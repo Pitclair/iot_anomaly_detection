@@ -1,0 +1,22 @@
+{
+  "precision_prec": 6,
+  "categories_k": 4,
+  "tolerance_delta": 2e-9,
+  "training_samples": [10, 15, 20, 25],
+
+  "ingest": {
+    "path": "data/raw/sample_packets.csv",
+    "time_col": "timestamp",
+    "protocol_col": "protocol",
+    "window_minutes": 10,
+    "categories": ["TCP", "UDP", "SSDP", "ARP"]
+  },
+
+  "model": {
+    "persist_path": "data/processed/model_alpha.json"
+  },
+
+  "forecast": {
+    "horizon_hours": 24
+  }
+}
