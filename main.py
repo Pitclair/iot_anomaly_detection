@@ -18,6 +18,7 @@ from processing.aggregation import aggregate_packet_traces
 from models.modeling_stage import run_modeling
 from models.forecasting_stage import run_forecasting
 from processing.manager import ProcessingManager
+from processing.statistics import Statistics
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -31,52 +32,54 @@ def load_config(path: str):
 
 
 def main(argv=None):
-    # Start preprocessing immediately when the project starts (Phase 1)
-    # TODO how to seperate the training and testing data,
-
-    training_dates = [
-        'D-LinkDayCam5_88-2020-10-08',
-        'D-LinkDayCam5_88-2020-10-09',
-        'D-LinkDayCam5_88-2020-10-10',
-        'D-LinkDayCam5_88-2020-10-11',
-        'D-LinkDayCam5_88-2020-10-12',
-        'D-LinkDayCam5_88-2020-10-13',
-        'D-LinkDayCam5_88-2020-10-14',
-        'D-LinkDayCam5_88-2020-10-15',
-        'D-LinkDayCam5_88-2020-10-16',
-    ]
-    testing_dates = [
-        'D-LinkDayCam5_88-2020-10-19',
-        'D-LinkDayCam5_88-2020-10-21',
-        'D-LinkDayCam5_88-2020-10-22',
-    ]
-    dates = training_dates + testing_dates
-
-    dataset_folder = 'D-LinkDayCam5'
-
     parser = argparse.ArgumentParser(description='IoT Anomaly Detection Baseline')
     parser.add_argument('--config', '-c', default=str(ROOT / 'configs' / 'config.json'))
     parser.add_argument('--stage', '-s', choices=['model', 'forecast'], required=True,
                         help='Stage to run: "model" or "forecast"')
-    parser.add_argument('--dataset', '-d', default=dataset_folder,)
+
 
     args = parser.parse_args(argv)
     cfg = load_config(args.config)
 
+    ingest_cfg = cfg.get('ingest', {})
+    categories = ingest_cfg.get('categories')
+    dataset_folder = ingest_cfg.get('dataset_folder')
+    training_dates = ingest_cfg.get('training_dates')
+    testing_dates = ingest_cfg.get('testing_dates')
+    raw_path = Path(ingest_cfg.get('raw_root'))  / dataset_folder
+    processed_path = Path(ingest_cfg.get('processed_root')) / dataset_folder
+    categories_k = cfg.get('categories_k', 4)
+    tolerance_delta = cfg.get('tolerance_delta', 1e-9)
+    model_out_path = cfg.get('model', {}).get('persist_path', 'data/processed/model_alpha.json')
+
+
+    if categories is None or dataset_folder is None or training_dates is None or testing_dates is None:
+        raise ValueError("categories, dataset_folder, training_dates e testing_dates devono essere specificati nel file di configurazione o tramite CLI.")
+
+    dates = training_dates + testing_dates
+
+
+    mgr = ProcessingManager(raw_root=str(raw_path), processed_root=str(processed_path), categories=categories, dates=dates)
+    logger.info(f"Auto preprocessing {len(dates)} PCAP packets to {processed_path}")
+    # mgr.run()
+    logger.info('Auto preprocessing complete.')
+
+    stats = Statistics(json_dir=processed_path, categories=categories)
+    stats.process_all()
+
+
+
     if args.stage == 'model':
-        run_modeling(cfg, dataset=args.dataset)
+        run_modeling(
+            data_path=processed_path,
+            categories_k=categories_k,
+            tolerance_delta=tolerance_delta,
+            model_out_path=model_out_path
+        )
     elif args.stage == 'forecast':
-        run_forecasting(cfg, dataset=args.dataset)
+        run_forecasting(cfg, dataset=processed_root)
     else:
         parser.print_help()
-
-    categories= ["TCP", "UDP", "SSDP", "ARP"]
-    raw_root = Path('data') / 'raw' / dataset_folder
-    processed_root = Path('data') / 'processed' / dataset_folder
-    mgr = ProcessingManager(raw_root=str(raw_root), processed_root=str(processed_root), categories=categories, dates=dates)
-    logger.info(f"Auto preprocessing {len(dates)} PCAP packets to {processed_root}")
-    mgr.run()
-    logger.info('Auto preprocessing complete.')
 
 
 if __name__ == '__main__':

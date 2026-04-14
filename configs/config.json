@@ -5,11 +5,29 @@
   "training_samples": [10, 15, 20, 25],
 
   "ingest": {
-    "path": "data/raw/sample_packets.csv",
+    "raw_root": "data/raw/",
+    "processed_root": "data/processed/",
     "time_col": "timestamp",
     "protocol_col": "protocol",
     "window_minutes": 10,
-    "categories": ["TCP", "UDP", "SSDP", "ARP"]
+    "categories": ["tcp", "udp", "ssdp", "arp"],
+    "dataset_folder": "D-LinkDayCam5",
+    "training_dates": [
+      "D-LinkDayCam5_88-2020-10-08",
+      "D-LinkDayCam5_88-2020-10-09",
+      "D-LinkDayCam5_88-2020-10-10",
+      "D-LinkDayCam5_88-2020-10-11",
+      "D-LinkDayCam5_88-2020-10-12",
+      "D-LinkDayCam5_88-2020-10-13",
+      "D-LinkDayCam5_88-2020-10-14",
+      "D-LinkDayCam5_88-2020-10-15",
+      "D-LinkDayCam5_88-2020-10-16"
+    ],
+    "testing_dates": [
+      "D-LinkDayCam5_88-2020-10-19",
+      "D-LinkDayCam5_88-2020-10-21",
+      "D-LinkDayCam5_88-2020-10-22"
+    ]
   },
 
   "model": {
