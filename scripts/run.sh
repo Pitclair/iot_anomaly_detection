@@ -20,8 +20,8 @@ if [ ! -f .env ]; then
 fi
 
 # Build the app image (uses Dockerfile.app)
-echo "Building app image..."
-docker compose -f docker-compose.yml build --no-cache app
+#echo "Building app image..."
+#docker compose -f docker-compose.yml build app
 
 # Ensure any previous run is stopped and orphan containers removed
 echo "Tearing down previous compose state..."

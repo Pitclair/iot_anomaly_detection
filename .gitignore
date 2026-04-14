@@ -1,8 +1,6 @@
 __pycache__/
 .env
 /.venv
-data/raw/
-data/processed/
 *.pyc
 .vscode/
 .idea/
