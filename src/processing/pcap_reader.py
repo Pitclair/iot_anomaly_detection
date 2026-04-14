@@ -12,50 +12,49 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def iter_pcap_packets(pcap_path: str) -> Iterator[Tuple[float, str]]:
-    """Yield (timestamp, protocol) for each packet in a pcap file.
+#TODO categories should come from config file, but hardcoding for now
 
-    Protocol categories: 'TCP', 'UDP', 'SSDP', 'ARP'
-    SSDP is UDP traffic where either sport or dport == 1900.
-    """
-    logger.info(f"Starting to process PCAP file: {pcap_path}")
+class PcapProcessor:
+    def __init__(self, categories: list[str]):
+        """Initialize the processor with protocol categories."""
+        self.categories = categories
+        self.packet_count = 0
+        self.protocol_count = {category: 0 for category in categories}
 
-    if not os.path.exists(pcap_path):
-        logger.error(f"File not found: {pcap_path}")
-        raise FileNotFoundError(pcap_path)
+    def process_pcap(self, pcap_path: str) -> Iterator[Tuple[float, str]]:
+        """Yield (timestamp, protocol) for each packet in a pcap file."""
+        logger.info(f"Starting to process PCAP file: {pcap_path}")
 
-    with PcapReader(pcap_path) as reader:
-        logger.info(f"Opened PCAP file: {pcap_path}")
-        for pkt in reader:
-            try:
-                ts = float(pkt.time)
-                logger.debug(f"Packet timestamp: {ts}")
-            except Exception as e:
-                logger.warning(f"Skipping malformed packet without timestamp: {e}")
-                continue
+        if not os.path.exists(pcap_path):
+            logger.error(f"File not found: {pcap_path}")
+            raise FileNotFoundError(pcap_path)
 
-            proto = None
-            if ARP in pkt:
-                proto = 'ARP'
-                logger.debug("Packet identified as ARP")
-            elif TCP in pkt:
-                proto = 'TCP'
-                logger.debug("Packet identified as TCP")
-            elif UDP in pkt:
-                udp = pkt[UDP]
-                sport = getattr(udp, 'sport', None)
-                dport = getattr(udp, 'dport', None)
-                if sport == 1900 or dport == 1900:
-                    proto = 'SSDP'
-                    logger.debug("Packet identified as SSDP")
-                else:
-                    proto = 'UDP'
-                    logger.debug("Packet identified as UDP")
-            else:
-                logger.debug("Packet ignored (not TCP, UDP, ARP, or SSDP)")
-                continue
+        with PcapReader(pcap_path) as reader:
+            for pkt in reader:
+                try:
+                    ts = float(pkt.time)
+                except Exception:
+                    continue
 
-            logger.info(f"Yielding packet: timestamp={ts}, protocol={proto}")
-            yield ts, proto
+                proto = None
+                if 'ARP' in self.categories and ARP in pkt:
+                    proto = 'ARP'
+                elif 'TCP' in self.categories and TCP in pkt:
+                    proto = 'TCP'
+                elif 'UDP' in self.categories and UDP in pkt:
+                    udp = pkt[UDP]
+                    sport = getattr(udp, 'sport', None)
+                    dport = getattr(udp, 'dport', None)
+                    if 'SSDP' in self.categories and (sport == 1900 or dport == 1900):
+                        proto = 'SSDP'
+                    elif 'UDP' in self.categories:
+                        proto = 'UDP'
 
-    logger.info(f"Finished processing PCAP file: {pcap_path}")
+                if proto:
+                    self.packet_count += 1
+                    self.protocol_count[proto] += 1
+                    yield ts, proto
+
+        logger.info(f"Finished processing PCAP file: {pcap_path}")
+        logger.info(f"Total packets processed: {self.packet_count}")
+        logger.info(f"Protocol counts: {self.protocol_count}")

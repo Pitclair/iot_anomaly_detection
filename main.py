@@ -18,7 +18,10 @@ from processing.aggregation import aggregate_packet_traces
 from models.modeling_stage import run_modeling
 from models.forecasting_stage import run_forecasting
 from processing.manager import ProcessingManager
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def load_config(path: str):
     p = Path(path)
@@ -29,6 +32,8 @@ def load_config(path: str):
 
 def main(argv=None):
     # Start preprocessing immediately when the project starts (Phase 1)
+    # TODO how to seperate the training and testing data,
+
     training_dates = [
         'D-LinkDayCam5_88-2020-10-08',
         'D-LinkDayCam5_88-2020-10-09',
@@ -65,13 +70,13 @@ def main(argv=None):
     else:
         parser.print_help()
 
-
+    categories= ["TCP", "UDP", "SSDP", "ARP"]
     raw_root = Path('data') / 'raw' / dataset_folder
     processed_root = Path('data') / 'processed' / dataset_folder
-    mgr = ProcessingManager(raw_root=str(raw_root), processed_root=str(processed_root))
-    print(f"Auto preprocessing {len(dates)} PCAP stems to {processed_root}")
+    mgr = ProcessingManager(raw_root=str(raw_root), processed_root=str(processed_root), categories=categories, dates=dates)
+    logger.info(f"Auto preprocessing {len(dates)} PCAP packets to {processed_root}")
     mgr.run()
-    print('Auto preprocessing complete.')
+    logger.info('Auto preprocessing complete.')
 
 
 if __name__ == '__main__':

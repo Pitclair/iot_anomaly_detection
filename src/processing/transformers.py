@@ -30,13 +30,13 @@ def build_time_series(records: Iterable[Tuple[float, str]]) -> pd.DataFrame:
     return df
 
 
-def to_10min_windows(df: pd.DataFrame, categories: List[str] = None) -> List[WindowCount]:
+def to_10min_windows(df: pd.DataFrame, categories: List[str]) -> List[WindowCount]:
     """Resample df into 10-minute windows and return list of validated WindowCount objects.
 
     Handles silent windows by filling zeros for missing intervals.
     """
-    if categories is None:
-        categories = ['TCP', 'UDP', 'SSDP', 'ARP']
+    if not categories:
+        raise ValueError("The 'categories' argument must not be empty.")
 
     if df.empty:
         # no packets at all -> return empty list
@@ -45,11 +45,11 @@ def to_10min_windows(df: pd.DataFrame, categories: List[str] = None) -> List[Win
     # Ensure timezone-naive timestamps and sort
     df = df.sort_index()
 
-    window = '10T'
+    window = '10min'  # Corretto da '10T' a '10min' per evitare errori di frequenza
     # Resample counting per protocol
     grouped = df.groupby('protocol').resample(window).size().unstack(level=0).fillna(0)
 
-    # reindex to continuous time range from first to last with freq=10T to include silent windows
+    # reindex to continuous time range from first to last with freq=10min to include silent windows
     start = grouped.index.min()
     end = grouped.index.max()
     full_index = pd.date_range(start=start, end=end, freq=window)
@@ -62,15 +62,11 @@ def to_10min_windows(df: pd.DataFrame, categories: List[str] = None) -> List[Win
 
     grouped = grouped[categories].astype(int)
 
-    # Convert rows to Pydantic WindowCount objects
+    # Convert rows to Pydantic WindowCount objects dynamically
     windows = []
     for _, row in grouped.iterrows():
-        wc = WindowCount(
-            tcp=int(row['TCP']),
-            udp=int(row['UDP']),
-            ssdp=int(row['SSDP']),
-            arp=int(row['ARP']),
-        )
+        wc_data = {protocol.lower(): int(row[protocol]) for protocol in grouped.columns}
+        wc = WindowCount(**wc_data)
         windows.append(wc)
 
     return windows
@@ -85,4 +81,3 @@ def to_numpy_matrix(windows: List[WindowCount]) -> np.ndarray:
 
     mat = np.array([[w.tcp, w.udp, w.ssdp, w.arp] for w in windows], dtype=int)
     return mat
-
