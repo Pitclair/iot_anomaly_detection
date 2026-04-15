@@ -64,7 +64,7 @@ def main(argv=None):
     # mgr.run()
     logger.info('Auto preprocessing complete.')
 
-    stats = Statistics(json_dir=processed_path, categories=categories)
+    stats = Statistics(json_dir=processed_path, categories=categories, dates=dates)
     stats.process_all()
 
 

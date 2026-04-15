@@ -7,19 +7,29 @@ from .schemas import ProcessedDataset
 from pathlib import Path
 
 class Statistics:
-    def __init__(self, json_dir, categories):
+    def __init__(self, json_dir, categories, dates=None):
         self.json_dir = Path(json_dir)
         self.categories = categories
+        self.dates = dates if dates is not None else []
         self.json_paths = self._collect_json_files()
 
     def _collect_json_files(self):
         # Cerca tutti i file .json nella directory e nelle sottocartelle
-        json_files = list(sorted(str(f) for f in self.json_dir.glob('*.json')))
+        json_files = list(sorted(self.json_dir.glob('*.json')))
         if not json_files:
             for subdir in self.json_dir.iterdir():
                 if subdir.is_dir():
-                    json_files.extend(str(f) for f in subdir.glob('*.json'))
-        return json_files
+                    json_files.extend(subdir.glob('*.json'))
+        # Filtra per date se specificate
+        if self.dates:
+            filtered = []
+            for f in json_files:
+                fname = str(f)
+                if any(date in fname for date in self.dates):
+                    filtered.append(str(f))
+            return filtered
+        else:
+            return [str(f) for f in json_files]
 
     @staticmethod
     def mean(matrix):
