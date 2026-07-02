@@ -61,7 +61,7 @@ def main(argv=None):
 
     mgr = ProcessingManager(raw_root=str(raw_path), processed_root=str(processed_path), categories=categories, dates=dates)
     logger.info(f"Auto preprocessing {len(dates)} PCAP packets to {processed_path}")
-    # mgr.run()
+    mgr.run()
     logger.info('Auto preprocessing complete.')
 
     stats = Statistics(json_dir=processed_path, categories=categories, dates=dates)
