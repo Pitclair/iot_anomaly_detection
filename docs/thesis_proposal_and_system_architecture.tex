@@ -1,0 +1,1719 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+
+\geometry{margin=1in}
+\setlist{nosep}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  urlcolor=blue!55!black,
+  citecolor=blue!55!black
+}
+
+\lstdefinestyle{plain}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false
+}
+\lstset{style=plain}
+\sloppy
+
+\title{Master's Thesis Proposal and System Architecture Document\\[0.5em]
+\large LM-IDNet: An Adaptive Dirichlet-Multinomial System for Unsupervised IoT Network Anomaly Detection}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section*{Purpose of This Document}
+\addcontentsline{toc}{section}{Purpose of This Document}
+
+This document proposes a complete Master's thesis project and a corresponding system architecture for unsupervised anomaly detection in IoT network traffic. It is written as a standalone guide for a reader who may know basic programming and statistics, but has no prior knowledge of Dirichlet-Multinomial modeling, overdispersed count data, probabilistic topic models, or IoT anomaly detection.
+
+The proposal is based on the project brief in \path{resouces/Proposte_di_Ricerca_basate_su_Dirichlet_Multinomial.pdf} and on the supporting academic papers in the same folder. The brief contains two possible research directions. The direction developed here is the second project in the brief: \textbf{LM-IDNet, an adaptive anomaly detection system for IoT and cybersecurity based on online estimation of Dirichlet-Multinomial parameters using the Languasco-Migliardi method}. The first project, a Dirichlet-Softmax layer for neural networks, is treated as a possible extension rather than as the central system, because the repository and datasets are already structured around IoT traffic modeling.
+
+The document has five required sections:
+
+\begin{enumerate}
+  \item Introduction and problem statement.
+  \item Mathematical and theoretical foundations.
+  \item Detailed literature review.
+  \item Proposed system architecture and process description.
+  \item Roadmap and implementation strategy.
+\end{enumerate}
+
+\section{Introduction and Problem Statement}
+
+\subsection{The Real-World Problem}
+
+The Internet of Things has moved networked computation into homes, factories, hospitals, transportation systems, offices, energy systems, and public infrastructure. Many IoT devices are small, cheap, and continuously connected: smart cameras, thermostats, light switches, voice assistants, wearable sensors, industrial monitors, and embedded controllers. These devices often have limited memory, limited CPU capacity, long deployment lifetimes, and weak update practices. At the same time, they continuously generate network traffic and interact with local networks and external cloud services.
+
+This creates a cybersecurity problem with several properties:
+
+\begin{itemize}
+  \item IoT devices are attractive attack targets because they are numerous and often poorly maintained.
+  \item A compromised IoT device can leak private information, participate in botnets, scan the local network, attack other devices, or disrupt critical services.
+  \item Signature-based defenses are insufficient because new attacks, misconfigurations, and zero-day vulnerabilities may not match known signatures.
+  \item Many IoT environments cannot support heavy deep-learning detection systems on-device or near the edge.
+  \item Network behavior is not constant; normal behavior can drift because of firmware updates, user behavior, cloud-service changes, time of day, and device lifecycle changes.
+\end{itemize}
+
+Therefore, a useful IoT anomaly detection system should be lightweight, interpretable, adaptive, and able to model ``normal'' behavior without requiring labeled attack data. This motivates an unsupervised statistical approach: learn the normal traffic distribution of a device, score future traffic against that learned distribution, and raise alerts when observed behavior becomes statistically unlikely.
+
+\subsection{The Statistical Problem Hidden Inside IoT Traffic}
+
+The thesis brief proposes a system that models IoT traffic as categorical count data. For example, in a 10-minute time window, a smart camera may produce a vector such as:
+
+\[
+x_t =
+\begin{bmatrix}
+\mathrm{TCP\_count} & \mathrm{UDP\_count} & \mathrm{SSDP\_count} & \mathrm{ARP\_count}
+\end{bmatrix}.
+\]
+
+Each window is not a single scalar measurement. It is a vector of counts across multiple traffic categories. The total number of packets in the window may vary, and the composition of traffic may vary as well.
+
+The core statistical task is:
+
+\begin{quote}
+Given historical count vectors that represent normal IoT traffic, estimate a probability model of normal behavior and use the log-likelihood of new count vectors as an anomaly score.
+\end{quote}
+
+A high log-likelihood means the new window resembles normal behavior. A very low log-likelihood means the window is unusual under the learned model. This is useful because many attacks and failures change traffic composition: for example, more scanning traffic, unusual UDP bursts, abnormal ARP activity, cloud communication failures, or discovery-protocol abuse.
+
+\subsection{Why Standard Models Are Not Enough}
+
+A first attempt might use simple distributions:
+
+\begin{itemize}
+  \item A Gaussian model for continuous features.
+  \item Independent Poisson models for packet counts.
+  \item A Multinomial model for categorical packet composition.
+\end{itemize}
+
+These are not sufficient in the setting targeted by the project brief.
+
+The Gaussian distribution is natural for continuous measurements with symmetric variation, but packet counts are non-negative integers and often skewed. A Gaussian model can assign probability to impossible negative counts and may poorly represent bursts.
+
+The Poisson distribution is natural for counts, but it assumes that the mean and variance are equal. Real network traffic often violates this assumption. It may have long quiet periods, sudden bursts, periodic maintenance, cloud-service synchronization, discovery traffic, and user-driven activity. The variance can be much larger than the mean. This phenomenon is called \textbf{overdispersion}.
+
+The Multinomial distribution is natural for categorical counts when the total number of trials is fixed and the category probabilities are fixed. However, it assumes that all packets in a window are conditionally independent draws from one fixed probability vector. IoT traffic often violates this assumption because packet types are correlated. For example, a camera's TCP traffic may rise together with certain UDP discovery patterns, or ARP activity may occur in bursts when network state changes.
+
+The Dirichlet-Multinomial distribution directly addresses these limitations. It models categorical counts while allowing the underlying category probabilities themselves to vary from window to window. This extra variation is exactly what makes the model appropriate for overdispersed multicategory count data.
+
+\subsection{Thesis Objective}
+
+The proposed thesis objective is:
+
+\begin{quote}
+Design, implement, and evaluate an adaptive, unsupervised anomaly detection system for IoT network traffic using a Dirichlet-Multinomial normal-behavior model, with efficient and accurate log-likelihood computation based on the Languasco-Migliardi method.
+\end{quote}
+
+The system should:
+
+\begin{itemize}
+  \item Ingest packet traces or NetFlow-like summaries from an IoT device.
+  \item Aggregate traffic into fixed-length count windows.
+  \item Estimate the Dirichlet-Multinomial parameters of normal traffic.
+  \item Score new windows by log-likelihood.
+  \item Detect anomalies using calibrated likelihood thresholds.
+  \item Adapt the normal model over time while reducing poisoning risk.
+  \item Support lightweight edge deployment.
+  \item Produce interpretable evidence about which traffic categories contributed to the anomaly.
+  \item Evaluate accuracy, false positive rate, true positive rate, likelihood distributions, runtime, and forecasting quality.
+\end{itemize}
+
+\subsection{Research Questions}
+
+The thesis can be organized around the following research questions:
+
+\textbf{RQ1. Modeling adequacy:} Does the Dirichlet-Multinomial distribution model normal IoT traffic windows better than simpler count models such as independent Poisson or Multinomial baselines?
+
+\textbf{RQ2. Anomaly detection:} Can Dirichlet-Multinomial log-likelihood scoring detect anomalous IoT traffic with acceptable true positive and false positive rates?
+
+\textbf{RQ3. Numerical reliability:} Does the Languasco-Migliardi log-likelihood computation improve stability and runtime compared with standard log-gamma implementations and the Yu-Shaw method, especially under overdispersion?
+
+\textbf{RQ4. Adaptation:} Can the system update its normal profile over time without absorbing anomalous behavior into the normal model?
+
+\textbf{RQ5. Edge suitability:} Can the full pipeline run within realistic edge constraints on CPU, memory, and latency?
+
+\subsection{Expected Contributions}
+
+The thesis should aim to produce the following contributions:
+
+\begin{itemize}
+  \item A clear statistical formulation of IoT anomaly detection as overdispersed categorical count modeling.
+  \item A working implementation of a Dirichlet-Multinomial anomaly detector using fixed-time traffic windows.
+  \item An efficient likelihood backend based on the Languasco-Migliardi method, or a clean abstraction that allows this backend to replace standard log-gamma computation.
+  \item A threshold-calibrated anomaly scoring method.
+  \item An adaptive retraining strategy with guardrails against model poisoning.
+  \item A reproducible experimental evaluation on smart-camera traffic.
+  \item A system architecture suitable for extension to NetFlow data and edge deployment.
+\end{itemize}
+
+\section{Mathematical and Theoretical Foundations}
+
+\subsection{From Network Packets to Count Vectors}
+
+The system begins with packet-level network observations. A raw packet trace is too detailed to model directly in a lightweight edge detector. Instead, the trace is aggregated into time windows.
+
+Let time be divided into windows of fixed duration, for example 10 minutes. In each window, packets are assigned to one of \(K\) traffic categories. In the current repository, the default categories are:
+
+\[
+\mathrm{TCP},\quad \mathrm{UDP},\quad \mathrm{SSDP},\quad \mathrm{ARP}.
+\]
+
+For a given window \(t\), define:
+
+\[
+\mathbf{x}_t = \left(x_{t1}, x_{t2}, \ldots, x_{tK}\right),
+\]
+
+where \(x_{tk}\) is the number of packets in category \(k\) during window \(t\).
+
+The total packet count in the window is:
+
+\[
+N_t = \sum_{k=1}^{K} x_{tk}.
+\]
+
+The empirical category frequencies are:
+
+\[
+f_{tk} = \frac{x_{tk}}{N_t},
+\]
+
+when \(N_t > 0\). Silent windows, where \(N_t = 0\), must be handled carefully. They can be retained as meaningful ``no traffic'' observations, modeled separately, or excluded from likelihood scoring depending on the experimental design.
+
+\subsection{Categorical and Multinomial Distributions}
+
+The simplest model for categorical observations is the Categorical distribution. If one packet belongs to one of \(K\) categories, and the probability of category \(k\) is \(p_k\), then:
+
+\[
+\Pr(\mathrm{category}=k)=p_k,
+\]
+
+where:
+
+\[
+p_k \geq 0,\qquad \sum_{k=1}^{K} p_k = 1.
+\]
+
+The vector \(\mathbf{p}=(p_1,\ldots,p_K)\) lies on the probability simplex.
+
+If a window contains \(N\) packets and each packet is independently assigned to a category with fixed probability vector \(\mathbf{p}\), then the count vector \(\mathbf{x}=(x_1,\ldots,x_K)\) follows a Multinomial distribution:
+
+\[
+\Pr(\mathbf{x}\mid N,\mathbf{p})
+=
+\frac{N!}{x_1!x_2!\cdots x_K!}
+\prod_{k=1}^{K} p_k^{x_k}.
+\]
+
+The Multinomial distribution is useful, but it has a strong assumption: the probability vector \(\mathbf{p}\) is fixed. If traffic composition changes from window to window because of normal device variability, the Multinomial model underestimates variability. This creates too many false positives because normal bursts look statistically impossible.
+
+\subsection{Overdispersion}
+
+Overdispersion means that the observed variance is larger than the variance expected under a chosen model.
+
+For a Poisson count model, the variance should equal the mean:
+
+\[
+\operatorname{Var}(X)=\mathbb{E}[X].
+\]
+
+If the observed variance is much larger than the mean, the data are overdispersed relative to the Poisson model.
+
+For Multinomial data, overdispersion means that count proportions vary more across windows than a fixed-probability Multinomial model predicts. In network traffic, this is common. Even during normal behavior, an IoT device may move among several modes:
+
+\begin{itemize}
+  \item Idle.
+  \item Local discovery.
+  \item Cloud upload.
+  \item Video streaming.
+  \item Firmware update.
+  \item DNS or control-plane communication.
+\end{itemize}
+
+Each mode has a different traffic mixture. A single fixed \(\mathbf{p}\) is therefore too rigid.
+
+\subsection{The Dirichlet Distribution}
+
+The Dirichlet distribution is a probability distribution over probability vectors.
+
+This is an important conceptual step:
+
+\begin{itemize}
+  \item A Multinomial distribution uses a probability vector \(\mathbf{p}\).
+  \item A Dirichlet distribution models uncertainty and variability in \(\mathbf{p}\) itself.
+\end{itemize}
+
+Let:
+
+\[
+\mathbf{p}=(p_1,\ldots,p_K),
+\]
+
+where \(p_k \geq 0\) and \(\sum_k p_k=1\). A Dirichlet distribution with parameter vector:
+
+\[
+\boldsymbol{\alpha}=(\alpha_1,\ldots,\alpha_K)
+\]
+
+has density:
+
+\[
+\operatorname{Dirichlet}(\mathbf{p}\mid\boldsymbol{\alpha})
+=
+\frac{\Gamma(\alpha_0)}{\prod_{k=1}^{K}\Gamma(\alpha_k)}
+\prod_{k=1}^{K}p_k^{\alpha_k-1},
+\]
+
+where:
+
+\[
+\alpha_0 = \sum_{k=1}^{K}\alpha_k.
+\]
+
+The parameters have intuitive meanings:
+
+\begin{itemize}
+  \item \(\alpha_k\) controls the tendency toward category \(k\).
+  \item \(\alpha_0\) is the total concentration or precision.
+  \item The mean probability of category \(k\) is:
+\end{itemize}
+
+\[
+\mathbb{E}[p_k]=\frac{\alpha_k}{\alpha_0}.
+\]
+
+If \(\alpha_0\) is large, probability vectors sampled from the Dirichlet are tightly concentrated around the mean. If \(\alpha_0\) is small, sampled probability vectors vary widely. This is why the Dirichlet is useful for overdispersed data: it lets the category probabilities fluctuate between windows.
+
+\subsection{The Dirichlet-Multinomial Distribution}
+
+The Dirichlet-Multinomial distribution is a compound distribution. It describes the following generative process:
+
+\begin{enumerate}
+  \item Draw a window-specific probability vector:
+\end{enumerate}
+
+\[
+\mathbf{p}_t \sim \operatorname{Dirichlet}(\boldsymbol{\alpha}).
+\]
+
+\begin{enumerate}[resume]
+  \item Draw the count vector for the window:
+\end{enumerate}
+
+\[
+\mathbf{x}_t \sim \operatorname{Multinomial}(N_t,\mathbf{p}_t).
+\]
+
+Because \(\mathbf{p}_t\) changes from one window to another, the resulting count vectors show more variability than ordinary Multinomial counts. This makes the Dirichlet-Multinomial a natural model for IoT traffic windows.
+
+The probability mass function, omitting only notation details, is:
+
+\[
+\Pr(\mathbf{x}\mid\boldsymbol{\alpha})
+=
+\frac{N!}{\prod_{k=1}^{K}x_k!}
+\frac{\Gamma(\alpha_0)}{\Gamma(\alpha_0+N)}
+\prod_{k=1}^{K}
+\frac{\Gamma(\alpha_k+x_k)}{\Gamma(\alpha_k)}.
+\]
+
+For parameter estimation and anomaly scoring, the combinatorial term:
+
+\[
+\frac{N!}{\prod_{k=1}^{K}x_k!}
+\]
+
+may be included if comparing count vectors with different total counts, because it affects the probability of the observed count vector. Some papers focus on the parameter-dependent part of the likelihood, especially when estimating \(\boldsymbol{\alpha}\).
+
+The log-likelihood contains paired differences of log-gamma terms:
+
+\[
+\log\Gamma(\alpha_k+x_k)-\log\Gamma(\alpha_k),
+\]
+
+\[
+\log\Gamma(\alpha_0+N)-\log\Gamma(\alpha_0).
+\]
+
+These paired differences are mathematically well-defined, but numerically difficult when the terms are individually huge and their difference is relatively small.
+
+\subsection{Mean-Precision and Overdispersion Parameterization}
+
+The supporting papers often reparameterize the model using:
+
+\[
+\alpha_k = \frac{p_k}{\psi},
+\]
+
+where:
+
+\[
+\sum_{k=1}^{K}p_k=1,\qquad \psi=\frac{1}{\alpha_0}.
+\]
+
+Here:
+
+\begin{itemize}
+  \item \(p_k\) is the mean probability of category \(k\).
+  \item \(\psi\) is an overdispersion parameter.
+  \item Small \(\psi\) means large total concentration \(\alpha_0\), so the model approaches the Multinomial.
+  \item Larger \(\psi\) means greater variability in the probability vector from window to window.
+\end{itemize}
+
+Different papers use slightly different conventions and thresholds for reporting dispersion. Under the mean-precision convention above, the important point is that total concentration controls how much the category probability vector can vary from window to window. Some supporting papers report a small fitted dispersion-related value and use an empirical threshold to classify datasets in their experiments. To avoid ambiguity in the thesis, the implementation should always report the exact parameter definition being used, empirical variance-to-mean diagnostics, and model-comparison results against simpler Poisson and Multinomial baselines.
+
+\subsection{Maximum Likelihood Estimation}
+
+To learn normal traffic, the system estimates \(\boldsymbol{\alpha}\) from training count vectors:
+
+\[
+\mathcal{D}=\{\mathbf{x}_1,\mathbf{x}_2,\ldots,\mathbf{x}_R\}.
+\]
+
+The maximum likelihood estimate is:
+
+\[
+\hat{\boldsymbol{\alpha}}
+=
+\underset{\boldsymbol{\alpha}}{\operatorname{arg\,max}}
+\sum_{i=1}^{R}\log \Pr(\mathbf{x}_i\mid\boldsymbol{\alpha}).
+\]
+
+There is no closed-form solution for the Dirichlet or Dirichlet-Multinomial maximum likelihood estimate. This is why iterative methods are needed.
+
+\subsection{Digamma Function and Fixed-Point Estimation}
+
+The derivative of \(\log\Gamma(x)\) is called the digamma function:
+
+\[
+\psi_0(x)=\frac{d}{dx}\log\Gamma(x).
+\]
+
+Minka's paper shows that the Dirichlet-Multinomial parameter vector can be estimated by a fixed-point update. For each category \(k\), the update has the form:
+
+\[
+\alpha_k^{\mathrm{new}}
+=
+\alpha_k
+\frac{
+\sum_{i=1}^{R}\left[\psi_0(x_{ik}+\alpha_k)-\psi_0(\alpha_k)\right]
+}{
+\sum_{i=1}^{R}\left[\psi_0(N_i+\alpha_0)-\psi_0(\alpha_0)\right]
+},
+\]
+
+where:
+
+\[
+N_i=\sum_{k=1}^{K}x_{ik},\qquad \alpha_0=\sum_{k=1}^{K}\alpha_k.
+\]
+
+Intuitively, the numerator measures how much category \(k\) is supported by the observed counts compared with the current parameter value. The denominator normalizes this support against the total count behavior of each window. Repeating this update moves \(\boldsymbol{\alpha}\) toward a likelihood maximum.
+
+Minka's work is crucial because it provides the algorithmic foundation used by the later ALM papers and by the current repository scaffold.
+
+\subsection{The Numerical Problem: Paired Log-Gamma Differences}
+
+The fixed-point update itself uses digamma differences. The convergence check and likelihood scoring use log-likelihood values. The Dirichlet-Multinomial log-likelihood requires terms like:
+
+\[
+\log\Gamma(a+n)-\log\Gamma(a).
+\]
+
+When \(a\) is large and \(n\) is moderate, both \(\log\Gamma(a+n)\) and \(\log\Gamma(a)\) may be very large, while their difference is much smaller. Subtracting two large nearly equal floating-point numbers can lose significant digits. This is called cancellation error.
+
+This problem is not a minor implementation detail. It directly affects:
+
+\begin{itemize}
+  \item Whether the estimator appears to converge.
+  \item Whether two models can be compared.
+  \item Whether anomaly scores are reliable.
+  \item Whether the system can run on ordinary double-precision hardware.
+\end{itemize}
+
+The Yu-Shaw paper and the Languasco-Migliardi line of papers focus on this issue.
+
+\subsection{Languasco-Migliardi Log-Likelihood Computation}
+
+The Languasco-Migliardi method improves computation of paired log-gamma differences using an Euler-Maclaurin based expansion with explicit error control. The later ALM papers explain that this method:
+
+\begin{itemize}
+  \item Avoids the instability of naive paired \(\log\Gamma\) subtraction.
+  \item Avoids the barrier encountered by the Yu-Shaw mesh approach.
+  \item Provides a way to check whether the requested decimal precision is feasible using double precision.
+  \item Reduces computational cost by avoiding unnecessary expensive operations.
+  \item Can be implemented efficiently in C and wrapped for Python.
+\end{itemize}
+
+For this thesis, the LM method is not just an optimization. It is a required part of making the anomaly detector trustworthy when the data are overdispersed and likelihood values are used as security signals.
+
+\subsection{Likelihood as an Anomaly Score}
+
+Once \(\hat{\boldsymbol{\alpha}}\) is estimated from normal traffic, a new window \(\mathbf{x}_t\) can be scored as:
+
+\[
+\operatorname{score}(\mathbf{x}_t)=\log\Pr(\mathbf{x}_t\mid\hat{\boldsymbol{\alpha}}).
+\]
+
+Because log-likelihoods are often negative, a lower value means a less likely observation.
+
+Two practical score variants are useful:
+
+\[
+\mathrm{raw\_score}(\mathbf{x}_t)
+=
+\log\Pr(\mathbf{x}_t\mid\hat{\boldsymbol{\alpha}}),
+\]
+
+\[
+\mathrm{normalized\_score}(\mathbf{x}_t)
+=
+\frac{\log\Pr(\mathbf{x}_t\mid\hat{\boldsymbol{\alpha}})}{\max(N_t,1)}.
+\]
+
+The normalized score prevents windows with more packets from automatically dominating the score simply because they contain more observations. The thesis should evaluate both.
+
+A threshold can be learned from validation data:
+
+\[
+\operatorname{threshold}
+=
+\operatorname{Quantile}_q\left(
+\left\{\operatorname{score}(\mathbf{x}_i):\mathbf{x}_i\in\mathcal{D}_{\mathrm{val}}\right\}
+\right).
+\]
+
+For example, if the first percentile is used, then about 1 percent of normal validation windows should fall below the threshold. Any future window with:
+
+\[
+\operatorname{score}(\mathbf{x}_t)<\operatorname{threshold}
+\]
+
+is marked anomalous.
+
+\subsection{Topic Modeling Concepts as an Intuition Bridge}
+
+Dirichlet-Multinomial models are central in probabilistic topic modeling, especially Latent Dirichlet Allocation. In topic modeling:
+
+\begin{itemize}
+  \item A document is represented as a bag of word counts.
+  \item A topic is a probability distribution over words.
+  \item A document has a probability distribution over topics.
+  \item Dirichlet distributions are used as priors over probability vectors.
+\end{itemize}
+
+The IoT anomaly detection setting has a similar structure:
+
+\begin{itemize}
+  \item A traffic window is represented as a bag of protocol or flow-feature counts.
+  \item A normal behavior mode is a probability distribution over traffic categories.
+  \item A device may move among behavior modes over time.
+  \item The Dirichlet-Multinomial models variability in the category probabilities.
+\end{itemize}
+
+The proposed baseline system does not need full LDA. However, topic modeling provides a useful extension path. A future version could learn latent ``traffic topics'' such as idle behavior, video upload, local discovery, or update behavior. The current thesis should first build the simpler and more interpretable Dirichlet-Multinomial normal profile.
+
+\section{Detailed Literature Review}
+
+This section explains the provided sources in a way that makes their mechanisms and relevance clear without requiring the reader to open the PDFs.
+
+\subsection{Project Brief: Research Proposals Based on the Dirichlet-Multinomial}
+
+The main thesis PDF contains two research proposals. The first is a deep-learning direction called Dirichlet-Softmax. It proposes replacing or extending the classical softmax layer with a Dirichlet-Multinomial likelihood-based layer. The motivation is that ordinary softmax produces normalized class probabilities but does not represent uncertainty well, is fragile under outliers, and does not explicitly model correlations or overdispersion among categories. The proposed Dirichlet-Softmax layer would estimate \(\boldsymbol{\alpha}\) parameters using an adapted Languasco-Migliardi algorithm and would target better calibrated and more informative probabilistic outputs. Suggested benchmarks include MNIST and CIFAR-10.
+
+The second proposal is the one developed in this document. It is titled in the brief as \textbf{LM-IDNet: adaptive anomaly detection for IoT networks and cybersecurity}. Its domain is cybersecurity, IoT, and unsupervised learning. Its stated objective is to build a lightweight and efficient system for detecting anomalies in IoT networks using an unsupervised pipeline based on online estimation of Dirichlet-Multinomial parameters through the LM algorithm.
+
+The project brief explicitly motivates the use of the Dirichlet-Multinomial by saying that traditional Gaussian and Poisson models cannot handle overdispersed data naturally. It proposes scoring new inputs by their log-likelihood under the normal model. The brief also specifies the system phases:
+
+\begin{itemize}
+  \item Use a smart-camera traffic dataset or NetFlow data.
+  \item Estimate an initial \(\boldsymbol{\alpha}\) from normal data.
+  \item Detect anomalies through log-likelihood.
+  \item Support adaptive retraining.
+  \item Target edge deployment.
+\end{itemize}
+
+It also specifies evaluation criteria:
+
+\begin{itemize}
+  \item Accuracy.
+  \item False positive rate.
+  \item True positive rate.
+  \item Log-likelihood distribution.
+  \item Applicability on low-power devices.
+\end{itemize}
+
+These requirements define the thesis target. The system is not merely a statistical experiment; it must be a deployable pipeline with ingestion, modeling, scoring, adaptation, and evaluation.
+
+\subsection{Minka: Estimating a Dirichlet Distribution}
+
+Thomas Minka's paper, \textit{Estimating a Dirichlet Distribution}, is the algorithmic foundation for the parameter estimation stage. It explains that the Dirichlet and Dirichlet-Multinomial distributions are basic models for proportional and count data, but their maximum likelihood estimates do not have closed-form solutions.
+
+The paper first treats the ordinary Dirichlet distribution. It shows that the log-likelihood involves \(\log\Gamma\), digamma, and trigamma functions. It then provides fixed-point and Newton-style iterative schemes. A key idea is that the Dirichlet parameters can be interpreted in terms of a mean vector and a precision parameter. The mean says where probability mass is centered; the precision says how concentrated the distribution is around that mean.
+
+The paper then extends the discussion to the Dirichlet-Multinomial, also called the Polya distribution. It describes the Dirichlet-Multinomial as a compound process: first draw a probability vector from a Dirichlet distribution, then draw categorical outcomes from a Multinomial distribution. For count vectors, Minka derives the likelihood, its gradient, and a fixed-point update for \(\boldsymbol{\alpha}\).
+
+The most important mechanism for this thesis is the update:
+
+\[
+\alpha_k^{\mathrm{new}}
+=
+\alpha_k
+\frac{
+\sum_{i=1}^{R}\left[\psi_0(x_{ik}+\alpha_k)-\psi_0(\alpha_k)\right]
+}{
+\sum_{i=1}^{R}\left[\psi_0(N_i+\alpha_0)-\psi_0(\alpha_0)\right]
+}.
+\]
+
+This gives a practical way to estimate a normal traffic model from count windows. The current repository already contains a Python implementation of this update in \path{src/algorithms/dirichlet.py}, although the broader modeling stage is not yet fully wired.
+
+Minka also discusses Newton methods and leave-one-out approximations. These are useful as possible extensions, but the fixed-point method is the best starting point because it is conceptually simple, aligns with the ALM papers, and is already present in the codebase.
+
+\subsection{Yu and Shaw: Efficient Computation of the Dirichlet-Multinomial Log-Likelihood}
+
+Yu and Shaw's \textit{Bioinformatics} paper addresses a numerical bottleneck: computing the Dirichlet-Multinomial log-likelihood accurately and quickly.
+
+The paper begins from the observation that the Dirichlet-Multinomial is useful for multicategory count data with overdispersion, especially in bioinformatics settings such as microbiome data. It explains that the model reduces to the Multinomial when overdispersion approaches zero, but ordinary implementations of the log-likelihood become unstable near that limit.
+
+The instability comes from paired log-gamma differences. A naive formula computes:
+
+\[
+\log\Gamma\left(\frac{1}{\psi}+N\right)-\log\Gamma\left(\frac{1}{\psi}\right),
+\]
+
+and similar category-level terms. When \(\psi\) is close to zero, \(1/\psi\) is large. The two log-gamma values are huge, and subtracting them loses precision.
+
+Yu and Shaw compare this with an alternative product formula used in some software. That product formula is more stable near zero overdispersion, but its number of terms grows with the total count \(N\). For high-count datasets, it becomes slow.
+
+Their proposed solution uses a truncated expansion involving Bernoulli polynomials to approximate paired log-gamma differences. Because the expansion is only directly accurate under certain conditions, they introduce a mesh algorithm. The mesh breaks the full count vector into smaller increments, computes the likelihood incrementally, and sums the pieces.
+
+The paper demonstrates that this method improves numerical stability and runtime, including a large speed improvement on a real microbiome dataset. This is an important paper because it identifies the exact computational problem that later work improves further.
+
+For this thesis, Yu and Shaw provide two lessons:
+
+\begin{enumerate}
+  \item Accurate likelihood computation is essential, not optional.
+  \item A method can be mathematically clever but still have practical limitations if its convergence conditions or error accumulation are not fully controlled.
+\end{enumerate}
+
+\subsection{Languasco and Migliardi: Fast Computation of the Dirichlet-Multinomial Log-Likelihood}
+
+The Languasco-Migliardi work improves on the Yu-Shaw approach. The original paper in the resources folder, \path{180_2022_1311_OnlinePDF.pdf}, is repeatedly unpacked in the later ALM papers. Its contribution is a more reliable and efficient way to compute paired log-gamma differences in the Dirichlet-Multinomial log-likelihood.
+
+The key mathematical contribution is an Euler-Maclaurin based formula for:
+
+\[
+\log\Gamma\left(\frac{1}{x}+y\right)-\log\Gamma\left(\frac{1}{x}\right),
+\]
+
+with an explicit remainder term. The later ALM2 paper states the theorem in operational form. It defines a correction term \(d(x,y)\), a finite sum using even Bernoulli numbers, and an error term. For small cases \(y=1\) or \(y=2\), the expression simplifies. For larger \(y\), the formula gives both an approximation and a bound on the approximation error.
+
+The practical consequences are central:
+
+\begin{itemize}
+  \item The method removes the Yu-Shaw delta-barrier, a condition that can cause Yu-Shaw to fail when some category parameters are too small relative to the selected mesh threshold.
+  \item It estimates error accumulation rather than ignoring it.
+  \item It allows a reliability check before computation: given the requested number of mantissa digits, the system can decide whether double precision is sufficient.
+  \item It uses the asymptotic state:
+\end{itemize}
+
+\[
+A=\sum_{k=1}^{K}x_k\log p_k
+\]
+
+as a way to estimate the order of magnitude of the likelihood near the low-overdispersion regime.
+
+\begin{itemize}
+  \item It reduces computational cost by replacing expensive power, logarithm, and exponential operations where possible with repeated products.
+\end{itemize}
+
+This paper is the reason the thesis brief requires the LM algorithm. In the proposed system, the LM method should be treated as the preferred likelihood backend for convergence checks, scoring, and evaluation whenever the Dirichlet-Multinomial likelihood is needed.
+
+\subsection{Efficient Analysis of Overdispersed Data Using Accurate Dirichlet-Multinomial Computation}
+
+The TPAMI paper by Al-Haj Baddar, Languasco, and Migliardi applies the Minka fixed-point estimator while comparing two log-likelihood computation procedures: Languasco-Migliardi (LM) and Yu-Shaw (YS).
+
+The paper begins with the modeling problem: many domains produce count data, and the correct distribution depends on dispersion. Poisson handles equidispersed univariate counts, negative binomial handles overdispersed binary or univariate count situations, and the Dirichlet-Multinomial is appropriate for multicategory overdispersed counts. The paper explicitly frames the Dirichlet-Multinomial as useful both for count modeling and as a conjugate structure in Bayesian statistics.
+
+The paper then states the Dirichlet-Multinomial log-likelihood using \(p\), \(\psi\), and \(\alpha_k=p_k/\psi\). It explains that evaluating this likelihood is difficult when the data are overdispersed because paired \(\log\Gamma\) differences become numerically unstable.
+
+The experimental method uses Minka's fixed-point iteration. In every iteration, the algorithm:
+
+\begin{enumerate}
+  \item Computes digamma-difference sums from the count matrix.
+  \item Updates \(\boldsymbol{\alpha}\).
+  \item Converts \(\boldsymbol{\alpha}\) to \(\mathbf{p}\) and \(\psi\).
+  \item Compares consecutive log-likelihood values.
+  \item Stops when the likelihood difference is below a tolerance.
+\end{enumerate}
+
+The paper compares LM and YS on multiple datasets from polls, images, and IoT network traffic. It reports that LM succeeded in estimating parameters at the required accuracy across experiments, while YS failed to produce sufficiently accurate results or failed outright in several cases. It also reports speedups for LM over YS, ranging approximately from twofold to twentyfold in the broader experiments.
+
+The paper evaluates model quality using distances such as total variation distance, Kullback-Leibler divergence, Euclidean distance, and mean squared error. It also uses chi-square and Z-tests to evaluate whether expected and observed count vectors are sufficiently close.
+
+For this thesis, the TPAMI paper provides evidence that:
+
+\begin{itemize}
+  \item Minka fixed-point estimation is viable for Dirichlet-Multinomial parameter learning.
+  \item The LM likelihood procedure is more reliable than YS for overdispersed data.
+  \item Evaluation must include both speed and goodness-of-fit.
+  \item IoT camera traffic is a legitimate application domain for this modeling approach.
+\end{itemize}
+
+\subsection{ALM IoT-CR: Modeling and Forecasting Overdispersed IoT Data}
+
+The \path{ALM_IoT-CR.pdf} paper is the closest source to the proposed thesis system. It applies Dirichlet-Multinomial modeling to IoT smart-camera traffic.
+
+The paper argues that IoT security remains an arms race between attackers and defenders. Even if systems are hardened by design, defenders still need traffic models that can identify suspicious behavior and provide early warnings. Traffic forecasting is presented as useful because a reliable prediction of future traffic gives defenders a baseline; deviations from that baseline can trigger proactive countermeasures.
+
+The dataset is the D-Link IoT device dataset. The paper focuses on \texttt{Camera5}. Packet traces are aggregated into 10-minute count vectors. Each vector contains counts for:
+
+\begin{itemize}
+  \item TCP packets.
+  \item UDP packets.
+  \item SSDP packets.
+  \item ARP packets.
+\end{itemize}
+
+The training days are packet traces from October 8, 9, 12, 13, 14, 15, and 16, 2020. The testing days are October 19, 21, and 22, 2020. This directly matches the direction already visible in the repository configuration, although the repository includes a slightly broader list of dates.
+
+The paper uses Minka's fixed-point iteration to estimate Dirichlet-Multinomial parameters for each training sub-dataset. It compares LM and YS for modeling speed and goodness of fit. It reports that LM converges much faster. One example from the paper is especially clear: for the October 13 subset at 20 percent input size, YS required almost 8 minutes while LM required around 6 seconds. The paper reports an average speedup around 14 when excluding an extreme case, with speedups generally around one order of magnitude.
+
+For goodness of fit, the paper uses:
+
+\begin{itemize}
+  \item Total variation distance.
+  \item Kullback-Leibler divergence.
+  \item Euclidean distance.
+  \item Mean squared error.
+  \item Chi-square test.
+  \item Z-test.
+\end{itemize}
+
+For forecasting, the paper samples from the models built during the first stage, averages the samples, and compares the prediction to the next-day traffic model. It uses Brier Score and Jensen-Shannon divergence. The results show that LM produced the best or near-best forecast accuracy and much better speed than YS. It also compares with Python's standard log-gamma implementation, called \texttt{lgam-std}, and notes that LM is implemented in pure Python in those experiments while standard math functions are C-optimized, meaning LM has additional speed potential if moved to C.
+
+For this thesis, ALM IoT-CR provides a concrete experimental template:
+
+\begin{itemize}
+  \item Use smart-camera traces.
+  \item Aggregate to 10-minute protocol count windows.
+  \item Use Minka fixed-point estimation.
+  \item Compare LM, YS, and standard log-gamma.
+  \item Evaluate speed, fit, and forecasting metrics.
+\end{itemize}
+
+The thesis extends this from modeling and forecasting to anomaly detection, adaptive retraining, and deployment architecture.
+
+\subsection{ALM2: Fast and Accurate Implementation of the Dirichlet-Multinomial Log-Likelihood}
+
+The \path{ALM2_new.pdf} paper focuses on implementation. It compares three variants of Minka's procedure:
+
+\begin{itemize}
+  \item \texttt{MP-scipy}, using SciPy's \texttt{gammaln}.
+  \item \texttt{MP-math}, using Python's \texttt{math.lgamma}.
+  \item \texttt{MP-ALM}, using a C implementation of the LM technique wrapped in Python.
+\end{itemize}
+
+The paper explains that the authors originally used Python implementations of LM, then moved to C and wrapped the implementation with Python's \texttt{ctypes} module. This matters because a thesis implementation may need to run on edge devices or process many windows quickly.
+
+The paper reports that \texttt{MP-ALM} is always faster than \texttt{MP-scipy} across the tested datasets, with gains from about 2.21x to 11.60x. Compared with \texttt{MP-math}, the gain ranges from about 1.04x to 5.02x. Larger gains are generally associated with overdispersed datasets, while smaller gains occur in non-overdispersed datasets.
+
+The paper also explains important implementation choices:
+
+\begin{itemize}
+  \item Avoid \texttt{pow(a, b)} for repeated powers when \(b\) is an integer-like sequence, because \texttt{pow} may internally use logarithm and exponential calls.
+  \item Precompute normalized Bernoulli-number constants.
+  \item Perform an error check before evaluating the main quantities.
+  \item Use the asymptotic state to decide whether double precision can support the requested accuracy.
+  \item Load and type-bind the C library once at runtime to minimize wrapping overhead.
+\end{itemize}
+
+For this thesis, ALM2 translates the mathematical LM method into engineering requirements. The anomaly detector should expose a likelihood engine abstraction so that the Python prototype can later be replaced by a C-backed LM implementation without changing the rest of the pipeline.
+
+\subsection{Nespoli et al.: Optimal Countermeasure Selection Against Cyber Attacks}
+
+The Nespoli, Papamartzivanos, Gomez Marmol, and Kambourakis survey is not about Dirichlet-Multinomial modeling. It is relevant because the thesis is in cybersecurity, and anomaly detection is only one phase of defense.
+
+The survey describes a cyber-defense cycle:
+
+\begin{enumerate}
+  \item Prevention.
+  \item Detection.
+  \item Reaction.
+  \item Forensics.
+\end{enumerate}
+
+The proposed thesis system primarily lives in the detection phase. However, the survey explains that detection should feed reaction. Once an intrusive incident is detected, a reaction system should evaluate the impact of the event and select countermeasures. Good countermeasure selection is a multi-criteria decision problem because defenders must balance:
+
+\begin{itemize}
+  \item Effectiveness in stopping or reducing the attack.
+  \item Cost of the countermeasure.
+  \item Impact on normal services.
+  \item Time needed to deploy the response.
+  \item Confidence in the detection.
+  \item Risk of acting on a false positive.
+\end{itemize}
+
+The survey distinguishes static countermeasures, which are preventive, from dynamic countermeasures, which are reactive. It also discusses attack graphs, attack trees, probabilistic state models, risk assessment, and decision-support systems as tools for selecting responses.
+
+For this thesis, the survey implies that the anomaly detector should not simply output ``anomaly'' or ``normal.'' It should output enough information for a reaction layer:
+
+\begin{itemize}
+  \item Severity score.
+  \item Confidence.
+  \item Affected device.
+  \item Time window.
+  \item Traffic categories responsible for the anomaly.
+  \item Suggested response class.
+\end{itemize}
+
+The thesis does not need to implement a full automated countermeasure optimizer, but its architecture should be compatible with one. At minimum, it should support a human-in-the-loop response workflow.
+
+\subsection{Motivating Note on Why ALM Matters Beyond This Thesis}
+
+The text note in the resources folder explains why faster and more accurate Dirichlet-Multinomial likelihood computation matters beyond IoT security. It frames the Dirichlet-Multinomial as a core primitive in probabilistic machine learning. It appears in topic modeling, Bayesian uncertainty estimation, reinforcement learning with categorical transition uncertainty, and other models for discrete data.
+
+The note correctly emphasizes that modern large language models and diffusion models do not usually rely on Dirichlet-Multinomial likelihoods in their core forward pass. However, improvements to this primitive still matter for:
+
+\begin{itemize}
+  \item Topic modeling and corpus analysis.
+  \item Hybrid neural-probabilistic systems.
+  \item Scientific count-data modeling.
+  \item Better uncertainty handling.
+  \item Faster experimentation in Bayesian models.
+\end{itemize}
+
+For the thesis, this note is useful as motivation: the system is applied to IoT anomaly detection, but the computational primitive being improved is broadly relevant.
+
+\subsection{Synthesis and Research Gap}
+
+Taken together, the sources establish the following chain:
+
+\begin{itemize}
+  \item Minka provides the iterative parameter estimation foundation.
+  \item Yu and Shaw identify and partially solve the Dirichlet-Multinomial likelihood instability problem.
+  \item Languasco and Migliardi improve the likelihood computation with explicit error control and better practical reliability.
+  \item The TPAMI paper shows that LM outperforms YS across several overdispersed count datasets, including IoT traffic.
+  \item The ALM IoT paper shows that smart-camera traffic can be modeled and forecast using this approach.
+  \item The ALM2 paper shows how to implement the LM method efficiently through a C/Python bridge.
+  \item The cyber-reaction survey shows that anomaly scores should feed a broader defense process.
+\end{itemize}
+
+The research gap for this Master's thesis is:
+
+\begin{quote}
+The existing papers demonstrate accurate modeling and forecasting of overdispersed IoT count data, but they do not deliver a complete adaptive anomaly detection system architecture with threshold calibration, online retraining, poisoning safeguards, interpretability, edge deployment considerations, and cybersecurity response integration.
+\end{quote}
+
+This thesis should fill that gap.
+
+\section{Proposed System Architecture and Process Description}
+
+\subsection{System Name and High-Level Concept}
+
+The proposed system is \textbf{LM-IDNet}, short for \textbf{Languasco-Migliardi IoT Dirichlet Network Detector}.
+
+The system learns a probabilistic profile of normal IoT traffic and detects deviations through Dirichlet-Multinomial log-likelihood. It is unsupervised because it does not require labeled attacks for training. It is adaptive because it can update its normal profile over time. It is lightweight because its features are compact count vectors and its core model has only one parameter per category.
+
+\subsection{Architecture Overview}
+
+The pipeline is:
+
+\begin{lstlisting}
+Raw PCAP or NetFlow
+    -> ingestion and parsing
+    -> categorical feature extraction
+    -> fixed time-window aggregation
+    -> count matrix validation
+    -> overdispersion diagnostics
+    -> normal-profile training
+    -> LM-backed Dirichlet-Multinomial likelihood engine
+    -> threshold calibration
+    -> online scoring
+    -> anomaly decision and explanation
+    -> adaptive retraining
+    -> forecasting and response support
+    -> evaluation and reporting
+\end{lstlisting}
+
+The core data object is a time-indexed count vector:
+
+\begin{lstlisting}
+WindowRecord {
+    device_id: string
+    start_time: timestamp
+    end_time: timestamp
+    counts: [x_1, ..., x_K]
+    total_count: N
+    metadata: optional fields
+}
+\end{lstlisting}
+
+The core model artifact is:
+
+\begin{lstlisting}
+DMNormalModel {
+    categories: [category_1, ..., category_K]
+    alpha: [alpha_1, ..., alpha_K]
+    alpha_0: sum(alpha)
+    p_mean: alpha / alpha_0
+    psi: 1 / alpha_0
+    training_window_range: timestamps
+    threshold_raw: float
+    threshold_normalized: float
+    likelihood_backend: "LM" | "standard" | "YS"
+    diagnostics: convergence and fit metadata
+}
+\end{lstlisting}
+
+\subsection{Stage 1: Data Ingestion}
+
+The system should support two input modes.
+
+\textbf{PCAP mode:} Raw packet captures are parsed packet by packet. Each packet is assigned a timestamp and a category. This mode is useful for offline research and reproducibility.
+
+\textbf{NetFlow mode:} Flow summaries are used instead of raw packets. This mode is useful for deployment because many networks already export NetFlow, IPFIX, or similar records.
+
+The current repository already contains a PCAP parser using Scapy's \texttt{PcapReader}. It identifies TCP, UDP, SSDP, and ARP packets. SSDP is recognized as UDP traffic on port 1900.
+
+Future feature categories can include:
+
+\begin{itemize}
+  \item DNS.
+  \item DHCP.
+  \item NTP.
+  \item TLS.
+  \item HTTP.
+  \item ICMP.
+  \item Destination class: local, gateway, cloud, multicast, broadcast.
+  \item Direction: inbound, outbound.
+  \item Packet-size bin.
+  \item Flow-duration bin.
+\end{itemize}
+
+The thesis should begin with the four protocol categories used in the ALM IoT paper, then evaluate whether richer categories improve detection.
+
+\subsection{Stage 2: Window Aggregation}
+
+Packets are grouped into fixed windows, typically 10 minutes. For each window, the system counts category occurrences:
+
+\[
+\mathbf{x}_t =
+\begin{bmatrix}
+\mathrm{TCP}_t & \mathrm{UDP}_t & \mathrm{SSDP}_t & \mathrm{ARP}_t
+\end{bmatrix}.
+\]
+
+The ALM IoT paper uses 10-minute windows for the D-Link smart-camera dataset, so this should be the baseline. The thesis can later test sensitivity to 1-minute, 5-minute, 10-minute, and 30-minute windows.
+
+Window length is a tradeoff:
+
+\begin{itemize}
+  \item Short windows detect attacks faster but produce noisier count vectors.
+  \item Long windows are more stable but delay detection and can hide short attacks.
+\end{itemize}
+
+Silent windows must be explicitly tracked. They can mean the device is idle, offline, disconnected, or not captured. A robust design should store silent windows rather than silently dropping them.
+
+\subsection{Stage 3: Data Validation and Diagnostics}
+
+Before modeling, the system validates that:
+
+\begin{itemize}
+  \item All counts are non-negative integers.
+  \item Category order is fixed and recorded.
+  \item Timestamps are monotonic within each device stream.
+  \item Missing windows are either filled with zeros or marked as missing.
+  \item Device identity and dataset partition are recorded.
+\end{itemize}
+
+The system then computes diagnostics:
+
+\[
+\bar{x}_{\cdot k}=\frac{1}{R}\sum_{i=1}^{R}x_{ik},
+\]
+
+\[
+s_k^2=\frac{1}{R-1}\sum_{i=1}^{R}\left(x_{ik}-\bar{x}_{\cdot k}\right)^2,
+\]
+
+\[
+\mathrm{DI}_k
+=
+\frac{s_k^2}{\bar{x}_{\cdot k}}.
+\]
+
+If \(\mathrm{DI}_k>1\), that category is overdispersed relative to a Poisson model. The system should also estimate a preliminary Dirichlet-Multinomial \(\psi\) to quantify multicategory overdispersion.
+
+Diagnostics are not merely descriptive. They justify why the Dirichlet-Multinomial model is appropriate and provide a sanity check for the thesis.
+
+\subsection{Stage 4: Training the Normal Model}
+
+Training uses normal traffic windows. If the dataset has no labels, the initial training interval should be selected from a period believed to be benign. The D-Link camera dates used in the ALM IoT paper provide a baseline split.
+
+Training steps:
+
+\begin{enumerate}
+  \item Load the training count matrix:
+\end{enumerate}
+
+\[
+X_{\mathrm{train}}\in\mathbb{N}^{R\times K}.
+\]
+
+\begin{enumerate}[resume]
+  \item Initialize \(\boldsymbol{\alpha}\).
+\end{enumerate}
+
+A simple initialization is:
+
+\[
+\bar{x}_{\cdot k}
+=
+\frac{1}{R}\sum_{i=1}^{R}x_{ik},
+\]
+
+\[
+p_k^{\mathrm{init}}
+=
+\frac{\bar{x}_{\cdot k}}
+{\sum_{j=1}^{K}\bar{x}_{\cdot j}},
+\]
+
+\[
+\alpha_k^{\mathrm{init}}=c\,p_k^{\mathrm{init}},
+\]
+
+where \(c\) is an initial concentration such as 10. More robust moment-based initialization can be added later.
+
+\begin{enumerate}[resume]
+  \item Run Minka fixed-point iteration.
+  \item Use the LM likelihood backend for convergence checks:
+\end{enumerate}
+
+\[
+\left|\log L(\boldsymbol{\alpha}^{\mathrm{new}})
+-\log L(\boldsymbol{\alpha}^{\mathrm{old}})\right|<\delta.
+\]
+
+\begin{enumerate}[resume]
+  \item Persist the model artifact.
+\end{enumerate}
+
+The current codebase has the fixed-point estimator in \path{src/algorithms/dirichlet.py}, but \path{src/models/modeling_stage.py} is currently commented out. A thesis implementation should activate and harden this stage.
+
+\subsection{Stage 5: Likelihood Engine}
+
+The likelihood engine should expose a common interface:
+
+\begin{lstlisting}[language=Python]
+log_likelihood(counts, alpha, include_multinomial_coefficient=True)
+\end{lstlisting}
+
+The backend can be one of:
+
+\begin{itemize}
+  \item Standard \texttt{gammaln}, useful as a baseline.
+  \item Yu-Shaw, useful for literature comparison.
+  \item Languasco-Migliardi, the target backend.
+  \item C-wrapped LM, the optimized deployment backend.
+\end{itemize}
+
+The architecture should isolate this component because the rest of the system should not care how paired log-gamma differences are computed. This makes it possible to prototype in Python and later replace only the numerical kernel.
+
+The likelihood engine should return:
+
+\begin{lstlisting}
+value: log-likelihood
+precision_status: ok | warning | impossible_requested_precision
+backend_metadata: terms, error_bound, runtime
+\end{lstlisting}
+
+This is important because the LM papers emphasize reliability, not just speed.
+
+\subsection{Stage 6: Threshold Calibration}
+
+After training, the system scores a validation set of normal windows:
+
+\[
+s_i=\log\Pr(\mathbf{x}_i\mid\hat{\boldsymbol{\alpha}}).
+\]
+
+Threshold options:
+
+\textbf{Empirical quantile threshold:}
+
+\[
+\operatorname{threshold}=\operatorname{Quantile}_q(\{s_i\}_{i=1}^{m}).
+\]
+
+For example, choose \(q=0.01\) for an expected 1 percent false positive rate on validation data.
+
+\textbf{Mean-standard-deviation threshold:}
+
+\[
+\operatorname{threshold}
+=
+\operatorname{mean}(\{s_i\})
+-\lambda\,\operatorname{std}(\{s_i\}).
+\]
+
+This is simple but assumes roughly symmetric score variation, which may not hold.
+
+\textbf{Extreme-value threshold:} Fit a tail model to low likelihood scores. This is more advanced and can be considered an extension.
+
+The baseline thesis should use empirical quantiles because they are interpretable and do not assume Gaussian score distributions.
+
+\subsection{Stage 7: Online Anomaly Detection}
+
+At runtime, each new window is transformed into a count vector and scored:
+
+\[
+\operatorname{score}_t
+=
+\log\Pr(\mathbf{x}_t\mid\hat{\boldsymbol{\alpha}}).
+\]
+
+The decision rule is:
+
+\[
+\operatorname{score}_t<\operatorname{threshold}
+\quad\Longrightarrow\quad
+\mathrm{anomaly}.
+\]
+
+The system should output a structured event:
+
+\begin{lstlisting}
+AnomalyEvent {
+    device_id,
+    window_start,
+    window_end,
+    score,
+    threshold,
+    severity,
+    counts,
+    expected_profile,
+    category_contributions,
+    model_version
+}
+\end{lstlisting}
+
+Severity can be based on the distance below threshold:
+
+\[
+\operatorname{severity}
+=
+\frac{\operatorname{threshold}-\operatorname{score}_t}
+{\mathrm{score\_scale}},
+\]
+
+where \(\mathrm{score\_scale}\) may be the standard deviation or interquartile range of validation scores.
+
+\subsection{Stage 8: Explanation and Category Contributions}
+
+A useful security system must explain why it raised an alert. For each category, the system can compare observed and expected proportions:
+
+\[
+\operatorname{observed}_k=\frac{x_k}{N},
+\]
+
+\[
+\operatorname{expected}_k=\frac{\alpha_k}{\alpha_0},
+\]
+
+\[
+\operatorname{residual}_k
+=
+\operatorname{observed}_k-\operatorname{expected}_k.
+\]
+
+It can also compare the observed count to an expected count:
+
+\[
+\mathrm{expected\_count}_k=N\,\operatorname{expected}_k.
+\]
+
+Large positive residuals indicate categories that are unusually high. Large negative residuals indicate categories that are unusually low.
+
+For example:
+
+\begin{quote}
+Anomaly: unusually high ARP and SSDP activity, unusually low TCP activity.
+\end{quote}
+
+This helps distinguish possible causes:
+
+\begin{itemize}
+  \item ARP burst: local network scanning or address resolution issue.
+  \item SSDP burst: discovery abuse or device/service discovery behavior.
+  \item TCP drop: cloud connectivity failure or device service interruption.
+  \item UDP burst: streaming, scanning, or unusual service communication.
+\end{itemize}
+
+\subsection{Stage 9: Adaptive Retraining}
+
+The project brief explicitly requires adaptive retraining. This is necessary because IoT behavior changes over time.
+
+However, adaptation is dangerous. If the system retrains on attack traffic, it can learn the attack as normal. This is model poisoning.
+
+The adaptive strategy should use guarded updates:
+
+\begin{enumerate}
+  \item Maintain a buffer of recent windows classified as normal with high confidence.
+  \item Exclude anomalous windows and windows near the threshold.
+  \item Retrain only when enough safe windows are available.
+  \item Keep old model versions for rollback.
+  \item Compare new and old models before promotion.
+  \item Limit how quickly \(\boldsymbol{\alpha}\) and thresholds can change.
+\end{enumerate}
+
+A simple update policy is:
+
+\[
+\mathrm{safe\_window}
+\quad\Longleftrightarrow\quad
+\operatorname{score}_t
+\geq
+\operatorname{threshold}+\operatorname{margin}.
+\]
+
+Then retrain every \(M\) safe windows or every \(T\) hours.
+
+A more advanced policy is to maintain a sliding window of safe data and use exponential smoothing:
+
+\[
+\boldsymbol{\alpha}_{\mathrm{adapted}}
+=
+(1-\rho)\boldsymbol{\alpha}_{\mathrm{old}}
++\rho\boldsymbol{\alpha}_{\mathrm{new}},
+\]
+
+where \(\rho\) is a small adaptation rate.
+
+\subsection{Stage 10: Forecasting}
+
+The ALM IoT paper includes forecasting. The thesis can include forecasting as a secondary stage because it supports both evaluation and detection.
+
+The simplest forecast uses the learned Dirichlet mean:
+
+\[
+\mathrm{expected\_probability}_k
+=
+\frac{\alpha_k}{\alpha_0},
+\]
+
+\[
+\mathrm{expected\_count}_{t+1,k}
+=
+\mathrm{predicted\_total}_{t+1}
+\mathrm{expected\_probability}_k.
+\]
+
+The category composition model does not by itself predict total packet volume. Therefore, total-count forecasting should be separated:
+
+\begin{itemize}
+  \item Use recent moving average of total counts.
+  \item Use seasonal time-of-day average.
+  \item Use a lightweight count model.
+  \item Or evaluate only composition forecasts.
+\end{itemize}
+
+Forecast quality can be measured with:
+
+\begin{itemize}
+  \item Brier Score for probabilistic category forecasts.
+  \item Jensen-Shannon divergence between predicted and observed distributions.
+  \item Mean absolute error for total packet count if total forecasting is included.
+\end{itemize}
+
+\subsection{Stage 11: Reaction Support}
+
+The Nespoli survey shows that detection should feed reaction. The thesis system should support at least basic response recommendations:
+
+\begin{lstlisting}
+if anomaly is mild:
+    log and monitor
+if anomaly is repeated:
+    alert operator
+if anomaly is severe and category pattern suggests scan:
+    recommend rate limit or isolation
+if anomaly suggests discovery abuse:
+    recommend SSDP filtering or local network inspection
+\end{lstlisting}
+
+The system should not automatically block traffic in the initial research prototype. Instead, it should provide structured events that could feed a later countermeasure selection framework.
+
+A response record should include:
+
+\begin{itemize}
+  \item Detection confidence.
+  \item Potential impact.
+  \item Suggested action.
+  \item Reversibility.
+  \item Expected operational cost.
+  \item Whether human approval is required.
+\end{itemize}
+
+This aligns the detector with dynamic reaction frameworks without overextending the thesis.
+
+\subsection{Current Repository Mapping}
+
+The current repository already contains a useful scaffold:
+
+\begin{itemize}
+  \item \path{src/processing/pcap_reader.py}: packet parsing with Scapy.
+  \item \path{src/processing/transformers.py}: timestamp/protocol records to 10-minute windows.
+  \item \path{src/processing/schemas.py}: Pydantic schemas for processed windows.
+  \item \path{src/processing/statistics.py}: mean, variance, dispersion reporting.
+  \item \path{src/algorithms/dirichlet.py}: Dirichlet-Multinomial log-likelihood with \texttt{gammaln} and Minka fixed-point estimation.
+  \item \path{src/evaluation/metrics.py}: TVD, KL divergence, MSE, Brier Score, and JSD.
+  \item \path{configs/config.json}: dataset paths, categories, training dates, testing dates, precision, and tolerance.
+\end{itemize}
+
+Important gaps remain:
+
+\begin{itemize}
+  \item The modeling stage is currently commented out and must be restored.
+  \item The CLI in tests and the CLI in \path{main.py} are inconsistent.
+  \item LM, YS, and C-wrapped LM are placeholders or absent.
+  \item No threshold calibration exists yet.
+  \item No anomaly scoring stage exists yet.
+  \item Forecasting currently uses synthetic actual data and must be connected to real testing windows.
+  \item No adaptive retraining policy exists yet.
+  \item No structured anomaly event output exists yet.
+\end{itemize}
+
+This is normal for a thesis scaffold. The architecture above defines how to evolve it into a research system.
+
+\subsection{Evaluation Design}
+
+The system should be evaluated along five axes.
+
+\textbf{Model fit:}
+
+\begin{itemize}
+  \item Total variation distance.
+  \item Kullback-Leibler divergence.
+  \item Euclidean distance.
+  \item Mean squared error.
+  \item Chi-square test where applicable.
+  \item Z-test where chi-square is not applicable.
+\end{itemize}
+
+\textbf{Anomaly detection:}
+
+\begin{itemize}
+  \item Accuracy.
+  \item Precision.
+  \item Recall / true positive rate.
+  \item False positive rate.
+  \item F1 score.
+  \item ROC-AUC and PR-AUC if labeled anomalies are available.
+  \item Detection delay.
+\end{itemize}
+
+\textbf{Likelihood behavior:}
+
+\begin{itemize}
+  \item Distribution of normal log-likelihoods.
+  \item Distribution of anomalous log-likelihoods.
+  \item Separation between distributions.
+  \item Stability of thresholds over time.
+\end{itemize}
+
+\textbf{Forecasting:}
+
+\begin{itemize}
+  \item Brier Score.
+  \item Jensen-Shannon divergence.
+  \item Total-count forecast error if total forecasting is included.
+\end{itemize}
+
+\textbf{Efficiency and edge readiness:}
+
+\begin{itemize}
+  \item Training time.
+  \item Scoring latency per window.
+  \item Memory usage.
+  \item CPU usage.
+  \item Model size.
+  \item Comparison of standard log-gamma, YS, Python LM, and C-wrapped LM.
+\end{itemize}
+
+\subsection{Baselines}
+
+The thesis should compare the proposed model with simple baselines:
+
+\begin{itemize}
+  \item Independent Poisson per category.
+  \item Multinomial with fixed category probabilities.
+  \item Gaussian model on transformed proportions.
+  \item Standard \texttt{gammaln} Dirichlet-Multinomial.
+  \item YS likelihood backend where feasible.
+  \item Optional machine-learning baselines such as Isolation Forest or One-Class SVM on count/proportion features.
+\end{itemize}
+
+Baselines are essential because the thesis claim is not merely that Dirichlet-Multinomial works, but that it is better suited to overdispersed categorical IoT traffic.
+
+\section{Roadmap and Implementation Strategy}
+
+\subsection{Phase 0: Research Setup and Reproducibility}
+
+Goals:
+
+\begin{itemize}
+  \item Freeze the dataset split.
+  \item Document the input files.
+  \item Create a reproducible command for preprocessing, training, scoring, and evaluation.
+  \item Fix CLI inconsistencies.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Confirm available D-Link Camera5 PCAP files.
+  \item Align \path{configs/config.json} with the dates used in the ALM IoT paper.
+  \item Decide whether October 10 and 11 should remain in training or be excluded to match the paper.
+  \item Add deterministic random seeds.
+  \item Add experiment output directories.
+  \item Record environment versions.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Clean configuration.
+  \item Reproducible preprocessing run.
+  \item Initial dataset summary report.
+\end{itemize}
+
+\subsection{Phase 1: Data Processing Hardening}
+
+Goals:
+
+\begin{itemize}
+  \item Produce validated count matrices for each day.
+  \item Handle silent windows explicitly.
+  \item Generate overdispersion reports.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Ensure category casing is consistent across config, parser, schemas, and JSON files.
+  \item Store window timestamps, not just counts.
+  \item Export both JSON and matrix formats for modeling.
+  \item Add tests for silent windows and missing categories.
+  \item Add per-day mean, variance, dispersion index, and total-count summaries.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Processed training and testing matrices.
+  \item Overdispersion report.
+  \item Unit tests for processing.
+\end{itemize}
+
+\subsection{Phase 2: Dirichlet-Multinomial Modeling}
+
+Goals:
+
+\begin{itemize}
+  \item Activate model training.
+  \item Estimate \(\boldsymbol{\alpha}\), \(\mathbf{p}\), and \(\psi\).
+  \item Save model artifacts with convergence diagnostics.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Restore \texttt{run\_modeling}.
+  \item Load processed JSON windows into a count matrix.
+  \item Implement robust alpha initialization.
+  \item Store log-likelihood history.
+  \item Store convergence status, iteration count, tolerance, and runtime.
+  \item Add tests for positive alpha, monotonic or stable likelihood behavior, and model persistence.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Working \texttt{model} stage.
+  \item Model artifact in JSON.
+  \item Training diagnostics.
+\end{itemize}
+
+\subsection{Phase 3: Likelihood Backend Abstraction}
+
+Goals:
+
+\begin{itemize}
+  \item Separate likelihood computation from the estimator.
+  \item Support multiple backends for comparison.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Define a \texttt{LikelihoodBackend} interface.
+  \item Implement \texttt{standard\_gammaln} backend.
+  \item Implement or integrate LM backend.
+  \item Keep YS as optional literature comparison if feasible.
+  \item Add numerical tests comparing backends on small cases.
+  \item Add high-precision reference checks for selected examples if possible.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Pluggable likelihood module.
+  \item Backend benchmark report.
+  \item Numerical reliability tests.
+\end{itemize}
+
+\subsection{Phase 4: Threshold Calibration and Anomaly Scoring}
+
+Goals:
+
+\begin{itemize}
+  \item Convert likelihood into anomaly decisions.
+  \item Produce structured event outputs.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Split training data into fit and validation sets.
+  \item Compute raw and normalized likelihood scores.
+  \item Calibrate empirical quantile thresholds.
+  \item Implement online scoring.
+  \item Add category residual explanations.
+  \item Export CSV/JSON anomaly events.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Working anomaly scoring stage.
+  \item Threshold artifact.
+  \item Likelihood distribution plots or tables.
+\end{itemize}
+
+\subsection{Phase 5: Experimental Anomaly Evaluation}
+
+Goals:
+
+\begin{itemize}
+  \item Evaluate detection performance.
+  \item Compare against baselines.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Identify any labeled attack data if available.
+  \item If labels are not available, create controlled synthetic anomalies:
+\end{itemize}
+
+\begin{itemize}
+  \item TCP flood-like increase.
+  \item UDP burst.
+  \item SSDP discovery burst.
+  \item ARP scan pattern.
+  \item Cloud-traffic suppression.
+  \item Mixed category drift.
+\end{itemize}
+
+\begin{itemize}
+  \item Evaluate TPR, FPR, precision, recall, and detection delay.
+  \item Compare against Poisson, Multinomial, and optional machine-learning baselines.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Detection evaluation tables.
+  \item Baseline comparison.
+  \item Error analysis of false positives and false negatives.
+\end{itemize}
+
+\subsection{Phase 6: Adaptive Retraining}
+
+Goals:
+
+\begin{itemize}
+  \item Update the model under normal drift.
+  \item Avoid poisoning from anomalous windows.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Implement safe-window buffer.
+  \item Add adaptation margin.
+  \item Add model versioning.
+  \item Add rollback if the new model produces worse validation behavior.
+  \item Compare static versus adaptive models across later dates.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Adaptive retraining module.
+  \item Static-vs-adaptive evaluation.
+  \item Poisoning-risk discussion.
+\end{itemize}
+
+\subsection{Phase 7: Forecasting and Response Support}
+
+Goals:
+
+\begin{itemize}
+  \item Connect the detector to forecasting and response workflows.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Replace synthetic actuals in forecasting with real testing windows.
+  \item Evaluate Brier Score and JSD.
+  \item Add total-count forecast baseline.
+  \item Generate response recommendations from anomaly severity and category pattern.
+  \item Keep responses advisory, not automatically enforced.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Forecasting evaluation.
+  \item Structured response recommendation output.
+  \item Discussion of integration with dynamic countermeasure frameworks.
+\end{itemize}
+
+\subsection{Phase 8: Edge Deployment Study}
+
+Goals:
+
+\begin{itemize}
+  \item Demonstrate feasibility for low-power or edge environments.
+\end{itemize}
+
+Tasks:
+
+\begin{itemize}
+  \item Measure memory and CPU use.
+  \item Benchmark scoring latency.
+  \item Compare pure Python and optimized likelihood backends.
+  \item Containerize the pipeline.
+  \item Evaluate whether the detector can run in near-real time on small windows.
+\end{itemize}
+
+Deliverables:
+
+\begin{itemize}
+  \item Edge-readiness benchmark.
+  \item Deployment guide.
+  \item Recommendations for C-wrapped LM integration.
+\end{itemize}
+
+\subsection{Possible Theoretical Extensions}
+
+The core thesis should remain focused, but the following extensions are natural:
+
+\textbf{Traffic-topic model:} Use LDA-like latent behavior modes. Windows are documents, traffic categories are words, and topics are normal behavior modes.
+
+\textbf{Hierarchical Dirichlet-Multinomial:} Learn device-level models that share information across devices while preserving device-specific behavior.
+
+\textbf{Contextual model:} Condition \(\boldsymbol{\alpha}\) or threshold on time of day, weekday, firmware version, or device state.
+
+\textbf{Zero-inflated model:} Explicitly model silent windows or categories with many zeros.
+
+\textbf{Bayesian thresholding:} Treat the threshold as uncertain and produce posterior alert probabilities.
+
+\textbf{Adversarial adaptation defense:} Formalize poisoning resistance by limiting update influence and detecting drift bursts.
+
+\textbf{Dirichlet-Softmax bridge:} Use the first project from the brief as a later neural extension, where model outputs represent Dirichlet concentration rather than only point probabilities.
+
+\subsection{Suggested Thesis Chapter Structure}
+
+The final thesis can be organized as:
+
+\begin{enumerate}
+  \item Introduction and motivation.
+  \item Background on IoT security and anomaly detection.
+  \item Mathematical foundations of Dirichlet-Multinomial modeling.
+  \item Literature review.
+  \item System architecture and implementation.
+  \item Experimental methodology.
+  \item Results and analysis.
+  \item Adaptive retraining and deployment considerations.
+  \item Conclusions and future work.
+\end{enumerate}
+
+\subsection{Final Expected Artifacts}
+
+The project should produce:
+
+\begin{itemize}
+  \item A working codebase for preprocessing, training, scoring, adaptation, and evaluation.
+  \item Reproducible experiment configurations.
+  \item Processed IoT count datasets.
+  \item Model artifacts with alpha, psi, thresholds, and diagnostics.
+  \item Evaluation reports.
+  \item An architecture diagram or equivalent system description.
+  \item A written thesis explaining both statistical theory and cybersecurity impact.
+\end{itemize}
+
+\section*{Source Map}
+\addcontentsline{toc}{section}{Source Map}
+
+The document integrates the provided materials as follows:
+
+\begin{itemize}
+  \item \path{Proposte_di_Ricerca_basate_su_Dirichlet_Multinomial.pdf}: defines the two project options and motivates the selected LM-IDNet direction: unsupervised IoT anomaly detection through online Dirichlet-Multinomial parameter estimation, log-likelihood scoring, adaptive retraining, edge deployment, and metrics such as accuracy, false positive rate, true positive rate, and likelihood distribution.
+  \item \path{minka-dirichlet.pdf}: provides the mathematical basis for estimating Dirichlet and Dirichlet-Multinomial parameters when no closed-form maximum likelihood estimator exists. The fixed-point update for \(\boldsymbol{\alpha}\) is the core estimator used by the proposed system.
+  \item \path{bioinformatics_30_11_1547.pdf}: explains why naive Dirichlet-Multinomial log-likelihood computation is unstable near low-overdispersion regimes and why product-form alternatives can become too slow for high-count data. Its Bernoulli-polynomial mesh method is the historical predecessor to the LM approach.
+  \item \path{180_2022_1311_OnlinePDF.pdf}: contains the original Languasco-Migliardi contribution for fast paired log-gamma difference computation using an Euler-Maclaurin style expansion, explicit error control, and reliability checks for requested precision.
+  \item \path{Efficient_Analysis_of_Overdispersed_Data_Using_an_Accurate_Computation_of_the_Dirichlet_Multinomial_Distribution.pdf}: shows how Minka fixed-point estimation and LM likelihood computation perform across multiple overdispersed count datasets, including IoT camera traffic, and reports LM's accuracy and speed advantages over Yu-Shaw.
+  \item \path{ALM_IoT-CR.pdf}: supplies the closest experimental template for this thesis: D-Link smart-camera traffic, 10-minute protocol count windows, training/testing day splits, LM-vs-YS modeling comparisons, and forecasting metrics such as Brier Score and Jensen-Shannon divergence.
+  \item \path{ALM2_new.pdf}: translates the LM method into implementation guidance by comparing Python math, SciPy, and C-wrapped LM variants inside Minka's procedure, and by explaining performance-oriented choices such as precomputed Bernoulli constants and \texttt{ctypes} wrapping.
+  \item \path{Optimal_Countermeasures_Selection_Against_Cyber_Attacks_A_Comprehensive_Survey_on_Reaction_Frameworks.pdf}: motivates the response-support layer by explaining the cyber-defense cycle and the need to balance cost, effectiveness, confidence, and service impact when selecting countermeasures.
+  \item \path{Why ALM is important - Sherenaz Al-Haj Baddar, [02102025 1.txt}: provides broader motivation for why accurate and fast Dirichlet-Multinomial likelihood computation matters beyond this particular IoT application, including topic modeling, uncertainty estimation, and hybrid probabilistic machine learning.
+\end{itemize}
+
+\section*{Concluding Statement}
+\addcontentsline{toc}{section}{Concluding Statement}
+
+The proposed thesis is technically coherent because the real-world problem, data representation, statistical model, numerical method, and system architecture align tightly.
+
+IoT anomaly detection requires lightweight unsupervised models. IoT traffic windows are naturally multicategory count vectors. These vectors are often overdispersed, so Poisson and Multinomial assumptions are too rigid. The Dirichlet-Multinomial distribution models exactly this kind of data by allowing the category probability vector to vary across windows. Minka's fixed-point algorithm gives a practical way to estimate the parameters. The Languasco-Migliardi method makes the log-likelihood computation accurate and efficient enough to trust in overdispersed regimes. The ALM IoT paper shows that the approach is already promising on smart-camera traffic. The proposed thesis completes the path from model to system by adding anomaly thresholds, adaptive retraining, interpretability, evaluation, and deployment architecture.
+
+The result should be a defensible Master's thesis and a practical prototype: a statistically grounded, explainable, adaptive IoT anomaly detector built on a modern and numerically reliable Dirichlet-Multinomial foundation.
+
+\end{document}
