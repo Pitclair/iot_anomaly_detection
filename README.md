@@ -23,3 +23,6 @@ lm-idnet forecast --config configs/config.json
 
 `python main.py ...` remains available as a compatibility launcher after the
 package has been installed.
+
+Configuration fields and validation rules are documented in
+[`docs/configuration.md`](docs/configuration.md).

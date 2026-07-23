@@ -10,7 +10,11 @@ from lm_idnet.evaluation.metrics import brier_score, js_divergence
 
 
 def run_forecasting(cfg: dict, dataset: str = 'camera_5') -> None:
-    model_path = Path(cfg.get('model', {}).get('persist_path', 'data/processed/model_alpha.json'))
+    model_path = Path(
+        cfg.get("outputs", {}).get(
+            "model_path", "data/processed/model_alpha.json"
+        )
+    )
     if not model_path.exists():
         print(f"Model not found at {model_path}. Run modeling first.")
         return

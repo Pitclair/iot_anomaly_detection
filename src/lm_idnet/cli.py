@@ -3,20 +3,13 @@
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 from pathlib import Path
 from typing import Sequence
 
+from lm_idnet.config import load_config
+
 logger = logging.getLogger(__name__)
-
-
-def load_config(path: str | Path) -> dict:
-    """Load a JSON configuration file."""
-    config_path = Path(path)
-    if not config_path.exists():
-        raise FileNotFoundError(f"Config not found: {config_path}")
-    return json.loads(config_path.read_text(encoding="utf-8"))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,19 +37,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     config = load_config(args.config)
 
-    ingest = config.get("ingest", {})
-    categories = ingest.get("categories")
-    dataset_folder = ingest.get("dataset_folder")
-    training_dates = ingest.get("training_dates")
-    testing_dates = ingest.get("testing_dates")
-    if any(
-        value is None
-        for value in (categories, dataset_folder, training_dates, testing_dates)
-    ):
-        raise ValueError(
-            "categories, dataset_folder, training_dates, and testing_dates "
-            "must be specified in the configuration"
-        )
+    ingest = config.ingest
 
     # Keep heavyweight imports out of module import and --help execution.
     from lm_idnet.models.forecasting_stage import run_forecasting
@@ -64,35 +45,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     from lm_idnet.processing.manager import ProcessingManager
     from lm_idnet.processing.statistics import Statistics
 
-    raw_path = Path(ingest["raw_root"]) / dataset_folder
-    processed_path = Path(ingest["processed_root"]) / dataset_folder
-    dates = training_dates + testing_dates
+    raw_path = ingest.raw_root / ingest.dataset_folder
+    processed_path = ingest.processed_root / ingest.dataset_folder
+    dates = list(ingest.training_dates + ingest.testing_dates)
 
     manager = ProcessingManager(
         raw_root=str(raw_path),
         processed_root=str(processed_path),
-        categories=categories,
+        categories=list(ingest.categories),
         dates=dates,
     )
     logger.info("Preprocessing %d configured captures to %s", len(dates), processed_path)
     manager.run()
     Statistics(
         json_dir=processed_path,
-        categories=categories,
+        categories=list(ingest.categories),
         dates=dates,
     ).process_all()
 
     if args.stage == "model":
         run_modeling(
             data_path=processed_path,
-            categories_k=config.get("categories_k", 4),
-            tolerance_delta=config.get("tolerance_delta", 1e-9),
-            model_out_path=config.get("model", {}).get(
-                "persist_path", "data/processed/model_alpha.json"
-            ),
+            categories_k=config.estimator.categories_k,
+            tolerance_delta=config.estimator.tolerance_delta,
+            model_out_path=str(config.outputs.model_path),
         )
     else:
-        run_forecasting(config, dataset=str(processed_path))
+        run_forecasting(config.model_dump(mode="json"), dataset=str(processed_path))
     return 0
 
 
