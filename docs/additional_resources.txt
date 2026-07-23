@@ -1,0 +1,109 @@
+
+The closest recent literature falls into three areas:
+  adaptive/online IoT anomaly detection, unsupervised statistical detection, and lightweight/explainable edge deployment.
+
+  One important finding is that very little post-2022 research applies the Dirichlet–Multinomial directly to IoT network anomaly detection. That strengthens the
+  project’s claimed research gap.
+
+  ## Most closely related literature
+
+  1. Self-Adaptive Traffic Anomaly Detection System for IoT Smart Home Environments — Watanabe et al., 2025, IEICE Transactions on Communications.
+
+     Proposes a gateway-based detector whose model is continuously regenerated from honeypot traffic. This is probably the closest external paper to LM-IDNet’s
+     adaptive architecture and unknown-attack objective. Its use of potentially malicious traffic for adaptation also makes it useful when discussing
+     model-poisoning safeguards. Paper and DOI (https://doi.org/10.23919/transcom.2024EBT0002)
+
+  2. Online Self-Supervised Deep Learning for Intrusion Detection Systems — Nakıp and Gelenbe, 2024, IEEE Transactions on Information Forensics and Security, 19,
+     5668–5683.
+
+     Presents a fully online, self-supervised IDS that does not require prior offline training. It is an excellent comparison for LM-IDNet’s online estimation and
+     adaptive retraining, although it uses a deep random neural network rather than a lightweight count model. IEEE record
+     (https://ieeexplore.ieee.org/document/10531267) · DOI (https://doi.org/10.1109/TIFS.2024.3402148)
+
+  3. A Contaminated Model for Overdispersed Multinomial Microbiome Count Data — van Heerden et al., 2026, preprint.
+
+     The most directly relevant recent statistical paper. It introduces a two-component contaminated Dirichlet–Multinomial model in which ordinary observations and
+     anomalies have different dispersion levels, and anomaly probabilities emerge from posterior inference. Although the application is microbiome data rather than
+     IoT traffic, the method could provide a strong theoretical extension or baseline for LM-IDNet. Preprint (https://arxiv.org/abs/2606.02199)
+
+  4. Intrusion Detection in the IoT Data Streams Using Concept Drift Localization — Chu et al., 2024, AIMS Mathematics, 9(1).
+
+     Introduces an ensemble of non-parametric concept-localization detectors for non-stationary IoT streams. It directly supports the thesis sections on drift
+     detection, safe retraining, and distinguishing behavioral evolution from security anomalies. Open-access paper (https://doi.org/10.3934/math.2024076)
+
+  5. CAEAID: An Incremental Contrast Learning-Based Intrusion Detection Framework for IoT Networks — Yin et al., 2025, Computer Networks, 262, 111161.
+
+     Combines incremental contrastive learning, adaptive anomaly detection, and model updating under concept drift. This is a strong modern adaptive baseline,
+     especially when comparing LM-IDNet’s statistical simplicity against deep incremental learning. Publisher page (https://doi.org/10.1016/j.comnet.2025.111161)
+
+  6. CADeSH: Collaborative Anomaly Detection for Smart Homes — Meidan et al., 2023 version, IEEE Internet of Things Journal.
+
+     Learns normal behavior from multiple identical consumer IoT devices using an autoencoder and clustering. It reports low false-positive rates using real
+     traffic collected from devices in different homes and discusses generalization, privacy, resource savings, and poisoning mitigation—all highly relevant to
+     LM-IDNet. IEEE record (https://ieeexplore.ieee.org/document/9844137) · Open preprint (https://arxiv.org/abs/2303.01021)
+
+  7. Robust Unsupervised Network Intrusion Detection with Self-Supervised Masked Context Reconstruction — 2023, Computers & Security, 128, 103131.
+
+     Introduces RUIDS, a transformer-based unsupervised detector designed to tolerate contaminated training data. It is particularly relevant to the thesis’s
+     requirement that anomalous windows must not be absorbed into the normal profile. Publisher page (https://doi.org/10.1016/j.cose.2023.103131)
+
+  8. Histogram-Based Network Traffic Representation for Anomaly Detection Through PCA — Baldoni and Battisti, 2025, Computer Networks, 265, 111276.
+
+     Uses compact histogram summaries of traffic windows with a completely unsupervised, low-complexity PCA detector. Because LM-IDNet also converts traffic
+     windows into compact count vectors, this is an especially appropriate non-neural baseline for both accuracy and computational-cost comparisons. Open-access
+     paper (https://doi.org/10.1016/j.comnet.2025.111276)
+
+  9. Supervision and Early Warning of Abnormal Data in Internet of Things Based on Unsupervised Attention Learning — 2024, Computer Communications.
+
+     Combines edge-side unsupervised anomaly detection with a Dirichlet-process mixture model. This is not a Dirichlet–Multinomial model, but it is one of the
+     closer recent works combining Bayesian non-parametric modeling, unsupervised IoT anomaly detection, edge execution, and early warning. Publisher page
+     (https://doi.org/10.1016/j.comcom.2023.11.019)
+
+  10. XAI-IoT: An Explainable AI Framework for Enhancing Anomaly Detection in IoT Systems — Gummadi, Napier, and Abdallah, 2024, IEEE Access, 12, 71024–71054.
+
+     Provides an explainable anomaly-detection framework for IoT sensor and network data. It is directly relevant to LM-IDNet’s proposed per-category explanations
+     and would help structure evaluation of explanation quality rather than reporting only detection metrics. IEEE/DOI page
+     (https://doi.org/10.1109/ACCESS.2024.3402446)
+
+  11. Network Traffic Inspection to Enhance Anomaly Detection in the Internet of Things Using Attention-Driven Deep Learning — 2025, Integration, 103, 102398.
+
+     Learns network-traffic representations from nine generic flow and protocol features, then performs unsupervised detection with a one-class SVM. Protocol
+     presence is particularly close to LM-IDNet’s categorical protocol-count features. Publisher page (https://doi.org/10.1016/j.vlsi.2025.102398)
+
+  12. FedMSE: Semi-Supervised Federated Learning Approach for IoT Network Intrusion Detection — Nguyen and Beuran, 2025, Computers & Security, 151, 104337.
+
+     Uses normal-data representation, a one-class classifier, and federated aggregation for heterogeneous IoT gateways. It is relevant to future multi-device or
+     hierarchical LM-IDNet extensions and to privacy-preserving edge deployment. Publisher page (https://doi.org/10.1016/j.cose.2025.104337) · Open preprint
+     (https://arxiv.org/abs/2410.14121)
+
+  13. Cross-Layer Federated Learning for Lightweight IoT Intrusion Detection Systems — Hajj et al., 2023, Sensors, 23(16), 7038.
+
+     Examines lightweight detection distributed across IoT layers. It is useful for the edge-deployment chapter and for comparing centralized per-device
+     Dirichlet–Multinomial profiles with collaborative or federated alternatives. Open-access paper (https://doi.org/10.3390/s23167038)
+
+  14. Quantifying and Managing Impacts of Concept Drifts on IoT Traffic Inference in Residential ISP Networks — Pashamokhtari et al., 2023, preprint.
+
+     Studies more than six million flow records from 24 consumer-IoT device types across 12 real homes. It demonstrates temporal and spatial drift in device
+     traffic and evaluates model-selection strategies for unseen homes. This is strong empirical justification for LM-IDNet’s adaptive and device-specific modeling
+     decisions. Preprint (https://arxiv.org/abs/2301.06695)
+
+  15. Anomaly Detection in Extremes — Trubey and Sansó, 2023, UCSC Technical Report.
+
+     Develops likelihood-based anomaly scores and uses a Dirichlet–Multinomial kernel for categorical data. It is not IoT-specific, but it is directly relevant to
+     probabilistic anomaly scoring for categorical observations and could inform more theoretically grounded thresholds than empirical quantiles alone. Report page
+     (https://tr.soe.ucsc.edu/research/technical-reports/UCSC-SOE-23-12) · PDF (https://tr.soe.ucsc.edu/sites/default/files/technical-reports/UCSC-SOE-23-12.pdf)
+
+  ## Useful recent reviews
+
+  Two surveys would be particularly helpful when expanding the thesis literature review:
+
+  - On-the-Fly, Memory-Aware Unsupervised Learning for Network Anomaly Detection: A Systematic Literature Review — 2025. Reviews 121 studies and reports that fewer
+    than approximately 15% evaluate genuine online adaptation. This strongly supports LM-IDNet’s research gap. Open-access article
+    (https://doi.org/10.1016/j.prime.2025.101146)
+
+  - A Systematic Literature Review of Recent Lightweight Detection Approaches Leveraging Machine and Deep Learning Mechanisms in Internet of Things Networks — Al
+    Mukhaini et al., 2024, Journal of King Saud University – Computer and Information Sciences, 36, 101866. Useful for selecting edge-oriented baselines and
+    reporting runtime, memory, and model-size metrics. Open-access article (https://doi.org/10.1016/j.jksuci.2023.101866)
+
+  The strongest immediate additions to the thesis are papers 1–8. Paper 3 supplies the closest recent Dirichlet–Multinomial anomaly model; papers 1, 2, 4, and 5
+  cover adaptation; paper 7 addresses contaminated normal training; and paper 8 gives a lightweight unsupervised baseline operating on compact traffic summaries.

@@ -1,0 +1,425 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=0.82in]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black}
+\setlist{nosep,leftmargin=*}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{LM-IDNet}
+\rhead{Crucial Prototype Roadmap}
+\cfoot{\thepage}
+\sloppy
+
+\newcommand{\status}{\(\square\) Not started \quad \(\square\) In progress \quad
+  \(\square\) Blocked \quad \(\square\) Done}
+\newcommand{\task}[4]{%
+  \subsection{#1: #2}
+  \textbf{Implementation.} #3
+
+  \textbf{Verification and acceptance gate.} #4
+
+  \textbf{Status.} \status
+}
+\newcommand{\artifact}[1]{\texttt{#1}}
+\newcommand{\gate}[1]{\textcolor{blue!45!black}{\textbf{Phase exit gate:} #1}}
+
+\title{LM-IDNet: Crucial Prototype Implementation Roadmap\\
+\large Minimum Ordered Path to a Working IoT Anomaly Detector}
+\author{Master's Thesis Engineering Plan}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document is the minimum ordered implementation path extracted from the
+Atomic Implementation Roadmap. It ends with a working prototype that can
+deterministically ingest data, produce validated time windows, fit a
+Dirichlet--Multinomial model, evaluate likelihoods using the LM backend,
+calibrate a threshold, and emit anomaly events. The original task identifiers
+are retained for traceability. Tasks omitted from this document are additional
+validation, comparative research, adaptation, forecasting, deployment, or
+polishing work; they remain important for the final thesis artifact but do not
+block the first working prototype.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{How to Use This Roadmap}
+
+Implement tasks strictly in document order. A task is Done only when its stated
+verification passes and no previously completed verification regresses. Keep
+generated evidence under \artifact{reports/} or \artifact{artifacts/}. Do not
+begin the next phase until its exit gate passes.
+
+\section{Stage 1: Executable Project Foundation}
+
+\task{F0.02}{Adopt a source-layout package}{Define one import strategy for
+\artifact{src/}; add package metadata in \artifact{pyproject.toml}; expose a
+console entry point such as \artifact{lm-idnet}; remove runtime
+\artifact{sys.path} mutation after migration.}{Install the project into a fresh
+virtual environment in editable mode, execute \artifact{python -c "import ..."},
+invoke \artifact{lm-idnet --help}, and run tests without setting
+\artifact{PYTHONPATH}.}
+
+\task{F0.04}{Centralize typed configuration}{Define a Pydantic configuration
+model for paths, dates, categories, seeds, estimator settings, calibration, and
+output locations. Reject unknown fields and invalid cross-field combinations.}
+{Unit-test missing fields, extra fields, invalid dates, duplicate categories,
+non-positive window sizes, invalid quantiles, and a known-valid configuration.
+Snapshot the normalized configuration.}
+
+\task{F0.09}{Define the testing architecture}{Configure pytest markers for
+\artifact{unit}, \artifact{integration}, \artifact{numerical}, and
+\artifact{slow}. Establish fixture factories for count matrices, windows,
+configurations, and temporary artifact stores.}{Run each marker independently;
+ensure no test is silently uncollected and that the default fast suite excludes
+only explicitly marked slow or data-heavy tests.}
+
+\task{F0.17}{Define exception and failure semantics}{Create domain exceptions
+for configuration, ingestion, validation, numerical precision, convergence,
+artifact compatibility, and policy rejection. Ensure commands fail closed when
+model integrity is uncertain.}{Unit-test every exception mapping to CLI exit
+code and message. Corrupt a model checksum and verify scoring stops rather than
+continuing with a warning.}
+
+\task{F0.18}{Version schemas and artifacts}{Assign semantic schema versions to
+processed datasets, models, thresholds, events, and experiment manifests.
+Reject unknown major versions.}{Round-trip each schema through JSON and reject
+an unsupported future major version.}
+
+\task{F0.06}{Standardize the command-line interface}{Implement the prototype
+subcommands \artifact{preprocess}, \artifact{train}, \artifact{calibrate}, and
+\artifact{score}. Make errors non-zero and machine-readable where appropriate.}
+{For every implemented subcommand, test \artifact{--help}, missing arguments,
+invalid configuration, and a minimal success case. Assert exit codes and
+essential output fields.}
+
+\gate{The package installs cleanly; typed configuration, tests, versioned
+schemas, failure semantics, and the four prototype commands work from a fresh
+environment.}
+
+\section{Stage 2: Reproducible Data Setup}
+
+\task{P0.01}{Inventory source captures}{Enumerate expected and present captures
+with date, byte size, packet count where readable, checksum, and parser status.
+Record missing or duplicate files without silently skipping them.}{Compare
+inventory entries with the filesystem; assert unique checksums unless
+duplication is explained; fail when a configured required capture is missing.}
+
+\task{P0.02}{Verify capture integrity}{Use a PCAP validation tool or complete
+streaming parse to detect truncation, invalid timestamps, and corrupt records.
+Record recoverable warnings separately from fatal corruption.}{Parse every
+configured source to end-of-file. Store counts and warnings; rerun and confirm
+identical counts. Quarantine a deliberately truncated fixture and verify the
+failure classification.}
+
+\task{P0.05}{Freeze temporal partitions}{Create disjoint fit, calibration,
+development-test, and final-test date lists. Preserve chronology and prohibit
+random window mixing across partitions.}{Automated tests assert non-overlap,
+chronological order, capture-level grouping, and that final-test identifiers are
+unavailable to training and threshold code.}
+
+\task{P0.06}{Create dataset fingerprints}{Hash the ordered file list,
+individual inputs, feature taxonomy, window policy, and partition definition
+into a dataset version identifier.}{Changing any file, category order, window
+length, or date assignment must change the fingerprint; repeating unchanged
+inputs must reproduce it.}
+
+\task{P0.07}{Centralize deterministic seeds}{Define named seeds for simulation
+and model fitting. Propagate generators explicitly instead of using global
+state.}{Run the smoke experiment twice in separate processes and compare model
+parameters, injected anomalies, metrics, and normalized reports exactly or
+within a declared numerical tolerance.}
+
+\task{P0.10}{Build a tiny public smoke fixture}{Create a payload-free synthetic
+packet/count fixture small enough for tests, with known timestamps, categories,
+silent windows, and expected outputs.}{Verify the fixture contains no real
+identifiers, its license permits distribution, and its expected preprocessing
+result is asserted exactly in integration tests.}
+
+\gate{Inputs are inventoried and validated, chronological partitions and the
+dataset fingerprint are frozen, and a safe deterministic smoke fixture exists.}
+
+\section{Stage 3: Canonical Windowed Data}
+
+\task{P1.01}{Define canonical category semantics}{Choose lowercase canonical
+names and explicitly decide whether SSDP is exclusive of UDP or counted in
+both. Record category order and classification priority.}{Use packets
+representing TCP, ordinary UDP, SSDP/UDP:1900, ARP, and unknown protocols;
+assert exactly the required counts and fixed column order.}
+
+\task{P1.03}{Harden timestamp parsing}{Convert all packet times to
+timezone-aware UTC, reject non-finite values, and preserve sufficient precision.
+Record original capture time-zone assumptions.}{Test epoch boundaries,
+fractional seconds, naive values, out-of-order packets, and daylight-saving
+examples; assert normalized UTC values.}
+
+\task{P1.04}{Specify window boundaries}{Implement half-open windows
+\([t,t+\Delta)\), with an explicitly chosen origin and deterministic boundary
+behavior.}{Place packets immediately before, on, and immediately after a
+boundary and assert assignment to exactly one correct window for every
+supported window length.}
+
+\task{P1.05}{Preserve window timestamps}{Define each window record with device
+ID, start/end UTC timestamps, ordered counts, total count, missingness state,
+and metadata.}{Schema round-trip preserves timestamps and category order;
+assert \(N_t=\sum_{k=1}^{K}x_{tk}\) for every record.}
+
+\task{P1.06}{Represent silent windows}{Materialize elapsed capture windows with
+zero total count and label them \artifact{observed-silent}; do not confuse them
+with absent capture coverage.}{Use a fixture with a deliberate quiet interval
+and verify all expected zero windows exist, remain ordered, and survive
+JSON/matrix export.}
+
+\task{P1.07}{Represent missing coverage}{Define a separate
+\artifact{missing} state for gaps where observation is unavailable; prohibit
+automatic conversion of missing coverage to zeros.}{Use a fixture with declared
+capture discontinuity and assert missing windows are excluded or handled
+according to policy, never counted as observed silence.}
+
+\task{P1.08}{Validate count values}{Reject booleans, negatives, fractional
+values, NaN, infinity, and integer overflow; use a documented integer width.}
+{Parameterized tests exercise every invalid type and maximum supported values.
+Valid arrays retain exact integer values through all exports.}
+
+\task{P1.09}{Validate temporal streams}{Check monotonicity, duplicate windows,
+overlap, expected duration, device continuity, and category-schema consistency.}
+{Inject one defect of each type and assert a specific validation error containing
+dataset and window identifiers. A valid multi-day stream passes.}
+
+\task{P1.10}{Make PCAP parsing resource-safe}{Stream packets with bounded
+memory, close readers on success and failure, constrain pathological packet
+handling, and count unsupported packets.}{Measure memory over a representative
+capture, inject parser exceptions, and assert file descriptors close and
+partial outputs are not promoted.}
+
+\task{P1.12}{Export canonical JSON}{Define canonical JSON with schema version,
+dataset fingerprint, metadata, window records, and checksums.}{Round-trip a
+multi-day fixture and compare every field. Verify stable serialization and
+checksum across repeated exports.}
+
+\task{P1.13}{Export modeling matrices}{Export timestamps, missingness mask,
+category columns, totals, device ID, and partition without losing provenance.}
+{Load canonical JSON and matrix output and assert row count, order, counts,
+timestamps, and metadata agree exactly.}
+
+\task{P1.14}{Load matrices by partition}{Implement a loader that selects only
+declared partition identifiers and returns
+\(X\in\mathbb{N}^{R\times K}\) plus aligned metadata.}{Assert shape, dtype,
+non-negativity, category order, and exact selected dates. Requesting an
+undeclared partition must fail.}
+
+\gate{The smoke and configured captures produce schema-valid, time-indexed,
+checksum-backed matrices with correct silence, missingness, and partition
+semantics.}
+
+\section{Stage 4: Dirichlet--Multinomial Model}
+
+\task{P2.01}{Define estimator input contract}{Accept only two-dimensional
+non-negative integer matrices with \(R>1\), \(K>1\), stable category order, and
+a documented policy for zero-total rows and all-zero categories.}{Parameterized
+tests reject every invalid dimension and policy violation; a valid matrix is
+not mutated by training.}
+
+\task{P2.02}{Verify the likelihood formula}{Implement the reference log
+probability
+\begin{align}
+\log p(\mathbf{x}\mid\boldsymbol{\alpha})={}&
+\log\Gamma(N+1)-\sum_{k=1}^{K}\log\Gamma(x_k+1)\\
+&+\log\Gamma(\alpha_0)-\log\Gamma(N+\alpha_0)
++\sum_{k=1}^{K}\left[\log\Gamma(x_k+\alpha_k)-\log\Gamma(\alpha_k)\right],
+\end{align}
+where \(\alpha_0=\sum_k\alpha_k\). Make inclusion of the multinomial
+coefficient explicit.}{Compare small cases with direct arbitrary-precision
+probability enumeration and verify the coefficient convention with a
+hand-calculated example.}
+
+\task{P2.03}{Implement robust initialization}{Provide mean-concentration and
+moment-based initializers, floors for sparse categories, and deterministic
+fallback behavior.}{Test balanced, highly skewed, sparse, and nearly constant
+synthetic matrices; every returned \(\alpha_k\) must be finite and strictly
+positive.}
+
+\task{P2.04}{Harden the fixed-point update}{Separate one Minka update from the
+iteration loop, validate numerator and denominator, guard positivity, and
+detect non-finite or zero updates.}{Unit-test the update against a stored
+high-precision example and force each guard branch with synthetic pathological
+inputs.}
+
+\task{P2.05}{Define convergence criteria}{Require both parameter stability and
+likelihood stability, use absolute plus relative tolerances, impose maximum
+iterations, and distinguish converged, stalled, diverged, and exhausted
+outcomes.}{Construct fixtures for each outcome and assert status, iteration
+count, and diagnostic reason. Never label maximum-iteration exhaustion as
+convergence.}
+
+\task{P2.07}{Activate the modeling stage}{Load only the fit partition,
+initialize and fit the estimator, derive \(\alpha_0\),
+\(p_k=\alpha_k/\alpha_0\), and \(\psi=1/\alpha_0\), then persist diagnostics.}
+{Run the CLI on the smoke matrix; assert a valid model artifact, successful
+exit, correct categories, positive alpha, \(\sum_kp_k=1\), and no access to
+calibration/test partitions.}
+
+\task{P2.08}{Define the model artifact}{Include schema version, model version,
+categories, parameters, training range, dataset/config/code hashes, backend,
+convergence, runtime, and integrity checksum.}{Validate against schema,
+round-trip exactly, reject category reordering and checksum corruption, and
+verify no raw packet data is embedded.}
+
+\task{P2.09}{Recover synthetic parameters}{Sample multiple seeded datasets from
+known \(\boldsymbol{\alpha}^{*}\), fit them, and quantify error in mean
+composition and concentration.}{Across increasing sample sizes, demonstrate
+decreasing median estimation error or explain deviations; enforce predeclared
+tolerances on a stable medium-size fixture.}
+
+\gate{Partition-safe training produces an integrity-checked converged model and
+recovers known synthetic parameters within declared tolerances.}
+
+\section{Stage 5: LM Likelihood Backend}
+
+\task{P3.01}{Define the backend protocol}{Create a stateless
+\artifact{LikelihoodBackend} interface returning value, precision status, error
+bound when available, backend version, and timing metadata; support
+single-window and batch calls.}{Contract-test a fake backend and every real
+backend for shape, dtype, metadata, immutability, error semantics, and
+consistent coefficient convention.}
+
+\task{P3.02}{Implement the standard gammaln backend}{Move SciPy-based
+likelihood evaluation behind the interface and support stable vectorized batch
+evaluation.}{Compare with the P2 arbitrary-precision oracle across small random
+cases and with regression fixtures.}
+
+\task{P3.03}{Build a high-precision oracle}{Use \artifact{mpmath} at
+configurable precision to evaluate selected log probabilities and paired
+log-gamma differences outside production code.}{Validate oracle precision by
+recomputing at doubled digits; accepted reference digits must remain unchanged.
+Store reference vectors and provenance.}
+
+\task{P3.05}{Implement paired log-gamma differences}{Implement the LM primitive
+for expressions such as
+\(\log\Gamma(x+a)-\log\Gamma(a)\), with no silent fallback and explicit error
+estimates.}{Compare a logarithmic grid of small/large \(x\), small/large \(a\),
+and low-overdispersion cases with the doubled-precision oracle. Enforce
+requested error bounds.}
+
+\task{P3.06}{Assemble the Python LM backend}{Use the LM primitive for all
+paired terms in the Dirichlet--Multinomial likelihood and retain an
+exact/reference path for factorial terms.}{Contract-test against standard and
+oracle backends over randomized and adversarial grids. Assert correct precision
+status propagation.}
+
+\task{P3.08}{Test extreme numerical regimes}{Cover zero counts, huge counts,
+highly imbalanced categories, \(\alpha_k\) near the lower bound, very large
+concentration, and cancellation-prone low-overdispersion cases.}{No accepted
+result may be NaN or infinite. Compare to the oracle and enforce tolerances
+appropriate to each regime.}
+
+\task{P3.10}{Implement backend selection}{Select backend only through validated
+configuration and record backend name/version in every model, score, and
+manifest.}{Run identical scoring with each enabled backend and verify artifact
+metadata. Invalid or unavailable selections must fail before data processing.}
+
+\gate{The standard and LM backends satisfy one interface, agree with the
+independent oracle within declared tolerances, and expose precision failures.}
+
+\section{Stage 6: Calibration and Anomaly Output}
+
+\task{P4.01}{Enforce fit/calibration isolation}{Load calibration windows
+through a partition-scoped API that cannot return fit or final-test rows.}
+{Assert disjoint identifiers and monkeypatch the fit loader to fail if
+calibration invokes it. Store partition fingerprints in the threshold artifact.}
+
+\task{P4.02}{Compute raw window scores}{Return one log probability
+\(s_t=\log p(\mathbf{x}_t\mid\hat{\boldsymbol{\alpha}})\) and precision metadata
+per eligible window.}{Compare each score with the backend single-window call;
+preserve timestamps/order and explicitly classify missing windows.}
+
+\task{P4.03}{Define normalized scores}{Implement a documented normalization,
+such as per-packet score \(s_t/\max(N_t,1)\), while treating silent windows
+according to policy rather than dividing silently.}{Test totals \(N_t=0,1\),
+and large \(N_t\); assert finite values or explicit non-applicability and record
+the formula in artifacts.}
+
+\task{P4.05}{Calibrate empirical quantiles}{Compute the lower-tail threshold
+\(\tau=Q_q(\{s_i\}_{i=1}^{m})\) with declared quantile convention and target
+calibration false-positive rate.}{Compare with an independent quantile
+implementation, test tiny/tied samples, and verify the observed calibration
+alarm rate matches the convention within finite-sample limits.}
+
+\task{P4.07}{Persist threshold artifacts}{Store model checksum, score type,
+quantile, threshold, calibration range/fingerprint, sample count, backend, and
+schema version.}{Round-trip and checksum-test the artifact. Scoring must reject
+a threshold created for another model, backend convention, or category schema.}
+
+\task{P4.08}{Implement online scoring}{Consume windows in timestamp order and
+emit score records without future context. Keep state bounded and deterministic.}
+{Replay the same stream in different chunk sizes and assert identical ordered
+outputs; monitor memory over a long synthetic stream.}
+
+\task{P4.09}{Implement anomaly decisions}{Apply the strict documented rule
+\(s_t<\tau\), including explicit equality behavior, and retain both score and
+threshold.}{Test values below, equal to, and above threshold, including
+floating-point neighbors. Decisions must be backend-metadata aware.}
+
+\task{P4.11}{Compute category residual explanations}{For \(N>0\), calculate
+\[
+r_k=\frac{x_k}{N}-\frac{\alpha_k}{\alpha_0},\qquad
+e_k=N\frac{\alpha_k}{\alpha_0},
+\]
+and rank positive and negative deviations; use a separate explanation for
+silence.}{Hand-check a known vector, assert residuals sum to zero within
+tolerance, category ordering is deterministic under ties, and silent windows
+never divide by zero.}
+
+\task{P4.13}{Define anomaly event schemas}{Create a versioned event containing
+device/window IDs, counts, score, threshold, decision, explanation, precision
+status, model/threshold versions, and run ID.}{Schema-test mandatory fields,
+reject incompatible category order, round-trip JSON/CSV, and verify no packet
+payload or unnecessary endpoint identifier is present.}
+
+\task{P0.12}{Create the end-to-end smoke command}{Provide one command that
+validates configuration, processes the smoke fixture, trains, calibrates,
+scores, and writes a report.}{Execute from a clean environment; assert
+successful exit, expected artifact set, valid schemas and checksums,
+deterministic decisions on repeated runs, and no modification of inputs.}
+
+\gate{One command takes the smoke fixture through preprocessing, training,
+LM-backed scoring, threshold calibration, and schema-valid anomaly events. This
+is the working-prototype milestone.}
+
+\section{Deferred Until After the Working Prototype}
+
+The omitted roadmap tasks fall into the following later categories:
+\begin{itemize}
+  \item \textbf{Additional engineering assurance:} broader CI, coverage,
+  property-based testing, structured logging, container hardening, governance,
+  threat modeling, and expanded reports.
+  \item \textbf{Research validation:} full anomaly-injection suite, detector
+  baselines, uncertainty estimates, sensitivity/ablation studies, locked final
+  evaluation, and publication figures.
+  \item \textbf{Additional functionality:} adaptive retraining, forecasting,
+  and advisory response support.
+  \item \textbf{Deployment and polishing:} optimized native bindings, edge
+  benchmarks, supply-chain controls, restart/exhaustion testing, deployment
+  documentation, and release packaging.
+\end{itemize}
+
+After this document's final gate passes, return to the Atomic Implementation
+Roadmap and complete the deferred tasks required by the thesis scope before
+making research-quality, security, or deployment-readiness claims.
+
+\end{document}
