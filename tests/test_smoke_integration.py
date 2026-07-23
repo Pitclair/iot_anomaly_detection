@@ -1,6 +1,10 @@
 import subprocess
 import sys
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 
 def test_smoke_main():
     cmd = [sys.executable, "-m", "lm_idnet.cli", "--help"]

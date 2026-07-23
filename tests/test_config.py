@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from lm_idnet.config import AppConfig, load_config
 
+pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "configs" / "config.json"

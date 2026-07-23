@@ -26,3 +26,6 @@ package has been installed.
 
 Configuration fields and validation rules are documented in
 [`docs/configuration.md`](docs/configuration.md).
+
+Test markers, suite commands, and shared fixtures are documented in
+[`docs/testing.md`](docs/testing.md).

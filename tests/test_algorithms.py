@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 from lm_idnet.algorithms.dirichlet import fixed_point_dirichlet
 
+pytestmark = [pytest.mark.unit, pytest.mark.numerical]
 
 def test_fixed_point_small():
     # small synthetic counts with clear proportions

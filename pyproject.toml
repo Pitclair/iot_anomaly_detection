@@ -30,3 +30,16 @@ include = ["lm_idnet*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = [
+  "--strict-markers",
+  "-m",
+  "not slow and not pcap and not benchmark",
+]
+markers = [
+  "unit: isolated, deterministic tests without external processes or datasets",
+  "integration: tests spanning multiple modules or a subprocess boundary",
+  "numerical: numerical correctness, stability, or convergence tests",
+  "slow: tests too expensive for the default fast suite",
+  "pcap: tests requiring packet-capture fixtures or parsing",
+  "benchmark: non-correctness performance measurements",
+]

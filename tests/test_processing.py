@@ -1,6 +1,8 @@
 import pandas as pd
+import pytest
 from lm_idnet.processing.aggregation import aggregate_packet_traces
 
+pytestmark = pytest.mark.unit
 
 def test_aggregate_simple():
     data = {
