@@ -29,3 +29,6 @@ Configuration fields and validation rules are documented in
 
 Test markers, suite commands, and shared fixtures are documented in
 [`docs/testing.md`](docs/testing.md).
+
+Domain exceptions, CLI exit codes, and fail-closed artifact handling are
+documented in [`docs/failure-semantics.md`](docs/failure-semantics.md).

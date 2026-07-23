@@ -13,6 +13,8 @@ from pydantic import (
     model_validator,
 )
 
+from lm_idnet.exceptions import ConfigurationError
+
 
 class StrictModel(BaseModel):
     """Base model that rejects misspelled and unsupported settings."""
@@ -124,7 +126,12 @@ class AppConfig(StrictModel):
 def load_config(path: str | Path) -> AppConfig:
     """Read and validate a JSON configuration file."""
     config_path = Path(path)
-    if not config_path.is_file():
-        raise FileNotFoundError(f"Config not found: {config_path}")
-    raw = json.loads(config_path.read_text(encoding="utf-8"))
-    return AppConfig.model_validate(raw)
+    try:
+        raw = json.loads(config_path.read_text(encoding="utf-8"))
+        return AppConfig.model_validate(raw)
+    except FileNotFoundError as error:
+        raise ConfigurationError(f"config not found: {config_path}") from error
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ConfigurationError(f"config is not readable JSON: {config_path}") from error
+    except ValueError as error:
+        raise ConfigurationError(f"config validation failed: {error}") from error

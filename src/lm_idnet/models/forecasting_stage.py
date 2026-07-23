@@ -3,9 +3,9 @@ Forecasting stage: generate horizon forecasts (24h) and compute Brier Score and 
 """
 from typing import Optional
 import numpy as np
-import json
 from pathlib import Path
 
+from lm_idnet.artifacts import load_model_for_scoring
 from lm_idnet.evaluation.metrics import brier_score, js_divergence
 
 
@@ -15,10 +15,7 @@ def run_forecasting(cfg: dict, dataset: str = 'camera_5') -> None:
             "model_path", "data/processed/model_alpha.json"
         )
     )
-    if not model_path.exists():
-        print(f"Model not found at {model_path}. Run modeling first.")
-        return
-    obj = json.loads(model_path.read_text())
+    obj = load_model_for_scoring(model_path)
     alpha = np.array(obj['alpha'], dtype=float)
 
     # expected probabilities from Dirichlet mean

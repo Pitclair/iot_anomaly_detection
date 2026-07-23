@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import argparse
 import logging
-from pathlib import Path
+import sys
 from typing import Sequence
 
 from lm_idnet.config import load_config
+from lm_idnet.exceptions import IngestionError, LMIDNetError
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,8 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Run the selected pipeline stage."""
+def run_command(argv: Sequence[str] | None = None) -> None:
+    """Run a pipeline command, raising typed domain failures."""
     args = build_parser().parse_args(argv)
     config = load_config(args.config)
 
@@ -56,7 +57,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         dates=dates,
     )
     logger.info("Preprocessing %d configured captures to %s", len(dates), processed_path)
-    manager.run()
+    try:
+        manager.run()
+    except (OSError, ValueError) as error:
+        raise IngestionError(f"preprocessing failed: {error}") from error
     Statistics(
         json_dir=processed_path,
         categories=list(ingest.categories),
@@ -72,6 +76,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     else:
         run_forecasting(config.model_dump(mode="json"), dataset=str(processed_path))
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run the CLI and map expected failures to stable exit codes."""
+    try:
+        run_command(argv)
+    except LMIDNetError as error:
+        print(
+            f"ERROR [{error.error_code}]: {error}",
+            file=sys.stderr,
+        )
+        return error.exit_code
     return 0
 
 
