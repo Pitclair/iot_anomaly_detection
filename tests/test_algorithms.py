@@ -1,5 +1,5 @@
 import numpy as np
-from algorithms.dirichlet import fixed_point_dirichlet
+from lm_idnet.algorithms.dirichlet import fixed_point_dirichlet
 
 
 def test_fixed_point_small():
@@ -10,4 +10,3 @@ def test_fixed_point_small():
     assert info['converged'] in (True, False)
     # alpha should be positive
     assert (alpha > 0).all()
-

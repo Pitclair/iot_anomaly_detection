@@ -1,3 +1,5 @@
+"""Descriptive statistics for processed packet windows."""
+
 import numpy as np
 import pandas as pd
 from tabulate import tabulate

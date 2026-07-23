@@ -13,8 +13,8 @@ RUN pip install --no-cache-dir -r /srv/app/requirements.txt
 # Copy the rest of the project
 COPY . /srv/app
 
-# Ensure the entrypoint runs python module; CMD can be overridden by compose
-# ENTRYPOINT ["python", "-u", "main.py"]
-# CMD ["model", "--config", "/configs/config.json"]
+# Install the source-layout package and its lm-idnet console command.
+RUN pip install --no-cache-dir --no-deps .
 
+ENTRYPOINT ["lm-idnet"]
 

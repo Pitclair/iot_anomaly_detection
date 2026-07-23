@@ -6,7 +6,7 @@ import numpy as np
 import json
 from pathlib import Path
 
-from algorithms.dirichlet import fixed_point_dirichlet
+from lm_idnet.algorithms.dirichlet import fixed_point_dirichlet
 
 
 def run_modeling(data_path: Path, categories_k: int, tolerance_delta: float, model_out_path: str) -> None:
@@ -34,4 +34,3 @@ def run_modeling(data_path: Path, categories_k: int, tolerance_delta: float, mod
     # out = {'alpha': alpha.tolist(), 'info': info}
     # out_path.write_text(json.dumps(out, indent=2))
     # print(f"Model saved to {out_path} (converged={info.get('converged')})")
-

@@ -1,5 +1,5 @@
 import pandas as pd
-from processing.aggregation import aggregate_packet_traces
+from lm_idnet.processing.aggregation import aggregate_packet_traces
 
 
 def test_aggregate_simple():
@@ -14,4 +14,3 @@ def test_aggregate_simple():
     # note: some environments may compress windows differently; check sums
     assert out['TCP'].sum() == 2
     assert out['ARP'].sum() == 1
-

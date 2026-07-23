@@ -1,6 +1,4 @@
-"""
-PCAP streaming reader using scapy.utils.PcapReader to yield packet records.
-"""
+"""Stream packet records with :class:`scapy.utils.PcapReader`."""
 from typing import Iterator, Tuple
 import os
 from scapy.utils import PcapReader

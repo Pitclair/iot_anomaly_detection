@@ -10,17 +10,16 @@ services:
     container_name: ${APP_CONTAINER_NAME:-iot_anomaly_app}
     working_dir: /srv/app
     environment:
-      - PYTHONPATH=/srv/app
       - PYTHONUNBUFFERED=1
     volumes:
       - ./:/srv/app
       - ./data:/data
       - ./configs:/configs:ro
     command: >
-      sh -c "python -u main.py --config configs/config.json --stage model"
+      sh -c "python -m pip install --no-deps -e . && lm-idnet model --config configs/config.json"
     restart: "no"
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import importlib; importlib.import_module(\"processing.aggregation\")' || exit 1"]
+      test: ["CMD-SHELL", "python -c 'import lm_idnet.processing.aggregation' || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3

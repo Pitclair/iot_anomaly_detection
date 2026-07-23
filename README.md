@@ -1,14 +1,25 @@
-IoT Anomaly Detection Baseline (Python 3.11)
+# IoT Anomaly Detection Baseline
 
 This repo provides a scaffold for modeling and forecasting IoT network traffic using Dirichlet-based methods.
 
 Structure:
-- src/: Python package modules (processing, algorithms, models, evaluation)
+- `src/lm_idnet/`: installable Python package
 - configs/config.json: default configuration
-- docker-compose.yml: run the app in python:3.11-slim without a Dockerfile
+- `tests/`: automated tests
 
-Usage (local):
+Install for local development:
 
-python main.py model --config configs/config.json
-python main.py forecast --config configs/config.json
+```sh
+python -m pip install -e .
+```
 
+Run the CLI from any directory without setting `PYTHONPATH`:
+
+```sh
+lm-idnet --help
+lm-idnet model --config configs/config.json
+lm-idnet forecast --config configs/config.json
+```
+
+`python main.py ...` remains available as a compatibility launcher after the
+package has been installed.

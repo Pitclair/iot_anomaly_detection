@@ -1,5 +1,4 @@
-"""
-Python-only implementations for Dirichlet parameter estimation.
+"""Python-only implementations for Dirichlet parameter estimation.
 Includes a Fixed-Point Iteration (Minka) implementation and placeholders for LM, YS, and lgam-std helpers.
 """
 from typing import Optional, Tuple
@@ -91,4 +90,3 @@ def lgam_std(x: float) -> float:
     """Use math.lgamma or scipy.special.gammaln for gamma-log computations.
     """
     return float(gammaln(x))
-

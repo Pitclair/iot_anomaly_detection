@@ -6,7 +6,7 @@ import numpy as np
 import json
 from pathlib import Path
 
-from evaluation.metrics import brier_score, js_divergence
+from lm_idnet.evaluation.metrics import brier_score, js_divergence
 
 
 def run_forecasting(cfg: dict, dataset: str = 'camera_5') -> None:
@@ -34,4 +34,3 @@ def run_forecasting(cfg: dict, dataset: str = 'camera_5') -> None:
     js = js_divergence(actual / total_per_hour + 1e-12, forecast / total_per_hour + 1e-12)
 
     print(f"Forecasting: horizon={horizon_hours}h, BrierScore={bs:.6f}, JSD={js:.6f}")
-

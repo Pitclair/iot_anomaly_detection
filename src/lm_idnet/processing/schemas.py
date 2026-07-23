@@ -1,6 +1,4 @@
-"""
-Pydantic schemas for processed window counts and dataset metadata.
-"""
+"""Pydantic schemas for processed counts and dataset metadata."""
 from typing import List
 from pydantic import BaseModel, Field, NonNegativeInt
 
@@ -20,4 +18,3 @@ class Metadata(BaseModel):
 class ProcessedDataset(BaseModel):
     metadata: Metadata
     windows: List[WindowCount]
-

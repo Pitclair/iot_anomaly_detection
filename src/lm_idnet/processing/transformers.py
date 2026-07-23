@@ -1,6 +1,4 @@
-"""
-Transform raw (timestamp, protocol) pairs into 10-minute count windows.
-"""
+"""Transform raw packet records into ten-minute count windows."""
 from typing import Iterable, List, Tuple
 import pandas as pd
 import numpy as np

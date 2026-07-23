@@ -1,6 +1,4 @@
-"""
-Processing manager to orchestrate reading PCAPs, transforming into windows, validating and exporting.
-"""
+"""Orchestrate reading, transforming, validating, and exporting PCAP data."""
 from pathlib import Path
 from typing import List
 import json

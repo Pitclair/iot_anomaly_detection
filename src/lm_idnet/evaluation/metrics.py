@@ -1,5 +1,4 @@
-"""
-Distance metrics and statistical tests used for evaluation.
+"""Distance metrics and statistical tests used for evaluation.
 Includes TVD, KL divergence, MSE, Brier Score and JSD.
 """
 import numpy as np
@@ -41,4 +40,3 @@ def js_divergence(p: np.ndarray, q: np.ndarray) -> float:
     q = np.asarray(q, dtype=float)
     m = 0.5 * (p + q)
     return 0.5 * (kl_divergence(p, m) + kl_divergence(q, m))
-
