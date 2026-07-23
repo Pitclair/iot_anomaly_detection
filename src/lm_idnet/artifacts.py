@@ -72,4 +72,17 @@ def load_verified_artifact(
 
 def load_model_for_scoring(path: str | Path) -> dict[str, Any]:
     """Fail-closed model loading boundary for current and future scorers."""
-    return load_verified_artifact(path, artifact_type="model")
+    model = load_typed_artifact(path, expected_type="model")
+    return model.model_dump(mode="json")
+
+
+def load_typed_artifact(
+    path: str | Path,
+    *,
+    expected_type: str,
+) -> Any:
+    """Verify integrity, migrate if supported, and validate a typed artifact."""
+    from lm_idnet.artifact_schemas import validate_versioned_artifact
+
+    raw = load_verified_artifact(path, artifact_type=expected_type)
+    return validate_versioned_artifact(raw, expected_type=expected_type)

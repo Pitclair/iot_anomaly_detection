@@ -70,8 +70,10 @@ def test_invalid_json_uses_configuration_failure(tmp_path: Path) -> None:
 def test_corrupt_model_checksum_fails_closed(tmp_path: Path) -> None:
     model_path = tmp_path / "model.json"
     model = {
-        "schema_version": "1.0.0",
+        "artifact_type": "model",
+        "schema_version": "1.1.0",
         "model_version": "test-model",
+        "categories": ["tcp", "udp", "ssdp", "arp"],
         "alpha": [1.0, 2.0, 3.0, 4.0],
     }
     model["checksum"] = artifact_checksum(model)
@@ -85,8 +87,10 @@ def test_corrupt_model_checksum_fails_closed(tmp_path: Path) -> None:
 def test_valid_model_checksum_is_accepted(tmp_path: Path) -> None:
     model_path = tmp_path / "model.json"
     model = {
-        "schema_version": "1.0.0",
+        "artifact_type": "model",
+        "schema_version": "1.1.0",
         "model_version": "test-model",
+        "categories": ["tcp", "udp", "ssdp", "arp"],
         "alpha": [1.0, 2.0, 3.0, 4.0],
     }
     model["checksum"] = artifact_checksum(model)

@@ -32,3 +32,6 @@ Test markers, suite commands, and shared fixtures are documented in
 
 Domain exceptions, CLI exit codes, and fail-closed artifact handling are
 documented in [`docs/failure-semantics.md`](docs/failure-semantics.md).
+
+Persisted artifact types, semantic versions, and migration rules are documented
+in [`docs/artifact-schemas.md`](docs/artifact-schemas.md).

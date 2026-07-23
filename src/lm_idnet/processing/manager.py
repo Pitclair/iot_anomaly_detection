@@ -2,6 +2,8 @@
 from pathlib import Path
 from typing import List
 import json
+from lm_idnet.artifacts import artifact_checksum
+from lm_idnet.artifact_schemas import CURRENT_SCHEMA_VERSION
 from .pcap_reader import PcapProcessor
 from .transformers import build_time_series, to_10min_windows
 from .schemas import ProcessedDataset, Metadata
@@ -31,9 +33,12 @@ class ProcessingManager:
 
     def export_json(self, dataset: ProcessedDataset, out_path: Path):
         out = {
+            'artifact_type': 'processed_dataset',
+            'schema_version': CURRENT_SCHEMA_VERSION,
             'metadata': dataset.metadata.dict(),
             'windows': [w.dict() for w in dataset.windows]
         }
+        out['checksum'] = artifact_checksum(out)
         with out_path.open('w', encoding='utf-8') as f:
             json.dump(out, f, indent=2)
 
