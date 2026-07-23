@@ -49,3 +49,10 @@ class ArtifactIntegrityError(ArtifactCompatibilityError):
 class PolicyRejectionError(LMIDNetError):
     exit_code = 8
     error_code = "policy_rejection_error"
+
+
+class CommandUnavailableError(LMIDNetError):
+    """A stable command exists but its implementation is not ready."""
+
+    exit_code = 9
+    error_code = "command_unavailable_error"

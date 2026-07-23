@@ -9,6 +9,7 @@ from lm_idnet.config import load_config
 from lm_idnet.exceptions import (
     ArtifactCompatibilityError,
     ArtifactIntegrityError,
+    CommandUnavailableError,
     ConfigurationError,
     ConvergenceError,
     DataValidationError,
@@ -32,6 +33,7 @@ pytestmark = pytest.mark.unit
         ArtifactCompatibilityError("unsupported model schema"),
         ArtifactIntegrityError("model checksum mismatch"),
         PolicyRejectionError("candidate exceeds drift policy"),
+        CommandUnavailableError("stage is not implemented"),
     ],
 )
 def test_domain_exception_maps_to_cli_exit_code_and_message(

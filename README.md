@@ -17,9 +17,21 @@ Run the CLI from any directory without setting `PYTHONPATH`:
 
 ```sh
 lm-idnet --help
-lm-idnet model --config configs/config.json
+lm-idnet preprocess --config configs/config.json
+lm-idnet diagnose --config configs/config.json
+lm-idnet train --config configs/config.json
 lm-idnet forecast --config configs/config.json
 ```
+
+The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,
+`score`, `evaluate`, `adapt`, `forecast`, and `benchmark`. Use
+`lm-idnet <command> --help` for command-specific options. Commands whose
+pipeline stage has not been implemented yet fail explicitly with exit code 9;
+they never report a false success. Every command supports `--dry-run` to
+validate its configuration and CLI wiring without executing the stage.
+
+The complete command contract and current implementation status are documented
+in [`docs/command-line-interface.md`](docs/command-line-interface.md).
 
 `python main.py ...` remains available as a compatibility launcher after the
 package has been installed.

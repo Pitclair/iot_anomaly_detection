@@ -45,7 +45,7 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
         },
         "experiment_manifest": {
             "run_id": "run-001",
-            "command": "lm-idnet model",
+            "command": "lm-idnet train",
             "code_commit": "abc123",
             "configuration_hash": HASH,
             "dataset_hash": HASH,

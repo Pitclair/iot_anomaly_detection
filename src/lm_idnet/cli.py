@@ -1,81 +1,179 @@
-"""Command-line interface for LM-IDNet."""
+"""Stable command-line interface for LM-IDNet."""
 
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
-from typing import Sequence
+from collections.abc import Callable, Sequence
+from pathlib import Path
 
-from lm_idnet.config import load_config
-from lm_idnet.exceptions import IngestionError, LMIDNetError
+from lm_idnet.config import AppConfig, load_config
+from lm_idnet.exceptions import (
+    CommandUnavailableError,
+    IngestionError,
+    LMIDNetError,
+)
 
 logger = logging.getLogger(__name__)
 
+COMMANDS = (
+    "preprocess",
+    "diagnose",
+    "train",
+    "calibrate",
+    "score",
+    "evaluate",
+    "adapt",
+    "forecast",
+    "benchmark",
+)
+
+COMMAND_HELP = {
+    "preprocess": "convert configured packet captures into processed windows",
+    "diagnose": "report descriptive statistics for processed windows",
+    "train": "fit and persist the normal-traffic model",
+    "calibrate": "calibrate an anomaly threshold for a trained model",
+    "score": "score processed windows and emit anomaly decisions",
+    "evaluate": "evaluate detector outputs using the frozen protocol",
+    "adapt": "train and assess a guarded adaptive-model candidate",
+    "forecast": "forecast held-out traffic from a verified model",
+    "benchmark": "measure configured backend and pipeline performance",
+}
+
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the CLI parser without importing optional pipeline dependencies."""
+    """Build the parser without importing pipeline dependencies."""
     parser = argparse.ArgumentParser(
         prog="lm-idnet",
-        description="IoT Anomaly Detection Baseline",
+        description="LM-IDNet IoT anomaly detector",
     )
     parser.add_argument(
-        "stage",
-        choices=("model", "forecast"),
-        help='Stage to run: "model" or "forecast"',
+        "--error-format",
+        choices=("text", "json"),
+        default="text",
+        help="format for expected runtime errors (default: text)",
     )
-    parser.add_argument(
-        "--config",
-        "-c",
-        default="configs/config.json",
-        help="Path to the JSON configuration (default: configs/config.json)",
+    subparsers = parser.add_subparsers(
+        title="commands",
+        dest="command",
+        required=True,
     )
+    for command in COMMANDS:
+        command_parser = subparsers.add_parser(
+            command,
+            help=COMMAND_HELP[command],
+            description=COMMAND_HELP[command].capitalize() + ".",
+        )
+        command_parser.add_argument(
+            "--config",
+            "-c",
+            required=True,
+            help="path to a validated JSON configuration",
+        )
+        command_parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="validate configuration and command availability without execution",
+        )
     return parser
 
 
-def run_command(argv: Sequence[str] | None = None) -> None:
-    """Run a pipeline command, raising typed domain failures."""
-    args = build_parser().parse_args(argv)
-    config = load_config(args.config)
+def _processed_path(config: AppConfig) -> Path:
+    return config.ingest.processed_root / config.ingest.dataset_folder
+
+
+def _preprocess(config: AppConfig) -> None:
+    from lm_idnet.processing.manager import ProcessingManager
 
     ingest = config.ingest
-
-    # Keep heavyweight imports out of module import and --help execution.
-    from lm_idnet.models.forecasting_stage import run_forecasting
-    from lm_idnet.models.modeling_stage import run_modeling
-    from lm_idnet.processing.manager import ProcessingManager
-    from lm_idnet.processing.statistics import Statistics
-
-    raw_path = ingest.raw_root / ingest.dataset_folder
-    processed_path = ingest.processed_root / ingest.dataset_folder
-    dates = list(ingest.training_dates + ingest.testing_dates)
-
     manager = ProcessingManager(
-        raw_root=str(raw_path),
-        processed_root=str(processed_path),
+        raw_root=str(ingest.raw_root / ingest.dataset_folder),
+        processed_root=str(_processed_path(config)),
         categories=list(ingest.categories),
-        dates=dates,
+        dates=list(ingest.training_dates + ingest.testing_dates),
     )
-    logger.info("Preprocessing %d configured captures to %s", len(dates), processed_path)
     try:
         manager.run()
     except (OSError, ValueError) as error:
         raise IngestionError(f"preprocessing failed: {error}") from error
+
+
+def _diagnose(config: AppConfig) -> None:
+    from lm_idnet.processing.statistics import Statistics
+
+    ingest = config.ingest
     Statistics(
-        json_dir=processed_path,
+        json_dir=_processed_path(config),
         categories=list(ingest.categories),
-        dates=dates,
+        dates=list(ingest.training_dates + ingest.testing_dates),
     ).process_all()
 
-    if args.stage == "model":
-        run_modeling(
-            data_path=processed_path,
-            categories_k=config.estimator.categories_k,
-            tolerance_delta=config.estimator.tolerance_delta,
-            model_out_path=str(config.outputs.model_path),
+
+def _forecast(config: AppConfig) -> None:
+    from lm_idnet.models.forecasting_stage import run_forecasting
+
+    run_forecasting(
+        config.model_dump(mode="json"),
+        dataset=str(_processed_path(config)),
+    )
+
+
+def _not_implemented(command: str) -> Callable[[AppConfig], None]:
+    def reject(_config: AppConfig) -> None:
+        raise CommandUnavailableError(
+            f"{command} is registered but its implementation is not available yet"
         )
-    else:
-        run_forecasting(config.model_dump(mode="json"), dataset=str(processed_path))
+
+    return reject
+
+
+HANDLERS: dict[str, Callable[[AppConfig], None]] = {
+    "preprocess": _preprocess,
+    "diagnose": _diagnose,
+    "train": _not_implemented("train"),
+    "calibrate": _not_implemented("calibrate"),
+    "score": _not_implemented("score"),
+    "evaluate": _not_implemented("evaluate"),
+    "adapt": _not_implemented("adapt"),
+    "forecast": _forecast,
+    "benchmark": _not_implemented("benchmark"),
+}
+
+
+def run_command(argv: Sequence[str] | None = None) -> None:
+    """Validate and dispatch exactly one CLI command."""
+    args = build_parser().parse_args(argv)
+    config = load_config(args.config)
+
+    if args.dry_run:
+        print(
+            json.dumps(
+                {
+                    "command": args.command,
+                    "config": str(args.config),
+                    "status": "ready",
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    HANDLERS[args.command](config)
+    print(json.dumps({"command": args.command, "status": "completed"}))
+
+
+def _json_errors_requested(argv: Sequence[str] | None) -> bool:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    try:
+        position = arguments.index("--error-format")
+    except ValueError:
+        return False
+    return (
+        position + 1 < len(arguments)
+        and arguments[position + 1] == "json"
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -83,10 +181,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         run_command(argv)
     except LMIDNetError as error:
-        print(
-            f"ERROR [{error.error_code}]: {error}",
-            file=sys.stderr,
-        )
+        if _json_errors_requested(argv):
+            message = json.dumps(
+                {
+                    "error": {
+                        "code": error.error_code,
+                        "message": str(error),
+                    }
+                },
+                sort_keys=True,
+            )
+        else:
+            message = f"ERROR [{error.error_code}]: {error}"
+        print(message, file=sys.stderr)
         return error.exit_code
     return 0
 
