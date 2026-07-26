@@ -60,12 +60,14 @@ def build_parser() -> argparse.ArgumentParser:
         dest="command",
         required=True,
     )
+    command_parsers: dict[str, argparse.ArgumentParser] = {}
     for command in COMMANDS:
         command_parser = subparsers.add_parser(
             command,
             help=COMMAND_HELP[command],
             description=COMMAND_HELP[command].capitalize() + ".",
         )
+        command_parsers[command] = command_parser
         command_parser.add_argument(
             "--config",
             "-c",
@@ -77,6 +79,16 @@ def build_parser() -> argparse.ArgumentParser:
             action="store_true",
             help="validate configuration and command availability without execution",
         )
+    command_parsers["preprocess"].add_argument(
+        "--inventory-only",
+        action="store_true",
+        help="inventory configured captures without preprocessing them",
+    )
+    command_parsers["preprocess"].add_argument(
+        "--inventory-output",
+        type=Path,
+        help="inventory JSON path (default: <reports_dir>/capture_inventory.json)",
+    )
     return parser
 
 
@@ -154,6 +166,26 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                     "command": args.command,
                     "config": str(args.config),
                     "status": "ready",
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "preprocess" and args.inventory_only:
+        from lm_idnet.processing.inventory import inventory_configured_captures
+
+        output_path = (
+            args.inventory_output
+            or config.outputs.reports_dir / "capture_inventory.json"
+        )
+        inventory_configured_captures(config, output_path)
+        print(
+            json.dumps(
+                {
+                    "command": "preprocess",
+                    "inventory": str(output_path),
+                    "status": "completed",
                 },
                 sort_keys=True,
             )

@@ -28,7 +28,8 @@
       "D-LinkDayCam5_88-2020-10-19",
       "D-LinkDayCam5_88-2020-10-21",
       "D-LinkDayCam5_88-2020-10-22"
-    ]
+    ],
+    "allowed_duplicate_captures": []
   },
   "seeds": {
     "simulation": 1001,

@@ -10,6 +10,8 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
 - `precision_digits`: positive numerical precision setting.
 - `ingest`: raw/processed paths, dataset name, column names, window length,
   ordered protocol categories, and the training/testing capture identifiers.
+  `allowed_duplicate_captures` documents exact, justified groups of captures
+  that are intentionally byte-identical; it is empty by default.
 - `seeds`: independent non-negative seeds for simulation, model fitting,
   bootstrap procedures, and other randomized algorithms.
 - `estimator`: category count, positive convergence tolerance, and positive

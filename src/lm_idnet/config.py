@@ -22,6 +22,29 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class DuplicateCaptureGroup(StrictModel):
+    capture_ids: tuple[str, ...] = Field(min_length=2)
+    reason: str = Field(min_length=1)
+
+    @field_validator("capture_ids")
+    @classmethod
+    def capture_ids_must_be_unique(
+        cls,
+        value: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        if len(set(value)) != len(value):
+            raise ValueError("duplicate explanation contains repeated capture IDs")
+        return value
+
+    @field_validator("reason")
+    @classmethod
+    def reason_must_not_be_blank(cls, value: str) -> str:
+        reason = value.strip()
+        if not reason:
+            raise ValueError("duplicate explanation reason must not be blank")
+        return reason
+
+
 class IngestConfig(StrictModel):
     raw_root: Path
     processed_root: Path
@@ -32,6 +55,7 @@ class IngestConfig(StrictModel):
     categories: tuple[str, ...] = Field(min_length=2)
     training_dates: tuple[str, ...] = Field(min_length=1)
     testing_dates: tuple[str, ...] = Field(min_length=1)
+    allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
 
     @field_validator("categories", mode="before")
     @classmethod
@@ -62,6 +86,22 @@ class IngestConfig(StrictModel):
                 "training_dates and testing_dates must be disjoint; overlap: "
                 + ", ".join(sorted(overlap))
             )
+        configured_ids = set(self.training_dates + self.testing_dates)
+        explained_ids: set[str] = set()
+        for group in self.allowed_duplicate_captures:
+            unknown_ids = set(group.capture_ids) - configured_ids
+            if unknown_ids:
+                raise ValueError(
+                    "duplicate explanation references unconfigured captures: "
+                    + ", ".join(sorted(unknown_ids))
+                )
+            repeated_ids = explained_ids.intersection(group.capture_ids)
+            if repeated_ids:
+                raise ValueError(
+                    "captures appear in more than one duplicate explanation: "
+                    + ", ".join(sorted(repeated_ids))
+                )
+            explained_ids.update(group.capture_ids)
         return self
 
 

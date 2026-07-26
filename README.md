@@ -47,3 +47,6 @@ documented in [`docs/failure-semantics.md`](docs/failure-semantics.md).
 
 Persisted artifact types, semantic versions, and migration rules are documented
 in [`docs/artifact-schemas.md`](docs/artifact-schemas.md).
+
+Source-capture inventory behavior and duplicate explanations are documented in
+[`docs/capture-inventory.md`](docs/capture-inventory.md).
