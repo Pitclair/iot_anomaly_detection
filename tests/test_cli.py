@@ -190,3 +190,91 @@ def test_preprocess_inventory_only_fails_when_required_capture_is_missing(
     assert result.returncode == 4
     assert "2 required capture(s) missing" in result.stderr
     assert json.loads(output_path.read_text(encoding="utf-8"))["missing_count"] == 2
+
+
+def test_preprocess_validation_only_parses_all_sources(tmp_path: Path) -> None:
+    raw_directory = tmp_path / "raw" / "camera"
+    raw_directory.mkdir(parents=True)
+    capture_ids = ["camera-2020-10-08", "camera-2020-10-09"]
+    for capture_id in capture_ids:
+        write_empty_pcap(raw_directory / f"{capture_id}.pcap")
+
+    config_data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    config_data["ingest"].update(
+        {
+            "raw_root": str(tmp_path / "raw"),
+            "dataset_folder": "camera",
+            "training_dates": [capture_ids[0]],
+            "testing_dates": [capture_ids[1]],
+            "allowed_duplicate_captures": [],
+        }
+    )
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config_data), encoding="utf-8")
+    output_path = tmp_path / "capture_validation.json"
+
+    result = run_cli(
+        "preprocess",
+        "--config",
+        str(config_path),
+        "--validate-captures-only",
+        "--validation-output",
+        str(output_path),
+    )
+
+    assert result.returncode == 0
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["accepted"] is True
+    assert report["summary"]["parsed_to_eof_count"] == 2
+
+
+def test_preprocess_validation_only_rejects_truncated_source(tmp_path: Path) -> None:
+    raw_directory = tmp_path / "raw" / "camera"
+    raw_directory.mkdir(parents=True)
+    capture_ids = ["camera-2020-10-08", "camera-2020-10-09"]
+    write_empty_pcap(raw_directory / f"{capture_ids[0]}.pcap")
+    fixture_hex = (
+        ROOT / "tests" / "data" / "quarantine" / "truncated_capture.hex"
+    ).read_text(encoding="utf-8").strip()
+    (raw_directory / f"{capture_ids[1]}.pcap").write_bytes(bytes.fromhex(fixture_hex))
+
+    config_data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    config_data["ingest"].update(
+        {
+            "raw_root": str(tmp_path / "raw"),
+            "dataset_folder": "camera",
+            "training_dates": [capture_ids[0]],
+            "testing_dates": [capture_ids[1]],
+            "allowed_duplicate_captures": [],
+        }
+    )
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config_data), encoding="utf-8")
+    output_path = tmp_path / "capture_validation.json"
+
+    result = run_cli(
+        "preprocess",
+        "--config",
+        str(config_path),
+        "--validate-captures-only",
+        "--validation-output",
+        str(output_path),
+    )
+
+    assert result.returncode == 4
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["accepted"] is False
+    assert report["captures"][1]["fatal_error"]["code"] == "truncated_packet_data"
+
+
+def test_preprocess_capture_modes_are_mutually_exclusive() -> None:
+    result = run_cli(
+        "preprocess",
+        "--config",
+        str(CONFIG),
+        "--inventory-only",
+        "--validate-captures-only",
+    )
+
+    assert result.returncode == 2
+    assert "not allowed with argument" in result.stderr

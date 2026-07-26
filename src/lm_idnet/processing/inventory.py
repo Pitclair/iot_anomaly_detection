@@ -6,21 +6,15 @@ import hashlib
 import json
 import os
 import re
-import struct
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 from lm_idnet.config import AppConfig, DuplicateCaptureGroup
 from lm_idnet.exceptions import DataValidationError, IngestionError
+from lm_idnet.processing.pcap_validation import validate_pcap_file
 
 _DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
-_PCAP_BYTE_ORDERS = {
-    b"\xd4\xc3\xb2\xa1": "<",  # little-endian, microsecond timestamps
-    b"\xa1\xb2\xc3\xd4": ">",  # big-endian, microsecond timestamps
-    b"\x4d\x3c\xb2\xa1": "<",  # little-endian, nanosecond timestamps
-    b"\xa1\xb2\x3c\x4d": ">",  # big-endian, nanosecond timestamps
-}
 
 
 class CaptureFormatError(ValueError):
@@ -40,45 +34,12 @@ def _sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
 
 
 def count_classic_pcap_packets(path: Path) -> int:
-    """Count records in a classic PCAP while detecting incomplete records."""
-    with path.open("rb") as capture:
-        global_header = capture.read(24)
-        if len(global_header) < 24:
-            raise CaptureFormatError("truncated", "incomplete PCAP global header")
-
-        byte_order = _PCAP_BYTE_ORDERS.get(global_header[:4])
-        if byte_order is None:
-            raise CaptureFormatError(
-                "unsupported_format",
-                "not a supported classic PCAP file",
-            )
-
-        # snaplen is the maximum record size declared by the capture. Checking
-        # it before read() avoids trusting a corrupt length that could request
-        # an excessive allocation.
-        snaplen = struct.unpack(f"{byte_order}I", global_header[16:20])[0]
-
-        packet_count = 0
-        record_header = struct.Struct(f"{byte_order}IIII")
-        while True:
-            header = capture.read(record_header.size)
-            if not header:
-                return packet_count
-            if len(header) != record_header.size:
-                raise CaptureFormatError("truncated", "incomplete packet header")
-
-            _seconds, _fraction, captured_length, original_length = (
-                record_header.unpack(header)
-            )
-            if captured_length > snaplen or captured_length > original_length:
-                raise CaptureFormatError(
-                    "invalid_record",
-                    "packet length exceeds the capture header limits",
-                )
-            packet_data = capture.read(captured_length)
-            if len(packet_data) != captured_length:
-                raise CaptureFormatError("truncated", "incomplete packet data")
-            packet_count += 1
+    """Count packets using the same complete parser as integrity validation."""
+    result = validate_pcap_file(path)
+    if result["status"] == "fatal":
+        error = result["fatal_error"]
+        raise CaptureFormatError(error["code"], error["message"])
+    return result["packet_count"]
 
 
 def _capture_date(capture_id: str) -> str | None:

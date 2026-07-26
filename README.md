@@ -50,3 +50,6 @@ in [`docs/artifact-schemas.md`](docs/artifact-schemas.md).
 
 Source-capture inventory behavior and duplicate explanations are documented in
 [`docs/capture-inventory.md`](docs/capture-inventory.md).
+
+Complete PCAP parsing, warning classification, and corruption handling are
+documented in [`docs/pcap-validation.md`](docs/pcap-validation.md).

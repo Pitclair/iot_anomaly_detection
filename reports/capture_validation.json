@@ -1,0 +1,180 @@
+{
+  "accepted": true,
+  "captures": [
+    {
+      "byte_size": 17089289,
+      "capture_id": "D-LinkDayCam5_88-2020-10-08",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 85005,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-08.pcap",
+      "status": "warning",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 26,
+      "warnings": [
+        {
+          "code": "out_of_order_timestamp",
+          "count": 26,
+          "example_record_numbers": [
+            3916,
+            4009,
+            4066,
+            4142,
+            4249,
+            4346,
+            4509,
+            4522,
+            5032,
+            5201
+          ],
+          "message": "packet timestamp is earlier than the preceding record"
+        }
+      ]
+    },
+    {
+      "byte_size": 10453742,
+      "capture_id": "D-LinkDayCam5_88-2020-10-09",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 58161,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-09.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 9965659,
+      "capture_id": "D-LinkDayCam5_88-2020-10-10",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 57588,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-10.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 10630244,
+      "capture_id": "D-LinkDayCam5_88-2020-10-11",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 61505,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-11.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 11090753,
+      "capture_id": "D-LinkDayCam5_88-2020-10-12",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 61159,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-12.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 6073541,
+      "capture_id": "D-LinkDayCam5_88-2020-10-13",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 33549,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-13.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 11368686,
+      "capture_id": "D-LinkDayCam5_88-2020-10-14",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 62431,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-14.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 11353810,
+      "capture_id": "D-LinkDayCam5_88-2020-10-15",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 62431,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-15.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 11291039,
+      "capture_id": "D-LinkDayCam5_88-2020-10-16",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 62101,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-16.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 9512722,
+      "capture_id": "D-LinkDayCam5_88-2020-10-19",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 52686,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-19.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 11404693,
+      "capture_id": "D-LinkDayCam5_88-2020-10-21",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 62926,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-21.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    },
+    {
+      "byte_size": 11281677,
+      "capture_id": "D-LinkDayCam5_88-2020-10-22",
+      "complete_to_eof": true,
+      "fatal_error": null,
+      "packet_count": 62392,
+      "path": "data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-22.pcap",
+      "status": "valid",
+      "timestamp_resolution": "microseconds",
+      "warning_count": 0,
+      "warnings": []
+    }
+  ],
+  "dataset_folder": "D-LinkDayCam5",
+  "generated_at_utc": "2026-07-26T16:27:20.677867+00:00",
+  "raw_directory": "data/raw/D-LinkDayCam5",
+  "summary": {
+    "configured_count": 12,
+    "fatal_count": 0,
+    "packet_count": 721934,
+    "parsed_to_eof_count": 12,
+    "valid_count": 11,
+    "warning_capture_count": 1,
+    "warning_count": 26
+  },
+  "validation_fingerprint": "013ddd915b988b5932aa880b773f045b4898c392c0889db1d79cc35bd190795a"
+}

@@ -79,7 +79,8 @@ def build_parser() -> argparse.ArgumentParser:
             action="store_true",
             help="validate configuration and command availability without execution",
         )
-    command_parsers["preprocess"].add_argument(
+    capture_mode = command_parsers["preprocess"].add_mutually_exclusive_group()
+    capture_mode.add_argument(
         "--inventory-only",
         action="store_true",
         help="inventory configured captures without preprocessing them",
@@ -88,6 +89,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--inventory-output",
         type=Path,
         help="inventory JSON path (default: <reports_dir>/capture_inventory.json)",
+    )
+    capture_mode.add_argument(
+        "--validate-captures-only",
+        action="store_true",
+        help="validate configured captures to EOF without preprocessing them",
+    )
+    command_parsers["preprocess"].add_argument(
+        "--validation-output",
+        type=Path,
+        help="validation JSON path (default: <reports_dir>/capture_validation.json)",
     )
     return parser
 
@@ -186,6 +197,26 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                     "command": "preprocess",
                     "inventory": str(output_path),
                     "status": "completed",
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "preprocess" and args.validate_captures_only:
+        from lm_idnet.processing.pcap_validation import validate_configured_captures
+
+        output_path = (
+            args.validation_output
+            or config.outputs.reports_dir / "capture_validation.json"
+        )
+        validate_configured_captures(config, output_path)
+        print(
+            json.dumps(
+                {
+                    "command": "preprocess",
+                    "status": "completed",
+                    "validation": str(output_path),
                 },
                 sort_keys=True,
             )
