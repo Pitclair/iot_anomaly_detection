@@ -12,6 +12,7 @@ from typing import Any, Iterable
 
 from lm_idnet.config import AppConfig, DuplicateCaptureGroup
 from lm_idnet.exceptions import DataValidationError, IngestionError
+from lm_idnet.partitioning import all_capture_ids, partition_name_for_capture
 from lm_idnet.processing.pcap_validation import validate_pcap_file
 
 _DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
@@ -106,11 +107,16 @@ def build_capture_inventory(config: AppConfig) -> dict[str, Any]:
     """Inspect every configured capture and summarize missing and duplicate data."""
     ingest = config.ingest
     raw_directory = ingest.raw_root / ingest.dataset_folder
-    capture_ids = ingest.training_dates + ingest.testing_dates
+    capture_ids = all_capture_ids(config)
     entries = [
         inspect_capture(capture_id, raw_directory / f"{capture_id}.pcap")
         for capture_id in capture_ids
     ]
+    for entry in entries:
+        entry["partition"] = partition_name_for_capture(
+            config,
+            entry["capture_id"],
+        )
 
     duplicate_groups = _find_duplicate_groups(entries)
     for group in duplicate_groups:

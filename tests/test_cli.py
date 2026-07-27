@@ -27,6 +27,17 @@ def write_empty_pcap(path: Path) -> None:
     path.write_bytes(struct.pack("<IHHIIII", 0xA1B2C3D4, 2, 4, 0, 0, 65535, 1))
 
 
+def set_test_partitions(config_data: dict, capture_ids: list[str]) -> None:
+    if len(capture_ids) != 4:
+        raise ValueError("CLI tests require one capture per partition")
+    config_data["ingest"]["partitions"] = {
+        "fit": [capture_ids[0]],
+        "calibration": [capture_ids[1]],
+        "development_test": [capture_ids[2]],
+        "final_test": [capture_ids[3]],
+    }
+
+
 def test_root_help_lists_every_stable_command() -> None:
     result = run_cli("--help")
 
@@ -124,17 +135,16 @@ def test_unimplemented_stage_fails_instead_of_claiming_success(
 def test_preprocess_inventory_only_writes_accepted_report(tmp_path: Path) -> None:
     raw_directory = tmp_path / "raw" / "camera"
     raw_directory.mkdir(parents=True)
-    capture_ids = ["camera-2020-10-08", "camera-2020-10-09"]
+    capture_ids = [f"camera-2020-10-{day:02d}" for day in range(8, 12)]
     for capture_id in capture_ids:
         write_empty_pcap(raw_directory / f"{capture_id}.pcap")
 
     config_data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    set_test_partitions(config_data, capture_ids)
     config_data["ingest"].update(
         {
             "raw_root": str(tmp_path / "raw"),
             "dataset_folder": "camera",
-            "training_dates": [capture_ids[0]],
-            "testing_dates": [capture_ids[1]],
             "allowed_duplicate_captures": [
                 {
                     "capture_ids": capture_ids,
@@ -165,12 +175,12 @@ def test_preprocess_inventory_only_fails_when_required_capture_is_missing(
     tmp_path: Path,
 ) -> None:
     config_data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    capture_ids = [f"camera-2020-10-{day:02d}" for day in range(8, 12)]
+    set_test_partitions(config_data, capture_ids)
     config_data["ingest"].update(
         {
             "raw_root": str(tmp_path / "raw"),
             "dataset_folder": "camera",
-            "training_dates": ["camera-2020-10-08"],
-            "testing_dates": ["camera-2020-10-09"],
             "allowed_duplicate_captures": [],
         }
     )
@@ -188,24 +198,23 @@ def test_preprocess_inventory_only_fails_when_required_capture_is_missing(
     )
 
     assert result.returncode == 4
-    assert "2 required capture(s) missing" in result.stderr
-    assert json.loads(output_path.read_text(encoding="utf-8"))["missing_count"] == 2
+    assert "4 required capture(s) missing" in result.stderr
+    assert json.loads(output_path.read_text(encoding="utf-8"))["missing_count"] == 4
 
 
 def test_preprocess_validation_only_parses_all_sources(tmp_path: Path) -> None:
     raw_directory = tmp_path / "raw" / "camera"
     raw_directory.mkdir(parents=True)
-    capture_ids = ["camera-2020-10-08", "camera-2020-10-09"]
+    capture_ids = [f"camera-2020-10-{day:02d}" for day in range(8, 12)]
     for capture_id in capture_ids:
         write_empty_pcap(raw_directory / f"{capture_id}.pcap")
 
     config_data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    set_test_partitions(config_data, capture_ids)
     config_data["ingest"].update(
         {
             "raw_root": str(tmp_path / "raw"),
             "dataset_folder": "camera",
-            "training_dates": [capture_ids[0]],
-            "testing_dates": [capture_ids[1]],
             "allowed_duplicate_captures": [],
         }
     )
@@ -225,26 +234,26 @@ def test_preprocess_validation_only_parses_all_sources(tmp_path: Path) -> None:
     assert result.returncode == 0
     report = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["accepted"] is True
-    assert report["summary"]["parsed_to_eof_count"] == 2
+    assert report["summary"]["parsed_to_eof_count"] == 4
 
 
 def test_preprocess_validation_only_rejects_truncated_source(tmp_path: Path) -> None:
     raw_directory = tmp_path / "raw" / "camera"
     raw_directory.mkdir(parents=True)
-    capture_ids = ["camera-2020-10-08", "camera-2020-10-09"]
-    write_empty_pcap(raw_directory / f"{capture_ids[0]}.pcap")
+    capture_ids = [f"camera-2020-10-{day:02d}" for day in range(8, 12)]
+    for capture_id in capture_ids[:3]:
+        write_empty_pcap(raw_directory / f"{capture_id}.pcap")
     fixture_hex = (
         ROOT / "tests" / "data" / "quarantine" / "truncated_capture.hex"
     ).read_text(encoding="utf-8").strip()
-    (raw_directory / f"{capture_ids[1]}.pcap").write_bytes(bytes.fromhex(fixture_hex))
+    (raw_directory / f"{capture_ids[3]}.pcap").write_bytes(bytes.fromhex(fixture_hex))
 
     config_data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    set_test_partitions(config_data, capture_ids)
     config_data["ingest"].update(
         {
             "raw_root": str(tmp_path / "raw"),
             "dataset_folder": "camera",
-            "training_dates": [capture_ids[0]],
-            "testing_dates": [capture_ids[1]],
             "allowed_duplicate_captures": [],
         }
     )
@@ -264,7 +273,7 @@ def test_preprocess_validation_only_rejects_truncated_source(tmp_path: Path) -> 
     assert result.returncode == 4
     report = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["accepted"] is False
-    assert report["captures"][1]["fatal_error"]["code"] == "truncated_packet_data"
+    assert report["captures"][3]["fatal_error"]["code"] == "truncated_packet_data"
 
 
 def test_preprocess_capture_modes_are_mutually_exclusive() -> None:

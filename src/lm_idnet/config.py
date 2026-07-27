@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from datetime import date
 from pathlib import Path
 
 from pydantic import (
@@ -14,6 +16,8 @@ from pydantic import (
 )
 
 from lm_idnet.exceptions import ConfigurationError
+
+_CAPTURE_DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
 class StrictModel(BaseModel):
@@ -45,6 +49,75 @@ class DuplicateCaptureGroup(StrictModel):
         return reason
 
 
+def _date_from_capture_id(capture_id: str) -> date:
+    match = _CAPTURE_DATE_PATTERN.search(capture_id)
+    if match is None:
+        raise ValueError(
+            f"capture identifier has no YYYY-MM-DD date: {capture_id}"
+        )
+    try:
+        return date.fromisoformat(match.group(1))
+    except ValueError as error:
+        raise ValueError(f"capture identifier has an invalid date: {capture_id}") from error
+
+
+class TemporalPartitions(StrictModel):
+    """Chronological capture-level partitions for the research protocol."""
+
+    fit: tuple[str, ...] = Field(min_length=1)
+    calibration: tuple[str, ...] = Field(min_length=1)
+    development_test: tuple[str, ...] = Field(min_length=1)
+    final_test: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("fit", "calibration", "development_test", "final_test")
+    @classmethod
+    def partition_must_be_unique_and_chronological(
+        cls,
+        capture_ids: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        if len(set(capture_ids)) != len(capture_ids):
+            raise ValueError("capture identifiers must be unique within a partition")
+        capture_dates = [_date_from_capture_id(capture_id) for capture_id in capture_ids]
+        if capture_dates != sorted(capture_dates):
+            raise ValueError("capture identifiers must be in chronological order")
+        return capture_ids
+
+    @model_validator(mode="after")
+    def partitions_must_be_disjoint_and_ordered(self) -> "TemporalPartitions":
+        named_partitions = (
+            ("fit", self.fit),
+            ("calibration", self.calibration),
+            ("development_test", self.development_test),
+            ("final_test", self.final_test),
+        )
+        owner_by_capture: dict[str, str] = {}
+        for partition_name, capture_ids in named_partitions:
+            for capture_id in capture_ids:
+                previous_owner = owner_by_capture.get(capture_id)
+                if previous_owner is not None:
+                    raise ValueError(
+                        f"capture {capture_id} appears in both "
+                        f"{previous_owner} and {partition_name}"
+                    )
+                owner_by_capture[capture_id] = partition_name
+
+        # Entire partitions, not individual windows, move forward in time.
+        for (earlier_name, earlier_ids), (later_name, later_ids) in zip(
+            named_partitions,
+            named_partitions[1:],
+        ):
+            if _date_from_capture_id(earlier_ids[-1]) >= _date_from_capture_id(
+                later_ids[0]
+            ):
+                raise ValueError(
+                    f"{earlier_name} must end before {later_name} begins"
+                )
+        return self
+
+    def all_capture_ids(self) -> tuple[str, ...]:
+        return self.fit + self.calibration + self.development_test + self.final_test
+
+
 class IngestConfig(StrictModel):
     raw_root: Path
     processed_root: Path
@@ -53,8 +126,7 @@ class IngestConfig(StrictModel):
     protocol_col: str = Field(default="protocol", min_length=1)
     window_minutes: int = Field(gt=0)
     categories: tuple[str, ...] = Field(min_length=2)
-    training_dates: tuple[str, ...] = Field(min_length=1)
-    testing_dates: tuple[str, ...] = Field(min_length=1)
+    partitions: TemporalPartitions
     allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
 
     @field_validator("categories", mode="before")
@@ -69,24 +141,11 @@ class IngestConfig(StrictModel):
             raise ValueError("categories must be unique after normalization")
         return normalized
 
-    @field_validator("training_dates", "testing_dates")
-    @classmethod
-    def dates_must_be_unique(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        if any(not item.strip() for item in value):
-            raise ValueError("date identifiers must not be empty")
-        if len(set(value)) != len(value):
-            raise ValueError("date identifiers must be unique within a partition")
-        return value
-
     @model_validator(mode="after")
-    def partitions_must_be_disjoint(self) -> "IngestConfig":
-        overlap = set(self.training_dates).intersection(self.testing_dates)
-        if overlap:
-            raise ValueError(
-                "training_dates and testing_dates must be disjoint; overlap: "
-                + ", ".join(sorted(overlap))
-            )
-        configured_ids = set(self.training_dates + self.testing_dates)
+    def duplicate_explanations_must_reference_configured_captures(
+        self,
+    ) -> "IngestConfig":
+        configured_ids = set(self.partitions.all_capture_ids())
         explained_ids: set[str] = set()
         for group in self.allowed_duplicate_captures:
             unknown_ids = set(group.capture_ids) - configured_ids

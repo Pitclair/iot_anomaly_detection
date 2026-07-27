@@ -15,6 +15,7 @@ from lm_idnet.exceptions import (
     IngestionError,
     LMIDNetError,
 )
+from lm_idnet.partitioning import all_capture_ids
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ def _preprocess(config: AppConfig) -> None:
         raw_root=str(ingest.raw_root / ingest.dataset_folder),
         processed_root=str(_processed_path(config)),
         categories=list(ingest.categories),
-        dates=list(ingest.training_dates + ingest.testing_dates),
+        dates=list(all_capture_ids(config)),
     )
     try:
         manager.run()
@@ -130,7 +131,7 @@ def _diagnose(config: AppConfig) -> None:
     Statistics(
         json_dir=_processed_path(config),
         categories=list(ingest.categories),
-        dates=list(ingest.training_dates + ingest.testing_dates),
+        dates=list(all_capture_ids(config)),
     ).process_all()
 
 

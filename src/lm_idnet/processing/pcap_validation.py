@@ -14,6 +14,7 @@ from typing import Any
 
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError, IngestionError
+from lm_idnet.partitioning import all_capture_ids, partition_name_for_capture
 
 _PCAP_FORMATS = {
     b"\xd4\xc3\xb2\xa1": ("<", "microseconds", 1_000_000),
@@ -294,9 +295,10 @@ def build_validation_report(config: AppConfig) -> dict[str, Any]:
     ingest = config.ingest
     raw_directory = ingest.raw_root / ingest.dataset_folder
     captures = []
-    for capture_id in ingest.training_dates + ingest.testing_dates:
+    for capture_id in all_capture_ids(config):
         result = validate_pcap_file(raw_directory / f"{capture_id}.pcap")
         result["capture_id"] = capture_id
+        result["partition"] = partition_name_for_capture(config, capture_id)
         captures.append(result)
 
     summary = {

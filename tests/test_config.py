@@ -24,6 +24,7 @@ def test_load_known_valid_configuration() -> None:
 
     assert config.ingest.categories == ("tcp", "udp", "ssdp", "arp")
     assert config.estimator.categories_k == 4
+    assert len(config.ingest.partitions.fit) == 6
 
 
 def test_normalized_configuration_matches_snapshot() -> None:
@@ -50,26 +51,44 @@ def test_extra_field_is_rejected(valid_data: dict) -> None:
 @pytest.mark.parametrize(
     ("partition", "dates"),
     [
-        ("training_dates", []),
-        ("training_dates", ["day-1", "day-1"]),
-        ("testing_dates", [""]),
+        ("fit", []),
+        ("fit", ["camera-2020-10-08", "camera-2020-10-08"]),
+        ("calibration", [""]),
     ],
 )
 def test_invalid_date_lists_are_rejected(
     valid_data: dict, partition: str, dates: list[str]
 ) -> None:
-    valid_data["ingest"][partition] = dates
+    valid_data["ingest"]["partitions"][partition] = dates
 
     with pytest.raises(ValidationError):
         AppConfig.model_validate(valid_data)
 
 
 def test_overlapping_partitions_are_rejected(valid_data: dict) -> None:
-    valid_data["ingest"]["testing_dates"][0] = valid_data["ingest"][
-        "training_dates"
-    ][0]
+    valid_data["ingest"]["partitions"]["calibration"][0] = valid_data[
+        "ingest"
+    ]["partitions"]["fit"][0]
 
-    with pytest.raises(ValidationError, match="must be disjoint"):
+    with pytest.raises(ValidationError, match="appears in both"):
+        AppConfig.model_validate(valid_data)
+
+
+def test_out_of_order_capture_ids_are_rejected(valid_data: dict) -> None:
+    valid_data["ingest"]["partitions"]["fit"][0:2] = reversed(
+        valid_data["ingest"]["partitions"]["fit"][0:2]
+    )
+
+    with pytest.raises(ValidationError, match="chronological order"):
+        AppConfig.model_validate(valid_data)
+
+
+def test_partition_boundaries_must_move_forward(valid_data: dict) -> None:
+    valid_data["ingest"]["partitions"]["calibration"] = [
+        "camera-2020-01-01"
+    ]
+
+    with pytest.raises(ValidationError, match="fit must end before calibration"):
         AppConfig.model_validate(valid_data)
 
 

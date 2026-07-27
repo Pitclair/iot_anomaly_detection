@@ -53,3 +53,6 @@ Source-capture inventory behavior and duplicate explanations are documented in
 
 Complete PCAP parsing, warning classification, and corruption handling are
 documented in [`docs/pcap-validation.md`](docs/pcap-validation.md).
+
+The frozen chronological research split and purpose-scoped access rules are
+documented in [`docs/temporal-partitions.md`](docs/temporal-partitions.md).

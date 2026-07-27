@@ -13,22 +13,28 @@
       "ssdp",
       "arp"
     ],
-    "training_dates": [
-      "D-LinkDayCam5_88-2020-10-08",
-      "D-LinkDayCam5_88-2020-10-09",
-      "D-LinkDayCam5_88-2020-10-10",
-      "D-LinkDayCam5_88-2020-10-11",
-      "D-LinkDayCam5_88-2020-10-12",
-      "D-LinkDayCam5_88-2020-10-13",
-      "D-LinkDayCam5_88-2020-10-14",
-      "D-LinkDayCam5_88-2020-10-15",
-      "D-LinkDayCam5_88-2020-10-16"
-    ],
-    "testing_dates": [
-      "D-LinkDayCam5_88-2020-10-19",
-      "D-LinkDayCam5_88-2020-10-21",
-      "D-LinkDayCam5_88-2020-10-22"
-    ],
+    "partitions": {
+      "fit": [
+        "D-LinkDayCam5_88-2020-10-08",
+        "D-LinkDayCam5_88-2020-10-09",
+        "D-LinkDayCam5_88-2020-10-10",
+        "D-LinkDayCam5_88-2020-10-11",
+        "D-LinkDayCam5_88-2020-10-12",
+        "D-LinkDayCam5_88-2020-10-13"
+      ],
+      "calibration": [
+        "D-LinkDayCam5_88-2020-10-14",
+        "D-LinkDayCam5_88-2020-10-15"
+      ],
+      "development_test": [
+        "D-LinkDayCam5_88-2020-10-16",
+        "D-LinkDayCam5_88-2020-10-19"
+      ],
+      "final_test": [
+        "D-LinkDayCam5_88-2020-10-21",
+        "D-LinkDayCam5_88-2020-10-22"
+      ]
+    },
     "allowed_duplicate_captures": []
   },
   "seeds": {

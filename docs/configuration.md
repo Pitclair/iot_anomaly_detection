@@ -9,7 +9,8 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
 
 - `precision_digits`: positive numerical precision setting.
 - `ingest`: raw/processed paths, dataset name, column names, window length,
-  ordered protocol categories, and the training/testing capture identifiers.
+  ordered protocol categories, and the fit/calibration/development/final
+  capture partitions.
   `allowed_duplicate_captures` documents exact, justified groups of captures
   that are intentionally byte-identical; it is empty by default.
 - `seeds`: independent non-negative seeds for simulation, model fitting,
@@ -34,8 +35,10 @@ Configuration validation is intentionally strict:
   configuration boundary.
 - Categories must remain unique after normalization.
 - `estimator.categories_k` must equal the number of configured categories.
-- Training and testing identifiers must each be unique and the two partitions
-  must not overlap.
+- Every temporal partition must be non-empty, internally chronological, and
+  disjoint from every other partition.
+- Partition boundaries must move forward in the order fit, calibration,
+  development-test, and final-test.
 - Window sizes and count-like settings must be positive.
 - Seeds must be non-negative.
 - Calibration quantiles must satisfy \(0 < q < 1\).

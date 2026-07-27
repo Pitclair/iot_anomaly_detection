@@ -56,12 +56,18 @@ def validation_config(
     raw_root: Path,
     capture_ids: list[str],
 ) -> AppConfig:
+    if len(capture_ids) != 4:
+        raise ValueError("validation tests require one capture per partition")
     return config_factory(
         ingest={
             "raw_root": str(raw_root),
             "dataset_folder": "camera",
-            "training_dates": [capture_ids[0]],
-            "testing_dates": capture_ids[1:],
+            "partitions": {
+                "fit": [capture_ids[0]],
+                "calibration": [capture_ids[1]],
+                "development_test": [capture_ids[2]],
+                "final_test": [capture_ids[3]],
+            },
             "allowed_duplicate_captures": [],
         }
     )
@@ -158,11 +164,15 @@ def test_configured_validation_is_deterministic_across_runs(
     tmp_path: Path,
     config_factory: Callable[..., AppConfig],
 ) -> None:
-    capture_ids = ["camera-2020-10-08", "camera-2020-10-09"]
+    capture_ids = [f"camera-2020-10-{day:02d}" for day in range(8, 12)]
     raw_directory = tmp_path / "raw" / "camera"
     raw_directory.mkdir(parents=True)
-    write_pcap(raw_directory / f"{capture_ids[0]}.pcap", [(1, 0, b"one", None)])
-    write_pcap(raw_directory / f"{capture_ids[1]}.pcap", [(2, 0, b"two", 5)])
+    for index, capture_id in enumerate(capture_ids):
+        original_length = 5 if index == 1 else None
+        write_pcap(
+            raw_directory / f"{capture_id}.pcap",
+            [(index + 1, 0, f"p{index}".encode(), original_length)],
+        )
     config = validation_config(config_factory, tmp_path / "raw", capture_ids)
 
     first = build_validation_report(config)
@@ -171,20 +181,30 @@ def test_configured_validation_is_deterministic_across_runs(
     assert first["captures"] == second["captures"]
     assert first["summary"] == second["summary"]
     assert first["validation_fingerprint"] == second["validation_fingerprint"]
-    assert first["summary"]["parsed_to_eof_count"] == 2
-    assert first["summary"]["packet_count"] == 2
+    assert first["summary"]["parsed_to_eof_count"] == 4
+    assert first["summary"]["packet_count"] == 4
     assert first["summary"]["warning_count"] == 1
+    assert [capture["partition"] for capture in first["captures"]] == [
+        "fit",
+        "calibration",
+        "development_test",
+        "final_test",
+    ]
 
 
 def test_fatal_report_is_written_before_command_failure(
     tmp_path: Path,
     config_factory: Callable[..., AppConfig],
 ) -> None:
-    capture_ids = ["camera-2020-10-08", "camera-2020-10-09"]
+    capture_ids = [f"camera-2020-10-{day:02d}" for day in range(8, 12)]
     raw_directory = tmp_path / "raw" / "camera"
     raw_directory.mkdir(parents=True)
-    write_pcap(raw_directory / f"{capture_ids[0]}.pcap", [(1, 0, b"one", None)])
-    # The second configured capture is deliberately absent.
+    for index, capture_id in enumerate(capture_ids[:3]):
+        write_pcap(
+            raw_directory / f"{capture_id}.pcap",
+            [(index + 1, 0, b"packet", None)],
+        )
+    # The final-test capture is deliberately absent.
     config = validation_config(config_factory, tmp_path / "raw", capture_ids)
     output_path = tmp_path / "reports" / "validation.json"
 
@@ -194,4 +214,4 @@ def test_fatal_report_is_written_before_command_failure(
     report = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["accepted"] is False
     assert report["summary"]["fatal_count"] == 1
-    assert report["captures"][1]["fatal_error"]["code"] == "missing_file"
+    assert report["captures"][3]["fatal_error"]["code"] == "missing_file"
