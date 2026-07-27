@@ -1,0 +1,133 @@
+{
+  "component_hashes": {
+    "feature_taxonomy": "a90e269e2578ab20435c59a157e132ba2b65c368050885360ec917ce69fd3cd8",
+    "ordered_files": "47968d4e63313eacbdaa19e75402dd4b6792c5a62dcd71893394425cc5f2fb6c",
+    "partition_definition": "684ac45fab4d6802168c3d75dd7be4561649d2c46aae8c419268aa497f7d0161",
+    "window_policy": "3912c7bec9219338fb0317160e4ad3d3b3a0dd4b1ec6cdd1d133ed1989725789"
+  },
+  "dataset_version": "sha256:001d55323fb95e78c2a017a446beeee2888c784531476ca40eb3b5396d3e8839",
+  "feature_taxonomy": {
+    "ordered_categories": [
+      "tcp",
+      "udp",
+      "ssdp",
+      "arp"
+    ],
+    "protocol_column": "protocol",
+    "time_column": "timestamp"
+  },
+  "ordered_files": [
+    {
+      "byte_size": 17089289,
+      "capture_id": "D-LinkDayCam5_88-2020-10-08",
+      "partition": "fit",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-08.pcap",
+      "sha256": "b6742108ccc84d397987ce790f857c1a8a52390fa66c423fbc5abc67f40a88c1"
+    },
+    {
+      "byte_size": 10453742,
+      "capture_id": "D-LinkDayCam5_88-2020-10-09",
+      "partition": "fit",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-09.pcap",
+      "sha256": "d24c0b95f31e14029a1156a6f2941e2bb1e789a685ffbd9c6da8a54d561f0c9c"
+    },
+    {
+      "byte_size": 9965659,
+      "capture_id": "D-LinkDayCam5_88-2020-10-10",
+      "partition": "fit",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-10.pcap",
+      "sha256": "17b821a2d82531c2f5d0f8e073f2fd58f68e3d37e2cd39ff5006a303334590cb"
+    },
+    {
+      "byte_size": 10630244,
+      "capture_id": "D-LinkDayCam5_88-2020-10-11",
+      "partition": "fit",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-11.pcap",
+      "sha256": "fb665ca12323bb7962895a3d629fbceeb57a850d035cb94581a8162db4eb1f6a"
+    },
+    {
+      "byte_size": 11090753,
+      "capture_id": "D-LinkDayCam5_88-2020-10-12",
+      "partition": "fit",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-12.pcap",
+      "sha256": "e6de0a3af46a01229a303ce0836be439e5a0d680ef018baa5008955f1d0a8e06"
+    },
+    {
+      "byte_size": 6073541,
+      "capture_id": "D-LinkDayCam5_88-2020-10-13",
+      "partition": "fit",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-13.pcap",
+      "sha256": "63f2407bba2abefe5b71cec5597527193bf7f390adaf55a20a01e5fa9cd276c6"
+    },
+    {
+      "byte_size": 11368686,
+      "capture_id": "D-LinkDayCam5_88-2020-10-14",
+      "partition": "calibration",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-14.pcap",
+      "sha256": "1bd7a4a8ee38122fc395d07a5a445a25c248643c2303c8d776615a8018dd0be0"
+    },
+    {
+      "byte_size": 11353810,
+      "capture_id": "D-LinkDayCam5_88-2020-10-15",
+      "partition": "calibration",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-15.pcap",
+      "sha256": "9bde4435b057f40d2766f1010ec29fb76af3f678026159ba5f88eca9b9dd5759"
+    },
+    {
+      "byte_size": 11291039,
+      "capture_id": "D-LinkDayCam5_88-2020-10-16",
+      "partition": "development_test",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-16.pcap",
+      "sha256": "b9f5efcc5d79723e97fe129677cbdf46f39449c3a7500e6d8d6fdbd8a088e0bd"
+    },
+    {
+      "byte_size": 9512722,
+      "capture_id": "D-LinkDayCam5_88-2020-10-19",
+      "partition": "development_test",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-19.pcap",
+      "sha256": "cc6ba0e04969a9051be9c8cecc9e8f164df2b6ffe1bb0409ae0060225c0b179e"
+    },
+    {
+      "byte_size": 11404693,
+      "capture_id": "D-LinkDayCam5_88-2020-10-21",
+      "partition": "final_test",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-21.pcap",
+      "sha256": "34d9863f5f9e9c634a5225e75315d71e5f2112ea2f4268e6a938ff5c2d8a17dc"
+    },
+    {
+      "byte_size": 11281677,
+      "capture_id": "D-LinkDayCam5_88-2020-10-22",
+      "partition": "final_test",
+      "relative_path": "D-LinkDayCam5/D-LinkDayCam5_88-2020-10-22.pcap",
+      "sha256": "ebb2208dc22cd8270bb25571a56ff1f174b72c06dfce5233718a35627944092d"
+    }
+  ],
+  "partition_definition": {
+    "calibration": [
+      "D-LinkDayCam5_88-2020-10-14",
+      "D-LinkDayCam5_88-2020-10-15"
+    ],
+    "development_test": [
+      "D-LinkDayCam5_88-2020-10-16",
+      "D-LinkDayCam5_88-2020-10-19"
+    ],
+    "final_test": [
+      "D-LinkDayCam5_88-2020-10-21",
+      "D-LinkDayCam5_88-2020-10-22"
+    ],
+    "fit": [
+      "D-LinkDayCam5_88-2020-10-08",
+      "D-LinkDayCam5_88-2020-10-09",
+      "D-LinkDayCam5_88-2020-10-10",
+      "D-LinkDayCam5_88-2020-10-11",
+      "D-LinkDayCam5_88-2020-10-12",
+      "D-LinkDayCam5_88-2020-10-13"
+    ]
+  },
+  "schema_version": "1.0.0",
+  "window_policy": {
+    "interval": "left_closed_right_open",
+    "timestamp_timezone": "UTC",
+    "window_minutes": 10
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "categories": [
+    "tcp",
+    "udp",
+    "ssdp",
+    "arp"
+  ],
+  "fixture_sha256": "b048ec89d448cbd09d91013d92bfc5d94de736ae1039a9e8f00f04105ebd396a",
+  "float_tolerance": 1e-12,
+  "injected_anomaly": {
+    "category_index": 2,
+    "magnitude": 9,
+    "window_index": 2
+  },
+  "metrics": {
+    "total_absolute_count_change": 9.0
+  },
+  "model_parameters": [
+    2.9785271181549065,
+    1.9809356109950538,
+    2.059396392942612,
+    2.9811408779074284
+  ],
+  "report_type": "infrastructure_smoke_experiment",
+  "scientific_claim": "none",
+  "seeds": {
+    "model_fitting": 1002,
+    "simulation": 1001
+  },
+  "windows": [
+    {
+      "counts": {
+        "arp": 0,
+        "ssdp": 0,
+        "tcp": 2,
+        "udp": 1
+      },
+      "end_utc": "2020-01-01T00:10:00Z",
+      "start_utc": "2020-01-01T00:00:00Z",
+      "state": "observed"
+    },
+    {
+      "counts": {
+        "arp": 0,
+        "ssdp": 0,
+        "tcp": 0,
+        "udp": 0
+      },
+      "end_utc": "2020-01-01T00:20:00Z",
+      "start_utc": "2020-01-01T00:10:00Z",
+      "state": "observed-silent"
+    },
+    {
+      "counts": {
+        "arp": 2,
+        "ssdp": 1,
+        "tcp": 0,
+        "udp": 0
+      },
+      "end_utc": "2020-01-01T00:30:00Z",
+      "start_utc": "2020-01-01T00:20:00Z",
+      "state": "observed"
+    }
+  ]
+}

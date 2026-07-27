@@ -101,6 +101,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="validation JSON path (default: <reports_dir>/capture_validation.json)",
     )
+    capture_mode.add_argument(
+        "--fingerprint-only",
+        action="store_true",
+        help="fingerprint source bytes and data-shaping policy without preprocessing",
+    )
+    command_parsers["preprocess"].add_argument(
+        "--fingerprint-output",
+        type=Path,
+        help="fingerprint JSON path (default: <reports_dir>/dataset_fingerprint.json)",
+    )
     return parser
 
 
@@ -218,6 +228,27 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                     "command": "preprocess",
                     "status": "completed",
                     "validation": str(output_path),
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "preprocess" and args.fingerprint_only:
+        from lm_idnet.dataset_fingerprint import fingerprint_configured_dataset
+
+        output_path = (
+            args.fingerprint_output
+            or config.outputs.reports_dir / "dataset_fingerprint.json"
+        )
+        manifest = fingerprint_configured_dataset(config, output_path)
+        print(
+            json.dumps(
+                {
+                    "command": "preprocess",
+                    "dataset_version": manifest["dataset_version"],
+                    "fingerprint": str(output_path),
+                    "status": "completed",
                 },
                 sort_keys=True,
             )

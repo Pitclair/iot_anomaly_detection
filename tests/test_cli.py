@@ -287,3 +287,52 @@ def test_preprocess_capture_modes_are_mutually_exclusive() -> None:
 
     assert result.returncode == 2
     assert "not allowed with argument" in result.stderr
+
+
+def test_preprocess_fingerprint_only_writes_reproducible_manifest(
+    tmp_path: Path,
+) -> None:
+    raw_directory = tmp_path / "raw" / "camera"
+    raw_directory.mkdir(parents=True)
+    capture_ids = [f"camera-2020-10-{day:02d}" for day in range(8, 12)]
+    for index, capture_id in enumerate(capture_ids):
+        (raw_directory / f"{capture_id}.pcap").write_bytes(
+            f"capture-{index}".encode()
+        )
+
+    config_data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    set_test_partitions(config_data, capture_ids)
+    config_data["ingest"].update(
+        {
+            "raw_root": str(tmp_path / "raw"),
+            "dataset_folder": "camera",
+            "allowed_duplicate_captures": [],
+        }
+    )
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config_data), encoding="utf-8")
+    first_path = tmp_path / "first_fingerprint.json"
+    second_path = tmp_path / "second_fingerprint.json"
+
+    first = run_cli(
+        "preprocess",
+        "--config",
+        str(config_path),
+        "--fingerprint-only",
+        "--fingerprint-output",
+        str(first_path),
+    )
+    second = run_cli(
+        "preprocess",
+        "--config",
+        str(config_path),
+        "--fingerprint-only",
+        "--fingerprint-output",
+        str(second_path),
+    )
+
+    assert first.returncode == second.returncode == 0
+    assert first_path.read_bytes() == second_path.read_bytes()
+    assert json.loads(first.stdout)["dataset_version"] == json.loads(second.stdout)[
+        "dataset_version"
+    ]

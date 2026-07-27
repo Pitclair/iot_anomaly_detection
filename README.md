@@ -56,3 +56,9 @@ documented in [`docs/pcap-validation.md`](docs/pcap-validation.md).
 
 The frozen chronological research split and purpose-scoped access rules are
 documented in [`docs/temporal-partitions.md`](docs/temporal-partitions.md).
+
+Dataset version identifiers are documented in
+[`docs/dataset-fingerprints.md`](docs/dataset-fingerprints.md), named random
+generators in
+[`docs/deterministic-randomness.md`](docs/deterministic-randomness.md), and the
+public fixture in [`docs/smoke-fixture.md`](docs/smoke-fixture.md).
