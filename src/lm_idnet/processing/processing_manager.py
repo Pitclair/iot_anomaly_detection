@@ -20,6 +20,7 @@ class ProcessingManager:
         self,
         raw_root: str,
         processed_root: str,
+        device_id: str,
         categories: list[str],
         dates: Sequence[str],
         window_minutes: int = 10,
@@ -30,13 +31,18 @@ class ProcessingManager:
         self.processor = PcapProcessor(categories=categories)
         self.transformer = PacketTransformer(
             categories=categories,
+            device_id=device_id,
             window_minutes=window_minutes,
         )
 
     def process_file(self, pcap_path: Path) -> ProcessedDataset:
         records = self.processor.process_pcap(pcap_path)
         time_series = self.transformer.build_time_series(records)
-        windows = self.transformer.to_windows(time_series)
+        window_metadata = {
+            "capture_id": pcap_path.stem,
+            "file_source": str(pcap_path),
+        }
+        windows = self.transformer.to_windows(time_series, metadata=window_metadata)
         metadata = Metadata(date=pcap_path.stem, file_source=str(pcap_path))
         return ProcessedDataset(metadata=metadata, windows=windows)
 
@@ -44,8 +50,10 @@ class ProcessingManager:
         document = {
             "artifact_type": "processed_dataset",
             "schema_version": CURRENT_SCHEMA_VERSION,
-            "metadata": dataset.metadata.model_dump(),
-            "windows": [window.model_dump() for window in dataset.windows],
+            "metadata": dataset.metadata.model_dump(mode="json"),
+            "windows": [
+                window.model_dump(mode="json") for window in dataset.windows
+            ],
         }
         document["checksum"] = artifact_checksum(document)
         with output_path.open("w", encoding="utf-8") as output_file:

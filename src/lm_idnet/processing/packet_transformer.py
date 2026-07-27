@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from .categories import validate_category_order
-from .schemas import WindowCount
+from .schemas import WindowRecord
 from .timestamps import normalize_utc_timestamp
 from .window_policy import (
     WINDOW_CLOSED,
@@ -22,9 +22,13 @@ class PacketTransformer:
     def __init__(
         self,
         categories: Sequence[str],
+        device_id: str,
         window_minutes: int = 10,
     ) -> None:
         self.categories = validate_category_order(list(categories))
+        self.device_id = device_id.strip()
+        if not self.device_id:
+            raise ValueError("device_id must not be empty")
         self.window_minutes = validate_window_minutes(window_minutes)
 
     def build_time_series(
@@ -50,7 +54,11 @@ class PacketTransformer:
         time_series = pd.DataFrame(rows).set_index("timestamp")
         return time_series.sort_index(kind="stable")
 
-    def to_windows(self, time_series: pd.DataFrame) -> list[WindowCount]:
+    def to_windows(
+        self,
+        time_series: pd.DataFrame,
+        metadata: dict[str, object] | None = None,
+    ) -> list[WindowRecord]:
         """Count classified packets in continuous fixed-duration windows."""
         if time_series.empty:
             return []
@@ -76,23 +84,19 @@ class PacketTransformer:
         grouped = self._include_silent_windows(grouped, frequency)
         grouped = grouped.reindex(columns=self.categories, fill_value=0).astype(int)
 
+        window_metadata = dict(metadata or {})
+        duration = pd.Timedelta(minutes=self.window_minutes)
         return [
-            WindowCount(**row.to_dict())
-            for _, row in grouped.iterrows()
+            self._build_window_record(start, row, duration, window_metadata)
+            for start, row in grouped.iterrows()
         ]
 
-    def to_numpy_matrix(self, windows: Sequence[WindowCount]) -> np.ndarray:
+    def to_numpy_matrix(self, windows: Sequence[WindowRecord]) -> np.ndarray:
         """Convert window counts to a matrix in canonical category order."""
         if not windows:
             return np.empty((0, len(self.categories)), dtype=int)
 
-        return np.array(
-            [
-                [getattr(window, category) for category in self.categories]
-                for window in windows
-            ],
-            dtype=int,
-        )
+        return np.array([window.counts for window in windows], dtype=int)
 
     @staticmethod
     def _include_silent_windows(
@@ -106,3 +110,24 @@ class PacketTransformer:
             freq=frequency,
         )
         return grouped.reindex(full_index, fill_value=0)
+
+    def _build_window_record(
+        self,
+        start: pd.Timestamp,
+        row: pd.Series,
+        duration: pd.Timedelta,
+        metadata: dict[str, object],
+    ) -> WindowRecord:
+        counts = tuple(int(row[category]) for category in self.categories)
+        total_count = sum(counts)
+        state = "observed" if total_count else "observed-silent"
+        return WindowRecord(
+            device_id=self.device_id,
+            start_utc=start,
+            end_utc=start + duration,
+            categories=self.categories,
+            counts=counts,
+            total_count=total_count,
+            state=state,
+            metadata=metadata,
+        )

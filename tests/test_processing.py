@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 from scapy.layers.inet import IP, TCP, UDP
 from scapy.layers.l2 import ARP, Ether
 from scapy.utils import wrpcap
@@ -19,7 +20,7 @@ from lm_idnet.processing.window_policy import (
     WINDOW_ORIGIN,
 )
 from lm_idnet.processing.pcap_processor import PcapProcessor
-from lm_idnet.processing.schemas import WindowCount
+from lm_idnet.processing.schemas import WindowRecord
 
 pytestmark = pytest.mark.unit
 
@@ -82,7 +83,7 @@ def test_processor_rejects_noncanonical_category_order():
 
 
 def test_packet_transformer_builds_windows_and_matrix():
-    transformer = PacketTransformer(CATEGORIES, window_minutes=10)
+    transformer = PacketTransformer(CATEGORIES, device_id="camera-01", window_minutes=10)
     records = [
         ("2020-01-01T00:00:00Z", "tcp"),
         ("2020-01-01T00:20:00Z", "arp"),
@@ -93,9 +94,33 @@ def test_packet_transformer_builds_windows_and_matrix():
     matrix = transformer.to_numpy_matrix(windows)
 
     assert windows == [
-        WindowCount(tcp=1, udp=0, ssdp=0, arp=0),
-        WindowCount(tcp=0, udp=0, ssdp=0, arp=0),
-        WindowCount(tcp=0, udp=0, ssdp=0, arp=1),
+        WindowRecord(
+            device_id="camera-01",
+            start_utc="2020-01-01T00:00:00Z",
+            end_utc="2020-01-01T00:10:00Z",
+            categories=CATEGORIES,
+            counts=(1, 0, 0, 0),
+            total_count=1,
+            state="observed",
+        ),
+        WindowRecord(
+            device_id="camera-01",
+            start_utc="2020-01-01T00:10:00Z",
+            end_utc="2020-01-01T00:20:00Z",
+            categories=CATEGORIES,
+            counts=(0, 0, 0, 0),
+            total_count=0,
+            state="observed-silent",
+        ),
+        WindowRecord(
+            device_id="camera-01",
+            start_utc="2020-01-01T00:20:00Z",
+            end_utc="2020-01-01T00:30:00Z",
+            categories=CATEGORIES,
+            counts=(0, 0, 0, 1),
+            total_count=1,
+            state="observed",
+        ),
     ]
     assert matrix.tolist() == [
         [1, 0, 0, 0],
@@ -106,12 +131,16 @@ def test_packet_transformer_builds_windows_and_matrix():
 
 def test_packet_transformer_rejects_invalid_window_size():
     with pytest.raises(ValueError, match="must be one of"):
-        PacketTransformer(CATEGORIES, window_minutes=0)
+        PacketTransformer(CATEGORIES, device_id="camera-01", window_minutes=0)
 
 
 @pytest.mark.parametrize("window_minutes", SUPPORTED_WINDOW_MINUTES)
 def test_half_open_window_assignment_at_boundaries(window_minutes):
-    transformer = PacketTransformer(CATEGORIES, window_minutes=window_minutes)
+    transformer = PacketTransformer(
+        CATEGORIES,
+        device_id="camera-01",
+        window_minutes=window_minutes,
+    )
     duration = pd.Timedelta(minutes=window_minutes)
     boundary = pd.Timestamp("1970-01-01T00:00:00Z") + (2 * duration)
     records = [
@@ -123,13 +152,63 @@ def test_half_open_window_assignment_at_boundaries(window_minutes):
     windows = transformer.to_windows(transformer.build_time_series(records))
 
     assert windows == [
-        WindowCount(tcp=1, udp=0, ssdp=0, arp=0),
-        WindowCount(tcp=0, udp=1, ssdp=0, arp=1),
+        WindowRecord(
+            device_id="camera-01",
+            start_utc=boundary - duration,
+            end_utc=boundary,
+            categories=CATEGORIES,
+            counts=(1, 0, 0, 0),
+            total_count=1,
+            state="observed",
+        ),
+        WindowRecord(
+            device_id="camera-01",
+            start_utc=boundary,
+            end_utc=boundary + duration,
+            categories=CATEGORIES,
+            counts=(0, 1, 0, 1),
+            total_count=2,
+            state="observed",
+        ),
     ]
-    assert sum(sum(window.model_dump().values()) for window in windows) == 3
+    assert sum(window.total_count for window in windows) == 3
 
 
 def test_window_policy_is_explicit_and_epoch_aligned():
     assert WINDOW_ORIGIN == "epoch"
     assert WINDOW_CLOSED == "left"
     assert WINDOW_LABEL == "left"
+
+
+def test_window_record_round_trip_preserves_timestamps_and_category_order():
+    original = WindowRecord(
+        device_id="camera-01",
+        start_utc="2020-01-01T00:00:00Z",
+        end_utc="2020-01-01T00:10:00Z",
+        categories=CATEGORIES,
+        counts=(2, 1, 0, 1),
+        total_count=4,
+        state="observed",
+        metadata={"capture_id": "capture-001"},
+    )
+
+    restored = WindowRecord.model_validate_json(original.model_dump_json())
+
+    assert restored == original
+    assert restored.categories == CATEGORIES
+    assert restored.start_utc.isoformat() == "2020-01-01T00:00:00+00:00"
+    assert restored.end_utc.isoformat() == "2020-01-01T00:10:00+00:00"
+    assert restored.total_count == sum(restored.counts)
+
+
+def test_window_record_rejects_incorrect_total_count():
+    with pytest.raises(ValidationError, match="sum of counts"):
+        WindowRecord(
+            device_id="camera-01",
+            start_utc="2020-01-01T00:00:00Z",
+            end_utc="2020-01-01T00:10:00Z",
+            categories=CATEGORIES,
+            counts=(2, 1, 0, 1),
+            total_count=3,
+            state="observed",
+        )

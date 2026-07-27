@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from lm_idnet.config import AppConfig
-from lm_idnet.processing.schemas import WindowCount
+from lm_idnet.processing.schemas import WindowRecord
 
 
 @pytest.mark.unit
@@ -25,12 +25,13 @@ def test_count_matrix_factory_is_deterministic(
 
 @pytest.mark.unit
 def test_window_factory_returns_valid_schema(
-    window_factory: Callable[..., WindowCount],
+    window_factory: Callable[..., WindowRecord],
 ) -> None:
     window = window_factory(tcp=4, udp=3, ssdp=2, arp=1)
 
-    assert isinstance(window, WindowCount)
-    assert window.tcp + window.udp + window.ssdp + window.arp == 10
+    assert isinstance(window, WindowRecord)
+    assert window.counts == (4, 3, 2, 1)
+    assert window.total_count == sum(window.counts) == 10
 
 
 @pytest.mark.unit

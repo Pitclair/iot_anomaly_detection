@@ -125,6 +125,7 @@ def _preprocess(config: AppConfig) -> None:
     manager = ProcessingManager(
         raw_root=str(ingest.raw_root / ingest.dataset_folder),
         processed_root=str(_processed_path(config)),
+        device_id=ingest.dataset_folder,
         categories=list(ingest.categories),
         dates=list(all_capture_ids(config)),
         window_minutes=ingest.window_minutes,

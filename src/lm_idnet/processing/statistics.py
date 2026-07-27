@@ -1,7 +1,6 @@
 """Descriptive statistics for processed packet windows."""
 
 import numpy as np
-import pandas as pd
 from tabulate import tabulate
 import json
 from pydantic import ValidationError
@@ -66,14 +65,11 @@ class Statistics:
         except ValidationError as e:
             print(f"[ERROR] {file_path} non valido secondo ProcessedDataset: {e}")
             return
-        df = pd.DataFrame([w.dict() for w in dataset.windows])
-        # Mappa le categorie ai nomi delle colonne effettive (case-insensitive)
-        df_cols_lower = {col.lower(): col for col in df.columns}
-        cat_map = [df_cols_lower[cat.lower()] for cat in self.categories if cat.lower() in df_cols_lower]
-        if not cat_map:
-            print(f"[ERROR] Nessuna delle categorie richieste trovata tra le colonne del file {file_path}.")
+        if not dataset.windows:
+            print(f"[ERROR] Nessuna finestra trovata nel file {file_path}.")
             return
-        matrix = df[cat_map].to_numpy()
+        category_order = dataset.windows[0].categories
+        matrix = np.asarray([window.counts for window in dataset.windows], dtype=int)
         means = self.mean(matrix)
         variances = self.variance(matrix)
         dispersions = self.dispersion(variances, means)
@@ -81,7 +77,7 @@ class Statistics:
         silent_pct = 100 * silent_rows / matrix.shape[0] if matrix.shape[0] > 0 else 0
         table = [
             [proto, f"{means[i]:.2f}", f"{variances[i]:.2f}", f"{dispersions[i]:.2f}"]
-            for i, proto in enumerate(cat_map)
+            for i, proto in enumerate(category_order)
         ]
         headers = ["Protocol", "Mean", "Variance", "Dispersion Index"]
         report = tabulate(table, headers, tablefmt="github")

@@ -65,7 +65,7 @@ def test_build_time_series_sorts_out_of_order_packets_in_utc():
         (Decimal("1.000000001"), "udp"),
     ]
 
-    transformer = PacketTransformer(CATEGORIES)
+    transformer = PacketTransformer(CATEGORIES, device_id="camera-01")
     time_series = transformer.build_time_series(records)
 
     assert time_series.index.tolist() == [

@@ -9,7 +9,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lm_idnet.exceptions import ArtifactCompatibilityError
-from lm_idnet.processing.schemas import Metadata, WindowCount
+from lm_idnet.processing.schemas import Metadata, WindowRecord
 
 CURRENT_SCHEMA_VERSION = "1.1.0"
 PREVIOUS_SCHEMA_VERSION = "1.0.0"
@@ -26,7 +26,7 @@ class VersionedArtifact(BaseModel):
 class ProcessedDatasetArtifact(VersionedArtifact):
     artifact_type: Literal["processed_dataset"] = "processed_dataset"
     metadata: Metadata
-    windows: tuple[WindowCount, ...]
+    windows: tuple[WindowRecord, ...]
 
 
 class ModelArtifact(VersionedArtifact):

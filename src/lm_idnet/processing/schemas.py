@@ -1,13 +1,57 @@
-"""Pydantic schemas for processed counts and dataset metadata."""
-from typing import List
-from pydantic import BaseModel, Field, NonNegativeInt
+"""Pydantic schemas for processed packet windows and dataset metadata."""
+
+from datetime import datetime, timezone
+from typing import Any, Literal
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    NonNegativeInt,
+    field_validator,
+    model_validator,
+)
+
+from .categories import CATEGORIES
 
 
-class WindowCount(BaseModel):
-    tcp: NonNegativeInt = Field(..., description="TCP packet count in window")
-    udp: NonNegativeInt = Field(..., description="UDP packet count in window")
-    ssdp: NonNegativeInt = Field(..., description="SSDP (UDP:1900) packet count in window")
-    arp: NonNegativeInt = Field(..., description="ARP packet count in window")
+class WindowRecord(BaseModel):
+    """A timestamped packet-count vector with explicit category semantics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: str = Field(min_length=1)
+    start_utc: datetime
+    end_utc: datetime
+    categories: tuple[str, ...]
+    counts: tuple[NonNegativeInt, ...]
+    total_count: NonNegativeInt
+    state: Literal["observed", "observed-silent", "missing"]
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("start_utc", "end_utc")
+    @classmethod
+    def timestamps_must_be_aware_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("window timestamps must be timezone-aware")
+        return value.astimezone(timezone.utc)
+
+    @model_validator(mode="after")
+    def validate_window(self) -> "WindowRecord":
+        if self.end_utc <= self.start_utc:
+            raise ValueError("window end must be after window start")
+        if self.categories != CATEGORIES:
+            raise ValueError(f"categories must have canonical order {CATEGORIES}")
+        if len(self.counts) != len(self.categories):
+            raise ValueError("counts length must match categories length")
+        if self.total_count != sum(self.counts):
+            raise ValueError("total_count must equal the sum of counts")
+
+        if self.state == "observed" and self.total_count == 0:
+            raise ValueError("observed windows must contain at least one packet")
+        if self.state in {"observed-silent", "missing"} and self.total_count != 0:
+            raise ValueError(f"{self.state} windows must have zero counts")
+        return self
 
 
 class Metadata(BaseModel):
@@ -17,4 +61,4 @@ class Metadata(BaseModel):
 
 class ProcessedDataset(BaseModel):
     metadata: Metadata
-    windows: List[WindowCount]
+    windows: list[WindowRecord]
