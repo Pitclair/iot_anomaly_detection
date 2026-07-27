@@ -2,6 +2,12 @@
 import pandas as pd
 
 from .categories import CATEGORIES, validate_category_order
+from .window_policy import (
+    WINDOW_CLOSED,
+    WINDOW_LABEL,
+    WINDOW_ORIGIN,
+    validate_window_minutes,
+)
 
 
 def aggregate_packet_traces(
@@ -23,8 +29,7 @@ def aggregate_packet_traces(
     - DataFrame indexed by window start time with columns for each category containing counts.
     """
     category_order = CATEGORIES if categories is None else validate_category_order(categories)
-    if window_minutes <= 0:
-        raise ValueError("window_minutes must be greater than zero")
+    validate_window_minutes(window_minutes)
     if time_col not in df or protocol_col not in df:
         raise ValueError(f"input must contain {time_col!r} and {protocol_col!r} columns")
 
@@ -34,7 +39,18 @@ def aggregate_packet_traces(
 
     # resample into windows and count occurrences per protocol
     window = f"{window_minutes}min"
-    grouped = df.groupby(protocol_col).resample(window).size().unstack(level=0).fillna(0)
+    grouped = (
+        df.groupby(protocol_col)
+        .resample(
+            window,
+            origin=WINDOW_ORIGIN,
+            closed=WINDOW_CLOSED,
+            label=WINDOW_LABEL,
+        )
+        .size()
+        .unstack(level=0)
+        .fillna(0)
+    )
 
     # ensure all categories present
     for c in category_order:

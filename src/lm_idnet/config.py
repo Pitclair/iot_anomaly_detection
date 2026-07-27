@@ -16,6 +16,7 @@ from pydantic import (
 )
 
 from lm_idnet.exceptions import ConfigurationError
+from lm_idnet.processing.window_policy import validate_window_minutes
 
 _CAPTURE_DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
@@ -128,6 +129,11 @@ class IngestConfig(StrictModel):
     categories: tuple[str, ...] = Field(min_length=2)
     partitions: TemporalPartitions
     allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
+
+    @field_validator("window_minutes")
+    @classmethod
+    def window_minutes_must_be_supported(cls, value: int) -> int:
+        return validate_window_minutes(value)
 
     @field_validator("categories", mode="before")
     @classmethod

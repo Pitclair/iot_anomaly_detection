@@ -8,10 +8,16 @@ import pandas as pd
 from .categories import validate_category_order
 from .schemas import WindowCount
 from .timestamps import normalize_utc_timestamp
+from .window_policy import (
+    WINDOW_CLOSED,
+    WINDOW_LABEL,
+    WINDOW_ORIGIN,
+    validate_window_minutes,
+)
 
 
 class PacketTransformer:
-    """Build UTC packet time series, count windows, and model matrices."""
+    """Build UTC time series and epoch-aligned half-open count windows."""
 
     def __init__(
         self,
@@ -19,9 +25,7 @@ class PacketTransformer:
         window_minutes: int = 10,
     ) -> None:
         self.categories = validate_category_order(list(categories))
-        if window_minutes <= 0:
-            raise ValueError("window_minutes must be greater than zero")
-        self.window_minutes = window_minutes
+        self.window_minutes = validate_window_minutes(window_minutes)
 
     def build_time_series(
         self,
@@ -59,7 +63,12 @@ class PacketTransformer:
         frequency = f"{self.window_minutes}min"
         grouped = (
             sorted_series.groupby("protocol")
-            .resample(frequency)
+            .resample(
+                frequency,
+                origin=WINDOW_ORIGIN,
+                closed=WINDOW_CLOSED,
+                label=WINDOW_LABEL,
+            )
             .size()
             .unstack(level=0)
             .fillna(0)

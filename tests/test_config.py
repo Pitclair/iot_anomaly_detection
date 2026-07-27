@@ -109,6 +109,13 @@ def test_non_positive_window_is_rejected(
         AppConfig.model_validate(valid_data)
 
 
+def test_unsupported_window_length_is_rejected(valid_data: dict) -> None:
+    valid_data["ingest"]["window_minutes"] = 2
+
+    with pytest.raises(ValidationError, match="must be one of"):
+        AppConfig.model_validate(valid_data)
+
+
 @pytest.mark.parametrize("quantile", [-0.1, 0, 1, 1.1])
 def test_invalid_quantile_is_rejected(valid_data: dict, quantile: float) -> None:
     valid_data["calibration"]["quantile"] = quantile

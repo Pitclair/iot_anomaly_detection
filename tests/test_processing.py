@@ -12,6 +12,12 @@ from lm_idnet.processing.categories import (
     classify_packet,
 )
 from lm_idnet.processing.packet_transformer import PacketTransformer
+from lm_idnet.processing.window_policy import (
+    SUPPORTED_WINDOW_MINUTES,
+    WINDOW_CLOSED,
+    WINDOW_LABEL,
+    WINDOW_ORIGIN,
+)
 from lm_idnet.processing.pcap_processor import PcapProcessor
 from lm_idnet.processing.schemas import WindowCount
 
@@ -99,5 +105,31 @@ def test_packet_transformer_builds_windows_and_matrix():
 
 
 def test_packet_transformer_rejects_invalid_window_size():
-    with pytest.raises(ValueError, match="greater than zero"):
+    with pytest.raises(ValueError, match="must be one of"):
         PacketTransformer(CATEGORIES, window_minutes=0)
+
+
+@pytest.mark.parametrize("window_minutes", SUPPORTED_WINDOW_MINUTES)
+def test_half_open_window_assignment_at_boundaries(window_minutes):
+    transformer = PacketTransformer(CATEGORIES, window_minutes=window_minutes)
+    duration = pd.Timedelta(minutes=window_minutes)
+    boundary = pd.Timestamp("1970-01-01T00:00:00Z") + (2 * duration)
+    records = [
+        (boundary - pd.Timedelta(nanoseconds=1), "tcp"),
+        (boundary, "udp"),
+        (boundary + pd.Timedelta(nanoseconds=1), "arp"),
+    ]
+
+    windows = transformer.to_windows(transformer.build_time_series(records))
+
+    assert windows == [
+        WindowCount(tcp=1, udp=0, ssdp=0, arp=0),
+        WindowCount(tcp=0, udp=1, ssdp=0, arp=1),
+    ]
+    assert sum(sum(window.model_dump().values()) for window in windows) == 3
+
+
+def test_window_policy_is_explicit_and_epoch_aligned():
+    assert WINDOW_ORIGIN == "epoch"
+    assert WINDOW_CLOSED == "left"
+    assert WINDOW_LABEL == "left"
