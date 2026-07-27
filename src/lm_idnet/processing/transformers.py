@@ -1,32 +1,30 @@
 """Transform raw packet records into ten-minute count windows."""
 from typing import Iterable, List, Tuple
-import pandas as pd
+
 import numpy as np
-from datetime import datetime
+import pandas as pd
+
 from .schemas import WindowCount
 from .categories import CATEGORIES, validate_category_order
+from .timestamps import normalize_utc_timestamp
 
 
-def build_time_series(records: Iterable[Tuple[float, str]]) -> pd.DataFrame:
-    """Convert an iterable of (timestamp, protocol) into a DataFrame with datetime index and protocol column.
-
-    Returns DataFrame with columns ['protocol'] indexed by datetime.
-    """
-    rows = []
-    for ts, proto in records:
-        # convert ts to pandas Timestamp
+def build_time_series(records: Iterable[Tuple[object, str]]) -> pd.DataFrame:
+    """Build a timestamp-sorted UTC time series from packet records."""
+    rows: list[dict[str, object]] = []
+    for record_number, (timestamp_value, protocol) in enumerate(records, start=1):
         try:
-            t = pd.to_datetime(ts, unit='s')
-        except Exception:
-            continue
-        rows.append({'timestamp': t, 'protocol': proto})
+            timestamp = normalize_utc_timestamp(timestamp_value)
+        except ValueError as error:
+            raise ValueError(f"invalid timestamp in record {record_number}") from error
+        rows.append({"timestamp": timestamp, "protocol": protocol})
 
     if not rows:
-        return pd.DataFrame(columns=['protocol']).set_index(pd.DatetimeIndex([]))
+        empty_index = pd.DatetimeIndex([], name="timestamp", tz="UTC")
+        return pd.DataFrame({"protocol": []}, index=empty_index)
 
-    df = pd.DataFrame(rows)
-    df.set_index('timestamp', inplace=True)
-    return df
+    time_series = pd.DataFrame(rows).set_index("timestamp")
+    return time_series.sort_index(kind="stable")
 
 
 def to_10min_windows(df: pd.DataFrame, categories: List[str]) -> List[WindowCount]:
@@ -40,7 +38,7 @@ def to_10min_windows(df: pd.DataFrame, categories: List[str]) -> List[WindowCoun
         # no packets at all -> return empty list
         return []
 
-    # Ensure timezone-naive timestamps and sort
+    # Sorting here also protects callers that construct a frame directly.
     df = df.sort_index()
 
     window = '10min'  # Corretto da '10T' a '10min' per evitare errori di frequenza

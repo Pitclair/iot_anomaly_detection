@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Iterator, Tuple
 
+import pandas as pd
 from scapy.utils import PcapReader
 
 from .categories import (
@@ -11,6 +12,7 @@ from .categories import (
     classify_packet,
     validate_category_order,
 )
+from .timestamps import normalize_utc_timestamp
 
 # Configure logging for the module
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +27,7 @@ class PcapProcessor:
         self.unsupported_count = 0
         self.protocol_count = {category: 0 for category in CATEGORIES}
 
-    def process_pcap(self, pcap_path: str) -> Iterator[Tuple[float, str]]:
+    def process_pcap(self, pcap_path: str) -> Iterator[Tuple[pd.Timestamp, str]]:
         """Yield (timestamp, protocol) for each packet in a pcap file."""
         logger.info(f"Starting to process PCAP file: {pcap_path}")
 
@@ -34,11 +36,13 @@ class PcapProcessor:
             raise FileNotFoundError(pcap_path)
 
         with PcapReader(pcap_path) as reader:
-            for pkt in reader:
+            for packet_number, pkt in enumerate(reader, start=1):
                 try:
-                    ts = float(pkt.time)
-                except Exception:
-                    continue
+                    timestamp = normalize_utc_timestamp(pkt.time)
+                except ValueError as error:
+                    raise ValueError(
+                        f"invalid timestamp in packet {packet_number} of {pcap_path}"
+                    ) from error
 
                 proto = classify_packet(pkt)
                 if proto == UNSUPPORTED:
@@ -46,7 +50,7 @@ class PcapProcessor:
                 else:
                     self.packet_count += 1
                     self.protocol_count[proto] += 1
-                yield ts, proto
+                yield timestamp, proto
 
         logger.info(f"Finished processing PCAP file: {pcap_path}")
         logger.info(f"Total packets processed: {self.packet_count}")
