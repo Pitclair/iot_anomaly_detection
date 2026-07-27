@@ -119,7 +119,7 @@ def _processed_path(config: AppConfig) -> Path:
 
 
 def _preprocess(config: AppConfig) -> None:
-    from lm_idnet.processing.manager import ProcessingManager
+    from lm_idnet.processing.processing_manager import ProcessingManager
 
     ingest = config.ingest
     manager = ProcessingManager(
@@ -127,6 +127,7 @@ def _preprocess(config: AppConfig) -> None:
         processed_root=str(_processed_path(config)),
         categories=list(ingest.categories),
         dates=list(all_capture_ids(config)),
+        window_minutes=ingest.window_minutes,
     )
     try:
         manager.run()

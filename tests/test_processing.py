@@ -11,7 +11,9 @@ from lm_idnet.processing.categories import (
     SSDP_IS_EXCLUSIVE_OF_UDP,
     classify_packet,
 )
-from lm_idnet.processing.pcap_reader import PcapProcessor
+from lm_idnet.processing.packet_transformer import PacketTransformer
+from lm_idnet.processing.pcap_processor import PcapProcessor
+from lm_idnet.processing.schemas import WindowCount
 
 pytestmark = pytest.mark.unit
 
@@ -71,3 +73,31 @@ def test_canonical_packet_classification_and_counts(tmp_path):
 def test_processor_rejects_noncanonical_category_order():
     with pytest.raises(ValueError, match="canonical order"):
         PcapProcessor(categories=["udp", "tcp", "ssdp", "arp"])
+
+
+def test_packet_transformer_builds_windows_and_matrix():
+    transformer = PacketTransformer(CATEGORIES, window_minutes=10)
+    records = [
+        ("2020-01-01T00:00:00Z", "tcp"),
+        ("2020-01-01T00:20:00Z", "arp"),
+    ]
+
+    time_series = transformer.build_time_series(records)
+    windows = transformer.to_windows(time_series)
+    matrix = transformer.to_numpy_matrix(windows)
+
+    assert windows == [
+        WindowCount(tcp=1, udp=0, ssdp=0, arp=0),
+        WindowCount(tcp=0, udp=0, ssdp=0, arp=0),
+        WindowCount(tcp=0, udp=0, ssdp=0, arp=1),
+    ]
+    assert matrix.tolist() == [
+        [1, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 1],
+    ]
+
+
+def test_packet_transformer_rejects_invalid_window_size():
+    with pytest.raises(ValueError, match="greater than zero"):
+        PacketTransformer(CATEGORIES, window_minutes=0)

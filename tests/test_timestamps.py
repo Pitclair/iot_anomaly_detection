@@ -9,7 +9,8 @@ from lm_idnet.processing.timestamps import (
     CAPTURE_TIME_ZONE_ASSUMPTION,
     normalize_utc_timestamp,
 )
-from lm_idnet.processing.transformers import build_time_series
+from lm_idnet.processing.categories import CATEGORIES
+from lm_idnet.processing.packet_transformer import PacketTransformer
 
 pytestmark = pytest.mark.unit
 
@@ -64,7 +65,8 @@ def test_build_time_series_sorts_out_of_order_packets_in_utc():
         (Decimal("1.000000001"), "udp"),
     ]
 
-    time_series = build_time_series(records)
+    transformer = PacketTransformer(CATEGORIES)
+    time_series = transformer.build_time_series(records)
 
     assert time_series.index.tolist() == [
         pd.Timestamp("1970-01-01T00:00:01.000000001Z"),
