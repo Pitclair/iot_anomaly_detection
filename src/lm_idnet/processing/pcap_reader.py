@@ -1,23 +1,29 @@
 """Stream packet records with :class:`scapy.utils.PcapReader`."""
-from typing import Iterator, Tuple
-import os
-from scapy.utils import PcapReader
-from scapy.layers.inet import TCP, UDP
-from scapy.layers.l2 import ARP
 import logging
+import os
+from typing import Iterator, Tuple
+
+from scapy.utils import PcapReader
+
+from .categories import (
+    CATEGORIES,
+    UNSUPPORTED,
+    classify_packet,
+    validate_category_order,
+)
 
 # Configure logging for the module
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-#TODO categories should come from config file, but hardcoding for now
 
 class PcapProcessor:
     def __init__(self, categories: list[str]):
         """Initialize the processor with protocol categories."""
-        self.categories = categories
+        self.categories = validate_category_order(categories)
         self.packet_count = 0
-        self.protocol_count = {category: 0 for category in categories}
+        self.unsupported_count = 0
+        self.protocol_count = {category: 0 for category in CATEGORIES}
 
     def process_pcap(self, pcap_path: str) -> Iterator[Tuple[float, str]]:
         """Yield (timestamp, protocol) for each packet in a pcap file."""
@@ -34,25 +40,15 @@ class PcapProcessor:
                 except Exception:
                     continue
 
-                proto = None
-                if 'ARP' in self.categories and ARP in pkt:
-                    proto = 'ARP'
-                elif 'TCP' in self.categories and TCP in pkt:
-                    proto = 'TCP'
-                elif 'UDP' in self.categories and UDP in pkt:
-                    udp = pkt[UDP]
-                    sport = getattr(udp, 'sport', None)
-                    dport = getattr(udp, 'dport', None)
-                    if 'SSDP' in self.categories and (sport == 1900 or dport == 1900):
-                        proto = 'SSDP'
-                    elif 'UDP' in self.categories:
-                        proto = 'UDP'
-
-                if proto:
+                proto = classify_packet(pkt)
+                if proto == UNSUPPORTED:
+                    self.unsupported_count += 1
+                else:
                     self.packet_count += 1
                     self.protocol_count[proto] += 1
-                    yield ts, proto
+                yield ts, proto
 
         logger.info(f"Finished processing PCAP file: {pcap_path}")
         logger.info(f"Total packets processed: {self.packet_count}")
+        logger.info(f"Unsupported packets: {self.unsupported_count}")
         logger.info(f"Protocol counts: {self.protocol_count}")

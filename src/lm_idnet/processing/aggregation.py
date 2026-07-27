@@ -1,10 +1,16 @@
 """Aggregate packet traces into fixed windows and count vectors."""
-from typing import List
 import pandas as pd
-import numpy as np
+
+from .categories import CATEGORIES, validate_category_order
 
 
-def aggregate_packet_traces(df: pd.DataFrame, time_col: str = 'timestamp', protocol_col: str = 'protocol', window_minutes: int = 10, categories: List[str] = None) -> pd.DataFrame:
+def aggregate_packet_traces(
+    df: pd.DataFrame,
+    time_col: str = "timestamp",
+    protocol_col: str = "protocol",
+    window_minutes: int = 10,
+    categories: list[str] | tuple[str, ...] | None = None,
+) -> pd.DataFrame:
     """
     Aggregate raw packet rows into time windows and count occurrences per protocol category.
 
@@ -16,8 +22,11 @@ def aggregate_packet_traces(df: pd.DataFrame, time_col: str = 'timestamp', proto
     Output:
     - DataFrame indexed by window start time with columns for each category containing counts.
     """
-    if categories is None:
-        categories = ['TCP', 'UDP', 'SSDP', 'ARP']
+    category_order = CATEGORIES if categories is None else validate_category_order(categories)
+    if window_minutes <= 0:
+        raise ValueError("window_minutes must be greater than zero")
+    if time_col not in df or protocol_col not in df:
+        raise ValueError(f"input must contain {time_col!r} and {protocol_col!r} columns")
 
     df = df.copy()
     df[time_col] = pd.to_datetime(df[time_col])
@@ -28,12 +37,12 @@ def aggregate_packet_traces(df: pd.DataFrame, time_col: str = 'timestamp', proto
     grouped = df.groupby(protocol_col).resample(window).size().unstack(level=0).fillna(0)
 
     # ensure all categories present
-    for c in categories:
+    for c in category_order:
         if c not in grouped.columns:
             grouped[c] = 0
 
     # keep only categories and sort columns by given order
-    grouped = grouped[categories]
+    grouped = grouped[list(category_order)]
 
     # coerce to integer counts
     grouped = grouped.astype(int)

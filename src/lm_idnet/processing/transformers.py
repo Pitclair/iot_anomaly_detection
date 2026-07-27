@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from .schemas import WindowCount
+from .categories import CATEGORIES, validate_category_order
 
 
 def build_time_series(records: Iterable[Tuple[float, str]]) -> pd.DataFrame:
@@ -33,8 +34,7 @@ def to_10min_windows(df: pd.DataFrame, categories: List[str]) -> List[WindowCoun
 
     Handles silent windows by filling zeros for missing intervals.
     """
-    if not categories:
-        raise ValueError("The 'categories' argument must not be empty.")
+    category_order = validate_category_order(categories)
 
     if df.empty:
         # no packets at all -> return empty list
@@ -54,11 +54,11 @@ def to_10min_windows(df: pd.DataFrame, categories: List[str]) -> List[WindowCoun
     grouped = grouped.reindex(full_index, fill_value=0)
 
     # Ensure columns for all categories
-    for c in categories:
+    for c in category_order:
         if c not in grouped.columns:
             grouped[c] = 0
 
-    grouped = grouped[categories].astype(int)
+    grouped = grouped[list(category_order)].astype(int)
 
     # Convert rows to Pydantic WindowCount objects dynamically
     windows = []
@@ -72,10 +72,13 @@ def to_10min_windows(df: pd.DataFrame, categories: List[str]) -> List[WindowCoun
 
 def to_numpy_matrix(windows: List[WindowCount]) -> np.ndarray:
     """Convert list of WindowCount into numpy array shape (R, K).
-    Order: TCP, UDP, SSDP, ARP
+    Order is defined by the canonical category policy.
     """
     if not windows:
-        return np.empty((0, 4), dtype=int)
+        return np.empty((0, len(CATEGORIES)), dtype=int)
 
-    mat = np.array([[w.tcp, w.udp, w.ssdp, w.arp] for w in windows], dtype=int)
+    mat = np.array(
+        [[getattr(window, category) for category in CATEGORIES] for window in windows],
+        dtype=int,
+    )
     return mat
