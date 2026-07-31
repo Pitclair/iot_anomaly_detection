@@ -16,7 +16,6 @@ from lm_idnet.processing.categories import (
 )
 from lm_idnet.processing.packet_transformer import PacketTransformer
 from lm_idnet.processing.window_policy import (
-    SUPPORTED_WINDOW_MINUTES,
     WINDOW_CLOSED,
     WINDOW_LABEL,
     WINDOW_ORIGIN,
@@ -177,9 +176,14 @@ def test_packet_transformer_builds_windows_and_matrix():
     ]
 
 
-def test_packet_transformer_rejects_invalid_window_size():
-    with pytest.raises(ValueError, match="must be one of"):
-        PacketTransformer(CATEGORY_ORDER, device_id="camera-01", window_minutes=0)
+@pytest.mark.parametrize("window_minutes", [0, -1])
+def test_packet_transformer_rejects_non_positive_window_size(window_minutes):
+    with pytest.raises(ValueError, match="must be positive"):
+        PacketTransformer(
+            CATEGORY_ORDER,
+            device_id="camera-01",
+            window_minutes=window_minutes,
+        )
 
 
 def test_declared_capture_discontinuity_is_missing_and_excluded_from_matrix():
@@ -233,7 +237,7 @@ def test_capture_discontinuity_cannot_hide_observed_packets():
         )
 
 
-@pytest.mark.parametrize("window_minutes", SUPPORTED_WINDOW_MINUTES)
+@pytest.mark.parametrize("window_minutes", [10, 7])
 def test_half_open_window_assignment_at_boundaries(window_minutes):
     transformer = PacketTransformer(
         CATEGORY_ORDER,

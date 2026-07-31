@@ -45,6 +45,9 @@ Configuration validation is intentionally strict:
 - Partition boundaries must move forward in the order fit, calibration,
   development-test, and final-test.
 - Window sizes and count-like settings must be positive.
+- `ingest.window_minutes` accepts any positive integer. The versioned experiment
+  configuration uses 10 minutes; this is a default research choice, not a
+  software whitelist.
 - Seeds must be non-negative.
 - Calibration quantiles must satisfy \(0 < q < 1\).
 

@@ -16,6 +16,7 @@ from numpy.random import Generator
 from lm_idnet.config import load_config
 from lm_idnet.exceptions import DataValidationError, IngestionError
 from lm_idnet.processing.categories import validate_categories
+from lm_idnet.processing.window_policy import validate_window_minutes
 from lm_idnet.randomness import create_named_generators
 
 
@@ -69,9 +70,10 @@ def aggregate_smoke_fixture(
 ) -> list[dict[str, Any]]:
     """Aggregate synthetic events into exact half-open windows, including silence."""
     categories = validate_categories(categories)
-    window_minutes = fixture["window_minutes"]
-    if not isinstance(window_minutes, int) or window_minutes <= 0:
-        raise DataValidationError("smoke window_minutes must be positive")
+    try:
+        window_minutes = validate_window_minutes(fixture["window_minutes"])
+    except ValueError as error:
+        raise DataValidationError(str(error)) from error
 
     start = _utc_timestamp(fixture["start_utc"])
     window_count = fixture["window_count"]

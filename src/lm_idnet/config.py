@@ -126,14 +126,14 @@ class IngestConfig(StrictModel):
     dataset_folder: str = Field(min_length=1)
     time_col: str = Field(default="timestamp", min_length=1)
     protocol_col: str = Field(default="protocol", min_length=1)
-    window_minutes: int = Field(gt=0)
+    window_minutes: int
     categories: tuple[str, ...] = Field(min_length=2)
     partitions: TemporalPartitions
     allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
 
-    @field_validator("window_minutes")
+    @field_validator("window_minutes", mode="before")
     @classmethod
-    def window_minutes_must_be_supported(cls, value: int) -> int:
+    def window_minutes_must_be_positive(cls, value: object) -> int:
         return validate_window_minutes(value)
 
     @field_validator("categories", mode="before")

@@ -105,14 +105,30 @@ def test_non_positive_window_is_rejected(
 ) -> None:
     valid_data["ingest"]["window_minutes"] = window_minutes
 
-    with pytest.raises(ValidationError, match="greater than 0"):
+    with pytest.raises(ValidationError, match="must be positive"):
         AppConfig.model_validate(valid_data)
 
 
-def test_unsupported_window_length_is_rejected(valid_data: dict) -> None:
-    valid_data["ingest"]["window_minutes"] = 2
+@pytest.mark.parametrize("window_minutes", [10, 7])
+def test_positive_window_length_is_accepted(
+    valid_data: dict,
+    window_minutes: int,
+) -> None:
+    valid_data["ingest"]["window_minutes"] = window_minutes
 
-    with pytest.raises(ValidationError, match="must be one of"):
+    config = AppConfig.model_validate(valid_data)
+
+    assert config.ingest.window_minutes == window_minutes
+
+
+@pytest.mark.parametrize("window_minutes", [True, 2.5, "10"])
+def test_non_integer_window_length_is_rejected(
+    valid_data: dict,
+    window_minutes: object,
+) -> None:
+    valid_data["ingest"]["window_minutes"] = window_minutes
+
+    with pytest.raises(ValidationError, match="must be an integer"):
         AppConfig.model_validate(valid_data)
 
 
