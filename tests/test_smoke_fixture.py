@@ -39,8 +39,9 @@ def test_smoke_fixture_is_synthetic_payload_free_and_redistributable() -> None:
 
 def test_smoke_preprocessing_matches_exact_expected_windows() -> None:
     fixture = load_smoke_fixture(FIXTURE)
+    categories = load_config(CONFIG).ingest.categories
 
-    actual = aggregate_smoke_fixture(fixture)
+    actual = aggregate_smoke_fixture(fixture, categories)
 
     assert actual == fixture["expected_windows"]
     assert actual[1]["state"] == "missing"

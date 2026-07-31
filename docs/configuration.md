@@ -33,7 +33,12 @@ Configuration validation is intentionally strict:
 - Required sections and fields cannot be omitted.
 - Category names are stripped and converted to lowercase once at the
   configuration boundary.
-- Categories must remain unique after normalization.
+- `ingest.categories` is the sole source of feature-column order. The current
+  paper taxonomy is fixed to `tcp`, `udp`, `ssdp`, and `arp`, but those names
+  may be configured in any order and that order is preserved throughout the
+  pipeline.
+- Categories must remain unique after normalization and must contain exactly
+  the fixed paper taxonomy.
 - `estimator.categories_k` must equal the number of configured categories.
 - Every temporal partition must be non-empty, internally chronological, and
   disjoint from every other partition.

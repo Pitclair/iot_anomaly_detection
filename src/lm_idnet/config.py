@@ -16,6 +16,7 @@ from pydantic import (
 )
 
 from lm_idnet.exceptions import ConfigurationError
+from lm_idnet.processing.categories import validate_categories
 from lm_idnet.processing.window_policy import validate_window_minutes
 
 _CAPTURE_DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
@@ -140,12 +141,7 @@ class IngestConfig(StrictModel):
     def normalize_categories(cls, value: object) -> object:
         if not isinstance(value, (list, tuple)):
             return value
-        normalized = tuple(str(category).strip().lower() for category in value)
-        if any(not category for category in normalized):
-            raise ValueError("categories must not contain empty names")
-        if len(set(normalized)) != len(normalized):
-            raise ValueError("categories must be unique after normalization")
-        return normalized
+        return validate_categories(value)
 
     @model_validator(mode="after")
     def duplicate_explanations_must_reference_configured_captures(

@@ -2,27 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from scapy.packet import Packet
 
-CATEGORIES: Final[tuple[str, ...]] = ("tcp", "udp", "ssdp", "arp")
-"""Feature-column order. This order is part of the dataset contract."""
+SUPPORTED_CATEGORY_NAMES: Final[frozenset[str]] = frozenset(
+    {"tcp", "udp", "ssdp", "arp"}
+)
+"""Fixed paper taxonomy. Configuration owns the order of these names."""
 
 UNSUPPORTED: Final[str] = "unsupported"
 SSDP_PORT: Final[int] = 1900
 SSDP_IS_EXCLUSIVE_OF_UDP: Final[bool] = True
-
-# The order is explicit because packets may contain more than one protocol layer.
-CLASSIFICATION_PRIORITY: Final[tuple[str, ...]] = (
-    "arp",
-    "tcp",
-    "ssdp",
-    "udp",
-    UNSUPPORTED,
-)
-
 
 def classify_packet(packet: "Packet") -> str:
     """Return the one canonical category assigned to ``packet``.
@@ -47,11 +40,26 @@ def classify_packet(packet: "Packet") -> str:
     return UNSUPPORTED
 
 
-def validate_category_order(categories: tuple[str, ...] | list[str]) -> tuple[str, ...]:
-    """Normalize and validate categories against the fixed feature contract."""
+def validate_categories(categories: Sequence[str]) -> tuple[str, ...]:
+    """Normalize configured categories while preserving their declared order."""
     normalized = tuple(str(category).strip().lower() for category in categories)
-    if normalized != CATEGORIES:
+    if any(not category for category in normalized):
+        raise ValueError("categories must not contain empty names")
+    if len(normalized) != len(set(normalized)):
+        raise ValueError("categories must be unique after normalization")
+
+    configured_names = set(normalized)
+    if configured_names != SUPPORTED_CATEGORY_NAMES:
+        missing = sorted(SUPPORTED_CATEGORY_NAMES - configured_names)
+        unsupported = sorted(configured_names - SUPPORTED_CATEGORY_NAMES)
+        details = []
+        if missing:
+            details.append(f"missing: {', '.join(missing)}")
+        if unsupported:
+            details.append(f"unsupported: {', '.join(unsupported)}")
         raise ValueError(
-            f"categories must have the canonical order {CATEGORIES}; got {normalized}"
+            "categories must contain the fixed paper taxonomy ("
+            + "; ".join(details)
+            + ")"
         )
     return normalized

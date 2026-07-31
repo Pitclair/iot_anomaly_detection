@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -9,10 +10,13 @@ from lm_idnet.processing.timestamps import (
     CAPTURE_TIME_ZONE_ASSUMPTION,
     normalize_utc_timestamp,
 )
-from lm_idnet.processing.categories import CATEGORIES
+from lm_idnet.config import load_config
 from lm_idnet.processing.packet_transformer import PacketTransformer
 
 pytestmark = pytest.mark.unit
+CATEGORY_ORDER = load_config(
+    Path(__file__).resolve().parents[1] / "configs" / "config.json"
+).ingest.categories
 
 
 @pytest.mark.parametrize(
@@ -65,7 +69,7 @@ def test_build_time_series_sorts_out_of_order_packets_in_utc():
         (Decimal("1.000000001"), "udp"),
     ]
 
-    transformer = PacketTransformer(CATEGORIES, device_id="camera-01")
+    transformer = PacketTransformer(CATEGORY_ORDER, device_id="camera-01")
     time_series = transformer.build_time_series(records)
 
     assert time_series.index.tolist() == [

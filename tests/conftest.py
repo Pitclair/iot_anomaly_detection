@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 from lm_idnet.config import AppConfig
-from lm_idnet.processing.categories import CATEGORIES
 from lm_idnet.processing.schemas import WindowRecord
 
 
@@ -47,6 +46,10 @@ def count_matrix_factory() -> Callable[..., np.ndarray]:
 @pytest.fixture
 def window_factory() -> Callable[..., WindowRecord]:
     """Create valid processed-window schema instances."""
+    config_data = json.loads(
+        (ROOT / "configs" / "config.json").read_text(encoding="utf-8")
+    )
+    category_order = AppConfig.model_validate(config_data).ingest.categories
 
     def create(
         *,
@@ -61,7 +64,7 @@ def window_factory() -> Callable[..., WindowRecord]:
             device_id="test-device",
             start_utc="2020-01-01T00:00:00Z",
             end_utc="2020-01-01T00:10:00Z",
-            categories=CATEGORIES,
+            categories=category_order,
             counts=counts,
             total_count=total_count,
             state="observed" if total_count else "observed-silent",

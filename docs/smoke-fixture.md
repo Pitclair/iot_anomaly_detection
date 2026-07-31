@@ -4,6 +4,10 @@ The fixture is `tests/data/smoke/synthetic_packet_counts.json`. It is a tiny
 synthetic event stream used to check integration and reproducibility without
 requiring private research captures.
 
+The fixture contains category-labeled events but does not declare feature-column
+order. The `ingest.categories` order from the supplied configuration controls
+aggregation, model input, and report output.
+
 It is:
 
 - explicitly synthetic;

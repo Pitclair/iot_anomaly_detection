@@ -1,36 +1,40 @@
 """Descriptive statistics for processed packet windows."""
 
-import numpy as np
-from tabulate import tabulate
 import json
-from pydantic import ValidationError
-from .schemas import ProcessedDataset
+import logging
 from pathlib import Path
+
+import numpy as np
+from pydantic import ValidationError
+from tabulate import tabulate
+
+from .categories import validate_categories
+from .schemas import ProcessedDataset
+
+logger = logging.getLogger(__name__)
+
 
 class Statistics:
     def __init__(self, json_dir, categories, dates=None):
         self.json_dir = Path(json_dir)
-        self.categories = categories
+        self.categories = validate_categories(categories)
         self.dates = dates if dates is not None else []
         self.json_paths = self._collect_json_files()
 
     def _collect_json_files(self):
-        # Cerca tutti i file .json nella directory e nelle sottocartelle
-        json_files = list(sorted(self.json_dir.glob('*.json')))
+        json_files = sorted(self.json_dir.glob("*.json"))
         if not json_files:
             for subdir in self.json_dir.iterdir():
                 if subdir.is_dir():
-                    json_files.extend(subdir.glob('*.json'))
-        # Filtra per date se specificate
-        if self.dates:
-            filtered = []
-            for f in json_files:
-                fname = str(f)
-                if any(date in fname for date in self.dates):
-                    filtered.append(str(f))
-            return filtered
-        else:
-            return [str(f) for f in json_files]
+                    json_files.extend(sorted(subdir.glob("*.json")))
+
+        if not self.dates:
+            return [str(path) for path in json_files]
+        return [
+            str(path)
+            for path in json_files
+            if any(date in str(path) for date in self.dates)
+        ]
 
     @staticmethod
     def mean(matrix):
@@ -38,38 +42,55 @@ class Statistics:
 
     @staticmethod
     def variance(matrix):
-        return np.var(matrix, axis=0, ddof=1) if matrix.size > 0 else np.array([])
+        if matrix.size == 0:
+            return np.array([])
+        if matrix.shape[0] < 2:
+            return np.full(matrix.shape[1], np.nan)
+        return np.var(matrix, axis=0, ddof=1)
 
     @staticmethod
     def dispersion(variance, mean):
-        # Evita divisioni per zero
-        with np.errstate(divide='ignore', invalid='ignore'):
-            disp = np.true_divide(variance, mean)
-            disp[~np.isfinite(disp)] = 0  # imposta a 0 se nan o inf
-        return disp
+        with np.errstate(divide="ignore", invalid="ignore"):
+            dispersion = np.true_divide(variance, mean)
+            dispersion[~np.isfinite(dispersion)] = 0
+        return dispersion
 
     def process_all(self):
         if not self.json_paths:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Nessun file JSON trovato in {self.json_dir} o sottocartelle per le statistiche.")
+            logger.warning("No processed JSON files found in %s", self.json_dir)
             return
         for file_path in self.json_paths:
             self.process_file(file_path)
 
     def process_file(self, file_path):
-        with open(file_path, 'r') as f:
-            data = json.load(f)
+        with Path(file_path).open("r", encoding="utf-8") as input_file:
+            data = json.load(input_file)
         try:
             dataset = ProcessedDataset(**data)
-        except ValidationError as e:
-            print(f"[ERROR] {file_path} non valido secondo ProcessedDataset: {e}")
+        except ValidationError as error:
+            print(f"[ERROR] Invalid processed dataset {file_path}: {error}")
             return
         if not dataset.windows:
-            print(f"[ERROR] Nessuna finestra trovata nel file {file_path}.")
+            print(f"[ERROR] No windows found in {file_path}.")
             return
-        category_order = dataset.windows[0].categories
-        matrix = np.asarray([window.counts for window in dataset.windows], dtype=int)
+        if dataset.windows[0].categories != self.categories:
+            raise ValueError(
+                f"processed categories {dataset.windows[0].categories} do not match "
+                f"configured categories {self.categories}"
+            )
+        if any(window.categories != self.categories for window in dataset.windows):
+            raise ValueError("processed windows contain inconsistent category orders")
+
+        observed_windows = [
+            window for window in dataset.windows if window.state != "missing"
+        ]
+        if not observed_windows:
+            print(f"[ERROR] No observed windows found in {file_path}.")
+            return
+        matrix = np.asarray(
+            [window.counts for window in observed_windows],
+            dtype=int,
+        )
         means = self.mean(matrix)
         variances = self.variance(matrix)
         dispersions = self.dispersion(variances, means)
@@ -77,7 +98,7 @@ class Statistics:
         silent_pct = 100 * silent_rows / matrix.shape[0] if matrix.shape[0] > 0 else 0
         table = [
             [proto, f"{means[i]:.2f}", f"{variances[i]:.2f}", f"{dispersions[i]:.2f}"]
-            for i, proto in enumerate(category_order)
+            for i, proto in enumerate(self.categories)
         ]
         headers = ["Protocol", "Mean", "Variance", "Dispersion Index"]
         report = tabulate(table, headers, tablefmt="github")

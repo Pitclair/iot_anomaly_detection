@@ -1,7 +1,9 @@
 """Aggregate packet traces into fixed windows and count vectors."""
+from collections.abc import Sequence
+
 import pandas as pd
 
-from .categories import CATEGORIES, validate_category_order
+from .categories import validate_categories
 from .window_policy import (
     WINDOW_CLOSED,
     WINDOW_LABEL,
@@ -12,10 +14,10 @@ from .window_policy import (
 
 def aggregate_packet_traces(
     df: pd.DataFrame,
+    categories: Sequence[str],
     time_col: str = "timestamp",
     protocol_col: str = "protocol",
     window_minutes: int = 10,
-    categories: list[str] | tuple[str, ...] | None = None,
 ) -> pd.DataFrame:
     """
     Aggregate raw packet rows into time windows and count occurrences per protocol category.
@@ -28,7 +30,7 @@ def aggregate_packet_traces(
     Output:
     - DataFrame indexed by window start time with columns for each category containing counts.
     """
-    category_order = CATEGORIES if categories is None else validate_category_order(categories)
+    category_order = validate_categories(categories)
     validate_window_minutes(window_minutes)
     if time_col not in df or protocol_col not in df:
         raise ValueError(f"input must contain {time_col!r} and {protocol_col!r} columns")

@@ -9,7 +9,6 @@
   "start_utc": "2020-01-01T00:00:00Z",
   "window_minutes": 10,
   "window_count": 3,
-  "categories": ["tcp", "udp", "ssdp", "arp"],
   "events": [
     {"timestamp": "2020-01-01T00:00:00Z", "category": "tcp"},
     {"timestamp": "2020-01-01T00:04:00Z", "category": "tcp"},

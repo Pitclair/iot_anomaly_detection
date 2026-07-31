@@ -15,6 +15,7 @@ from numpy.random import Generator
 
 from lm_idnet.config import load_config
 from lm_idnet.exceptions import DataValidationError, IngestionError
+from lm_idnet.processing.categories import validate_categories
 from lm_idnet.randomness import create_named_generators
 
 
@@ -30,7 +31,6 @@ def load_smoke_fixture(path: Path) -> dict[str, Any]:
         "start_utc",
         "window_minutes",
         "window_count",
-        "categories",
         "events",
         "capture_discontinuities",
         "expected_windows",
@@ -48,10 +48,6 @@ def load_smoke_fixture(path: Path) -> dict[str, Any]:
         raise DataValidationError("smoke fixture must be synthetic and payload-free")
     if metadata.get("license") != "CC0-1.0":
         raise DataValidationError("smoke fixture must declare the CC0-1.0 license")
-    if not isinstance(fixture["categories"], list) or not fixture["categories"]:
-        raise DataValidationError("smoke fixture categories must be a non-empty list")
-    if not all(isinstance(category, str) for category in fixture["categories"]):
-        raise DataValidationError("smoke fixture categories must be strings")
     if not isinstance(fixture["events"], list):
         raise DataValidationError("smoke fixture events must be a list")
     return fixture
@@ -67,11 +63,12 @@ def _utc_timestamp(value: str) -> datetime:
     return timestamp.astimezone(timezone.utc)
 
 
-def aggregate_smoke_fixture(fixture: dict[str, Any]) -> list[dict[str, Any]]:
+def aggregate_smoke_fixture(
+    fixture: dict[str, Any],
+    categories: Sequence[str],
+) -> list[dict[str, Any]]:
     """Aggregate synthetic events into exact half-open windows, including silence."""
-    categories = fixture["categories"]
-    if len(categories) != len(set(categories)):
-        raise DataValidationError("smoke categories must be unique")
+    categories = validate_categories(categories)
     window_minutes = fixture["window_minutes"]
     if not isinstance(window_minutes, int) or window_minutes <= 0:
         raise DataValidationError("smoke window_minutes must be positive")
@@ -139,7 +136,10 @@ def aggregate_smoke_fixture(fixture: dict[str, Any]) -> list[dict[str, Any]]:
     return windows
 
 
-def _count_matrix(windows: list[dict[str, Any]], categories: list[str]) -> np.ndarray:
+def _count_matrix(
+    windows: list[dict[str, Any]],
+    categories: Sequence[str],
+) -> np.ndarray:
     observed_windows = [window for window in windows if window["state"] != "missing"]
     return np.asarray(
         [
@@ -180,10 +180,10 @@ def run_smoke_experiment(
     config_path: Path,
 ) -> dict[str, Any]:
     fixture = load_smoke_fixture(fixture_path)
-    windows = aggregate_smoke_fixture(fixture)
-    categories = fixture["categories"]
-    counts = _count_matrix(windows, categories)
     config = load_config(config_path)
+    categories = config.ingest.categories
+    windows = aggregate_smoke_fixture(fixture, categories)
+    counts = _count_matrix(windows, categories)
     generators = create_named_generators(config.seeds)
 
     model_parameters = fit_smoke_profile(counts, generators.model_fitting)

@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from .categories import validate_category_order
+from .categories import validate_categories
 from .schemas import WindowRecord
 from .timestamps import normalize_utc_timestamp
 from .window_policy import (
@@ -26,7 +26,7 @@ class PacketTransformer:
         device_id: str,
         window_minutes: int = 10,
     ) -> None:
-        self.categories = validate_category_order(list(categories))
+        self.categories = validate_categories(categories)
         self.device_id = device_id.strip()
         if not self.device_id:
             raise ValueError("device_id must not be empty")
@@ -113,6 +113,12 @@ class PacketTransformer:
         """Convert window counts to a matrix in canonical category order."""
         if not windows:
             return np.empty((0, len(self.categories)), dtype=int)
+
+        for window in windows:
+            if window.categories != self.categories:
+                raise ValueError(
+                    "window categories do not match the configured category order"
+                )
 
         observed_counts = [
             window.counts for window in windows if window.state != "missing"

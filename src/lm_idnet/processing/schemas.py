@@ -12,7 +12,7 @@ from pydantic import (
     model_validator,
 )
 
-from .categories import CATEGORIES
+from .categories import validate_categories
 
 
 class WindowRecord(BaseModel):
@@ -29,6 +29,13 @@ class WindowRecord(BaseModel):
     state: Literal["observed", "observed-silent", "missing"]
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("categories", mode="before")
+    @classmethod
+    def categories_must_use_supported_taxonomy(cls, value: object) -> object:
+        if not isinstance(value, (list, tuple)):
+            return value
+        return validate_categories(value)
+
     @field_validator("start_utc", "end_utc")
     @classmethod
     def timestamps_must_be_aware_utc(cls, value: datetime) -> datetime:
@@ -40,8 +47,6 @@ class WindowRecord(BaseModel):
     def validate_window(self) -> "WindowRecord":
         if self.end_utc <= self.start_utc:
             raise ValueError("window end must be after window start")
-        if self.categories != CATEGORIES:
-            raise ValueError(f"categories must have canonical order {CATEGORIES}")
         if self.state == "missing":
             if self.counts is not None or self.total_count is not None:
                 raise ValueError("missing windows must not contain observed counts")

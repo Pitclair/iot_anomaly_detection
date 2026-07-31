@@ -8,10 +8,9 @@ import pandas as pd
 from scapy.utils import PcapReader
 
 from .categories import (
-    CATEGORIES,
     UNSUPPORTED,
     classify_packet,
-    validate_category_order,
+    validate_categories,
 )
 from .timestamps import normalize_utc_timestamp
 
@@ -21,10 +20,10 @@ logger = logging.getLogger(__name__)
 class PcapProcessor:
     def __init__(self, categories: list[str]):
         """Initialize the processor with protocol categories."""
-        self.categories = validate_category_order(categories)
+        self.categories = validate_categories(categories)
         self.packet_count = 0
         self.unsupported_count = 0
-        self.protocol_count = {category: 0 for category in CATEGORIES}
+        self.protocol_count = {category: 0 for category in self.categories}
 
     def process_pcap(self, pcap_path: str | Path) -> Iterator[tuple[pd.Timestamp, str]]:
         """Yield normalized UTC timestamps and categories from a PCAP file."""
