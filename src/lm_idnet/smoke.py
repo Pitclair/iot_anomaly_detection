@@ -32,6 +32,7 @@ def load_smoke_fixture(path: Path) -> dict[str, Any]:
         "window_count",
         "categories",
         "events",
+        "capture_discontinuities",
         "expected_windows",
     }
     missing_fields = sorted(required_fields - fixture.keys())
@@ -80,17 +81,37 @@ def aggregate_smoke_fixture(fixture: dict[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(window_count, int) or window_count <= 0:
         raise DataValidationError("smoke window_count must be positive")
     duration = timedelta(minutes=window_minutes)
+    discontinuities = fixture["capture_discontinuities"]
+    if not isinstance(discontinuities, list):
+        raise DataValidationError("capture_discontinuities must be a list")
+    missing_ranges: list[tuple[datetime, datetime]] = []
+    for discontinuity in discontinuities:
+        if not isinstance(discontinuity, dict) or set(discontinuity) != {"start_utc", "end_utc"}:
+            raise DataValidationError(
+                "each capture discontinuity must contain start_utc and end_utc"
+            )
+        gap_start = _utc_timestamp(discontinuity["start_utc"])
+        gap_end = _utc_timestamp(discontinuity["end_utc"])
+        if gap_end <= gap_start:
+            raise DataValidationError("capture discontinuity end must follow its start")
+        missing_ranges.append((gap_start, gap_end))
+
     windows = []
     for index in range(window_count):
         window_start = start + index * duration
+        window_end = window_start + duration
+        is_missing = any(
+            gap_start < window_end and gap_end > window_start
+            for gap_start, gap_end in missing_ranges
+        )
         windows.append(
             {
                 "start_utc": window_start.isoformat().replace("+00:00", "Z"),
-                "end_utc": (window_start + duration).isoformat().replace(
+                "end_utc": window_end.isoformat().replace(
                     "+00:00", "Z"
                 ),
-                "state": "observed-silent",
-                "counts": {category: 0 for category in categories},
+                "state": "missing" if is_missing else "observed-silent",
+                "counts": None if is_missing else {category: 0 for category in categories},
             }
         )
 
@@ -109,14 +130,22 @@ def aggregate_smoke_fixture(fixture: dict[str, Any]) -> list[dict[str, Any]]:
             raise DataValidationError(
                 f"smoke event falls outside declared coverage: {event['timestamp']}"
             )
+        if windows[window_index]["state"] == "missing":
+            raise DataValidationError(
+                f"smoke event falls within missing coverage: {event['timestamp']}"
+            )
         windows[window_index]["counts"][category] += 1
         windows[window_index]["state"] = "observed"
     return windows
 
 
 def _count_matrix(windows: list[dict[str, Any]], categories: list[str]) -> np.ndarray:
+    observed_windows = [window for window in windows if window["state"] != "missing"]
     return np.asarray(
-        [[window["counts"][category] for category in categories] for window in windows],
+        [
+            [window["counts"][category] for category in categories]
+            for window in observed_windows
+        ],
         dtype=np.int64,
     )
 
@@ -172,6 +201,7 @@ def run_smoke_experiment(
         },
         "categories": categories,
         "windows": windows,
+        "modeled_window_count": int(counts.shape[0]),
         "model_parameters": model_parameters,
         "injected_anomaly": injection,
         "metrics": {"total_absolute_count_change": metric},

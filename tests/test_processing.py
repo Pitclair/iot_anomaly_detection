@@ -134,6 +134,57 @@ def test_packet_transformer_rejects_invalid_window_size():
         PacketTransformer(CATEGORIES, device_id="camera-01", window_minutes=0)
 
 
+def test_declared_capture_discontinuity_is_missing_and_excluded_from_matrix():
+    transformer = PacketTransformer(CATEGORIES, "camera-01", window_minutes=10)
+    records = [
+        ("2020-01-01T00:00:00Z", "tcp"),
+        ("2020-01-01T00:20:00Z", "arp"),
+    ]
+
+    windows = transformer.to_windows(
+        transformer.build_time_series(records),
+        capture_discontinuities=[
+            ("2020-01-01T00:10:00Z", "2020-01-01T00:20:00Z")
+        ],
+    )
+
+    assert windows[1].state == "missing"
+    assert windows[1].counts is None
+    assert windows[1].total_count is None
+    assert transformer.to_numpy_matrix(windows).tolist() == [
+        [1, 0, 0, 0],
+        [0, 0, 0, 1],
+    ]
+
+
+def test_missing_window_rejects_zero_counts_disguised_as_silence():
+    with pytest.raises(ValidationError, match="must not contain observed counts"):
+        WindowRecord(
+            device_id="camera-01",
+            start_utc="2020-01-01T00:10:00Z",
+            end_utc="2020-01-01T00:20:00Z",
+            categories=CATEGORIES,
+            counts=(0, 0, 0, 0),
+            total_count=0,
+            state="missing",
+        )
+
+
+def test_capture_discontinuity_cannot_hide_observed_packets():
+    transformer = PacketTransformer(CATEGORIES, "camera-01", window_minutes=10)
+    time_series = transformer.build_time_series(
+        [("2020-01-01T00:00:00Z", "tcp")]
+    )
+
+    with pytest.raises(ValueError, match="overlaps.*containing packets"):
+        transformer.to_windows(
+            time_series,
+            capture_discontinuities=[
+                ("2020-01-01T00:00:00Z", "2020-01-01T00:10:00Z")
+            ],
+        )
+
+
 @pytest.mark.parametrize("window_minutes", SUPPORTED_WINDOW_MINUTES)
 def test_half_open_window_assignment_at_boundaries(window_minutes):
     transformer = PacketTransformer(

@@ -18,6 +18,12 @@
     {"timestamp": "2020-01-01T00:24:00Z", "category": "arp"},
     {"timestamp": "2020-01-01T00:29:59Z", "category": "arp"}
   ],
+  "capture_discontinuities": [
+    {
+      "start_utc": "2020-01-01T00:10:00Z",
+      "end_utc": "2020-01-01T00:20:00Z"
+    }
+  ],
   "expected_windows": [
     {
       "start_utc": "2020-01-01T00:00:00Z",
@@ -28,8 +34,8 @@
     {
       "start_utc": "2020-01-01T00:10:00Z",
       "end_utc": "2020-01-01T00:20:00Z",
-      "state": "observed-silent",
-      "counts": {"tcp": 0, "udp": 0, "ssdp": 0, "arp": 0}
+      "state": "missing",
+      "counts": null
     },
     {
       "start_utc": "2020-01-01T00:20:00Z",

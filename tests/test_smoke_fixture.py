@@ -43,8 +43,17 @@ def test_smoke_preprocessing_matches_exact_expected_windows() -> None:
     actual = aggregate_smoke_fixture(fixture)
 
     assert actual == fixture["expected_windows"]
-    assert actual[1]["state"] == "observed-silent"
-    assert sum(actual[1]["counts"].values()) == 0
+    assert actual[1]["state"] == "missing"
+    assert actual[1]["counts"] is None
+
+
+def test_missing_smoke_window_is_excluded_from_model_counts() -> None:
+    report = run_smoke_experiment(FIXTURE, CONFIG)
+
+    assert report["windows"][1]["state"] == "missing"
+    assert report["windows"][1]["counts"] is None
+    assert len(report["windows"]) == 3
+    assert report["modeled_window_count"] == 2
 
 
 def test_named_generators_are_reproducible_and_independent() -> None:

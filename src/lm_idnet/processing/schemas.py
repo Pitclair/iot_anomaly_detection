@@ -24,8 +24,8 @@ class WindowRecord(BaseModel):
     start_utc: datetime
     end_utc: datetime
     categories: tuple[str, ...]
-    counts: tuple[NonNegativeInt, ...]
-    total_count: NonNegativeInt
+    counts: tuple[NonNegativeInt, ...] | None
+    total_count: NonNegativeInt | None
     state: Literal["observed", "observed-silent", "missing"]
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -42,6 +42,13 @@ class WindowRecord(BaseModel):
             raise ValueError("window end must be after window start")
         if self.categories != CATEGORIES:
             raise ValueError(f"categories must have canonical order {CATEGORIES}")
+        if self.state == "missing":
+            if self.counts is not None or self.total_count is not None:
+                raise ValueError("missing windows must not contain observed counts")
+            return self
+
+        if self.counts is None or self.total_count is None:
+            raise ValueError("observed windows must contain counts and a total_count")
         if len(self.counts) != len(self.categories):
             raise ValueError("counts length must match categories length")
         if self.total_count != sum(self.counts):
@@ -49,8 +56,8 @@ class WindowRecord(BaseModel):
 
         if self.state == "observed" and self.total_count == 0:
             raise ValueError("observed windows must contain at least one packet")
-        if self.state in {"observed-silent", "missing"} and self.total_count != 0:
-            raise ValueError(f"{self.state} windows must have zero counts")
+        if self.state == "observed-silent" and self.total_count != 0:
+            raise ValueError("observed-silent windows must have zero counts")
         return self
 
 

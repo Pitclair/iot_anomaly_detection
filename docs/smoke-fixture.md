@@ -19,12 +19,16 @@ It declares three consecutive ten-minute UTC windows:
 | Window | TCP | UDP | SSDP | ARP | State |
 |---|---:|---:|---:|---:|---|
 | 00:00--00:10 | 2 | 1 | 0 | 0 | observed |
-| 00:10--00:20 | 0 | 0 | 0 | 0 | observed-silent |
+| 00:10--00:20 | -- | -- | -- | -- | missing |
 | 00:20--00:30 | 0 | 0 | 1 | 2 | observed |
 
 Events on a boundary enter the later window because the reference aggregation
 uses half-open intervals `[start, end)`. Integration tests compare every field
 of the produced windows with the exact expected JSON.
+
+The fixture declares the middle interval as a capture discontinuity. Its count
+vector is `null`, so unavailable observation cannot be mistaken for observed
+silence or passed to model fitting as a row of zeros.
 
 ## Reproducibility smoke experiment
 
