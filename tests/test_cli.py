@@ -1,4 +1,5 @@
 import json
+import os
 import struct
 import subprocess
 import sys
@@ -15,11 +16,14 @@ CONFIG = ROOT / "configs" / "config.json"
 
 
 def run_cli(*arguments: str) -> subprocess.CompletedProcess[str]:
+    environment = os.environ.copy()
+    environment["LM_IDNET_LOG_PATH"] = os.devnull
     return subprocess.run(
         [sys.executable, "-m", "lm_idnet.cli", *arguments],
         capture_output=True,
         check=False,
         text=True,
+        env=environment,
     )
 
 
@@ -44,6 +48,7 @@ def test_root_help_lists_every_stable_command() -> None:
     assert result.returncode == 0
     for command in COMMANDS:
         assert command in result.stdout
+    assert "--verbose" in result.stdout
 
 
 @pytest.mark.parametrize("command", COMMANDS)

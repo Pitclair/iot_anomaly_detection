@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -12,12 +13,14 @@ from pathlib import Path
 from lm_idnet.config import AppConfig, load_config
 from lm_idnet.exceptions import (
     CommandUnavailableError,
+    ConfigurationError,
     IngestionError,
     LMIDNetError,
 )
 from lm_idnet.partitioning import all_capture_ids, partition_name_for_capture
 
 logger = logging.getLogger(__name__)
+DEFAULT_LOG_PATH = Path("logs/lm_idnet.log")
 
 COMMANDS = (
     "preprocess",
@@ -55,6 +58,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("text", "json"),
         default="text",
         help="format for expected runtime errors (default: text)",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="show informational logs in the terminal",
     )
     subparsers = parser.add_subparsers(
         title="commands",
@@ -117,6 +125,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="statistics JSON path (default: <reports_dir>/capture_statistics.json)",
     )
     return parser
+
+
+def _configure_logging(verbose: bool) -> Path:
+    """Write informational logs to disk and optionally echo them to stderr."""
+    log_path = Path(os.environ.get("LM_IDNET_LOG_PATH", DEFAULT_LOG_PATH))
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    except OSError as error:
+        raise ConfigurationError(f"cannot open log file: {log_path}") from error
+
+    file_handler.setLevel(logging.INFO)
+    terminal_handler = logging.StreamHandler()
+    terminal_handler.setLevel(logging.INFO if verbose else logging.WARNING)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[file_handler, terminal_handler],
+        force=True,
+    )
+    return log_path
 
 
 def _processed_path(config: AppConfig) -> Path:
@@ -188,6 +217,9 @@ HANDLERS: dict[str, Callable[[AppConfig], None]] = {
 def run_command(argv: Sequence[str] | None = None) -> None:
     """Validate and dispatch exactly one CLI command."""
     args = build_parser().parse_args(argv)
+    log_path = _configure_logging(args.verbose)
+    logger.info("Writing application logs to %s", log_path)
+    logger.info("Starting command: %s", args.command)
     config = load_config(args.config)
 
     if args.dry_run:

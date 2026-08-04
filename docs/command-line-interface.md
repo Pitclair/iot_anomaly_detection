@@ -44,6 +44,13 @@ Successful command and dry-run status records are JSON on standard output.
 Expected failures produce no success record, write to standard error, and
 return a non-zero exit code.
 
+Informational application logs are written to `logs/lm_idnet.log`. Add the
+global `--verbose` option before the command to also show them in the terminal:
+
+```sh
+lm-idnet --verbose preprocess --config configs/config.json
+```
+
 Use JSON-formatted runtime errors when integrating with scripts:
 
 ```sh
