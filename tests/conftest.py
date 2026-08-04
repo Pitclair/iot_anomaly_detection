@@ -62,11 +62,11 @@ def window_factory() -> Callable[..., WindowRecord]:
         total_count = sum(counts)
         return WindowRecord(
             device_id="test-device",
+            capture_id="test-capture",
             start_utc="2020-01-01T00:00:00Z",
             end_utc="2020-01-01T00:10:00Z",
             categories=category_order,
             counts=counts,
-            total_count=total_count,
             state="observed" if total_count else "observed-silent",
         )
 

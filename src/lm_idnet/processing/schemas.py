@@ -1,7 +1,7 @@
 """Pydantic schemas for processed packet windows and dataset metadata."""
 
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import (
     BaseModel,
@@ -18,16 +18,25 @@ from .categories import validate_categories
 class WindowRecord(BaseModel):
     """A timestamped packet-count vector with explicit category semantics."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     device_id: str = Field(min_length=1)
+    capture_id: str | None = Field(default=None, min_length=1)
     start_utc: datetime
     end_utc: datetime
     categories: tuple[str, ...]
     counts: tuple[NonNegativeInt, ...] | None
-    total_count: NonNegativeInt | None
     state: Literal["observed", "observed-silent", "missing"]
-    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("device_id", "capture_id")
+    @classmethod
+    def identifiers_must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        identifier = value.strip()
+        if not identifier:
+            raise ValueError("identifier must not be blank")
+        return identifier
 
     @field_validator("categories", mode="before")
     @classmethod
@@ -48,22 +57,25 @@ class WindowRecord(BaseModel):
         if self.end_utc <= self.start_utc:
             raise ValueError("window end must be after window start")
         if self.state == "missing":
-            if self.counts is not None or self.total_count is not None:
-                raise ValueError("missing windows must not contain observed counts")
+            if self.counts is not None:
+                raise ValueError("missing windows cannot have counts")
             return self
 
-        if self.counts is None or self.total_count is None:
-            raise ValueError("observed windows must contain counts and a total_count")
+        if self.counts is None:
+            raise ValueError("non-missing windows require counts")
         if len(self.counts) != len(self.categories):
             raise ValueError("counts length must match categories length")
-        if self.total_count != sum(self.counts):
-            raise ValueError("total_count must equal the sum of counts")
 
         if self.state == "observed" and self.total_count == 0:
-            raise ValueError("observed windows must contain at least one packet")
+            raise ValueError("observed windows require packet counts")
         if self.state == "observed-silent" and self.total_count != 0:
-            raise ValueError("observed-silent windows must have zero counts")
+            raise ValueError("silent windows require zero counts")
         return self
+
+    @property
+    def total_count(self) -> int | None:
+        """Return the packet total, or no value when coverage is missing."""
+        return None if self.counts is None else sum(self.counts)
 
 
 class Metadata(BaseModel):

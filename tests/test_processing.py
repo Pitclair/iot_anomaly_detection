@@ -139,7 +139,6 @@ def test_packet_transformer_builds_windows_and_matrix():
             end_utc="2020-01-01T00:10:00Z",
             categories=CATEGORY_ORDER,
             counts=(1, 0, 0, 0),
-            total_count=1,
             state="observed",
         ),
         WindowRecord(
@@ -148,7 +147,6 @@ def test_packet_transformer_builds_windows_and_matrix():
             end_utc="2020-01-01T00:20:00Z",
             categories=CATEGORY_ORDER,
             counts=(0, 0, 0, 0),
-            total_count=0,
             state="observed-silent",
         ),
         WindowRecord(
@@ -157,7 +155,6 @@ def test_packet_transformer_builds_windows_and_matrix():
             end_utc="2020-01-01T00:30:00Z",
             categories=CATEGORY_ORDER,
             counts=(0, 0, 0, 1),
-            total_count=1,
             state="observed",
         ),
     ]
@@ -202,14 +199,13 @@ def test_declared_capture_discontinuity_is_missing_and_excluded_from_matrix():
 
 
 def test_missing_window_rejects_zero_counts_disguised_as_silence():
-    with pytest.raises(ValidationError, match="must not contain observed counts"):
+    with pytest.raises(ValidationError, match="cannot have counts"):
         WindowRecord(
             device_id="camera-01",
             start_utc="2020-01-01T00:10:00Z",
             end_utc="2020-01-01T00:20:00Z",
             categories=CATEGORY_ORDER,
             counts=(0, 0, 0, 0),
-            total_count=0,
             state="missing",
         )
 
@@ -253,7 +249,6 @@ def test_half_open_window_assignment_at_boundaries(window_minutes):
             end_utc=boundary,
             categories=CATEGORY_ORDER,
             counts=(1, 0, 0, 0),
-            total_count=1,
             state="observed",
         ),
         WindowRecord(
@@ -262,7 +257,6 @@ def test_half_open_window_assignment_at_boundaries(window_minutes):
             end_utc=boundary + duration,
             categories=CATEGORY_ORDER,
             counts=(0, 1, 0, 1),
-            total_count=2,
             state="observed",
         ),
     ]
@@ -275,16 +269,23 @@ def test_window_policy_is_explicit_and_epoch_aligned():
     assert WINDOW_LABEL == "left"
 
 
-def test_window_record_round_trip_preserves_timestamps_and_category_order():
+@pytest.mark.parametrize(
+    ("state", "counts"),
+    [
+        ("observed", (2, 1, 0, 1)),
+        ("observed-silent", (0, 0, 0, 0)),
+        ("missing", None),
+    ],
+)
+def test_window_record_round_trip_preserves_all_states(state, counts):
     original = WindowRecord(
         device_id="camera-01",
+        capture_id="capture-001",
         start_utc="2020-01-01T00:00:00Z",
         end_utc="2020-01-01T00:10:00Z",
         categories=CATEGORY_ORDER,
-        counts=(2, 1, 0, 1),
-        total_count=4,
-        state="observed",
-        metadata={"capture_id": "capture-001"},
+        counts=counts,
+        state=state,
     )
 
     restored = WindowRecord.model_validate_json(original.model_dump_json())
@@ -293,17 +294,43 @@ def test_window_record_round_trip_preserves_timestamps_and_category_order():
     assert restored.categories == CATEGORY_ORDER
     assert restored.start_utc.isoformat() == "2020-01-01T00:00:00+00:00"
     assert restored.end_utc.isoformat() == "2020-01-01T00:10:00+00:00"
-    assert restored.total_count == sum(restored.counts)
+    expected_total = None if counts is None else sum(counts)
+    assert restored.total_count == expected_total
 
 
-def test_window_record_rejects_incorrect_total_count():
-    with pytest.raises(ValidationError, match="sum of counts"):
+def test_window_record_is_immutable():
+    window = WindowRecord(
+        device_id="camera-01",
+        start_utc="2020-01-01T00:00:00Z",
+        end_utc="2020-01-01T00:10:00Z",
+        categories=CATEGORY_ORDER,
+        counts=(1, 0, 0, 0),
+        state="observed",
+    )
+
+    with pytest.raises(ValidationError, match="frozen"):
+        window.state = "missing"
+
+
+def test_silent_window_rejects_nonzero_counts():
+    with pytest.raises(ValidationError, match="require zero counts"):
         WindowRecord(
             device_id="camera-01",
             start_utc="2020-01-01T00:00:00Z",
             end_utc="2020-01-01T00:10:00Z",
             categories=CATEGORY_ORDER,
-            counts=(2, 1, 0, 1),
-            total_count=3,
+            counts=(1, 0, 0, 0),
+            state="observed-silent",
+        )
+
+
+def test_observed_window_rejects_zero_counts():
+    with pytest.raises(ValidationError, match="require packet counts"):
+        WindowRecord(
+            device_id="camera-01",
+            start_utc="2020-01-01T00:00:00Z",
+            end_utc="2020-01-01T00:10:00Z",
+            categories=CATEGORY_ORDER,
+            counts=(0, 0, 0, 0),
             state="observed",
         )

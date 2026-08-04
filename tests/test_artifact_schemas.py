@@ -25,13 +25,12 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
             "windows": [
                 {
                     "device_id": "camera-01",
+                    "capture_id": "capture",
                     "start_utc": "2020-10-08T00:00:00Z",
                     "end_utc": "2020-10-08T00:10:00Z",
                     "categories": ["tcp", "udp", "ssdp", "arp"],
                     "counts": [2, 1, 0, 0],
-                    "total_count": 3,
                     "state": "observed",
-                    "metadata": {"capture_id": "capture"},
                 }
             ],
         },

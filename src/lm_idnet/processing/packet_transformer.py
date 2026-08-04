@@ -58,7 +58,7 @@ class PacketTransformer:
     def to_windows(
         self,
         time_series: pd.DataFrame,
-        metadata: dict[str, object] | None = None,
+        capture_id: str | None = None,
         capture_discontinuities: Iterable[tuple[datetime | str, datetime | str]] = (),
     ) -> list[WindowRecord]:
         """Count packets while preserving declared gaps as missing coverage."""
@@ -86,7 +86,6 @@ class PacketTransformer:
         grouped = self._include_silent_windows(grouped, frequency)
         grouped = grouped.reindex(columns=self.categories, fill_value=0).astype(int)
 
-        window_metadata = dict(metadata or {})
         duration = pd.Timedelta(minutes=self.window_minutes)
         missing_starts = self._missing_window_starts(
             capture_discontinuities,
@@ -103,7 +102,7 @@ class PacketTransformer:
                 start,
                 row,
                 duration,
-                window_metadata,
+                capture_id,
                 is_missing=start in missing_starts,
             )
             for start, row in grouped.iterrows()
@@ -165,30 +164,28 @@ class PacketTransformer:
         start: pd.Timestamp,
         row: pd.Series,
         duration: pd.Timedelta,
-        metadata: dict[str, object],
+        capture_id: str | None,
         is_missing: bool,
     ) -> WindowRecord:
         if is_missing:
             return WindowRecord(
                 device_id=self.device_id,
+                capture_id=capture_id,
                 start_utc=start,
                 end_utc=start + duration,
                 categories=self.categories,
                 counts=None,
-                total_count=None,
                 state="missing",
-                metadata=metadata,
             )
         counts = tuple(int(row[category]) for category in self.categories)
         total_count = sum(counts)
         state = "observed" if total_count else "observed-silent"
         return WindowRecord(
             device_id=self.device_id,
+            capture_id=capture_id,
             start_utc=start,
             end_utc=start + duration,
             categories=self.categories,
             counts=counts,
-            total_count=total_count,
             state=state,
-            metadata=metadata,
         )

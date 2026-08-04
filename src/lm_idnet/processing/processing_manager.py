@@ -38,11 +38,10 @@ class ProcessingManager:
     def process_file(self, pcap_path: Path) -> ProcessedDataset:
         records = self.processor.process_pcap(pcap_path)
         time_series = self.transformer.build_time_series(records)
-        window_metadata = {
-            "capture_id": pcap_path.stem,
-            "file_source": str(pcap_path),
-        }
-        windows = self.transformer.to_windows(time_series, metadata=window_metadata)
+        windows = self.transformer.to_windows(
+            time_series,
+            capture_id=pcap_path.stem,
+        )
         metadata = Metadata(date=pcap_path.stem, file_source=str(pcap_path))
         return ProcessedDataset(metadata=metadata, windows=windows)
 
