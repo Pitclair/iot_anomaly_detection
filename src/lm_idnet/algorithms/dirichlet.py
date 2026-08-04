@@ -6,20 +6,14 @@ import numpy as np
 import math
 from scipy.special import digamma, gammaln
 
+from .log_likelihood import ScipyLogLikelihood
+
 
 def dirichlet_multinomial_log_likelihood(counts: np.ndarray, alpha: np.ndarray) -> float:
-    """Compute log-likelihood of Dirichlet-Multinomial for count matrix (n_samples, k).
-    Uses gammaln for stability.
-    """
+    """Compatibility wrapper for the local SciPy likelihood backend."""
     if counts.ndim == 1:
         counts = counts.reshape(1, -1)
-    N = counts.sum(axis=1)
-    K = alpha.size
-    A = alpha.sum()
-    ll = np.sum(gammaln(N + 1)) - np.sum(gammaln(counts + 1))
-    ll += len(counts) * (gammaln(A) - np.sum(gammaln(alpha)))
-    ll += np.sum(gammaln(counts + alpha) - gammaln(A + N)[:, None])
-    return float(ll)
+    return ScipyLogLikelihood().calculate(counts, alpha)
 
 
 def fixed_point_dirichlet(counts: np.ndarray, alpha_init: Optional[np.ndarray] = None, tol: float = 1e-9, max_iter: int = 1000) -> Tuple[np.ndarray, dict]:

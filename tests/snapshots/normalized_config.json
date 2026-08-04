@@ -46,7 +46,8 @@
   "estimator": {
     "categories_k": 4,
     "tolerance_delta": 2e-9,
-    "max_iterations": 1000
+    "max_iterations": 1000,
+    "log_likelihood_backend": "scipy"
   },
   "calibration": {
     "quantile": 0.01,

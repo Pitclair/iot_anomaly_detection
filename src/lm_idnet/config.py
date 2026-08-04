@@ -6,6 +6,7 @@ import json
 import re
 from datetime import date
 from pathlib import Path
+from typing import Literal
 
 from pydantic import (
     BaseModel,
@@ -177,6 +178,7 @@ class EstimatorConfig(StrictModel):
     categories_k: int = Field(gt=1)
     tolerance_delta: float = Field(gt=0)
     max_iterations: int = Field(default=1000, gt=0)
+    log_likelihood_backend: Literal["scipy", "lm"] = "scipy"
 
 
 class CalibrationConfig(StrictModel):

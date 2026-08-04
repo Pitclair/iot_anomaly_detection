@@ -88,6 +88,10 @@ def test_initialization_reports_that_no_model_was_fitted(
 
     assert result["matrix_shape"] == [12, 4]
     assert result["initial_alpha"] == [1.0, 1.0, 1.0, 1.0]
+    assert result["initial_concentration"] == 4.0
+    assert result["initial_psi"] == 0.25
+    assert result["log_likelihood_backend"] == "scipy"
+    assert np.isfinite(result["initial_log_likelihood"])
     assert result["fitting_performed"] is False
     assert result["model_saved"] is False
 

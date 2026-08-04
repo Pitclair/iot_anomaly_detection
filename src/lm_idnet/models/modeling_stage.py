@@ -5,6 +5,7 @@ import logging
 
 import numpy as np
 
+from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.partitioning import fit_partition_for_training
@@ -109,7 +110,23 @@ def initialize_modeling_stage(config: AppConfig) -> dict[str, object]:
     """Prepare model inputs without fitting or persisting a model."""
     training = load_training_matrix(config)
     initial_alpha = create_initial_alpha(len(config.ingest.categories))
+    concentration = float(initial_alpha.sum())
+    psi = 1.0 / concentration
+    backend = config.estimator.log_likelihood_backend
+    log_likelihood = initialize_log_likelihood(backend)
+    initial_log_likelihood = log_likelihood.calculate(
+        training.counts,
+        initial_alpha,
+    )
     logger.info("Initial alpha: %s", initial_alpha.tolist())
+    logger.info("Initial concentration: %s", concentration)
+    logger.info("Initial psi: %s", psi)
+    logger.info("Log-likelihood backend: %s", backend)
+    logger.info(
+        "Log-likelihood implementation: %s",
+        type(log_likelihood).__name__,
+    )
+    logger.info("Initial log-likelihood: %s", initial_log_likelihood)
     logger.info("Model fitting intentionally stops before fixed-point iteration")
 
     return {
@@ -121,6 +138,10 @@ def initialize_modeling_stage(config: AppConfig) -> dict[str, object]:
         "silent_window_count": training.silent_window_count,
         "categories": list(config.ingest.categories),
         "initial_alpha": initial_alpha.tolist(),
+        "initial_concentration": concentration,
+        "initial_psi": psi,
+        "log_likelihood_backend": backend,
+        "initial_log_likelihood": initial_log_likelihood,
         "fitting_performed": False,
         "model_saved": False,
     }
