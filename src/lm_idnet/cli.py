@@ -37,7 +37,7 @@ COMMANDS = (
 COMMAND_HELP = {
     "preprocess": "convert configured packet captures into processed windows",
     "diagnose": "report descriptive statistics for processed windows",
-    "train": "fit and persist the normal-traffic model",
+    "train": "load fit counts and initialize the normal-traffic model",
     "calibrate": "calibrate an anomaly threshold for a trained model",
     "score": "score processed windows and emit anomaly decisions",
     "evaluate": "evaluate detector outputs using the frozen protocol",
@@ -204,7 +204,6 @@ def _not_implemented(command: str) -> Callable[[AppConfig], None]:
 
 HANDLERS: dict[str, Callable[[AppConfig], None]] = {
     "preprocess": _preprocess,
-    "train": _not_implemented("train"),
     "calibrate": _not_implemented("calibrate"),
     "score": _not_implemented("score"),
     "evaluate": _not_implemented("evaluate"),
@@ -307,6 +306,22 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                     "command": "diagnose",
                     "report": str(output_path),
                     "status": "completed",
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "train":
+        from lm_idnet.models.modeling_stage import initialize_modeling_stage
+
+        result = initialize_modeling_stage(config)
+        print(
+            json.dumps(
+                {
+                    "command": "train",
+                    "status": "initialized",
+                    **result,
                 },
                 sort_keys=True,
             )

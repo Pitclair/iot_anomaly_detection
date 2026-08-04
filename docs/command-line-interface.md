@@ -63,8 +63,9 @@ standard exit code 2 and usage output.
 ## Implementation status
 
 At this milestone, `preprocess`, `diagnose`, and `forecast` have callable
-handlers. `train`, `calibrate`, `score`, `evaluate`, `adapt`, and `benchmark`
-are registered stable interfaces but intentionally return
+handlers. `train` loads the fit-partition matrix and creates a neutral initial
+alpha vector, then stops before fitting or saving a model. `calibrate`, `score`,
+`evaluate`, `adapt`, and `benchmark` are registered stable interfaces but return
 `command_unavailable_error` (exit code 9) when executed. Their `--help` and
 `--dry-run` paths work normally.
 
