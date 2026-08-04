@@ -79,10 +79,27 @@ class WindowRecord(BaseModel):
 
 
 class Metadata(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    capture_id: str = Field(min_length=1)
+    partition: Literal["fit", "calibration", "development_test", "final_test"]
     date: str
     file_source: str
 
 
 class ProcessedDataset(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     metadata: Metadata
-    windows: list[WindowRecord]
+    windows: tuple[WindowRecord, ...]
+
+    @model_validator(mode="after")
+    def capture_ids_must_match_metadata(self) -> "ProcessedDataset":
+        mismatched = {
+            window.capture_id
+            for window in self.windows
+            if window.capture_id != self.metadata.capture_id
+        }
+        if mismatched:
+            raise ValueError("window capture IDs must match dataset metadata")
+        return self

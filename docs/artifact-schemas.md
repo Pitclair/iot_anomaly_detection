@@ -1,6 +1,6 @@
 # Artifact schema versioning
 
-Every persisted LM-IDNet artifact has:
+Every versioned LM-IDNet model or result artifact has:
 
 - `artifact_type`, identifying the schema family;
 - `schema_version`, written as semantic `MAJOR.MINOR.PATCH`;
@@ -13,7 +13,6 @@ version is `1.0.0`.
 
 | Artifact type | Purpose |
 |---|---|
-| `processed_dataset` | Processed capture metadata and validated count windows |
 | `model` | Category ordering and fitted Dirichlet parameters |
 | `threshold` | Model-bound score convention, quantile, and threshold |
 | `anomaly_event` | Window decision, score, threshold, and model identity |
@@ -21,6 +20,10 @@ version is `1.0.0`.
 
 The Pydantic definitions and migration registry are in
 `src/lm_idnet/artifact_schemas.py`.
+
+Processed captures deliberately use a simpler boundary: one validated JSON file
+per capture, loaded and saved through `processing.storage`. They do not have a
+second matrix export, schema migration, or per-file checksum.
 
 ## Compatibility rules
 

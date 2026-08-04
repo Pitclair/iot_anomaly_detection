@@ -15,7 +15,7 @@ from lm_idnet.exceptions import (
     IngestionError,
     LMIDNetError,
 )
-from lm_idnet.partitioning import all_capture_ids
+from lm_idnet.partitioning import all_capture_ids, partition_name_for_capture
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,10 @@ def _preprocess(config: AppConfig) -> None:
         processed_root=str(_processed_path(config)),
         device_id=ingest.dataset_folder,
         categories=list(ingest.categories),
-        dates=list(all_capture_ids(config)),
+        capture_partitions={
+            capture_id: partition_name_for_capture(config, capture_id)
+            for capture_id in all_capture_ids(config)
+        },
         window_minutes=ingest.window_minutes,
     )
     try:

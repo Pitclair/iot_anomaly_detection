@@ -20,8 +20,12 @@ from lm_idnet.processing.window_policy import (
     WINDOW_ORIGIN,
 )
 from lm_idnet.processing.pcap_processor import PcapProcessor
-from lm_idnet.processing.schemas import WindowRecord
+from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.statistics import Statistics
+from lm_idnet.processing.storage import (
+    load_processed_dataset,
+    save_processed_dataset,
+)
 
 pytestmark = pytest.mark.unit
 CATEGORY_ORDER = load_config(
@@ -93,7 +97,10 @@ def test_configured_category_order_flows_through_pipeline_and_report(
     assert tuple(processor.protocol_count) == configured_order
 
     transformer = PacketTransformer(configured_order, device_id="camera-01")
-    windows = transformer.to_windows(transformer.build_time_series(records))
+    windows = transformer.to_windows(
+        transformer.build_time_series(records),
+        capture_id="capture-001",
+    )
     model_input = transformer.to_numpy_matrix(windows)
 
     assert windows[0].categories == configured_order
@@ -104,7 +111,12 @@ def test_configured_category_order_flows_through_pipeline_and_report(
     dataset_path.write_text(
         json.dumps(
             {
-                "metadata": {"date": "capture-001", "file_source": "fixture.pcap"},
+                "metadata": {
+                    "capture_id": "capture-001",
+                    "partition": "fit",
+                    "date": "capture-001",
+                    "file_source": "fixture.pcap",
+                },
                 "windows": [window.model_dump(mode="json") for window in windows],
             }
         ),
@@ -296,6 +308,58 @@ def test_window_record_round_trip_preserves_all_states(state, counts):
     assert restored.end_utc.isoformat() == "2020-01-01T00:10:00+00:00"
     expected_total = None if counts is None else sum(counts)
     assert restored.total_count == expected_total
+
+
+def test_processed_dataset_save_load_round_trip_preserves_model_inputs(tmp_path):
+    windows = tuple(
+        WindowRecord(
+            device_id="camera-01",
+            capture_id="capture-001",
+            start_utc=f"2020-01-01T00:{index * 10:02d}:00Z",
+            end_utc=f"2020-01-01T00:{(index + 1) * 10:02d}:00Z",
+            categories=CATEGORY_ORDER,
+            counts=counts,
+            state=state,
+        )
+        for index, (state, counts) in enumerate(
+            (
+                ("observed", (2, 1, 0, 1)),
+                ("observed-silent", (0, 0, 0, 0)),
+                ("missing", None),
+            )
+        )
+    )
+    original = ProcessedDataset(
+        metadata=Metadata(
+            capture_id="capture-001",
+            partition="calibration",
+            date="2020-01-01",
+            file_source="capture-001.pcap",
+        ),
+        windows=windows,
+    )
+    output_path = tmp_path / "capture-001.json"
+
+    save_processed_dataset(original, output_path)
+    restored = load_processed_dataset(output_path)
+
+    saved_document = json.loads(output_path.read_text(encoding="utf-8"))
+    assert set(saved_document) == {"metadata", "windows"}
+    assert restored == original
+    assert [window.counts for window in restored.windows] == [
+        (2, 1, 0, 1),
+        (0, 0, 0, 0),
+        None,
+    ]
+    assert [window.state for window in restored.windows] == [
+        "observed",
+        "observed-silent",
+        "missing",
+    ]
+    assert restored.windows[0].categories == CATEGORY_ORDER
+    assert restored.windows[0].start_utc.isoformat() == "2020-01-01T00:00:00+00:00"
+    assert restored.metadata.capture_id == "capture-001"
+    assert restored.metadata.partition == "calibration"
 
 
 def test_window_record_is_immutable():

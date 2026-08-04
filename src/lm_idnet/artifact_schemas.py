@@ -9,7 +9,6 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lm_idnet.exceptions import ArtifactCompatibilityError
-from lm_idnet.processing.schemas import Metadata, WindowRecord
 
 CURRENT_SCHEMA_VERSION = "1.1.0"
 PREVIOUS_SCHEMA_VERSION = "1.0.0"
@@ -21,12 +20,6 @@ class VersionedArtifact(BaseModel):
 
     schema_version: Literal["1.1.0"] = CURRENT_SCHEMA_VERSION
     checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
-
-
-class ProcessedDatasetArtifact(VersionedArtifact):
-    artifact_type: Literal["processed_dataset"] = "processed_dataset"
-    metadata: Metadata
-    windows: tuple[WindowRecord, ...]
 
 
 class ModelArtifact(VersionedArtifact):
@@ -65,15 +58,13 @@ class ExperimentManifestArtifact(VersionedArtifact):
 
 
 Artifact = (
-    ProcessedDatasetArtifact
-    | ModelArtifact
+    ModelArtifact
     | ThresholdArtifact
     | AnomalyEventArtifact
     | ExperimentManifestArtifact
 )
 
 SCHEMA_BY_TYPE: dict[str, type[VersionedArtifact]] = {
-    "processed_dataset": ProcessedDatasetArtifact,
     "model": ModelArtifact,
     "threshold": ThresholdArtifact,
     "anomaly_event": AnomalyEventArtifact,

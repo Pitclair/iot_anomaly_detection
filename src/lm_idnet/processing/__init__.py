@@ -7,5 +7,6 @@ __all__ = [
     "processing_manager",
     "schemas",
     "statistics",
+    "storage",
     "window_policy",
 ]

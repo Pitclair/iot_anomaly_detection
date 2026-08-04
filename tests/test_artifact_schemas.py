@@ -20,20 +20,6 @@ HASH = "0" * 64
 
 def artifact_examples() -> dict[str, dict[str, Any]]:
     examples: dict[str, dict[str, Any]] = {
-        "processed_dataset": {
-            "metadata": {"date": "2020-10-08", "file_source": "capture.pcap"},
-            "windows": [
-                {
-                    "device_id": "camera-01",
-                    "capture_id": "capture",
-                    "start_utc": "2020-10-08T00:00:00Z",
-                    "end_utc": "2020-10-08T00:10:00Z",
-                    "categories": ["tcp", "udp", "ssdp", "arp"],
-                    "counts": [2, 1, 0, 0],
-                    "state": "observed",
-                }
-            ],
-        },
         "model": {
             "model_version": "model-001",
             "categories": ["tcp", "udp", "ssdp", "arp"],

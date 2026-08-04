@@ -1,15 +1,15 @@
 """Descriptive statistics for processed packet windows."""
 
-import json
 import logging
 from pathlib import Path
 
 import numpy as np
-from pydantic import ValidationError
 from tabulate import tabulate
 
+from lm_idnet.exceptions import DataValidationError
+
 from .categories import validate_categories
-from .schemas import ProcessedDataset
+from .storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +63,9 @@ class Statistics:
             self.process_file(file_path)
 
     def process_file(self, file_path):
-        with Path(file_path).open("r", encoding="utf-8") as input_file:
-            data = json.load(input_file)
         try:
-            dataset = ProcessedDataset(**data)
-        except ValidationError as error:
+            dataset = load_processed_dataset(file_path)
+        except DataValidationError as error:
             print(f"[ERROR] Invalid processed dataset {file_path}: {error}")
             return
         if not dataset.windows:
