@@ -23,13 +23,9 @@ class PacketTransformer:
     def __init__(
         self,
         categories: Sequence[str],
-        device_id: str,
         window_minutes: int = 10,
     ) -> None:
         self.categories = validate_categories(categories)
-        self.device_id = device_id.strip()
-        if not self.device_id:
-            raise ValueError("device_id must not be empty")
         self.window_minutes = validate_window_minutes(window_minutes)
 
     def build_time_series(
@@ -58,7 +54,6 @@ class PacketTransformer:
     def to_windows(
         self,
         time_series: pd.DataFrame,
-        capture_id: str | None = None,
         capture_discontinuities: Iterable[tuple[datetime | str, datetime | str]] = (),
     ) -> list[WindowRecord]:
         """Count packets while preserving declared gaps as missing coverage."""
@@ -102,7 +97,6 @@ class PacketTransformer:
                 start,
                 row,
                 duration,
-                capture_id,
                 is_missing=start in missing_starts,
             )
             for start, row in grouped.iterrows()
@@ -164,13 +158,10 @@ class PacketTransformer:
         start: pd.Timestamp,
         row: pd.Series,
         duration: pd.Timedelta,
-        capture_id: str | None,
         is_missing: bool,
     ) -> WindowRecord:
         if is_missing:
             return WindowRecord(
-                device_id=self.device_id,
-                capture_id=capture_id,
                 start_utc=start,
                 end_utc=start + duration,
                 categories=self.categories,
@@ -181,8 +172,6 @@ class PacketTransformer:
         total_count = sum(counts)
         state = "observed" if total_count else "observed-silent"
         return WindowRecord(
-            device_id=self.device_id,
-            capture_id=capture_id,
             start_utc=start,
             end_utc=start + duration,
             categories=self.categories,

@@ -61,8 +61,6 @@ def window_factory() -> Callable[..., WindowRecord]:
         counts = (tcp, udp, ssdp, arp)
         total_count = sum(counts)
         return WindowRecord(
-            device_id="test-device",
-            capture_id="test-capture",
             start_utc="2020-01-01T00:00:00Z",
             end_utc="2020-01-01T00:10:00Z",
             categories=category_order,

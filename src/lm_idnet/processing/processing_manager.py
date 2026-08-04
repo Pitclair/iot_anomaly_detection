@@ -24,22 +24,22 @@ class ProcessingManager:
     ) -> None:
         self.raw_root = Path(raw_root).resolve(strict=False)
         self.processed_root = Path(processed_root).resolve(strict=False)
+        self.device_id = device_id.strip()
+        if not self.device_id:
+            raise ValueError("device_id must not be empty")
         self.capture_partitions = dict(capture_partitions)
         self.processor = PcapProcessor(categories=categories)
         self.transformer = PacketTransformer(
             categories=categories,
-            device_id=device_id,
             window_minutes=window_minutes,
         )
 
     def process_file(self, pcap_path: Path, partition: str) -> ProcessedDataset:
         records = self.processor.process_pcap(pcap_path)
         time_series = self.transformer.build_time_series(records)
-        windows = self.transformer.to_windows(
-            time_series,
-            capture_id=pcap_path.stem,
-        )
+        windows = self.transformer.to_windows(time_series)
         metadata = Metadata(
+            device_id=self.device_id,
             capture_id=pcap_path.stem,
             partition=partition,
             date=pcap_path.stem,

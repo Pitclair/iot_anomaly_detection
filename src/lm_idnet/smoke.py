@@ -114,7 +114,6 @@ def aggregate_smoke_fixture(
 
     transformer = PacketTransformer(
         categories,
-        device_id="smoke-fixture",
         window_minutes=window_minutes,
     )
     try:

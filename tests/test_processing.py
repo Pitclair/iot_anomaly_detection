@@ -40,7 +40,7 @@ def test_packet_transformer_counts_simple_trace():
         ("2020-01-01 00:09:59", "tcp"),
         ("2020-01-01 00:10:00", "arp"),
     ]
-    transformer = PacketTransformer(CATEGORY_ORDER, device_id="camera-01")
+    transformer = PacketTransformer(CATEGORY_ORDER)
 
     windows = transformer.to_windows(transformer.build_time_series(records))
 
@@ -73,7 +73,7 @@ def test_canonical_packet_classification_and_counts(tmp_path):
     assert processor.packet_count == 4
     assert processor.unsupported_count == 1
 
-    transformer = PacketTransformer(CATEGORY_ORDER, device_id="camera-01")
+    transformer = PacketTransformer(CATEGORY_ORDER)
     windows = transformer.to_windows(transformer.build_time_series(records))
     assert transformer.to_numpy_matrix(windows).sum(axis=0).tolist() == [1, 1, 1, 1]
 
@@ -95,11 +95,8 @@ def test_configured_category_order_flows_through_pipeline_and_report(
     processor = PcapProcessor(categories=list(configured_order))
     assert tuple(processor.protocol_count) == configured_order
 
-    transformer = PacketTransformer(configured_order, device_id="camera-01")
-    windows = transformer.to_windows(
-        transformer.build_time_series(records),
-        capture_id="capture-001",
-    )
+    transformer = PacketTransformer(configured_order)
+    windows = transformer.to_windows(transformer.build_time_series(records))
     model_input = transformer.to_numpy_matrix(windows)
 
     assert windows[0].categories == configured_order
@@ -111,6 +108,7 @@ def test_configured_category_order_flows_through_pipeline_and_report(
         json.dumps(
             {
                 "metadata": {
+                    "device_id": "camera-01",
                     "capture_id": "capture-001",
                     "partition": "fit",
                     "date": "capture-001",
@@ -137,7 +135,7 @@ def test_configured_category_order_flows_through_pipeline_and_report(
 
 
 def test_packet_transformer_builds_windows_and_matrix():
-    transformer = PacketTransformer(CATEGORY_ORDER, device_id="camera-01", window_minutes=10)
+    transformer = PacketTransformer(CATEGORY_ORDER, window_minutes=10)
     records = [
         ("2020-01-01T00:00:00Z", "tcp"),
         ("2020-01-01T00:20:00Z", "arp"),
@@ -149,7 +147,6 @@ def test_packet_transformer_builds_windows_and_matrix():
 
     assert windows == [
         WindowRecord(
-            device_id="camera-01",
             start_utc="2020-01-01T00:00:00Z",
             end_utc="2020-01-01T00:10:00Z",
             categories=CATEGORY_ORDER,
@@ -157,7 +154,6 @@ def test_packet_transformer_builds_windows_and_matrix():
             state="observed",
         ),
         WindowRecord(
-            device_id="camera-01",
             start_utc="2020-01-01T00:10:00Z",
             end_utc="2020-01-01T00:20:00Z",
             categories=CATEGORY_ORDER,
@@ -165,7 +161,6 @@ def test_packet_transformer_builds_windows_and_matrix():
             state="observed-silent",
         ),
         WindowRecord(
-            device_id="camera-01",
             start_utc="2020-01-01T00:20:00Z",
             end_utc="2020-01-01T00:30:00Z",
             categories=CATEGORY_ORDER,
@@ -185,13 +180,12 @@ def test_packet_transformer_rejects_non_positive_window_size(window_minutes):
     with pytest.raises(ValueError, match="must be positive"):
         PacketTransformer(
             CATEGORY_ORDER,
-            device_id="camera-01",
             window_minutes=window_minutes,
         )
 
 
 def test_declared_capture_discontinuity_is_missing_and_excluded_from_matrix():
-    transformer = PacketTransformer(CATEGORY_ORDER, "camera-01", window_minutes=10)
+    transformer = PacketTransformer(CATEGORY_ORDER, window_minutes=10)
     records = [
         ("2020-01-01T00:00:00Z", "tcp"),
         ("2020-01-01T00:20:00Z", "arp"),
@@ -216,7 +210,6 @@ def test_declared_capture_discontinuity_is_missing_and_excluded_from_matrix():
 def test_missing_window_rejects_zero_counts_disguised_as_silence():
     with pytest.raises(ValidationError, match="cannot have counts"):
         WindowRecord(
-            device_id="camera-01",
             start_utc="2020-01-01T00:10:00Z",
             end_utc="2020-01-01T00:20:00Z",
             categories=CATEGORY_ORDER,
@@ -226,7 +219,7 @@ def test_missing_window_rejects_zero_counts_disguised_as_silence():
 
 
 def test_capture_discontinuity_cannot_hide_observed_packets():
-    transformer = PacketTransformer(CATEGORY_ORDER, "camera-01", window_minutes=10)
+    transformer = PacketTransformer(CATEGORY_ORDER, window_minutes=10)
     time_series = transformer.build_time_series(
         [("2020-01-01T00:00:00Z", "tcp")]
     )
@@ -244,7 +237,6 @@ def test_capture_discontinuity_cannot_hide_observed_packets():
 def test_half_open_window_assignment_at_boundaries(window_minutes):
     transformer = PacketTransformer(
         CATEGORY_ORDER,
-        device_id="camera-01",
         window_minutes=window_minutes,
     )
     duration = pd.Timedelta(minutes=window_minutes)
@@ -259,7 +251,6 @@ def test_half_open_window_assignment_at_boundaries(window_minutes):
 
     assert windows == [
         WindowRecord(
-            device_id="camera-01",
             start_utc=boundary - duration,
             end_utc=boundary,
             categories=CATEGORY_ORDER,
@@ -267,7 +258,6 @@ def test_half_open_window_assignment_at_boundaries(window_minutes):
             state="observed",
         ),
         WindowRecord(
-            device_id="camera-01",
             start_utc=boundary,
             end_utc=boundary + duration,
             categories=CATEGORY_ORDER,
@@ -294,8 +284,6 @@ def test_window_policy_is_explicit_and_epoch_aligned():
 )
 def test_window_record_round_trip_preserves_all_states(state, counts):
     original = WindowRecord(
-        device_id="camera-01",
-        capture_id="capture-001",
         start_utc="2020-01-01T00:00:00Z",
         end_utc="2020-01-01T00:10:00Z",
         categories=CATEGORY_ORDER,
@@ -316,8 +304,6 @@ def test_window_record_round_trip_preserves_all_states(state, counts):
 def test_processed_dataset_save_load_round_trip_preserves_model_inputs(tmp_path):
     windows = tuple(
         WindowRecord(
-            device_id="camera-01",
-            capture_id="capture-001",
             start_utc=f"2020-01-01T00:{index * 10:02d}:00Z",
             end_utc=f"2020-01-01T00:{(index + 1) * 10:02d}:00Z",
             categories=CATEGORY_ORDER,
@@ -334,6 +320,7 @@ def test_processed_dataset_save_load_round_trip_preserves_model_inputs(tmp_path)
     )
     original = ProcessedDataset(
         metadata=Metadata(
+            device_id="camera-01",
             capture_id="capture-001",
             partition="calibration",
             date="2020-01-01",
@@ -348,6 +335,9 @@ def test_processed_dataset_save_load_round_trip_preserves_model_inputs(tmp_path)
 
     saved_document = json.loads(output_path.read_text(encoding="utf-8"))
     assert set(saved_document) == {"metadata", "windows"}
+    assert saved_document["metadata"]["device_id"] == "camera-01"
+    assert all("device_id" not in window for window in saved_document["windows"])
+    assert all("capture_id" not in window for window in saved_document["windows"])
     assert restored == original
     assert [window.counts for window in restored.windows] == [
         (2, 1, 0, 1),
@@ -362,12 +352,12 @@ def test_processed_dataset_save_load_round_trip_preserves_model_inputs(tmp_path)
     assert restored.windows[0].categories == CATEGORY_ORDER
     assert restored.windows[0].start_utc.isoformat() == "2020-01-01T00:00:00+00:00"
     assert restored.metadata.capture_id == "capture-001"
+    assert restored.metadata.device_id == "camera-01"
     assert restored.metadata.partition == "calibration"
 
 
 def test_window_record_is_immutable():
     window = WindowRecord(
-        device_id="camera-01",
         start_utc="2020-01-01T00:00:00Z",
         end_utc="2020-01-01T00:10:00Z",
         categories=CATEGORY_ORDER,
@@ -382,7 +372,6 @@ def test_window_record_is_immutable():
 def test_silent_window_rejects_nonzero_counts():
     with pytest.raises(ValidationError, match="require zero counts"):
         WindowRecord(
-            device_id="camera-01",
             start_utc="2020-01-01T00:00:00Z",
             end_utc="2020-01-01T00:10:00Z",
             categories=CATEGORY_ORDER,
@@ -394,7 +383,6 @@ def test_silent_window_rejects_nonzero_counts():
 def test_observed_window_rejects_zero_counts():
     with pytest.raises(ValidationError, match="require packet counts"):
         WindowRecord(
-            device_id="camera-01",
             start_utc="2020-01-01T00:00:00Z",
             end_utc="2020-01-01T00:10:00Z",
             categories=CATEGORY_ORDER,

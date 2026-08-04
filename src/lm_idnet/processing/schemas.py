@@ -20,23 +20,11 @@ class WindowRecord(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    device_id: str = Field(min_length=1)
-    capture_id: str | None = Field(default=None, min_length=1)
     start_utc: datetime
     end_utc: datetime
     categories: tuple[str, ...]
     counts: tuple[NonNegativeInt, ...] | None
     state: Literal["observed", "observed-silent", "missing"]
-
-    @field_validator("device_id", "capture_id")
-    @classmethod
-    def identifiers_must_not_be_blank(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        identifier = value.strip()
-        if not identifier:
-            raise ValueError("identifier must not be blank")
-        return identifier
 
     @field_validator("categories", mode="before")
     @classmethod
@@ -81,10 +69,19 @@ class WindowRecord(BaseModel):
 class Metadata(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    device_id: str = Field(min_length=1)
     capture_id: str = Field(min_length=1)
     partition: Literal["fit", "calibration", "development_test", "final_test"]
     date: str
     file_source: str
+
+    @field_validator("device_id", "capture_id")
+    @classmethod
+    def identifiers_must_not_be_blank(cls, value: str) -> str:
+        identifier = value.strip()
+        if not identifier:
+            raise ValueError("identifier must not be blank")
+        return identifier
 
 
 class ProcessedDataset(BaseModel):
@@ -92,14 +89,3 @@ class ProcessedDataset(BaseModel):
 
     metadata: Metadata
     windows: tuple[WindowRecord, ...]
-
-    @model_validator(mode="after")
-    def capture_ids_must_match_metadata(self) -> "ProcessedDataset":
-        mismatched = {
-            window.capture_id
-            for window in self.windows
-            if window.capture_id != self.metadata.capture_id
-        }
-        if mismatched:
-            raise ValueError("window capture IDs must match dataset metadata")
-        return self
