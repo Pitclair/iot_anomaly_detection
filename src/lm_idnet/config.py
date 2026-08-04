@@ -176,6 +176,7 @@ class SeedConfig(StrictModel):
 
 class EstimatorConfig(StrictModel):
     categories_k: int = Field(gt=1)
+    initial_alpha_value: float = Field(gt=0)
     tolerance_delta: float = Field(gt=0)
     max_iterations: int = Field(default=1000, gt=0)
     log_likelihood_backend: Literal["scipy", "lm"] = "scipy"

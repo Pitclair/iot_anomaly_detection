@@ -45,6 +45,7 @@
   },
   "estimator": {
     "categories_k": 4,
+    "initial_alpha_value": 1.0,
     "tolerance_delta": 2e-9,
     "max_iterations": 1000,
     "log_likelihood_backend": "scipy"

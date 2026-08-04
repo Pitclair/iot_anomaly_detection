@@ -21,8 +21,9 @@ def test_fixed_point_small():
     alpha, info = fixed_point_dirichlet(
         counts,
         ScipyLogLikelihood(),
-        tol=1e-6,
-        max_iter=200,
+        alpha_init=np.ones(4),
+        tolerance=1e-6,
+        max_iterations=200,
     )
     assert alpha.shape[0] == 4
     assert info['converged'] in (True, False)
@@ -38,7 +39,8 @@ def test_fixed_point_uses_injected_log_likelihood() -> None:
         counts,
         log_likelihood,
         alpha_init=np.ones(2),
-        max_iter=2,
+        tolerance=1e-9,
+        max_iterations=2,
     )
 
     # One call establishes the baseline and each iteration evaluates its update.

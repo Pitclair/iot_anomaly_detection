@@ -99,17 +99,25 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
     )
 
 
-def create_initial_alpha(category_count: int) -> np.ndarray:
-    """Create the simple neutral starting point alpha_k = 1."""
+def create_initial_alpha(
+    category_count: int,
+    initial_value: float,
+) -> np.ndarray:
+    """Create a neutral alpha vector from configured values."""
     if category_count < 2:
         raise ValueError("at least two categories are required")
-    return np.ones(category_count, dtype=np.float64)
+    if not np.isfinite(initial_value) or initial_value <= 0:
+        raise ValueError("initial alpha value must be finite and positive")
+    return np.full(category_count, initial_value, dtype=np.float64)
 
 
 def initialize_modeling_stage(config: AppConfig) -> dict[str, object]:
     """Prepare model inputs without fitting or persisting a model."""
     training = load_training_matrix(config)
-    initial_alpha = create_initial_alpha(len(config.ingest.categories))
+    initial_alpha = create_initial_alpha(
+        len(config.ingest.categories),
+        config.estimator.initial_alpha_value,
+    )
     concentration = float(initial_alpha.sum())
     psi = 1.0 / concentration
     backend = config.estimator.log_likelihood_backend

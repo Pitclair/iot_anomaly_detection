@@ -15,8 +15,9 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   that are intentionally byte-identical; it is empty by default.
 - `seeds`: independent non-negative seeds for simulation, model fitting,
   bootstrap procedures, and other randomized algorithms.
-- `estimator`: category count, positive convergence tolerance, positive
-  iteration limit, and the selected log-likelihood backend. `scipy` is the
+- `estimator`: category count, positive initial alpha value, positive
+  convergence tolerance, positive iteration limit, and the selected
+  log-likelihood backend. `scipy` is the
   working pipeline backend; `lm` selects the placeholder for the future
   Languasco-Migliardi implementation and fails until it is implemented.
 - `calibration`: lower-tail quantile strictly between zero and one and the

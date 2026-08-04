@@ -109,4 +109,10 @@ def test_training_rejects_dataset_with_wrong_partition(
 
 def test_initial_alpha_requires_multiple_categories() -> None:
     with pytest.raises(ValueError, match="at least two"):
-        create_initial_alpha(1)
+        create_initial_alpha(1, 1.0)
+
+
+def test_initial_alpha_uses_configured_value() -> None:
+    alpha = create_initial_alpha(4, 0.5)
+
+    assert alpha.tolist() == [0.5, 0.5, 0.5, 0.5]
