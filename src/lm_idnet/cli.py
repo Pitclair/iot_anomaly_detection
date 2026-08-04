@@ -111,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="fingerprint JSON path (default: <reports_dir>/dataset_fingerprint.json)",
     )
+    command_parsers["diagnose"].add_argument(
+        "--output",
+        type=Path,
+        help="statistics JSON path (default: <reports_dir>/capture_statistics.json)",
+    )
     return parser
 
 
@@ -139,15 +144,15 @@ def _preprocess(config: AppConfig) -> None:
         raise IngestionError(f"preprocessing failed: {error}") from error
 
 
-def _diagnose(config: AppConfig) -> None:
+def _diagnose(config: AppConfig, output_path: Path) -> None:
     from lm_idnet.processing.statistics import Statistics
 
     ingest = config.ingest
     Statistics(
-        json_dir=_processed_path(config),
+        processed_dir=_processed_path(config),
         categories=list(ingest.categories),
         dates=list(all_capture_ids(config)),
-    ).process_all()
+    ).write_report(output_path)
 
 
 def _forecast(config: AppConfig) -> None:
@@ -170,7 +175,6 @@ def _not_implemented(command: str) -> Callable[[AppConfig], None]:
 
 HANDLERS: dict[str, Callable[[AppConfig], None]] = {
     "preprocess": _preprocess,
-    "diagnose": _diagnose,
     "train": _not_implemented("train"),
     "calibrate": _not_implemented("calibrate"),
     "score": _not_implemented("score"),
@@ -253,6 +257,23 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                     "command": "preprocess",
                     "dataset_version": manifest["dataset_version"],
                     "fingerprint": str(output_path),
+                    "status": "completed",
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "diagnose":
+        output_path = (
+            args.output or config.outputs.reports_dir / "capture_statistics.json"
+        )
+        _diagnose(config, output_path)
+        print(
+            json.dumps(
+                {
+                    "command": "diagnose",
+                    "report": str(output_path),
                     "status": "completed",
                 },
                 sort_keys=True,

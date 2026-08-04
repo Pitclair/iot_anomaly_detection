@@ -15,6 +15,10 @@ forecast    Forecast traffic using a verified model
 benchmark   Measure backend and pipeline performance
 ```
 
+`diagnose` writes one JSON report for all configured captures. By default the
+report is `reports/capture_statistics.json`; use `--output PATH` to choose a
+different location. Each entry includes its capture ID and temporal partition.
+
 Run `lm-idnet --help` for the complete list or
 `lm-idnet <command> --help` for command-specific arguments.
 

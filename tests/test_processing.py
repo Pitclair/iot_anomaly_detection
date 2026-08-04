@@ -80,7 +80,6 @@ def test_canonical_packet_classification_and_counts(tmp_path):
 
 def test_configured_category_order_flows_through_pipeline_and_report(
     tmp_path,
-    capsys,
     config_factory,
 ):
     config = config_factory(
@@ -122,15 +121,19 @@ def test_configured_category_order_flows_through_pipeline_and_report(
         ),
         encoding="utf-8",
     )
-    Statistics(
-        json_dir=tmp_path,
+    report = Statistics(
+        processed_dir=tmp_path,
         categories=configured_order,
         dates=["capture-001"],
-    ).process_all()
-    report = capsys.readouterr().out
+    ).build_report()
 
-    report_positions = [report.index(f"| {category}") for category in configured_order]
-    assert report_positions == sorted(report_positions)
+    capture_report = report["captures"][0]
+    assert capture_report["capture_id"] == "capture-001"
+    assert capture_report["partition"] == "fit"
+    assert [item["category"] for item in capture_report["categories"]] == list(
+        configured_order
+    )
+    assert [item["mean"] for item in capture_report["categories"]] == [1, 0, 1, 1]
 
 
 def test_packet_transformer_builds_windows_and_matrix():
