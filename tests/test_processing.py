@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -76,6 +78,37 @@ def test_canonical_packet_classification_and_counts(tmp_path):
     transformer = PacketTransformer(CATEGORY_ORDER)
     windows = transformer.to_windows(transformer.build_time_series(records))
     assert transformer.to_numpy_matrix(windows).sum(axis=0).tolist() == [1, 1, 1, 1]
+
+
+def test_first_capture_in_fresh_process_loads_ethernet_layers(tmp_path):
+    pcap_path = tmp_path / "first-capture.pcap"
+    wrpcap(
+        str(pcap_path),
+        [
+            Ether() / IP() / TCP(sport=1234, dport=443),
+            Ether() / IP() / UDP(sport=1234, dport=53),
+            Ether() / ARP(),
+        ],
+    )
+    script = """
+import json
+import sys
+from lm_idnet.processing.pcap_processor import PcapProcessor
+
+processor = PcapProcessor(categories=["tcp", "udp", "ssdp", "arp"])
+records = list(processor.process_pcap(sys.argv[1]))
+print(json.dumps([category for _, category in records]))
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(pcap_path)],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == ["tcp", "udp", "arp"]
 
 
 def test_configured_category_order_flows_through_pipeline_and_report(

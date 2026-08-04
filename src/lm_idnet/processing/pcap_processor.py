@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import Iterator
 
 import pandas as pd
+# Register link-layer decoders before PcapReader inspects the capture header.
+# Otherwise, the first capture opened in a fresh process can become Raw packets.
+from scapy.layers import inet as _inet_layers  # noqa: F401
+from scapy.layers import l2 as _l2_layers  # noqa: F401
 from scapy.utils import PcapReader
 
 from .categories import (
