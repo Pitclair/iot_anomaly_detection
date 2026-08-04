@@ -16,6 +16,7 @@ from numpy.random import Generator
 from lm_idnet.config import load_config
 from lm_idnet.exceptions import DataValidationError, IngestionError
 from lm_idnet.processing.categories import validate_categories
+from lm_idnet.processing.packet_transformer import PacketTransformer
 from lm_idnet.processing.window_policy import validate_window_minutes
 from lm_idnet.randomness import create_named_generators
 
@@ -68,7 +69,7 @@ def aggregate_smoke_fixture(
     fixture: dict[str, Any],
     categories: Sequence[str],
 ) -> list[dict[str, Any]]:
-    """Aggregate synthetic events into exact half-open windows, including silence."""
+    """Validate smoke data and aggregate it with the production transformer."""
     categories = validate_categories(categories)
     try:
         window_minutes = validate_window_minutes(fixture["window_minutes"])
@@ -79,7 +80,7 @@ def aggregate_smoke_fixture(
     window_count = fixture["window_count"]
     if not isinstance(window_count, int) or window_count <= 0:
         raise DataValidationError("smoke window_count must be positive")
-    duration = timedelta(minutes=window_minutes)
+    coverage_end = start + window_count * timedelta(minutes=window_minutes)
     discontinuities = fixture["capture_discontinuities"]
     if not isinstance(discontinuities, list):
         raise DataValidationError("capture_discontinuities must be a list")
@@ -95,25 +96,7 @@ def aggregate_smoke_fixture(
             raise DataValidationError("capture discontinuity end must follow its start")
         missing_ranges.append((gap_start, gap_end))
 
-    windows = []
-    for index in range(window_count):
-        window_start = start + index * duration
-        window_end = window_start + duration
-        is_missing = any(
-            gap_start < window_end and gap_end > window_start
-            for gap_start, gap_end in missing_ranges
-        )
-        windows.append(
-            {
-                "start_utc": window_start.isoformat().replace("+00:00", "Z"),
-                "end_utc": window_end.isoformat().replace(
-                    "+00:00", "Z"
-                ),
-                "state": "missing" if is_missing else "observed-silent",
-                "counts": None if is_missing else {category: 0 for category in categories},
-            }
-        )
-
+    records: list[tuple[datetime, str]] = []
     for event in fixture["events"]:
         if not isinstance(event, dict) or set(event) != {"timestamp", "category"}:
             raise DataValidationError(
@@ -123,19 +106,41 @@ def aggregate_smoke_fixture(
         if category not in categories:
             raise DataValidationError(f"unknown smoke category: {category}")
         timestamp = _utc_timestamp(event["timestamp"])
-        elapsed = timestamp - start
-        window_index = int(elapsed.total_seconds() // duration.total_seconds())
-        if elapsed.total_seconds() < 0 or window_index >= window_count:
+        if timestamp < start or timestamp >= coverage_end:
             raise DataValidationError(
                 f"smoke event falls outside declared coverage: {event['timestamp']}"
             )
-        if windows[window_index]["state"] == "missing":
-            raise DataValidationError(
-                f"smoke event falls within missing coverage: {event['timestamp']}"
-            )
-        windows[window_index]["counts"][category] += 1
-        windows[window_index]["state"] = "observed"
-    return windows
+        records.append((timestamp, category))
+
+    transformer = PacketTransformer(
+        categories,
+        device_id="smoke-fixture",
+        window_minutes=window_minutes,
+    )
+    try:
+        windows = transformer.to_windows(
+            transformer.build_time_series(records),
+            capture_discontinuities=missing_ranges,
+        )
+    except ValueError as error:
+        raise DataValidationError(str(error)) from error
+
+    if len(windows) != window_count or windows[0].start_utc != start:
+        raise DataValidationError("smoke events do not span the declared coverage")
+
+    return [
+        {
+            "start_utc": window.start_utc.isoformat().replace("+00:00", "Z"),
+            "end_utc": window.end_utc.isoformat().replace("+00:00", "Z"),
+            "state": window.state,
+            "counts": (
+                None
+                if window.counts is None
+                else dict(zip(categories, window.counts, strict=True))
+            ),
+        }
+        for window in windows
+    ]
 
 
 def _count_matrix(

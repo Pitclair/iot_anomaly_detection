@@ -9,7 +9,6 @@ from scapy.layers.l2 import ARP, Ether
 from scapy.utils import wrpcap
 
 from lm_idnet.config import load_config
-from lm_idnet.processing.aggregation import aggregate_packet_traces
 from lm_idnet.processing.categories import (
     SSDP_IS_EXCLUSIVE_OF_UDP,
     classify_packet,
@@ -30,27 +29,21 @@ CATEGORY_ORDER = load_config(
 ).ingest.categories
 
 
-def test_aggregate_simple():
-    data = {
-        "timestamp": [
-            "2020-01-01 00:00:00",
-            "2020-01-01 00:01:00",
-            "2020-01-01 00:09:59",
-            "2020-01-01 00:10:00",
-        ],
-        "protocol": ["tcp", "udp", "tcp", "arp"],
-    }
-    df = pd.DataFrame(data)
-    out = aggregate_packet_traces(
-        df,
-        categories=CATEGORY_ORDER,
-        window_minutes=10,
-    )
-    # Expect two windows: first contains 3 events (TCP,UDP,TCP), second contains 1 (ARP)
-    assert out.shape[0] == 2
-    assert tuple(out.columns) == CATEGORY_ORDER
-    assert out["tcp"].sum() == 2
-    assert out["arp"].sum() == 1
+def test_packet_transformer_counts_simple_trace():
+    records = [
+        ("2020-01-01 00:00:00", "tcp"),
+        ("2020-01-01 00:01:00", "udp"),
+        ("2020-01-01 00:09:59", "tcp"),
+        ("2020-01-01 00:10:00", "arp"),
+    ]
+    transformer = PacketTransformer(CATEGORY_ORDER, device_id="camera-01")
+
+    windows = transformer.to_windows(transformer.build_time_series(records))
+
+    assert [window.counts for window in windows] == [
+        (2, 1, 0, 0),
+        (0, 0, 0, 1),
+    ]
 
 
 def test_canonical_packet_classification_and_counts(tmp_path):
@@ -76,10 +69,9 @@ def test_canonical_packet_classification_and_counts(tmp_path):
     assert processor.packet_count == 4
     assert processor.unsupported_count == 1
 
-    frame = pd.DataFrame(records, columns=["timestamp", "protocol"])
-    counts = aggregate_packet_traces(frame, categories=CATEGORY_ORDER)
-    assert tuple(counts.columns) == CATEGORY_ORDER
-    assert counts.sum().tolist() == [1, 1, 1, 1]
+    transformer = PacketTransformer(CATEGORY_ORDER, device_id="camera-01")
+    windows = transformer.to_windows(transformer.build_time_series(records))
+    assert transformer.to_numpy_matrix(windows).sum(axis=0).tolist() == [1, 1, 1, 1]
 
 
 def test_configured_category_order_flows_through_pipeline_and_report(
