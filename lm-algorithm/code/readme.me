@@ -1,0 +1,13 @@
+
+1. This code compares 3 techniques to calculate the log-likelihood of the 
+Dirichlet Multinomial (DM) Distribution; namely: Python's math library, Scipy library, and the Languasco-Migliardi (LM) technique, see "Alessandro Languasco & Mauro Migliardi, 2023. On the fast computation of the Dirichlet-multinomial log-likelihood function, Computational Statistics, Springer, vol. 38(4), pages 1995-2013, December.".
+
+2. The comparison is conducted using 9 different datasets, included into the "code" folder with csv file extension; namely: cane.csv, cavallo.csv, IoT.csv, TIP.csv, TCP.csv, space.csv, auto.csv, f_vs_m.csv, and mideast.csv.
+
+3. To run this code, use Reproducible Run, which executes the executor_prod.py script. If you wish to use a given dataset, ratio, accuracy, and/or mantissa precision, you need to modify lines 81, 99, 109, and/or 110 in this script, respectively.
+
+
+5. It is worth noticing that the execution times vary significantly depending on the dataset used, and the ratio and contents of the dataset samples utilized in fitting the DM Distribution. For the datasets included in this capsule, it was noticed that Reproducible Run took anywhere from 10 seconds to 5 minutes to finish execution. Moreover, it was observed that for particular highly overdispersed datasets, namely cane and cavallo, Python's math and Scipy implementations of the log-likelihood function may struggle to converge in less than 5 minutes, especially with smaller ratios. Thus, for these two datasets, the user is advised to abort experiments that do not complete within 5 minutes, and re-execute, which would utilize a different sample of the designated dataset that may converge at a faster pace.
+
+
+

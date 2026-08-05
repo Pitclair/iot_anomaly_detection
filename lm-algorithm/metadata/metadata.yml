@@ -1,0 +1,18 @@
+metadata_version: 1
+name: Fast and accurate implementation of the Dirichlet multinomial log-likelihood
+  function
+description: This capsule compares 3 implementations of the log-likelihood of the
+  Dirichlet Multinomial Distribution, one of which is the recently developed Languasco-Migliardi
+  (LM) technique, and the other two are based on Python's math and Scipy library.   The
+  experiments using 9 datasets from different domains show the superiority of the
+  LM technique in terms of execution time and accuracy.
+authors:
+- name: Alessandro Languasco
+  affiliations:
+  - name: Università di Padova
+- name: 'Mauro Migliardi '
+  affiliations:
+  - name: Università di Padova
+- name: Sherenaz Al-Haj Baddar
+  affiliations:
+  - name: The University of Jordan

@@ -1,0 +1,12 @@
+# hash:sha256:20bc67421ec25215c04c3940b2d267c1174eb5997244c68c1d9a9147eb331d25
+FROM registry.codeocean.com/codeocean/ubuntu:20.04-cuda11.7.0-cudnn8
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl=7.68.0-1ubuntu2.25 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY postInstall /
+RUN /postInstall

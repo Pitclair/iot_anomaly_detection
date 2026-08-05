@@ -1,0 +1,52 @@
+#all: mainLM_hor_shift_fig6 mainLM_hor_shift_fig5 mainLM_hor_shift_exp1 mainLM_hor_shift_exp2 mainLM_hor_shift_exp3 mainLM_hor_shift_exp4 mainLM_hor_shift_exp5 mainLM_hor_shift_exp8 lib lib_time
+all: lib_time mainLM_hor_shift
+ 
+
+#init.o: init.c constants_hor_shift.h
+	#gcc -c -Ofast -fcommon init.c
+	
+lib_time: init_hor_shift.h constants_hor_shift.h LM_hor_shift.h LM_time_lib.c
+	gcc -O3 -fPIC -shared LM_time_lib.c -o LM_time_lib.so
+
+mainLM_hor_shift: init_hor_shift.h constants_hor_shift.h LM_hor_shift.h LM_time_lib.c mainLM_hor_shift.c
+	gcc -O3 mainLM_hor_shift.c LM_time_lib.c -lm -o mainLM_hor_shift
+
+
+#lib: init_hor_shift.h constants_hor_shift.h LM_hor_shift.h LM_lib.c
+	#gcc -fPIC -shared LM_lib.c -o LM_lib.so
+
+#init_hor_shift.o: init_hor_shift.c constants_hor_shift.h
+	#gcc -c -Ofast -fcommon init_hor_shift.c	
+
+#LM_hor_shift.o: LM_hor_shift.c constants_hor_shift.h
+	#gcc -c -Ofast -fcommon LM_hor_shift.c
+	
+	
+#mainLM_hor_shift_fig6: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_fig6.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_fig6.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_fig6  -lgsl -lgslcblas -lm
+
+#mainLM_hor_shift_fig5: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_fig5.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_fig5.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_fig5  -lgsl -lgslcblas -lm
+
+#mainLM_hor_shift_exp1: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_exp1.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_exp1.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_exp1  -lgsl -lgslcblas -lm
+
+#mainLM_hor_shift_exp2: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_exp2.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_exp2.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_exp2  -lgsl -lgslcblas -lm
+
+#mainLM_hor_shift_exp3: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_exp3.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_exp3.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_exp3  -lgsl -lgslcblas -lm
+
+#mainLM_hor_shift_exp4: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_exp4.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_exp4.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_exp4  -lgsl -lgslcblas -lm
+	
+#mainLM_hor_shift_exp5: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_exp5.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_exp5.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_exp5  -lgsl -lgslcblas -lm
+
+#mainLM_hor_shift_exp8: LM_hor_shift.o init_hor_shift.o mainLM_hor_shift_exp8.c LM_hor_shift.h constants_hor_shift.h init_hor_shift.h
+	#gcc mainLM_hor_shift_exp8.c init_hor_shift.o LM_hor_shift.o -Ofast -fcommon -o mainLM_hor_shift_exp8  -lgsl -lgslcblas -lm
+
+		
+clean:
+	rm *.o mainLM_hor_shift_fig6 mainLM_hor_shift_fig5 mainLM_hor_shift_exp1 mainLM_hor_shift_exp2 mainLM_hor_shift_exp3 mainLM_hor_shift_exp4 mainLM_hor_shift_exp5 mainLM_hor_shift_exp8 LM_lib.so LM_time_lib.so mainLM_hor_shift
+
