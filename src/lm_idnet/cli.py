@@ -313,14 +313,14 @@ def run_command(argv: Sequence[str] | None = None) -> None:
         return
 
     if args.command == "train":
-        from lm_idnet.models.modeling_stage import initialize_modeling_stage
+        from lm_idnet.models.modeling_stage import train_model
 
-        result = initialize_modeling_stage(config)
+        result = train_model(config)
         print(
             json.dumps(
                 {
                     "command": "train",
-                    "status": "initialized",
+                    "status": "completed",
                     **result,
                 },
                 sort_keys=True,

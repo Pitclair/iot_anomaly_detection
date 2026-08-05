@@ -62,10 +62,11 @@ standard exit code 2 and usage output.
 
 ## Implementation status
 
-At this milestone, `preprocess`, `diagnose`, and `forecast` have callable
-handlers. `train` loads the fit-partition matrix and creates a neutral initial
-alpha vector, then stops before fitting or saving a model. `calibrate`, `score`,
-`evaluate`, `adapt`, and `benchmark` are registered stable interfaces but return
+At this milestone, `preprocess`, `diagnose`, `train`, and `forecast` have callable
+handlers. `train` loads the fit-partition matrix, estimates Dirichlet parameters
+with Minka's fixed-point iteration and the configured likelihood backend, and
+saves a checksummed model artifact. `calibrate`, `score`, `evaluate`, `adapt`,
+and `benchmark` are registered stable interfaces but return
 `command_unavailable_error` (exit code 9) when executed. Their `--help` and
 `--dry-run` paths work normally.
 

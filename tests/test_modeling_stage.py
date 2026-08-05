@@ -1,15 +1,17 @@
-"""Tests for the deliberately incomplete model-initialization stage."""
+"""Tests for Dirichlet-multinomial model training."""
 
 from datetime import datetime, timedelta, timezone
+import logging
 
 import numpy as np
 import pytest
 
-from lm_idnet.exceptions import DataValidationError
+from lm_idnet.artifacts import load_model_for_scoring
+from lm_idnet.exceptions import ConvergenceError, DataValidationError
 from lm_idnet.models.modeling_stage import (
     create_initial_alpha,
-    initialize_modeling_stage,
     load_training_matrix,
+    train_model,
 )
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import save_processed_dataset
@@ -77,23 +79,53 @@ def test_load_training_matrix_uses_only_observed_fit_windows(
     assert training.missing_window_count == capture_count
 
 
-def test_initialization_reports_that_no_model_was_fitted(
+def test_training_fits_and_saves_model(
+    tmp_path,
+    config_factory,
+    caplog,
+) -> None:
+    model_path = tmp_path / "model.json"
+    config = config_factory(
+        ingest={"processed_root": tmp_path},
+        estimator={"tolerance_delta": 1e-4, "max_iterations": 2000},
+        outputs={"model_path": model_path},
+    )
+    write_fit_datasets(config, tmp_path)
+
+    with caplog.at_level(logging.INFO):
+        result = train_model(config)
+    saved = load_model_for_scoring(model_path)
+
+    assert result["stage"] == "dirichlet_multinomial_training"
+    assert result["matrix_shape"] == [12, 4]
+    assert result["initial_alpha"] == pytest.approx([2.8, 1.6, 2.4, 3.2])
+    assert (np.asarray(result["alpha"]) > 0).all()
+    assert result["log_likelihood_backend"] == "scipy"
+    assert result["final_log_likelihood"] > result["initial_log_likelihood"]
+    assert result["model_path"] == str(model_path)
+    assert saved["alpha"] == pytest.approx(result["alpha"])
+    assert saved["categories"] == list(config.ingest.categories)
+    assert saved["checksum"] == result["model_checksum"]
+    assert "Model converged" in caplog.text
+    assert "Saved model" in caplog.text
+
+
+def test_training_does_not_save_unconverged_model(
     tmp_path,
     config_factory,
 ) -> None:
-    config = config_factory(ingest={"processed_root": tmp_path})
+    model_path = tmp_path / "model.json"
+    config = config_factory(
+        ingest={"processed_root": tmp_path},
+        estimator={"max_iterations": 1},
+        outputs={"model_path": model_path},
+    )
     write_fit_datasets(config, tmp_path)
 
-    result = initialize_modeling_stage(config)
+    with pytest.raises(ConvergenceError, match="did not converge"):
+        train_model(config)
 
-    assert result["matrix_shape"] == [12, 4]
-    assert result["initial_alpha"] == pytest.approx([2.8, 1.6, 2.4, 3.2])
-    assert result["initial_concentration"] == pytest.approx(10.0)
-    assert result["initial_psi"] == pytest.approx(0.1)
-    assert result["log_likelihood_backend"] == "scipy"
-    assert np.isfinite(result["initial_log_likelihood"])
-    assert result["fitting_performed"] is False
-    assert result["model_saved"] is False
+    assert not model_path.exists()
 
 
 def test_training_rejects_dataset_with_wrong_partition(
