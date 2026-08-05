@@ -41,21 +41,12 @@ class DirichletMultinomialEstimator:
 
     def fit(self, counts: np.ndarray) -> DirichletFit:
         """Initialize alpha once and fit it to the supplied count matrix."""
-        initial_alpha = self._create_initial_alpha(
-            counts,
-            self.initial_concentration,
-        )
-        return self._fixed_point_dirichlet(
-            counts,
-            self.log_likelihood,
-            initial_alpha,
-            self.tolerance,
-            self.max_iterations,
-        )
+        initial_alpha = self._create_initial_alpha(counts)
+        return self._fixed_point_dirichlet(counts, initial_alpha)
 
     def _create_initial_alpha(
-            self,
-            counts: np.ndarray
+        self,
+        counts: np.ndarray,
     ) -> np.ndarray:
         """Initialize alpha from observed category proportions."""
         counts = np.asarray(counts)
@@ -63,7 +54,10 @@ class DirichletMultinomialEstimator:
             raise DataValidationError(
                 "initial alpha requires a non-empty matrix with multiple categories"
             )
-        if not np.isfinite(self.initial_concentration) or self.initial_concentration <= 0:
+        if (
+            not np.isfinite(self.initial_concentration)
+            or self.initial_concentration <= 0
+        ):
             raise DataValidationError(
                 "initial alpha concentration must be finite and positive"
             )
@@ -77,9 +71,9 @@ class DirichletMultinomialEstimator:
         return category_proportions * self.initial_concentration
 
     def _fixed_point_dirichlet(
-            self,
-            counts: np.ndarray,
-            alpha_init: np.ndarray,
+        self,
+        counts: np.ndarray,
+        alpha_init: np.ndarray,
     ) -> DirichletFit:
         """Run Minka's fixed-point iteration from an existing alpha vector."""
         counts = np.asarray(counts, dtype=np.float64)
@@ -130,4 +124,3 @@ class DirichletMultinomialEstimator:
             initial_log_likelihood=initial_log_likelihood,
             final_log_likelihood=final_log_likelihood,
         )
-

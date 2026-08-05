@@ -7,11 +7,10 @@ from time import perf_counter
 
 import numpy as np
 
-from lm_idnet.algorithms.dirichlet import DirichletMultinomialEstimator
-from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
 from lm_idnet.artifact_schemas import CURRENT_SCHEMA_VERSION, ModelArtifact
 from lm_idnet.artifacts import artifact_checksum
 from lm_idnet.config import AppConfig
+from lm_idnet.algorithms.estimator_factory import create_estimator
 from lm_idnet.exceptions import ConvergenceError, DataValidationError
 from lm_idnet.partitioning import fit_partition_for_training
 from lm_idnet.processing.schemas import ProcessedDataset
@@ -130,12 +129,7 @@ def train_model(config: AppConfig) -> dict[str, object]:
     """Fit the configured normal-traffic model and save it."""
     training = load_training_matrix(config)
     backend = config.estimator.log_likelihood_backend
-    estimator = DirichletMultinomialEstimator(
-        log_likelihood=initialize_log_likelihood(backend),
-        initial_concentration=config.estimator.initial_alpha_concentration,
-        tolerance=config.estimator.tolerance_delta,
-        max_iterations=config.estimator.max_iterations,
-    )
+    estimator = create_estimator(config.estimator)
 
     logger.info(
         "Starting model fit: rows=%d, categories=%d, backend=%s, "
