@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from lm_idnet.algorithms.dirichlet import create_initial_alpha, fixed_point_dirichlet
+from lm_idnet.algorithms.dirichlet import (
+    DirichletFit,
+    create_initial_alpha,
+    fixed_point_dirichlet,
+)
 from lm_idnet.algorithms.log_likelihood import LogLikelihood, ScipyLogLikelihood
 from lm_idnet.exceptions import DataValidationError
 
@@ -39,20 +43,29 @@ def test_initial_alpha_rejects_unobserved_category() -> None:
         create_initial_alpha(counts, 10.0)
 
 
-def test_fixed_point_small():
+def test_fixed_point_returns_complete_fit() -> None:
     # small synthetic counts with clear proportions
     counts = np.array([[10, 5, 0, 0], [9,6,1,0], [11,4,0,1]])
-    alpha, info = fixed_point_dirichlet(
+    initial_alpha = np.ones(4)
+
+    fit = fixed_point_dirichlet(
         counts,
         ScipyLogLikelihood(),
-        alpha_init=np.ones(4),
+        alpha_init=initial_alpha,
         tolerance=1e-6,
         max_iterations=200,
     )
-    assert alpha.shape[0] == 4
-    assert info['converged'] in (True, False)
-    # alpha should be positive
-    assert (alpha > 0).all()
+
+    assert isinstance(fit, DirichletFit)
+    assert fit.initial_alpha.tolist() == initial_alpha.tolist()
+    assert fit.alpha.shape == (4,)
+    assert (fit.alpha > 0).all()
+    assert fit.concentration == pytest.approx(fit.alpha.sum())
+    assert fit.psi == pytest.approx(1.0 / fit.concentration)
+    assert 1 <= fit.iterations <= 200
+    assert isinstance(fit.converged, bool)
+    assert np.isfinite(fit.initial_log_likelihood)
+    assert np.isfinite(fit.final_log_likelihood)
 
 
 def test_fixed_point_uses_injected_log_likelihood() -> None:

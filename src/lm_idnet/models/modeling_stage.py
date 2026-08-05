@@ -147,7 +147,7 @@ def train_model(config: AppConfig) -> dict[str, object]:
     )
     logger.info("Initial alpha: %s", initial_alpha.tolist())
     started = perf_counter()
-    alpha, diagnostics = fixed_point_dirichlet(
+    fit = fixed_point_dirichlet(
         training.counts,
         log_likelihood,
         initial_alpha,
@@ -156,26 +156,28 @@ def train_model(config: AppConfig) -> dict[str, object]:
     )
     duration_seconds = perf_counter() - started
 
-    if not diagnostics["converged"]:
+    if not fit.converged:
         message = (
             "model fitting did not converge after "
-            f"{diagnostics['iterations']} iterations"
+            f"{fit.iterations} iterations"
         )
         logger.error(message)
         raise ConvergenceError(message)
 
-    concentration = float(alpha.sum())
-    psi = 1.0 / concentration
-    model = save_model(config.outputs.model_path, config.ingest.categories, alpha)
+    model = save_model(
+        config.outputs.model_path,
+        config.ingest.categories,
+        fit.alpha,
+    )
     logger.info(
         "Model converged after %d iterations in %.3f seconds",
-        diagnostics["iterations"],
+        fit.iterations,
         duration_seconds,
     )
-    logger.info("Fitted alpha: %s", alpha.tolist())
-    logger.info("Fitted concentration: %s", concentration)
-    logger.info("Fitted psi: %s", psi)
-    logger.info("Final log-likelihood: %s", diagnostics["ll_history"][-1])
+    logger.info("Fitted alpha: %s", fit.alpha.tolist())
+    logger.info("Fitted concentration: %s", fit.concentration)
+    logger.info("Fitted psi: %s", fit.psi)
+    logger.info("Final log-likelihood: %s", fit.final_log_likelihood)
     logger.info("Saved model to %s", config.outputs.model_path)
 
     return {
@@ -186,14 +188,14 @@ def train_model(config: AppConfig) -> dict[str, object]:
         "missing_window_count": training.missing_window_count,
         "silent_window_count": training.silent_window_count,
         "categories": list(config.ingest.categories),
-        "initial_alpha": initial_alpha.tolist(),
-        "alpha": alpha.tolist(),
-        "concentration": concentration,
-        "psi": psi,
+        "initial_alpha": fit.initial_alpha.tolist(),
+        "alpha": fit.alpha.tolist(),
+        "concentration": fit.concentration,
+        "psi": fit.psi,
         "log_likelihood_backend": backend,
-        "iterations": diagnostics["iterations"],
-        "initial_log_likelihood": diagnostics["ll_history"][0],
-        "final_log_likelihood": diagnostics["ll_history"][-1],
+        "iterations": fit.iterations,
+        "initial_log_likelihood": fit.initial_log_likelihood,
+        "final_log_likelihood": fit.final_log_likelihood,
         "duration_seconds": duration_seconds,
         "model_path": str(config.outputs.model_path),
         "model_version": model.model_version,
