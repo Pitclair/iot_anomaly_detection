@@ -7,7 +7,7 @@ from time import perf_counter
 
 import numpy as np
 
-from lm_idnet.algorithms.dirichlet import create_initial_alpha, fixed_point_dirichlet
+from lm_idnet.algorithms.dirichlet import DirichletMultinomialEstimator
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
 from lm_idnet.artifact_schemas import CURRENT_SCHEMA_VERSION, ModelArtifact
 from lm_idnet.artifacts import artifact_checksum
@@ -129,12 +129,13 @@ def save_model(
 def train_model(config: AppConfig) -> dict[str, object]:
     """Fit the configured normal-traffic model and save it."""
     training = load_training_matrix(config)
-    initial_alpha = create_initial_alpha(
-        training.counts,
-        config.estimator.initial_alpha_concentration,
-    )
     backend = config.estimator.log_likelihood_backend
-    log_likelihood = initialize_log_likelihood(backend)
+    estimator = DirichletMultinomialEstimator(
+        log_likelihood=initialize_log_likelihood(backend),
+        initial_concentration=config.estimator.initial_alpha_concentration,
+        tolerance=config.estimator.tolerance_delta,
+        max_iterations=config.estimator.max_iterations,
+    )
 
     logger.info(
         "Starting model fit: rows=%d, categories=%d, backend=%s, "
@@ -145,16 +146,10 @@ def train_model(config: AppConfig) -> dict[str, object]:
         config.estimator.tolerance_delta,
         config.estimator.max_iterations,
     )
-    logger.info("Initial alpha: %s", initial_alpha.tolist())
     started = perf_counter()
-    fit = fixed_point_dirichlet(
-        training.counts,
-        log_likelihood,
-        initial_alpha,
-        config.estimator.tolerance_delta,
-        config.estimator.max_iterations,
-    )
+    fit = estimator.fit(training.counts)
     duration_seconds = perf_counter() - started
+    logger.info("Initial alpha: %s", fit.initial_alpha.tolist())
 
     if not fit.converged:
         message = (
