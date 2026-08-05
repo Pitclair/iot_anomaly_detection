@@ -100,23 +100,35 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
 
 
 def create_initial_alpha(
-    category_count: int,
-    initial_value: float,
+    counts: np.ndarray,
+    concentration: float,
 ) -> np.ndarray:
-    """Create a neutral alpha vector from configured values."""
-    if category_count < 2:
-        raise ValueError("at least two categories are required")
-    if not np.isfinite(initial_value) or initial_value <= 0:
-        raise ValueError("initial alpha value must be finite and positive")
-    return np.full(category_count, initial_value, dtype=np.float64)
+    """Initialize alpha from observed category proportions."""
+    counts = np.asarray(counts)
+    if counts.ndim != 2 or counts.shape[0] == 0 or counts.shape[1] < 2:
+        raise DataValidationError(
+            "initial alpha requires a non-empty matrix with multiple categories"
+        )
+    if not np.isfinite(concentration) or concentration <= 0:
+        raise DataValidationError(
+            "initial alpha concentration must be finite and positive"
+        )
+
+    category_totals = counts.sum(axis=0, dtype=np.float64)
+    if (category_totals <= 0).any():
+        raise DataValidationError(
+            "every category needs observed counts to initialize alpha"
+        )
+    category_proportions = category_totals / category_totals.sum()
+    return category_proportions * concentration
 
 
 def initialize_modeling_stage(config: AppConfig) -> dict[str, object]:
     """Prepare model inputs without fitting or persisting a model."""
     training = load_training_matrix(config)
     initial_alpha = create_initial_alpha(
-        len(config.ingest.categories),
-        config.estimator.initial_alpha_value,
+        training.counts,
+        config.estimator.initial_alpha_concentration,
     )
     concentration = float(initial_alpha.sum())
     psi = 1.0 / concentration

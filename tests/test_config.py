@@ -24,7 +24,7 @@ def test_load_known_valid_configuration() -> None:
 
     assert config.ingest.categories == ("tcp", "udp", "ssdp", "arp")
     assert config.estimator.categories_k == 4
-    assert config.estimator.initial_alpha_value == 1.0
+    assert config.estimator.initial_alpha_concentration == 10.0
     assert config.estimator.log_likelihood_backend == "scipy"
     assert len(config.ingest.partitions.fit) == 6
 
