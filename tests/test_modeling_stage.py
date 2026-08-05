@@ -9,7 +9,6 @@ import pytest
 from lm_idnet.artifacts import load_model_for_scoring
 from lm_idnet.exceptions import ConvergenceError, DataValidationError
 from lm_idnet.models.modeling_stage import (
-    create_initial_alpha,
     load_training_matrix,
     train_model,
 )
@@ -137,26 +136,3 @@ def test_training_rejects_dataset_with_wrong_partition(
 
     with pytest.raises(DataValidationError, match="not marked as fit"):
         load_training_matrix(config)
-
-
-def test_initial_alpha_requires_multiple_categories() -> None:
-    counts = np.ones((2, 1), dtype=np.int64)
-
-    with pytest.raises(DataValidationError, match="multiple categories"):
-        create_initial_alpha(counts, 10.0)
-
-
-def test_initial_alpha_uses_data_proportions_and_configured_concentration() -> None:
-    counts = np.array([[3, 1], [1, 1]], dtype=np.int64)
-
-    alpha = create_initial_alpha(counts, 9.0)
-
-    assert alpha.tolist() == pytest.approx([6.0, 3.0])
-    assert alpha.sum() == pytest.approx(9.0)
-
-
-def test_initial_alpha_rejects_unobserved_category() -> None:
-    counts = np.array([[3, 0], [1, 0]], dtype=np.int64)
-
-    with pytest.raises(DataValidationError, match="every category"):
-        create_initial_alpha(counts, 10.0)

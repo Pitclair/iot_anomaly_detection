@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 
-from lm_idnet.algorithms.dirichlet import fixed_point_dirichlet
+from lm_idnet.algorithms.dirichlet import create_initial_alpha, fixed_point_dirichlet
 from lm_idnet.algorithms.log_likelihood import LogLikelihood, ScipyLogLikelihood
+from lm_idnet.exceptions import DataValidationError
 
 pytestmark = [pytest.mark.unit, pytest.mark.numerical]
 
@@ -13,6 +14,29 @@ class RecordingLogLikelihood(LogLikelihood):
     def calculate(self, counts: np.ndarray, alpha: np.ndarray) -> float:
         self.calls += 1
         return float(alpha.sum())
+
+
+def test_initial_alpha_requires_multiple_categories() -> None:
+    counts = np.ones((2, 1), dtype=np.int64)
+
+    with pytest.raises(DataValidationError, match="multiple categories"):
+        create_initial_alpha(counts, 10.0)
+
+
+def test_initial_alpha_uses_data_proportions_and_configured_concentration() -> None:
+    counts = np.array([[3, 1], [1, 1]], dtype=np.int64)
+
+    alpha = create_initial_alpha(counts, 9.0)
+
+    assert alpha.tolist() == pytest.approx([6.0, 3.0])
+    assert alpha.sum() == pytest.approx(9.0)
+
+
+def test_initial_alpha_rejects_unobserved_category() -> None:
+    counts = np.array([[3, 0], [1, 0]], dtype=np.int64)
+
+    with pytest.raises(DataValidationError, match="every category"):
+        create_initial_alpha(counts, 10.0)
 
 
 def test_fixed_point_small():

@@ -1,9 +1,35 @@
 """Python implementations for Dirichlet parameter estimation."""
 
 import numpy as np
-from scipy.special import digamma, gammaln
+from scipy.special import digamma
+
+from lm_idnet.exceptions import DataValidationError
 
 from .log_likelihood import LogLikelihood
+
+
+def create_initial_alpha(
+    counts: np.ndarray,
+    concentration: float,
+) -> np.ndarray:
+    """Initialize alpha from observed category proportions."""
+    counts = np.asarray(counts)
+    if counts.ndim != 2 or counts.shape[0] == 0 or counts.shape[1] < 2:
+        raise DataValidationError(
+            "initial alpha requires a non-empty matrix with multiple categories"
+        )
+    if not np.isfinite(concentration) or concentration <= 0:
+        raise DataValidationError(
+            "initial alpha concentration must be finite and positive"
+        )
+
+    category_totals = counts.sum(axis=0, dtype=np.float64)
+    if (category_totals <= 0).any():
+        raise DataValidationError(
+            "every category needs observed counts to initialize alpha"
+        )
+    category_proportions = category_totals / category_totals.sum()
+    return category_proportions * concentration
 
 
 def fixed_point_dirichlet(

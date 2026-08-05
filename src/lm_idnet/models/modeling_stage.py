@@ -7,7 +7,7 @@ from time import perf_counter
 
 import numpy as np
 
-from lm_idnet.algorithms.dirichlet import fixed_point_dirichlet
+from lm_idnet.algorithms.dirichlet import create_initial_alpha, fixed_point_dirichlet
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
 from lm_idnet.artifact_schemas import CURRENT_SCHEMA_VERSION, ModelArtifact
 from lm_idnet.artifacts import artifact_checksum
@@ -102,30 +102,6 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
         missing_window_count=missing_window_count,
         silent_window_count=silent_window_count,
     )
-
-
-def create_initial_alpha(
-    counts: np.ndarray,
-    concentration: float,
-) -> np.ndarray:
-    """Initialize alpha from observed category proportions."""
-    counts = np.asarray(counts)
-    if counts.ndim != 2 or counts.shape[0] == 0 or counts.shape[1] < 2:
-        raise DataValidationError(
-            "initial alpha requires a non-empty matrix with multiple categories"
-        )
-    if not np.isfinite(concentration) or concentration <= 0:
-        raise DataValidationError(
-            "initial alpha concentration must be finite and positive"
-        )
-
-    category_totals = counts.sum(axis=0, dtype=np.float64)
-    if (category_totals <= 0).any():
-        raise DataValidationError(
-            "every category needs observed counts to initialize alpha"
-        )
-    category_proportions = category_totals / category_totals.sum()
-    return category_proportions * concentration
 
 
 def save_model(
