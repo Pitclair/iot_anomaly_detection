@@ -104,6 +104,23 @@ def test_training_fits_and_saves_model(
     assert result["model_path"] == str(model_path)
     assert saved["alpha"] == pytest.approx(result["alpha"])
     assert saved["categories"] == list(config.ingest.categories)
+    assert saved["concentration"] == pytest.approx(result["concentration"])
+    assert saved["mean_probabilities"] == pytest.approx(
+        np.asarray(result["alpha"]) / result["concentration"]
+    )
+    assert saved["psi"] == pytest.approx(result["psi"])
+    assert saved["training_capture_ids"] == list(config.ingest.partitions.fit)
+    assert saved["log_likelihood_backend"] == "scipy"
+    assert saved["fit_diagnostics"] == {
+        "initial_alpha": pytest.approx(result["initial_alpha"]),
+        "iterations": result["iterations"],
+        "converged": True,
+        "tolerance": config.estimator.tolerance_delta,
+        "max_iterations": config.estimator.max_iterations,
+        "initial_log_likelihood": result["initial_log_likelihood"],
+        "final_log_likelihood": result["final_log_likelihood"],
+        "duration_seconds": pytest.approx(result["duration_seconds"]),
+    }
     assert saved["checksum"] == result["model_checksum"]
     assert "Model converged" in caplog.text
     assert "Saved model" in caplog.text

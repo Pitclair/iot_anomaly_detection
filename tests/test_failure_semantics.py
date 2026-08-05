@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from lm_idnet import cli
+from lm_idnet.artifact_schemas import CURRENT_SCHEMA_VERSION
 from lm_idnet.artifacts import artifact_checksum, load_model_for_scoring
 from lm_idnet.config import load_config
 from lm_idnet.exceptions import (
@@ -98,4 +99,13 @@ def test_valid_model_checksum_is_accepted(tmp_path: Path) -> None:
     model["checksum"] = artifact_checksum(model)
     model_path.write_text(json.dumps(model), encoding="utf-8")
 
-    assert load_model_for_scoring(model_path) == model
+    loaded = load_model_for_scoring(model_path)
+
+    assert loaded["schema_version"] == CURRENT_SCHEMA_VERSION
+    assert loaded["alpha"] == model["alpha"]
+    assert loaded["concentration"] == pytest.approx(10.0)
+    assert loaded["mean_probabilities"] == pytest.approx([0.1, 0.2, 0.3, 0.4])
+    assert loaded["psi"] == pytest.approx(0.1)
+    assert loaded["training_capture_ids"] == []
+    assert loaded["log_likelihood_backend"] is None
+    assert loaded["fit_diagnostics"] is None
