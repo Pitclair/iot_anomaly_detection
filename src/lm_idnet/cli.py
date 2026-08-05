@@ -36,7 +36,7 @@ COMMANDS = (
 
 COMMAND_HELP = {
     "preprocess": "convert configured packet captures into processed windows",
-    "diagnose": "report descriptive statistics for processed windows",
+    "diagnose": "report descriptive statistics and daily psi estimates",
     "train": "load fit counts and initialize the normal-traffic model",
     "calibrate": "calibrate an anomaly threshold for a trained model",
     "score": "score processed windows and emit anomaly decisions",
@@ -174,12 +174,14 @@ def _preprocess(config: AppConfig) -> None:
 
 
 def _diagnose(config: AppConfig, output_path: Path) -> None:
+    from lm_idnet.algorithms.estimator_factory import create_estimator
     from lm_idnet.processing.statistics import Statistics
 
     ingest = config.ingest
     Statistics(
         processed_dir=_processed_path(config),
         categories=list(ingest.categories),
+        estimator=create_estimator(config.estimator),
         dates=list(all_capture_ids(config)),
     ).write_report(output_path)
 

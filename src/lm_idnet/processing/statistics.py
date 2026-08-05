@@ -1,21 +1,33 @@
 """Descriptive statistics for processed packet windows."""
 
 import json
+import logging
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
+from lm_idnet.algorithms.dirichlet import DirichletMultinomialEstimator
 from lm_idnet.exceptions import DataValidationError
 
 from .categories import validate_categories
 from .storage import load_processed_dataset
 
+logger = logging.getLogger(__name__)
+
 
 class Statistics:
-    def __init__(self, processed_dir, categories, dates=None):
+    def __init__(
+        self,
+        processed_dir: str | Path,
+        categories: Sequence[str],
+        estimator: DirichletMultinomialEstimator,
+        dates: Sequence[str] | None = None,
+    ) -> None:
         self.processed_dir = Path(processed_dir)
         self.categories = validate_categories(categories)
+        self.estimator = estimator
         self.capture_ids = set(dates or [])
 
     def _dataset_paths(self) -> list[Path]:
@@ -52,6 +64,39 @@ class Statistics:
     def _optional_float(value: float) -> float | None:
         return float(value) if np.isfinite(value) else None
 
+    def _fit_daily_psi(
+        self,
+        matrix: np.ndarray,
+        capture_id: str,
+    ) -> dict[str, float | int | bool]:
+        try:
+            fit = self.estimator.fit(matrix)
+        except (DataValidationError, ValueError) as error:
+            raise DataValidationError(
+                f"cannot estimate daily psi for {capture_id}: {error}"
+            ) from error
+
+        if fit.converged:
+            logger.info(
+                "Daily psi fitted for %s: psi=%g, iterations=%d",
+                capture_id,
+                fit.psi,
+                fit.iterations,
+            )
+        else:
+            logger.warning(
+                "Daily psi did not converge for %s after %d iterations; "
+                "reporting the final estimate",
+                capture_id,
+                fit.iterations,
+            )
+
+        return {
+            "psi": fit.psi,
+            "iterations": fit.iterations,
+            "converged": fit.converged,
+        }
+
     def process_file(self, file_path: str | Path) -> dict[str, Any]:
         dataset = load_processed_dataset(file_path)
         if not dataset.windows:
@@ -69,12 +114,19 @@ class Statistics:
 
         matrix = np.asarray(
             [window.counts for window in observed_windows],
-            dtype=int,
+            dtype=np.int64,
+        )
+        capture_id = dataset.metadata.capture_id
+        logger.info(
+            "Calculating daily statistics for %s from %d observed windows",
+            capture_id,
+            matrix.shape[0],
         )
         means = self.mean(matrix)
         variances = self.variance(matrix)
         dispersions = self.dispersion(variances, means)
         silent_count = int((matrix.sum(axis=1) == 0).sum())
+        dirichlet_fit = self._fit_daily_psi(matrix, capture_id)
 
         category_statistics = []
         for index, category in enumerate(self.categories):
@@ -88,13 +140,14 @@ class Statistics:
             )
 
         return {
-            "capture_id": dataset.metadata.capture_id,
+            "capture_id": capture_id,
             "partition": dataset.metadata.partition,
             "total_instances": int(matrix.shape[0]),
             "silent_windows": {
                 "count": silent_count,
                 "percent": 100.0 * silent_count / matrix.shape[0],
             },
+            "dirichlet_fit": dirichlet_fit,
             "categories": category_statistics,
         }
 
@@ -104,6 +157,11 @@ class Statistics:
             raise DataValidationError(
                 f"no processed JSON files found in {self.processed_dir}"
             )
+        logger.info(
+            "Building daily statistics report from %d captures in %s",
+            len(paths),
+            self.processed_dir,
+        )
         return {
             "report_type": "capture_statistics",
             "captures": [self.process_file(path) for path in paths],
@@ -122,4 +180,5 @@ class Statistics:
             raise DataValidationError(
                 f"cannot save statistics report: {report_path}"
             ) from error
+        logger.info("Saved daily statistics report to %s", report_path)
         return report

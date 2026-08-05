@@ -5,7 +5,7 @@ stage and never performs another stage implicitly.
 
 ```text
 preprocess  Read configured captures and write processed windows
-diagnose    Report statistics for already processed windows
+diagnose    Report statistics and daily psi for processed windows
 train       Fit the normal-traffic model
 calibrate   Create a model-bound anomaly threshold
 score       Score windows and emit anomaly decisions
@@ -15,9 +15,12 @@ forecast    Forecast traffic using a verified model
 benchmark   Measure backend and pipeline performance
 ```
 
-`diagnose` writes one JSON report for all configured captures. By default the
-report is `reports/capture_statistics.json`; use `--output PATH` to choose a
-different location. Each entry includes its capture ID and temporal partition.
+`diagnose` writes one JSON report for all configured captures. Each entry
+includes its capture ID, temporal partition, descriptive category statistics,
+and a daily Dirichlet-multinomial fit with `psi`, iteration count, and
+convergence status. By default the report is
+`reports/capture_statistics.json`; use `--output PATH` to choose a different
+location.
 
 Run `lm-idnet --help` for the complete list or
 `lm-idnet <command> --help` for command-specific arguments.

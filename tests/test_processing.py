@@ -1,8 +1,11 @@
 import json
+import logging
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
+import numpy as np
 import pandas as pd
 import pytest
 from pydantic import ValidationError
@@ -10,6 +13,7 @@ from scapy.layers.inet import IP, TCP, UDP
 from scapy.layers.l2 import ARP, Ether
 from scapy.utils import wrpcap
 
+from lm_idnet.algorithms.dirichlet import DirichletFit
 from lm_idnet.config import load_config
 from lm_idnet.processing.categories import (
     SSDP_IS_EXCLUSIVE_OF_UDP,
@@ -114,6 +118,7 @@ print(json.dumps([category for _, category in records]))
 def test_configured_category_order_flows_through_pipeline_and_report(
     tmp_path,
     config_factory,
+    caplog,
 ):
     config = config_factory(
         ingest={"categories": ["arp", "ssdp", "udp", "tcp"]}
@@ -152,11 +157,24 @@ def test_configured_category_order_flows_through_pipeline_and_report(
         ),
         encoding="utf-8",
     )
-    report = Statistics(
-        processed_dir=tmp_path,
-        categories=configured_order,
-        dates=["capture-001"],
-    ).build_report()
+    estimator = Mock()
+    estimator.fit.return_value = DirichletFit(
+        initial_alpha=np.ones(4),
+        alpha=np.full(4, 2.0),
+        concentration=8.0,
+        psi=0.125,
+        iterations=12,
+        converged=True,
+        initial_log_likelihood=-20.0,
+        final_log_likelihood=-10.0,
+    )
+    with caplog.at_level(logging.INFO):
+        report = Statistics(
+            processed_dir=tmp_path,
+            categories=configured_order,
+            estimator=estimator,
+            dates=["capture-001"],
+        ).build_report()
 
     capture_report = report["captures"][0]
     assert capture_report["capture_id"] == "capture-001"
@@ -165,6 +183,14 @@ def test_configured_category_order_flows_through_pipeline_and_report(
         configured_order
     )
     assert [item["mean"] for item in capture_report["categories"]] == [1, 0, 1, 1]
+    assert capture_report["dirichlet_fit"] == {
+        "psi": 0.125,
+        "iterations": 12,
+        "converged": True,
+    }
+    estimator.fit.assert_called_once()
+    assert estimator.fit.call_args.args[0].tolist() == [[1, 0, 1, 1]]
+    assert "Daily psi fitted for capture-001" in caplog.text
 
 
 def test_packet_transformer_builds_windows_and_matrix():
