@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.1.0",
-  "checksum": "ff808b2214d83b2cc0ae52ee7c7c45b2c9f0f952a974c27ca38ada178da79812",
+  "schema_version": "1.2.0",
+  "checksum": "3e0664f87858c2d8f39c321933eb0a33dca139f2073759d0ce7a28b1b0a4104d",
   "artifact_type": "model",
   "model_version": "dm-94319935a86a",
   "categories": [
@@ -14,5 +14,37 @@
     30.15838616136956,
     28.926508361433207,
     43.003825831483454
-  ]
+  ],
+  "concentration": 122.22136575570367,
+  "mean_probabilities": [
+    0.1647227984807388,
+    0.2467521613336428,
+    0.23667309052372704,
+    0.3518519496618913
+  ],
+  "psi": 0.00818187551592904,
+  "training_capture_ids": [
+    "D-LinkDayCam5_88-2020-10-08",
+    "D-LinkDayCam5_88-2020-10-09",
+    "D-LinkDayCam5_88-2020-10-10",
+    "D-LinkDayCam5_88-2020-10-11",
+    "D-LinkDayCam5_88-2020-10-12",
+    "D-LinkDayCam5_88-2020-10-13"
+  ],
+  "log_likelihood_backend": "scipy",
+  "fit_diagnostics": {
+    "initial_alpha": [
+      1.8028179286008814,
+      2.416473353660418,
+      2.3111726970039523,
+      3.4695360207347488
+    ],
+    "iterations": 1879,
+    "converged": true,
+    "tolerance": 2e-9,
+    "max_iterations": 100000,
+    "initial_log_likelihood": -477950.7955887165,
+    "final_log_likelihood": -476052.588811236,
+    "duration_seconds": 0.17933453898876905
+  }
 }

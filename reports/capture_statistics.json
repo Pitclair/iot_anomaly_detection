@@ -1,0 +1,485 @@
+{
+  "report_type": "capture_statistics",
+  "captures": [
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-08",
+      "partition": "fit",
+      "total_instances": 191,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.014718733954440144,
+        "iterations": 1087,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 97.69633507853403,
+          "variance": 56228.580986497494,
+          "dispersion_index": 575.5444248885864
+        },
+        {
+          "category": "udp",
+          "mean": 104.67015706806282,
+          "variance": 352.39063102783143,
+          "dispersion_index": 3.3666771971946683
+        },
+        {
+          "category": "ssdp",
+          "mean": 100.05759162303664,
+          "variance": 336.97034995866636,
+          "dispersion_index": 3.367763949668007
+        },
+        {
+          "category": "arp",
+          "mean": 142.0104712041885,
+          "variance": 616.3893634610085,
+          "dispersion_index": 4.340450096632231
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-09",
+      "partition": "fit",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.005183620305062635,
+        "iterations": 2604,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 70.13194444444444,
+          "variance": 1763.9894619269587,
+          "dispersion_index": 25.15243910461254
+        },
+        {
+          "category": "udp",
+          "mean": 100.56944444444444,
+          "variance": 111.5196192696193,
+          "dispersion_index": 1.1088817273045974
+        },
+        {
+          "category": "ssdp",
+          "mean": 96.65277777777777,
+          "variance": 36.36810411810408,
+          "dispersion_index": 0.3762758293581684
+        },
+        {
+          "category": "arp",
+          "mean": 136.125,
+          "variance": 138.92132867132867,
+          "dispersion_index": 1.0205423593853347
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-10",
+      "partition": "fit",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.007931086130679766,
+        "iterations": 1795,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 65.44444444444444,
+          "variance": 2891.8710178710103,
+          "dispersion_index": 44.18818193690848
+        },
+        {
+          "category": "udp",
+          "mean": 93.04861111111111,
+          "variance": 64.91370435120437,
+          "dispersion_index": 0.6976321685628353
+        },
+        {
+          "category": "ssdp",
+          "mean": 96.31944444444444,
+          "variance": 34.17696192696194,
+          "dispersion_index": 0.3548293091191434
+        },
+        {
+          "category": "arp",
+          "mean": 144.66666666666666,
+          "variance": 590.5594405594405,
+          "dispersion_index": 4.082208114466179
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-11",
+      "partition": "fit",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.004202349343424363,
+        "iterations": 3534,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 65.45833333333333,
+          "variance": 482.0961538461539,
+          "dispersion_index": 7.364931694657986
+        },
+        {
+          "category": "udp",
+          "mean": 101.23611111111111,
+          "variance": 78.97882672882673,
+          "dispersion_index": 0.7801448106016634
+        },
+        {
+          "category": "ssdp",
+          "mean": 97.00694444444444,
+          "variance": 28.048902486402493,
+          "dispersion_index": 0.2891432427548113
+        },
+        {
+          "category": "arp",
+          "mean": 163.26388888888889,
+          "variance": 408.2935120435119,
+          "dispersion_index": 2.500819469768852
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-12",
+      "partition": "fit",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.0031781221563309805,
+        "iterations": 4685,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 74.22916666666667,
+          "variance": 619.6184440559437,
+          "dispersion_index": 8.347371685289165
+        },
+        {
+          "category": "udp",
+          "mean": 106.17361111111111,
+          "variance": 42.606012043512024,
+          "dispersion_index": 0.4012862668759063
+        },
+        {
+          "category": "ssdp",
+          "mean": 97.20833333333333,
+          "variance": 31.201048951048957,
+          "dispersion_index": 0.3209709279147771
+        },
+        {
+          "category": "arp",
+          "mean": 146.40277777777777,
+          "variance": 127.1932789432789,
+          "dispersion_index": 0.8687900658301946
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-13",
+      "partition": "fit",
+      "total_instances": 79,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.004805066182874713,
+        "iterations": 3094,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 75.60759493670886,
+          "variance": 782.3440441415122,
+          "dispersion_index": 10.347426667868653
+        },
+        {
+          "category": "udp",
+          "mean": 106.43037974683544,
+          "variance": 183.58162934112298,
+          "dispersion_index": 1.7248987533240623
+        },
+        {
+          "category": "ssdp",
+          "mean": 95.29113924050633,
+          "variance": 69.67056150600453,
+          "dispersion_index": 0.7311336821166788
+        },
+        {
+          "category": "arp",
+          "mean": 146.0759493670886,
+          "variance": 214.3531320999675,
+          "dispersion_index": 1.4674087899391188
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-14",
+      "partition": "calibration",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.004831930933561462,
+        "iterations": 3061,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 74.03472222222223,
+          "variance": 1000.0197649572647,
+          "dispersion_index": 13.507442655833984
+        },
+        {
+          "category": "udp",
+          "mean": 112.71527777777777,
+          "variance": 33.1561285936286,
+          "dispersion_index": 0.2941582476423214
+        },
+        {
+          "category": "ssdp",
+          "mean": 97.30555555555556,
+          "variance": 34.731157731157744,
+          "dispersion_index": 0.35692882624084465
+        },
+        {
+          "category": "arp",
+          "mean": 149.44444444444446,
+          "variance": 151.3675213675214,
+          "dispersion_index": 1.012868172719474
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-15",
+      "partition": "calibration",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.005104130133884409,
+        "iterations": 2936,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 74.80555555555556,
+          "variance": 987.8919968919965,
+          "dispersion_index": 13.206131410364602
+        },
+        {
+          "category": "udp",
+          "mean": 111.57638888888889,
+          "variance": 44.133984071484065,
+          "dispersion_index": 0.3955494931408294
+        },
+        {
+          "category": "ssdp",
+          "mean": 96.88194444444444,
+          "variance": 37.4475038850039,
+          "dispersion_index": 0.3865271707720279
+        },
+        {
+          "category": "arp",
+          "mean": 149.0,
+          "variance": 160.3916083916084,
+          "dispersion_index": 1.0764537475946871
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-16",
+      "partition": "development_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.005471979624303963,
+        "iterations": 2816,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 74.13194444444444,
+          "variance": 1137.2621891996896,
+          "dispersion_index": 15.34105435548059
+        },
+        {
+          "category": "udp",
+          "mean": 112.20138888888889,
+          "variance": 149.6304875679875,
+          "dispersion_index": 1.3335885504604938
+        },
+        {
+          "category": "ssdp",
+          "mean": 95.91666666666667,
+          "variance": 120.52447552447552,
+          "dispersion_index": 1.2565540454332809
+        },
+        {
+          "category": "arp",
+          "mean": 148.95833333333334,
+          "variance": 436.1241258741264,
+          "dispersion_index": 2.9278262995745545
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-19",
+      "partition": "development_test",
+      "total_instances": 126,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.005989140879084001,
+        "iterations": 2389,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 73.86507936507937,
+          "variance": 1940.9656507936504,
+          "dispersion_index": 26.27717545933168
+        },
+        {
+          "category": "udp",
+          "mean": 105.69047619047619,
+          "variance": 185.15942857142852,
+          "dispersion_index": 1.75190268078396
+        },
+        {
+          "category": "ssdp",
+          "mean": 96.26190476190476,
+          "variance": 111.0428571428571,
+          "dispersion_index": 1.1535493445461287
+        },
+        {
+          "category": "arp",
+          "mean": 142.24603174603175,
+          "variance": 402.13898412698416,
+          "dispersion_index": 2.827066450928974
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-21",
+      "partition": "final_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.00419836481066755,
+        "iterations": 3418,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 78.4375,
+          "variance": 923.7443181818181,
+          "dispersion_index": 11.776819992756247
+        },
+        {
+          "category": "udp",
+          "mean": 110.34722222222223,
+          "variance": 68.14432789432786,
+          "dispersion_index": 0.6175445699674771
+        },
+        {
+          "category": "ssdp",
+          "mean": 96.08333333333333,
+          "variance": 56.55244755244752,
+          "dispersion_index": 0.5885770777357938
+        },
+        {
+          "category": "arp",
+          "mean": 149.47222222222223,
+          "variance": 172.6425796425795,
+          "dispersion_index": 1.1550144707550385
+        }
+      ]
+    },
+    {
+      "capture_id": "D-LinkDayCam5_88-2020-10-22",
+      "partition": "final_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.0046761473385842954,
+        "iterations": 3126,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 78.89583333333333,
+          "variance": 1044.6673951048951,
+          "dispersion_index": 13.241097165311585
+        },
+        {
+          "category": "udp",
+          "mean": 107.34722222222223,
+          "variance": 112.75971250971244,
+          "dispersion_index": 1.0504204037649496
+        },
+        {
+          "category": "ssdp",
+          "mean": 95.77083333333333,
+          "variance": 74.75131118881116,
+          "dispersion_index": 0.7805227185257637
+        },
+        {
+          "category": "arp",
+          "mean": 147.02777777777777,
+          "variance": 219.76146076146077,
+          "dispersion_index": 1.4946934795791778
+        }
+      ]
+    }
+  ]
+}
