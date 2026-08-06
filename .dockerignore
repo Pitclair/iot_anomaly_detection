@@ -1,0 +1,16 @@
+.git
+.venv
+.env
+.agents
+.codex
+.idea
+.pytest_cache
+**/__pycache__
+*.py[cod]
+
+data
+logs
+reports
+
+# The container compiles this library for its own platform.
+src/lm_idnet/algorithms/native/*.so

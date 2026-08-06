@@ -1,6 +1,6 @@
 {
   "schema_version": "1.2.0",
-  "checksum": "3e0664f87858c2d8f39c321933eb0a33dca139f2073759d0ce7a28b1b0a4104d",
+  "checksum": "8713561e26a2fa79c426ed772ee7a84a029c900a7bdcb71a60acc626281f1a52",
   "artifact_type": "model",
   "model_version": "dm-94319935a86a",
   "categories": [
@@ -45,6 +45,6 @@
     "max_iterations": 100000,
     "initial_log_likelihood": -477950.7955887165,
     "final_log_likelihood": -476052.588811236,
-    "duration_seconds": 0.17933453898876905
+    "duration_seconds": 0.17897542705759406
   }
 }
