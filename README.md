@@ -1,19 +1,79 @@
 # IoT Anomaly Detection Baseline
 
-This repo provides a scaffold for modeling and forecasting IoT network traffic using Dirichlet-based methods.
+This repository provides a scaffold for modeling and forecasting IoT network
+traffic using Dirichlet-based methods.
 
 Structure:
+
 - `src/lm_idnet/`: installable Python package
-- configs/config.json: default configuration
+- `configs/config.json`: default configuration
 - `tests/`: automated tests
 
-Install for local development:
+## Run with Docker
+
+Docker is the recommended way to run the project. The image installs
+`lm-idnet`, and every container invocation compiles the required native LM
+library before dispatching the requested CLI command.
+
+Use the runner from the repository root:
+
+```sh
+./scripts/run.sh --help
+./scripts/run.sh preprocess --config configs/config.json
+./scripts/run.sh diagnose --config configs/config.json
+./scripts/run.sh train --config configs/config.json
+./scripts/run.sh forecast --config configs/config.json
+```
+
+The runner builds `lm-idnet:latest` using Docker's build cache and then starts
+a temporary container. It mounts these host directories into `/app` so inputs
+and generated artifacts survive after the container exits:
+
+- `configs/` as read-only configuration
+- `data/` for raw and processed datasets
+- `artifacts/` for calibrated thresholds and detector output
+- `reports/` for generated reports
+- `logs/` for application logs
+
+The container runs commands with the current host user's numeric user and
+group IDs, so generated files remain writable outside Docker.
+
+The first argument is always an ordinary `lm-idnet` argument or subcommand;
+the runner does not select a pipeline stage for you. For example, inspect a
+specific command with:
+
+```sh
+./scripts/run.sh train --help
+```
+
+Override the image name or Python base version when needed:
+
+```sh
+LM_IDNET_IMAGE_NAME=my-lm-idnet PYTHON_VERSION=3.12-slim \
+  ./scripts/run.sh diagnose --config configs/config.json
+```
+
+The equivalent manual build is:
+
+```sh
+docker build --tag lm-idnet:latest .
+```
+
+The runner is preferred for execution because it supplies all persistent
+volume mounts consistently. Docker Compose is not required because this
+project currently runs as one command-line application rather than a group of
+long-running services.
+
+## Local development
+
+Install the package directly only when the local machine already has all
+required build tools:
 
 ```sh
 python -m pip install -e .
 ```
 
-Run the CLI from any directory without setting `PYTHONPATH`:
+Run the CLI without setting `PYTHONPATH`:
 
 ```sh
 lm-idnet --help

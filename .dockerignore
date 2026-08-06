@@ -9,6 +9,7 @@
 *.py[cod]
 
 data
+artifacts
 logs
 reports
 

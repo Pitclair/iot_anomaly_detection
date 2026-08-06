@@ -1,38 +1,27 @@
 #!/bin/sh
-
-# Simple runner for the build-based Docker Compose application.
-# - ensures a .env exists (copies from .env.LOCAL if available)
-# - builds the app image, brings compose down, starts it, then brings it down after exit
-
-# set -euo pipefail
+set -eu
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [ ! -f .env ]; then
-  if [ -f .env.LOCAL ]; then
-    cp .env.LOCAL .env
-    echo "Created .env from .env.LOCAL"
-  else
-    echo ".env not found and .env.LOCAL missing; creating empty .env"
-    touch .env
-  fi
-fi
+IMAGE_NAME="${LM_IDNET_IMAGE_NAME:-lm-idnet:latest}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.11-slim}"
 
-# Build the image that compiles the native LM library during startup.
 echo "Building app image..."
-docker compose -f docker-compose.yml build app
+docker build \
+  --build-arg "PYTHON_VERSION=$PYTHON_VERSION" \
+  --tag "$IMAGE_NAME" \
+  "$ROOT_DIR"
 
-# Ensure any previous run is stopped and orphan containers removed
-echo "Tearing down previous compose state..."
-docker compose -f docker-compose.yml down --remove-orphans
+mkdir -p data artifacts reports logs
 
-# Run compose in foreground so the user sees logs
-echo "Starting app (foreground). Use Ctrl+C to stop."
-docker compose -f docker-compose.yml up --remove-orphans
-
-# After exit, bring everything down
-echo "Bringing compose down..."
-docker compose -f docker-compose.yml down
-
-echo "Run finished."
+exec docker run --rm \
+  --env PYTHONUNBUFFERED=1 \
+  --user "$(id -u):$(id -g)" \
+  --volume "$ROOT_DIR/configs:/app/configs:ro" \
+  --volume "$ROOT_DIR/data:/app/data" \
+  --volume "$ROOT_DIR/artifacts:/app/artifacts" \
+  --volume "$ROOT_DIR/reports:/app/reports" \
+  --volume "$ROOT_DIR/logs:/app/logs" \
+  "$IMAGE_NAME" \
+  "$@"
