@@ -13,16 +13,17 @@ from lm_idnet.exceptions import CommandUnavailableError, DataValidationError
 pytestmark = [pytest.mark.unit, pytest.mark.numerical]
 
 
-def test_scipy_backend_matches_small_known_distribution() -> None:
+def test_scipy_backend_returns_parameter_dependent_kernel() -> None:
     counts = np.array([[2, 0], [1, 1]], dtype=np.int64)
     alpha = np.ones(2)
     log_likelihood = initialize_log_likelihood("scipy")
 
     value = log_likelihood.calculate(counts, alpha)
 
-    # With alpha=(1, 1) and N=2, all three count vectors have probability 1/3.
+    # The full probabilities are both 1/3. Removing the multinomial
+    # coefficients of 1 and 2 leaves kernel values of 1/3 and 1/6.
     assert isinstance(log_likelihood, ScipyLogLikelihood)
-    assert value == pytest.approx(2 * np.log(1 / 3))
+    assert value == pytest.approx(np.log(1 / 3) + np.log(1 / 6))
 
 
 def test_likelihood_rejects_alpha_with_wrong_length() -> None:

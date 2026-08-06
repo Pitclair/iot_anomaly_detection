@@ -39,6 +39,10 @@ package has been installed.
 Configuration fields and validation rules are documented in
 [`docs/configuration.md`](docs/configuration.md).
 
+The distinction between the fitting likelihood kernel and the complete anomaly
+score is documented in
+[`docs/likelihood-semantics.md`](docs/likelihood-semantics.md).
+
 Test markers, suite commands, and shared fixtures are documented in
 [`docs/testing.md`](docs/testing.md).
 

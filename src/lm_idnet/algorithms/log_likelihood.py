@@ -1,4 +1,4 @@
-"""Dirichlet-multinomial log-likelihood implementations."""
+"""Parameter-dependent Dirichlet-multinomial likelihood kernels."""
 
 from abc import ABC, abstractmethod
 from typing import Literal
@@ -12,15 +12,19 @@ LogLikelihoodBackend = Literal["scipy", "lm"]
 
 
 class LogLikelihood(ABC):
-    """Common interface for interchangeable log-likelihood implementations."""
+    """Common interface for interchangeable likelihood-kernel implementations.
+
+    The kernel omits the count-only multinomial coefficient because parameter
+    estimation compares alpha values for the same observed counts.
+    """
 
     @abstractmethod
     def calculate(self, counts: np.ndarray, alpha: np.ndarray) -> float:
-        """Return the log-likelihood of the count matrix under alpha."""
+        """Return the alpha-dependent log-likelihood kernel for the matrix."""
 
 
 class ScipyLogLikelihood(LogLikelihood):
-    """Standard DM log-likelihood calculated with SciPy's gammaln."""
+    """DM likelihood kernel calculated with SciPy's gammaln."""
 
     def calculate(self, counts: np.ndarray, alpha: np.ndarray) -> float:
         counts = np.asarray(counts)
@@ -29,23 +33,18 @@ class ScipyLogLikelihood(LogLikelihood):
 
         row_totals = counts.sum(axis=1)
         concentration = alpha.sum()
-        multinomial_terms = (
-            gammaln(row_totals + 1) - gammaln(counts + 1).sum(axis=1)
-        )
         concentration_terms = gammaln(concentration) - gammaln(
             concentration + row_totals
         )
         category_terms = (
             gammaln(counts + alpha) - gammaln(alpha)
         ).sum(axis=1)
-        value = float(
-            np.sum(multinomial_terms + concentration_terms + category_terms)
-        )
-        if not np.isfinite(value):
+        kernel_value = float(np.sum(concentration_terms + category_terms))
+        if not np.isfinite(kernel_value):
             raise DataValidationError(
-                "Dirichlet-multinomial log-likelihood is not finite"
+                "Dirichlet-multinomial likelihood kernel is not finite"
             )
-        return value
+        return kernel_value
 
     @staticmethod
     def _validate_inputs(counts: np.ndarray, alpha: np.ndarray) -> None:
@@ -64,11 +63,11 @@ class ScipyLogLikelihood(LogLikelihood):
 
 
 class LmLogLikelihood(LogLikelihood):
-    """Placeholder for the future Languasco-Migliardi implementation."""
+    """Placeholder for the future Languasco-Migliardi kernel implementation."""
 
     def calculate(self, counts: np.ndarray, alpha: np.ndarray) -> float:
         raise CommandUnavailableError(
-            "the LM log-likelihood implementation is not available yet"
+            "the LM likelihood-kernel implementation is not available yet"
         )
 
 
@@ -79,7 +78,7 @@ _IMPLEMENTATIONS: dict[str, type[LogLikelihood]] = {
 
 
 def initialize_log_likelihood(backend: LogLikelihoodBackend) -> LogLikelihood:
-    """Instantiate the configured log-likelihood implementation."""
+    """Instantiate the configured likelihood-kernel implementation."""
     implementation = _IMPLEMENTATIONS.get(backend)
     if implementation is None:
         raise DataValidationError(f"unknown log-likelihood backend: {backend}")
