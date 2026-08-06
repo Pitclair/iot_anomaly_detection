@@ -54,6 +54,10 @@ global `--verbose` option before the command to also show them in the terminal:
 lm-idnet --verbose preprocess --config configs/config.json
 ```
 
+Log timestamps use ISO 8601 UTC with millisecond precision and an explicit `Z`
+suffix, for example `2026-08-06T10:38:04.975Z`. They do not depend on the host
+or container timezone.
+
 Use JSON-formatted runtime errors when integrating with scripts:
 
 ```sh

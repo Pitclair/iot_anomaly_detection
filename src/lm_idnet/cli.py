@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
@@ -21,6 +22,15 @@ from lm_idnet.partitioning import all_capture_ids, partition_name_for_capture
 
 logger = logging.getLogger(__name__)
 DEFAULT_LOG_PATH = Path("logs/lm_idnet.log")
+LOG_FORMAT = "%(asctime)s.%(msecs)03dZ %(levelname)s %(name)s: %(message)s"
+LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
+
+class UtcLogFormatter(logging.Formatter):
+    """Format log timestamps as explicit ISO 8601 UTC values."""
+
+    converter = time.gmtime
+
 
 COMMANDS = (
     "preprocess",
@@ -136,12 +146,14 @@ def _configure_logging(verbose: bool) -> Path:
     except OSError as error:
         raise ConfigurationError(f"cannot open log file: {log_path}") from error
 
+    formatter = UtcLogFormatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
     file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
     terminal_handler = logging.StreamHandler()
     terminal_handler.setLevel(logging.INFO if verbose else logging.WARNING)
+    terminal_handler.setFormatter(formatter)
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         handlers=[file_handler, terminal_handler],
         force=True,
     )

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import struct
 import subprocess
@@ -7,12 +8,32 @@ from pathlib import Path
 
 import pytest
 
-from lm_idnet.cli import COMMANDS
+from lm_idnet.cli import COMMANDS, LOG_DATE_FORMAT, LOG_FORMAT, UtcLogFormatter
 
 pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs" / "config.json"
+
+
+def test_log_formatter_uses_explicit_iso_utc_timestamp() -> None:
+    formatter = UtcLogFormatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+    record = logging.LogRecord(
+        name="lm_idnet.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="message",
+        args=(),
+        exc_info=None,
+    )
+    record.created = 0.123
+    record.msecs = 123
+
+    assert (
+        formatter.format(record)
+        == "1970-01-01T00:00:00.123Z INFO lm_idnet.test: message"
+    )
 
 
 def run_cli(*arguments: str) -> subprocess.CompletedProcess[str]:
