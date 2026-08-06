@@ -73,9 +73,11 @@ Therefore, the complete raw score for one window is:
 C(\mathbf{x})+K(\mathbf{x};\boldsymbol{\alpha}).
 \]
 
-The coefficient will be calculated outside the likelihood backend when the
-calibration and scoring stages are implemented. Both stages must use this same
-complete formula; otherwise, their values would be on different scales.
+The coefficient is calculated outside the likelihood backend by
+[`log_multinomial_coefficient()`](../src/lm_idnet/algorithms/dirichlet_multinomial.py).
+The calibration and scoring stages must both combine it with the kernel using
+this same complete formula; otherwise, their values would be on different
+scales.
 
 | Pipeline operation | Kernel | Multinomial coefficient |
 |---|---:|---:|
