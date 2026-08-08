@@ -1,8 +1,5 @@
 {
-  "schema_version": "1.2.0",
-  "checksum": "8713561e26a2fa79c426ed772ee7a84a029c900a7bdcb71a60acc626281f1a52",
   "artifact_type": "model",
-  "model_version": "dm-94319935a86a",
   "categories": [
     "tcp",
     "udp",

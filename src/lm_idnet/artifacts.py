@@ -1,88 +1,45 @@
-"""Integrity verification for artifacts consumed by trusted stages."""
+"""Load and save validated JSON artifacts."""
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
 from pathlib import Path
-from typing import Any
 
-from lm_idnet.exceptions import (
-    ArtifactCompatibilityError,
-    ArtifactIntegrityError,
-)
+from lm_idnet.artifact_schemas import Artifact, validate_artifact
+from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 
 
-def artifact_checksum(artifact: dict[str, Any]) -> str:
-    """Return the SHA-256 digest of an artifact excluding its checksum field."""
-    unsigned = {key: value for key, value in artifact.items() if key != "checksum"}
-    canonical = json.dumps(
-        unsigned,
-        ensure_ascii=False,
-        allow_nan=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    return hashlib.sha256(canonical).hexdigest()
-
-
-def load_verified_artifact(
-    path: str | Path,
-    *,
-    artifact_type: str = "artifact",
-) -> dict[str, Any]:
-    """Load an artifact only when it is readable, structured, and unmodified."""
+def load_artifact(path: str | Path, *, expected_type: str) -> Artifact:
+    """Read a JSON artifact and validate its type and contents."""
     artifact_path = Path(path)
     try:
         raw = json.loads(artifact_path.read_text(encoding="utf-8"))
     except FileNotFoundError as error:
         raise ArtifactCompatibilityError(
-            f"{artifact_type} not found: {artifact_path}"
+            f"{expected_type} not found: {artifact_path}"
         ) from error
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise ArtifactCompatibilityError(
-            f"{artifact_type} cannot be read as JSON: {artifact_path}"
+            f"{expected_type} cannot be read as JSON: {artifact_path}"
         ) from error
 
     if not isinstance(raw, dict):
         raise ArtifactCompatibilityError(
-            f"{artifact_type} must be a JSON object: {artifact_path}"
+            f"{expected_type} must be a JSON object: {artifact_path}"
         )
+    return validate_artifact(raw, expected_type=expected_type)
 
-    supplied = raw.get("checksum")
-    if not isinstance(supplied, str) or not supplied:
-        raise ArtifactIntegrityError(
-            f"{artifact_type} has no valid checksum: {artifact_path}"
-        )
 
+def save_artifact(path: str | Path, artifact: Artifact) -> None:
+    """Write an already validated artifact as readable JSON."""
+    artifact_path = Path(path)
     try:
-        expected = artifact_checksum(raw)
-    except (TypeError, ValueError) as error:
-        raise ArtifactCompatibilityError(
-            f"{artifact_type} cannot be canonicalized: {artifact_path}"
-        ) from error
-
-    if not hmac.compare_digest(supplied, expected):
-        raise ArtifactIntegrityError(
-            f"{artifact_type} checksum mismatch: {artifact_path}"
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        artifact_path.write_text(
+            artifact.model_dump_json(indent=2) + "\n",
+            encoding="utf-8",
         )
-    return raw
-
-
-def load_model_for_scoring(path: str | Path) -> dict[str, Any]:
-    """Fail-closed model loading boundary for current and future scorers."""
-    model = load_typed_artifact(path, expected_type="model")
-    return model.model_dump(mode="json")
-
-
-def load_typed_artifact(
-    path: str | Path,
-    *,
-    expected_type: str,
-) -> Any:
-    """Verify integrity, migrate if supported, and validate a typed artifact."""
-    from lm_idnet.artifact_schemas import validate_versioned_artifact
-
-    raw = load_verified_artifact(path, artifact_type=expected_type)
-    return validate_versioned_artifact(raw, expected_type=expected_type)
+    except OSError as error:
+        raise DataValidationError(
+            f"cannot save {artifact.artifact_type} artifact: {artifact_path}"
+        ) from error

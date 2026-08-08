@@ -1,4 +1,4 @@
-"""Deterministic version identifiers for configured source datasets."""
+"""Deterministic fingerprints for configured source datasets."""
 
 from __future__ import annotations
 
@@ -88,7 +88,6 @@ def build_dataset_manifest(config: AppConfig) -> dict[str, Any]:
     }
     dataset_digest = _canonical_hash(components)
     return {
-        "schema_version": "1.0.0",
         "dataset_version": f"sha256:{dataset_digest}",
         **components,
         "component_hashes": component_hashes,

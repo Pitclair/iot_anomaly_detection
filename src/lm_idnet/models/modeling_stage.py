@@ -8,8 +8,8 @@ from time import perf_counter
 import numpy as np
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
-from lm_idnet.artifact_schemas import CURRENT_SCHEMA_VERSION, ModelArtifact
-from lm_idnet.artifacts import artifact_checksum
+from lm_idnet.artifact_schemas import ModelArtifact
+from lm_idnet.artifacts import save_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.algorithms.estimator_factory import create_estimator
 from lm_idnet.exceptions import ConvergenceError, DataValidationError
@@ -115,18 +115,15 @@ def save_model(
     duration_seconds: float,
 ) -> ModelArtifact:
     """Save fitted parameters and their training provenance."""
-    identity = {"categories": categories, "alpha": fit.alpha.tolist()}
-    model_data = {
-        "artifact_type": "model",
-        "schema_version": CURRENT_SCHEMA_VERSION,
-        "model_version": f"dm-{artifact_checksum(identity)[:12]}",
-        **identity,
-        "concentration": fit.concentration,
-        "mean_probabilities": (fit.alpha / fit.concentration).tolist(),
-        "psi": fit.psi,
-        "training_capture_ids": training_capture_ids,
-        "log_likelihood_backend": log_likelihood_backend,
-        "fit_diagnostics": {
+    model = ModelArtifact(
+        categories=categories,
+        alpha=fit.alpha.tolist(),
+        concentration=fit.concentration,
+        mean_probabilities=(fit.alpha / fit.concentration).tolist(),
+        psi=fit.psi,
+        training_capture_ids=training_capture_ids,
+        log_likelihood_backend=log_likelihood_backend,
+        fit_diagnostics={
             "initial_alpha": fit.initial_alpha.tolist(),
             "iterations": fit.iterations,
             "converged": fit.converged,
@@ -136,13 +133,8 @@ def save_model(
             "final_log_likelihood": fit.final_log_likelihood,
             "duration_seconds": duration_seconds,
         },
-    }
-    model_data["checksum"] = artifact_checksum(model_data)
-    model = ModelArtifact.model_validate(model_data)
-
-    model_path = Path(path)
-    model_path.parent.mkdir(parents=True, exist_ok=True)
-    model_path.write_text(model.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    )
+    save_artifact(path, model)
     return model
 
 
@@ -174,7 +166,7 @@ def train_model(config: AppConfig) -> dict[str, object]:
         logger.error(message)
         raise ConvergenceError(message)
 
-    model = save_model(
+    save_model(
         path=config.outputs.model_path,
         categories=config.ingest.categories,
         fit=fit,
@@ -213,6 +205,4 @@ def train_model(config: AppConfig) -> dict[str, object]:
         "final_log_likelihood": fit.final_log_likelihood,
         "duration_seconds": duration_seconds,
         "model_path": str(config.outputs.model_path),
-        "model_version": model.model_version,
-        "model_checksum": model.checksum,
     }

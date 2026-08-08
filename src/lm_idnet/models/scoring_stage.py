@@ -9,7 +9,7 @@ import numpy as np
 
 from lm_idnet.algorithms.dirichlet_multinomial import log_probability
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
-from lm_idnet.artifacts import load_model_for_scoring, load_typed_artifact
+from lm_idnet.artifacts import load_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.partitioning import development_partition_for_evaluation
@@ -21,27 +21,23 @@ EXPECTED_SCORE_TYPE = "raw_log_probability"
 
 def score_windows(config: AppConfig) -> dict[str, object]:
     """Score every non-missing development-test window and save JSON Lines."""
-    model = load_model_for_scoring(config.outputs.model_path)
-    threshold = load_typed_artifact(
+    model = load_artifact(config.outputs.model_path, expected_type="model")
+    threshold = load_artifact(
         config.outputs.threshold_path,
         expected_type="threshold",
     )
-    if threshold.model_checksum != model["checksum"]:
-        raise ArtifactCompatibilityError(
-            "threshold model checksum does not match model checksum"
-        )
     if threshold.score_type != EXPECTED_SCORE_TYPE:
         raise ArtifactCompatibilityError(
             f"threshold score type must be {EXPECTED_SCORE_TYPE!r}; "
             f"found {threshold.score_type!r}"
         )
 
-    backend_name = model["log_likelihood_backend"]
+    backend_name = model.log_likelihood_backend
     if not isinstance(backend_name, str):
         raise DataValidationError("model does not record a likelihood backend")
     log_likelihood = initialize_log_likelihood(backend_name)
-    alpha = np.asarray(model["alpha"], dtype=np.float64)
-    model_categories = tuple(model["categories"])
+    alpha = np.asarray(model.alpha, dtype=np.float64)
+    model_categories = model.categories
     selection = development_partition_for_evaluation(config)
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     results: list[dict[str, object]] = []
@@ -80,8 +76,6 @@ def score_windows(config: AppConfig) -> dict[str, object]:
                     "score": score,
                     "threshold": threshold.threshold,
                     "is_anomaly": score < threshold.threshold,
-                    "model_checksum": model["checksum"],
-                    "threshold_checksum": threshold.checksum,
                 }
             )
 
@@ -112,6 +106,4 @@ def score_windows(config: AppConfig) -> dict[str, object]:
         "window_count": len(results),
         "anomaly_count": anomaly_count,
         "events_path": str(output_path),
-        "model_checksum": model["checksum"],
-        "threshold_checksum": threshold.checksum,
     }

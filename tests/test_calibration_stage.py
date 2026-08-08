@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
-from lm_idnet.artifacts import artifact_checksum, load_typed_artifact
+from lm_idnet.artifacts import load_artifact
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.calibration_stage import (
     calibrate_threshold,
@@ -101,9 +101,7 @@ def test_load_calibration_windows_keeps_observed_and_silent_windows(
 ) -> None:
     config = config_factory(ingest={"processed_root": tmp_path})
     write_calibration_datasets(config)
-    model = {"categories": list(config.ingest.categories)}
-
-    windows = load_calibration_windows(config, model)
+    windows = load_calibration_windows(config, config.ingest.categories)
 
     assert len(windows) == len(config.ingest.partitions.calibration) * 2
     assert {window.state for window in windows} == {
@@ -118,10 +116,8 @@ def test_load_calibration_windows_rejects_wrong_partition(
 ) -> None:
     config = config_factory(ingest={"processed_root": tmp_path})
     write_calibration_datasets(config, wrong_partition=True)
-    model = {"categories": list(config.ingest.categories)}
-
     with pytest.raises(DataValidationError, match="wrong partition"):
-        load_calibration_windows(config, model)
+        load_calibration_windows(config, config.ingest.categories)
 
 
 def test_calibrate_threshold_scores_windows_and_saves_artifact(
@@ -142,21 +138,13 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     write_calibration_datasets(config)
 
     result = calibrate_threshold(config)
-    threshold = load_typed_artifact(
+    threshold = load_artifact(
         threshold_path,
         expected_type="threshold",
     )
 
     assert result["window_count"] == 4
     assert result["threshold"] == pytest.approx(threshold.threshold)
-    assert result["threshold_checksum"] == threshold.checksum
-    assert threshold.checksum == artifact_checksum(
-        threshold.model_dump(mode="json")
-    )
-    assert threshold.model_checksum == load_typed_artifact(
-        model_path,
-        expected_type="model",
-    ).checksum
     assert threshold.calibration_capture_ids == (
         config.ingest.partitions.calibration
     )

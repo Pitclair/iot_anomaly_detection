@@ -1,28 +1,18 @@
-"""Versioned schemas and explicit migrations for persisted artifacts."""
+"""Schemas for persisted model and result artifacts."""
 
 from __future__ import annotations
 
 from datetime import datetime
-import re
-from copy import deepcopy
 from math import isclose, isfinite
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from lm_idnet.exceptions import ArtifactCompatibilityError
 
-CURRENT_SCHEMA_VERSION = "1.2.0"
-PREVIOUS_SCHEMA_VERSION = "1.1.0"
-LEGACY_SCHEMA_VERSION = "1.0.0"
-_SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
-
-class VersionedArtifact(BaseModel):
+class ArtifactBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
-    schema_version: Literal["1.2.0"] = CURRENT_SCHEMA_VERSION
-    checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
 class FitDiagnostics(BaseModel):
@@ -48,9 +38,8 @@ class FitDiagnostics(BaseModel):
         return self
 
 
-class ModelArtifact(VersionedArtifact):
+class ModelArtifact(ArtifactBase):
     artifact_type: Literal["model"] = "model"
-    model_version: str = Field(min_length=1)
     categories: tuple[str, ...] = Field(min_length=2)
     alpha: tuple[float, ...] = Field(min_length=2)
     concentration: float = Field(gt=0, allow_inf_nan=False)
@@ -105,12 +94,12 @@ class ModelArtifact(VersionedArtifact):
         if any(not capture_id.strip() for capture_id in self.training_capture_ids):
             raise ValueError("training capture IDs must not be blank")
 
-        metadata_fields_present = (
+        provenance_fields_present = (
             bool(self.training_capture_ids),
             self.log_likelihood_backend is not None,
             self.fit_diagnostics is not None,
         )
-        if any(metadata_fields_present) and not all(metadata_fields_present):
+        if any(provenance_fields_present) and not all(provenance_fields_present):
             raise ValueError(
                 "training captures, likelihood backend, and fit diagnostics "
                 "must be provided together"
@@ -123,9 +112,8 @@ class ModelArtifact(VersionedArtifact):
         return self
 
 
-class ThresholdArtifact(VersionedArtifact):
+class ThresholdArtifact(ArtifactBase):
     artifact_type: Literal["threshold"] = "threshold"
-    model_checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
     score_type: str = Field(min_length=1)
     quantile: float = Field(gt=0, lt=1)
     threshold: float
@@ -139,17 +127,16 @@ class ThresholdArtifact(VersionedArtifact):
     score_maximum: float
 
 
-class AnomalyEventArtifact(VersionedArtifact):
+class AnomalyEventArtifact(ArtifactBase):
     artifact_type: Literal["anomaly_event"] = "anomaly_event"
     event_id: str = Field(min_length=1)
     window_id: str = Field(min_length=1)
     score: float
     threshold: float
     decision: bool
-    model_version: str = Field(min_length=1)
 
 
-class ExperimentManifestArtifact(VersionedArtifact):
+class ExperimentManifestArtifact(ArtifactBase):
     artifact_type: Literal["experiment_manifest"] = "experiment_manifest"
     run_id: str = Field(min_length=1)
     command: str = Field(min_length=1)
@@ -166,7 +153,7 @@ Artifact = (
     | ExperimentManifestArtifact
 )
 
-SCHEMA_BY_TYPE: dict[str, type[VersionedArtifact]] = {
+SCHEMA_BY_TYPE: dict[str, type[ArtifactBase]] = {
     "model": ModelArtifact,
     "threshold": ThresholdArtifact,
     "anomaly_event": AnomalyEventArtifact,
@@ -174,105 +161,18 @@ SCHEMA_BY_TYPE: dict[str, type[VersionedArtifact]] = {
 }
 
 
-def parse_semantic_version(value: object) -> tuple[int, int, int]:
-    """Parse a strict MAJOR.MINOR.PATCH schema version."""
-    if not isinstance(value, str) or not (match := _SEMVER.fullmatch(value)):
-        raise ArtifactCompatibilityError(
-            f"invalid semantic schema version: {value!r}"
-        )
-    return tuple(int(part) for part in match.groups())
-
-
-def _add_legacy_model_fields(model: dict[str, Any]) -> None:
-    """Add derivable fields while marking unavailable fit metadata explicitly."""
-    alpha = model.get("alpha")
-    if not isinstance(alpha, (list, tuple)):
-        return
-    try:
-        alpha_values = tuple(float(value) for value in alpha)
-    except (TypeError, ValueError):
-        return
-    if not alpha_values or any(
-        not isfinite(value) or value <= 0 for value in alpha_values
-    ):
-        return
-
-    concentration = sum(alpha_values)
-    model.setdefault("concentration", concentration)
-    model.setdefault(
-        "mean_probabilities",
-        [value / concentration for value in alpha_values],
-    )
-    model.setdefault("psi", 1.0 / concentration)
-    # Versions before 1.2.0 never persisted these values. Empty/null makes the
-    # missing provenance visible instead of guessing it during migration.
-    model.setdefault("training_capture_ids", [])
-    model.setdefault("log_likelihood_backend", None)
-    model.setdefault("fit_diagnostics", None)
-
-
-def migrate_artifact(
-    raw: dict[str, Any],
-    *,
-    expected_type: str,
-) -> dict[str, Any]:
-    """Migrate a supported previous schema to the current representation."""
-    migrated = deepcopy(raw)
-    version = migrated.get("schema_version")
-    parsed = parse_semantic_version(version)
-    current = parse_semantic_version(CURRENT_SCHEMA_VERSION)
-
-    if parsed[0] != current[0]:
-        raise ArtifactCompatibilityError(
-            f"unsupported schema major version {parsed[0]}; "
-            f"supported major is {current[0]}"
-        )
-    if parsed > current:
-        raise ArtifactCompatibilityError(
-            f"schema version {version} is newer than supported "
-            f"{CURRENT_SCHEMA_VERSION}"
-        )
-    if version == LEGACY_SCHEMA_VERSION:
-        migrated["artifact_type"] = expected_type
-        version = PREVIOUS_SCHEMA_VERSION
-
-    if version == PREVIOUS_SCHEMA_VERSION:
-        if expected_type == "model":
-            _add_legacy_model_fields(migrated)
-        migrated["schema_version"] = CURRENT_SCHEMA_VERSION
-
-        # The original checksum was verified before migration. Recalculate it
-        # for the new in-memory representation after adding current fields.
-        from lm_idnet.artifacts import artifact_checksum
-        migrated["checksum"] = artifact_checksum(migrated)
-        return migrated
-    if version != CURRENT_SCHEMA_VERSION:
-        raise ArtifactCompatibilityError(
-            f"no migration from schema version {version}"
-        )
-    return migrated
-
-
-def validate_versioned_artifact(
-    raw: dict[str, Any],
-    *,
-    expected_type: str,
-) -> Artifact:
-    """Migrate and validate an artifact against its registered current schema."""
+def validate_artifact(raw: dict, *, expected_type: str) -> Artifact:
+    """Validate an artifact against the requested schema."""
     schema = SCHEMA_BY_TYPE.get(expected_type)
     if schema is None:
+        raise ArtifactCompatibilityError(f"unknown artifact type: {expected_type}")
+    if raw.get("artifact_type") != expected_type:
         raise ArtifactCompatibilityError(
-            f"unknown artifact type: {expected_type}"
-        )
-    migrated = migrate_artifact(raw, expected_type=expected_type)
-    if migrated.get("artifact_type") != expected_type:
-        raise ArtifactCompatibilityError(
-            f"expected {expected_type}, found {migrated.get('artifact_type')!r}"
+            f"expected {expected_type}, found {raw.get('artifact_type')!r}"
         )
     try:
-        return schema.model_validate(migrated)
+        return schema.model_validate(raw)
     except ValidationError as error:
         raise ArtifactCompatibilityError(
-            f"{expected_type} does not match schema "
-            f"{CURRENT_SCHEMA_VERSION}: {error}"
+            f"{expected_type} does not match its schema: {error}"
         ) from error

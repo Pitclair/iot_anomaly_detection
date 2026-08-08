@@ -6,7 +6,7 @@ import logging
 import numpy as np
 import pytest
 
-from lm_idnet.artifacts import load_model_for_scoring
+from lm_idnet.artifacts import load_artifact
 from lm_idnet.exceptions import ConvergenceError, DataValidationError
 from lm_idnet.models.modeling_stage import (
     load_training_matrix,
@@ -93,7 +93,7 @@ def test_training_fits_and_saves_model(
 
     with caplog.at_level(logging.INFO):
         result = train_model(config)
-    saved = load_model_for_scoring(model_path)
+    saved = load_artifact(model_path, expected_type="model").model_dump(mode="json")
 
     assert result["stage"] == "dirichlet_multinomial_training"
     assert result["matrix_shape"] == [12, 4]
@@ -121,7 +121,6 @@ def test_training_fits_and_saves_model(
         "final_log_likelihood": result["final_log_likelihood"],
         "duration_seconds": pytest.approx(result["duration_seconds"]),
     }
-    assert saved["checksum"] == result["model_checksum"]
     assert "Model converged" in caplog.text
     assert "Saved model" in caplog.text
 

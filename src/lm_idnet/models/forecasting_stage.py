@@ -5,7 +5,7 @@ from typing import Optional
 import numpy as np
 from pathlib import Path
 
-from lm_idnet.artifacts import load_model_for_scoring
+from lm_idnet.artifacts import load_artifact
 from lm_idnet.evaluation.metrics import brier_score, js_divergence
 
 
@@ -15,8 +15,8 @@ def run_forecasting(cfg: dict, dataset: str = 'camera_5') -> None:
             "model_path", "data/processed/model_alpha.json"
         )
     )
-    obj = load_model_for_scoring(model_path)
-    alpha = np.array(obj['alpha'], dtype=float)
+    model = load_artifact(model_path, expected_type="model")
+    alpha = np.array(model.alpha, dtype=float)
 
     # expected probabilities from Dirichlet mean
     probs = alpha / alpha.sum()

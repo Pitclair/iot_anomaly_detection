@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
-from lm_idnet.artifacts import load_model_for_scoring
 from lm_idnet.exceptions import ArtifactCompatibilityError
 from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models.modeling_stage import save_model
@@ -18,7 +17,7 @@ from lm_idnet.processing.storage import save_processed_dataset
 pytestmark = pytest.mark.unit
 
 
-def write_model(config) -> dict:
+def write_model(config) -> None:
     alpha = np.asarray([1.0, 2.0, 3.0, 4.0])
     save_model(
         config.outputs.model_path,
@@ -30,17 +29,14 @@ def write_model(config) -> dict:
         config.estimator.max_iterations,
         0.1,
     )
-    return load_model_for_scoring(config.outputs.model_path)
 
 
-def write_threshold(config, model_checksum: str, score_type: str) -> None:
+def write_threshold(config, score_type: str) -> None:
     start = datetime(2020, 10, 14, tzinfo=timezone.utc)
     save_threshold(
         config.outputs.threshold_path,
         {
             "artifact_type": "threshold",
-            "schema_version": "1.2.0",
-            "model_checksum": model_checksum,
             "score_type": score_type,
             "quantile": 0.01,
             "threshold": 0.0,
@@ -110,8 +106,8 @@ def test_score_windows_writes_observed_and_silent_results(
             "events_path": tmp_path / "events.jsonl",
         },
     )
-    model = write_model(config)
-    write_threshold(config, model["checksum"], "raw_log_probability")
+    write_model(config)
+    write_threshold(config, "raw_log_probability")
     write_development_captures(config)
 
     summary = score_windows(config)
@@ -133,8 +129,6 @@ def test_score_windows_writes_observed_and_silent_results(
             "score",
             "threshold",
             "is_anomaly",
-            "model_checksum",
-            "threshold_checksum",
         }
         for result in results
     )
@@ -146,11 +140,6 @@ def test_score_windows_writes_observed_and_silent_results(
         result["is_anomaly"] == (result["score"] < result["threshold"])
         for result in results
     )
-    assert all(result["model_checksum"] == model["checksum"] for result in results)
-    assert all(
-        result["threshold_checksum"] == summary["threshold_checksum"]
-        for result in results
-    )
     assert all(
         result["is_anomaly"] is False
         for result in results
@@ -158,19 +147,9 @@ def test_score_windows_writes_observed_and_silent_results(
     )
 
 
-@pytest.mark.parametrize(
-    ("model_checksum", "score_type", "message"),
-    [
-        ("0" * 64, "raw_log_probability", "model checksum"),
-        (None, "normalized_log_probability", "score type"),
-    ],
-)
-def test_score_windows_rejects_incompatible_threshold(
+def test_score_windows_rejects_unexpected_score_type(
     tmp_path,
     config_factory,
-    model_checksum,
-    score_type,
-    message,
 ) -> None:
     config = config_factory(
         outputs={
@@ -179,10 +158,10 @@ def test_score_windows_rejects_incompatible_threshold(
             "events_path": tmp_path / "events.jsonl",
         }
     )
-    model = write_model(config)
-    write_threshold(config, model_checksum or model["checksum"], score_type)
+    write_model(config)
+    write_threshold(config, "normalized_log_probability")
 
-    with pytest.raises(ArtifactCompatibilityError, match=message):
+    with pytest.raises(ArtifactCompatibilityError, match="score type"):
         score_windows(config)
 
     assert not config.outputs.events_path.exists()

@@ -1,15 +1,11 @@
-import json
 from pathlib import Path
 
 import pytest
 
 from lm_idnet import cli
-from lm_idnet.artifact_schemas import CURRENT_SCHEMA_VERSION
-from lm_idnet.artifacts import artifact_checksum, load_model_for_scoring
 from lm_idnet.config import load_config
 from lm_idnet.exceptions import (
     ArtifactCompatibilityError,
-    ArtifactIntegrityError,
     CommandUnavailableError,
     ConfigurationError,
     ConvergenceError,
@@ -31,8 +27,7 @@ pytestmark = pytest.mark.unit
         DataValidationError("negative packet count"),
         NumericalPrecisionError("requested precision is unavailable"),
         ConvergenceError("maximum iterations exhausted"),
-        ArtifactCompatibilityError("unsupported model schema"),
-        ArtifactIntegrityError("model checksum mismatch"),
+        ArtifactCompatibilityError("invalid model artifact"),
         PolicyRejectionError("candidate exceeds drift policy"),
         CommandUnavailableError("stage is not implemented"),
     ],
@@ -68,44 +63,3 @@ def test_invalid_json_uses_configuration_failure(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigurationError, match="not readable JSON"):
         load_config(invalid)
-
-
-def test_corrupt_model_checksum_fails_closed(tmp_path: Path) -> None:
-    model_path = tmp_path / "model.json"
-    model = {
-        "artifact_type": "model",
-        "schema_version": "1.1.0",
-        "model_version": "test-model",
-        "categories": ["tcp", "udp", "ssdp", "arp"],
-        "alpha": [1.0, 2.0, 3.0, 4.0],
-    }
-    model["checksum"] = artifact_checksum(model)
-    model["alpha"][0] = 999.0
-    model_path.write_text(json.dumps(model), encoding="utf-8")
-
-    with pytest.raises(ArtifactIntegrityError, match="checksum mismatch"):
-        load_model_for_scoring(model_path)
-
-
-def test_valid_model_checksum_is_accepted(tmp_path: Path) -> None:
-    model_path = tmp_path / "model.json"
-    model = {
-        "artifact_type": "model",
-        "schema_version": "1.1.0",
-        "model_version": "test-model",
-        "categories": ["tcp", "udp", "ssdp", "arp"],
-        "alpha": [1.0, 2.0, 3.0, 4.0],
-    }
-    model["checksum"] = artifact_checksum(model)
-    model_path.write_text(json.dumps(model), encoding="utf-8")
-
-    loaded = load_model_for_scoring(model_path)
-
-    assert loaded["schema_version"] == CURRENT_SCHEMA_VERSION
-    assert loaded["alpha"] == model["alpha"]
-    assert loaded["concentration"] == pytest.approx(10.0)
-    assert loaded["mean_probabilities"] == pytest.approx([0.1, 0.2, 0.3, 0.4])
-    assert loaded["psi"] == pytest.approx(0.1)
-    assert loaded["training_capture_ids"] == []
-    assert loaded["log_likelihood_backend"] is None
-    assert loaded["fit_diagnostics"] is None

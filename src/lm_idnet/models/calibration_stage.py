@@ -10,11 +10,8 @@ import numpy as np
 
 from lm_idnet.algorithms.dirichlet_multinomial import log_probability
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
-from lm_idnet.artifact_schemas import (
-    CURRENT_SCHEMA_VERSION,
-    ThresholdArtifact,
-)
-from lm_idnet.artifacts import artifact_checksum, load_model_for_scoring
+from lm_idnet.artifact_schemas import ThresholdArtifact
+from lm_idnet.artifacts import load_artifact, save_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.partitioning import calibration_partition_for_threshold
@@ -26,13 +23,11 @@ logger = logging.getLogger(__name__)
 
 def load_calibration_windows(
     config: AppConfig,
-    model: dict[str, Any],
+    model_categories: tuple[str, ...],
 ) -> tuple[WindowRecord, ...]:
     """Load observed windows from the configured calibration captures."""
     selection = calibration_partition_for_threshold(config)
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
-    model_categories = tuple(model["categories"])
-
     windows: list[WindowRecord] = []
     for capture_id in selection.capture_ids:
         dataset = load_processed_dataset(processed_dir / f"{capture_id}.json")
@@ -61,33 +56,16 @@ def save_threshold(
     path: str | Path,
     threshold_data: dict[str, Any],
 ) -> ThresholdArtifact:
-    """Validate, checksum, and save a threshold artifact."""
-    candidate = ThresholdArtifact.model_validate(
-        {**threshold_data, "checksum": "0" * 64}
-    )
-    normalized = candidate.model_dump(mode="json")
-    normalized["checksum"] = artifact_checksum(normalized)
-    threshold = ThresholdArtifact.model_validate(normalized)
-
-    output_path = Path(path)
-    try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(
-            threshold.model_dump_json(indent=2) + "\n",
-            encoding="utf-8",
-        )
-    except OSError as error:
-        raise DataValidationError(
-            f"cannot save threshold artifact: {output_path}"
-        ) from error
-
+    """Validate and save a threshold artifact."""
+    threshold = ThresholdArtifact.model_validate(threshold_data)
+    save_artifact(path, threshold)
     return threshold
 
 
 def calibrate_threshold(config: AppConfig) -> dict[str, object]:
     """Calculate and save the configured lower-quantile threshold."""
-    model = load_model_for_scoring(config.outputs.model_path)
-    windows = load_calibration_windows(config, model)
+    model = load_artifact(config.outputs.model_path, expected_type="model")
+    windows = load_calibration_windows(config, model.categories)
 
     if len(windows) < config.calibration.minimum_samples:
         raise DataValidationError(
@@ -95,12 +73,12 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
             f"{config.calibration.minimum_samples} windows; found {len(windows)}"
         )
 
-    backend_name = model["log_likelihood_backend"]
+    backend_name = model.log_likelihood_backend
     if not isinstance(backend_name, str):
         raise DataValidationError("model does not record a likelihood backend")
 
     log_likelihood = initialize_log_likelihood(backend_name)
-    alpha = np.asarray(model["alpha"], dtype=np.float64)
+    alpha = np.asarray(model.alpha, dtype=np.float64)
     scores = np.asarray(
         [
             log_probability(
@@ -120,8 +98,6 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
         config.outputs.threshold_path,
         {
             "artifact_type": "threshold",
-            "schema_version": CURRENT_SCHEMA_VERSION,
-            "model_checksum": model["checksum"],
             "score_type": "raw_log_probability",
             "quantile": quantile,
             "threshold": threshold_value,
@@ -151,5 +127,4 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
         "quantile": quantile,
         "threshold": threshold.threshold,
         "threshold_path": str(config.outputs.threshold_path),
-        "threshold_checksum": threshold.checksum,
     }

@@ -40,12 +40,6 @@ class ArtifactCompatibilityError(LMIDNetError):
     error_code = "artifact_compatibility_error"
 
 
-class ArtifactIntegrityError(ArtifactCompatibilityError):
-    """An artifact failed an integrity check and must not be consumed."""
-
-    error_code = "artifact_integrity_error"
-
-
 class PolicyRejectionError(LMIDNetError):
     exit_code = 8
     error_code = "policy_rejection_error"

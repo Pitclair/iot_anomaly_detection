@@ -1,5 +1,4 @@
 {
-  "schema_version": "1.0.0",
   "metadata": {
     "name": "lm-idnet-public-smoke-fixture",
     "synthetic": true,

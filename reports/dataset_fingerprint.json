@@ -124,7 +124,6 @@
       "D-LinkDayCam5_88-2020-10-13"
     ]
   },
-  "schema_version": "1.0.0",
   "window_policy": {
     "interval": "left_closed_right_open",
     "timestamp_timezone": "UTC",
