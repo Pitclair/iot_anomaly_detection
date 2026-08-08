@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import re
 from copy import deepcopy
 from math import isclose, isfinite
@@ -128,6 +129,14 @@ class ThresholdArtifact(VersionedArtifact):
     score_type: str = Field(min_length=1)
     quantile: float = Field(gt=0, lt=1)
     threshold: float
+    calibration_capture_ids: tuple[str, ...]
+    calibration_window_count: int
+    calibration_start_utc: datetime
+    calibration_end_utc: datetime
+    quantile_method: Literal["linear"]
+    score_minimum: float
+    score_median: float
+    score_maximum: float
 
 
 class AnomalyEventArtifact(VersionedArtifact):

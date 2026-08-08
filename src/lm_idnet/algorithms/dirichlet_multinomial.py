@@ -19,3 +19,9 @@ def log_multinomial_coefficient(counts: NDArray[np.int64]) -> float:
     if not np.isfinite(coefficient):
         raise DataValidationError("log multinomial coefficient is not finite")
     return float(coefficient)
+
+
+def log_probability(counts, alpha, log_likelihood) -> float:
+   coefficient = log_multinomial_coefficient(counts)
+   kernel = log_likelihood.calculate(counts[np.newaxis, :], alpha)
+   return coefficient + kernel
