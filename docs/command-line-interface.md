@@ -69,11 +69,13 @@ standard exit code 2 and usage output.
 
 ## Implementation status
 
-At this milestone, `preprocess`, `diagnose`, `train`, and `forecast` have callable
-handlers. `train` loads the fit-partition matrix, estimates Dirichlet parameters
-with Minka's fixed-point iteration and the configured likelihood backend, and
-saves a checksummed model artifact. `calibrate`, `score`, `evaluate`, `adapt`,
-and `benchmark` are registered stable interfaces but return
+At this milestone, `preprocess`, `diagnose`, `train`, `calibrate`, and `forecast`
+have callable handlers. `train` loads the fit-partition matrix, estimates
+Dirichlet parameters with Minka's fixed-point iteration and the configured
+likelihood backend, and saves a checksummed model artifact. `calibrate` scores
+the configured calibration captures and saves a checksummed lower-quantile
+threshold artifact. `score`, `evaluate`, `adapt`, and `benchmark` are registered
+stable interfaces but return
 `command_unavailable_error` (exit code 9) when executed. Their `--help` and
 `--dry-run` paths work normally.
 
@@ -84,6 +86,6 @@ and acceptance tests.
 
 ## Stage isolation
 
-`train`, `diagnose`, `forecast`, and later downstream commands consume existing
-processed artifacts. They do not silently invoke PCAP preprocessing.
-Preprocessing happens only through `lm-idnet preprocess`.
+`train`, `diagnose`, `calibrate`, `forecast`, and later downstream commands
+consume existing processed artifacts. They do not silently invoke PCAP
+preprocessing. Preprocessing happens only through `lm-idnet preprocess`.

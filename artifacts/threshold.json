@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.2.0",
+  "checksum": "76f907e34e05d996b78fb87174315f0433e8a9b2d4109b9cadc6799805e01220",
+  "artifact_type": "threshold",
+  "model_checksum": "8713561e26a2fa79c426ed772ee7a84a029c900a7bdcb71a60acc626281f1a52",
+  "score_type": "raw_log_probability",
+  "quantile": 0.01,
+  "threshold": -22.504374145250928,
+  "calibration_capture_ids": [
+    "D-LinkDayCam5_88-2020-10-14",
+    "D-LinkDayCam5_88-2020-10-15"
+  ],
+  "calibration_window_count": 288,
+  "calibration_start_utc": "2020-10-13T16:00:00Z",
+  "calibration_end_utc": "2020-10-15T16:00:00Z",
+  "quantile_method": "linear",
+  "score_minimum": -23.414561471393426,
+  "score_median": -11.989178880009945,
+  "score_maximum": -11.19408639518906
+}
