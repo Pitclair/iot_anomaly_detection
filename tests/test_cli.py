@@ -146,7 +146,7 @@ def test_json_error_format_is_machine_readable(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "command",
-    ("score", "evaluate", "adapt", "benchmark"),
+    ("evaluate", "adapt", "benchmark"),
 )
 def test_unimplemented_stage_fails_instead_of_claiming_success(
     command: str,
@@ -156,6 +156,34 @@ def test_unimplemented_stage_fails_instead_of_claiming_success(
     assert result.returncode == 9
     assert "command_unavailable_error" in result.stderr
     assert '"status": "completed"' not in result.stdout
+
+
+def test_score_command_runs_scoring_stage(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from lm_idnet import cli
+    from lm_idnet.models import scoring_stage
+
+    expected_result = {
+        "partition": "development_test",
+        "window_count": 2,
+        "anomaly_count": 1,
+    }
+    monkeypatch.setenv("LM_IDNET_LOG_PATH", os.devnull)
+    monkeypatch.setattr(
+        scoring_stage,
+        "score_windows",
+        lambda _config: expected_result,
+    )
+
+    cli.run_command(["score", "--config", str(CONFIG)])
+
+    assert json.loads(capsys.readouterr().out) == {
+        "command": "score",
+        "status": "completed",
+        **expected_result,
+    }
 
 
 def test_calibrate_command_runs_calibration_stage(

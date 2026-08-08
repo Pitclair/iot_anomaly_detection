@@ -69,13 +69,15 @@ standard exit code 2 and usage output.
 
 ## Implementation status
 
-At this milestone, `preprocess`, `diagnose`, `train`, `calibrate`, and `forecast`
-have callable handlers. `train` loads the fit-partition matrix, estimates
-Dirichlet parameters with Minka's fixed-point iteration and the configured
-likelihood backend, and saves a checksummed model artifact. `calibrate` scores
-the configured calibration captures and saves a checksummed lower-quantile
-threshold artifact. `score`, `evaluate`, `adapt`, and `benchmark` are registered
-stable interfaces but return
+At this milestone, `preprocess`, `diagnose`, `train`, `calibrate`, `score`, and
+`forecast` have callable handlers. `train` loads the fit-partition matrix,
+estimates Dirichlet parameters with Minka's fixed-point iteration and the
+configured likelihood backend, and saves a checksummed model artifact.
+`calibrate` scores the configured calibration captures and saves a checksummed
+lower-quantile threshold artifact. `score` applies that threshold to
+non-missing development-test windows and writes one JSON Lines result per
+window. `evaluate`, `adapt`, and `benchmark` are registered stable interfaces
+but return
 `command_unavailable_error` (exit code 9) when executed. Their `--help` and
 `--dry-run` paths work normally.
 
