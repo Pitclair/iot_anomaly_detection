@@ -218,7 +218,6 @@ def _not_implemented(command: str) -> Callable[[AppConfig], None]:
 
 HANDLERS: dict[str, Callable[[AppConfig], None]] = {
     "preprocess": _preprocess,
-    "calibrate": _not_implemented("calibrate"),
     "score": _not_implemented("score"),
     "evaluate": _not_implemented("evaluate"),
     "adapt": _not_implemented("adapt"),
@@ -334,6 +333,22 @@ def run_command(argv: Sequence[str] | None = None) -> None:
             json.dumps(
                 {
                     "command": "train",
+                    "status": "completed",
+                    **result,
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "calibrate":
+        from lm_idnet.models.calibration_stage import calibrate_threshold
+
+        result = calibrate_threshold(config)
+        print(
+            json.dumps(
+                {
+                    "command": "calibrate",
                     "status": "completed",
                     **result,
                 },
