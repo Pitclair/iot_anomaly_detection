@@ -4,8 +4,7 @@ from typing import Any
 
 import pytest
 
-from lm_idnet.artifact_schemas import Artifact, validate_artifact
-from lm_idnet.artifacts import load_artifact
+from lm_idnet.artifacts import Artifact, load_artifact, validate_artifact
 from lm_idnet.exceptions import ArtifactCompatibilityError
 
 pytestmark = pytest.mark.unit

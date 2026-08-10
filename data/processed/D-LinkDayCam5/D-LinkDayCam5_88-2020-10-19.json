@@ -4,7 +4,7 @@
     "capture_id": "D-LinkDayCam5_88-2020-10-19",
     "partition": "development_test",
     "date": "D-LinkDayCam5_88-2020-10-19",
-    "file_source": "/home/usrtima/projects/iot_anomaly_detection/data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-19.pcap"
+    "file_source": "/app/data/raw/D-LinkDayCam5/D-LinkDayCam5_88-2020-10-19.pcap"
   },
   "windows": [
     {

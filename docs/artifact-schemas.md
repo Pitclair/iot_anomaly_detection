@@ -16,7 +16,14 @@ logic. Those features can be added when the formats need long-term stability.
 | `anomaly_event` | Window decision and score |
 | `experiment_manifest` | Run, command, data, configuration, and seed provenance |
 
-The Pydantic definitions are in `src/lm_idnet/artifact_schemas.py`.
+Schemas live with the application layer that owns their data:
+
+- processed capture schemas are in `processing/schemas.py`;
+- model, calibration, and scoring schemas are in `models/schemas.py`;
+- experiment-level schemas are in `evaluation/schemas.py`.
+
+The shared `artifacts.py` module only routes artifact types and handles JSON
+loading and saving.
 
 A model stores alpha, concentration, mean probabilities, and psi together with
 the training capture IDs and likelihood backend. Its fitting diagnostics

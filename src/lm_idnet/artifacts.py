@@ -5,8 +5,46 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from lm_idnet.artifact_schemas import Artifact, validate_artifact
+from pydantic import BaseModel, ValidationError
+
+from lm_idnet.evaluation.schemas import ExperimentManifestArtifact
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
+from lm_idnet.models.schemas import (
+    AnomalyEventArtifact,
+    ModelArtifact,
+    ThresholdArtifact,
+)
+
+Artifact = (
+    ModelArtifact
+    | ThresholdArtifact
+    | AnomalyEventArtifact
+    | ExperimentManifestArtifact
+)
+
+SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
+    "model": ModelArtifact,
+    "threshold": ThresholdArtifact,
+    "anomaly_event": AnomalyEventArtifact,
+    "experiment_manifest": ExperimentManifestArtifact,
+}
+
+
+def validate_artifact(raw: dict, *, expected_type: str) -> Artifact:
+    """Route an artifact to the schema owned by its application layer."""
+    schema = SCHEMA_BY_TYPE.get(expected_type)
+    if schema is None:
+        raise ArtifactCompatibilityError(f"unknown artifact type: {expected_type}")
+    if raw.get("artifact_type") != expected_type:
+        raise ArtifactCompatibilityError(
+            f"expected {expected_type}, found {raw.get('artifact_type')!r}"
+        )
+    try:
+        return schema.model_validate(raw)
+    except ValidationError as error:
+        raise ArtifactCompatibilityError(
+            f"{expected_type} does not match its schema: {error}"
+        ) from error
 
 
 def load_artifact(path: str | Path, *, expected_type: str) -> Artifact:

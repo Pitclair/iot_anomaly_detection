@@ -1,24 +1,20 @@
-"""Schemas for persisted model and result artifacts."""
-
-from __future__ import annotations
+"""Schemas for training, calibration, and scoring artifacts."""
 
 from datetime import datetime
 from math import isclose, isfinite
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
-
-from lm_idnet.exceptions import ArtifactCompatibilityError
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-class ArtifactBase(BaseModel):
+class ModelSchema(BaseModel):
+    """Reject fields that are not part of a model-layer artifact."""
+
     model_config = ConfigDict(extra="forbid")
 
 
-class FitDiagnostics(BaseModel):
+class FitDiagnostics(ModelSchema):
     """Convergence details required to reproduce and assess a model fit."""
-
-    model_config = ConfigDict(extra="forbid")
 
     initial_alpha: tuple[float, ...] = Field(min_length=2)
     iterations: int = Field(gt=0)
@@ -38,7 +34,7 @@ class FitDiagnostics(BaseModel):
         return self
 
 
-class ModelArtifact(ArtifactBase):
+class ModelArtifact(ModelSchema):
     artifact_type: Literal["model"] = "model"
     categories: tuple[str, ...] = Field(min_length=2)
     alpha: tuple[float, ...] = Field(min_length=2)
@@ -112,7 +108,7 @@ class ModelArtifact(ArtifactBase):
         return self
 
 
-class ThresholdArtifact(ArtifactBase):
+class ThresholdArtifact(ModelSchema):
     artifact_type: Literal["threshold"] = "threshold"
     score_type: str = Field(min_length=1)
     quantile: float = Field(gt=0, lt=1)
@@ -127,52 +123,10 @@ class ThresholdArtifact(ArtifactBase):
     score_maximum: float
 
 
-class AnomalyEventArtifact(ArtifactBase):
+class AnomalyEventArtifact(ModelSchema):
     artifact_type: Literal["anomaly_event"] = "anomaly_event"
     event_id: str = Field(min_length=1)
     window_id: str = Field(min_length=1)
     score: float
     threshold: float
     decision: bool
-
-
-class ExperimentManifestArtifact(ArtifactBase):
-    artifact_type: Literal["experiment_manifest"] = "experiment_manifest"
-    run_id: str = Field(min_length=1)
-    command: str = Field(min_length=1)
-    code_commit: str = Field(min_length=1)
-    configuration_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
-    dataset_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
-    seed: int = Field(ge=0)
-
-
-Artifact = (
-    ModelArtifact
-    | ThresholdArtifact
-    | AnomalyEventArtifact
-    | ExperimentManifestArtifact
-)
-
-SCHEMA_BY_TYPE: dict[str, type[ArtifactBase]] = {
-    "model": ModelArtifact,
-    "threshold": ThresholdArtifact,
-    "anomaly_event": AnomalyEventArtifact,
-    "experiment_manifest": ExperimentManifestArtifact,
-}
-
-
-def validate_artifact(raw: dict, *, expected_type: str) -> Artifact:
-    """Validate an artifact against the requested schema."""
-    schema = SCHEMA_BY_TYPE.get(expected_type)
-    if schema is None:
-        raise ArtifactCompatibilityError(f"unknown artifact type: {expected_type}")
-    if raw.get("artifact_type") != expected_type:
-        raise ArtifactCompatibilityError(
-            f"expected {expected_type}, found {raw.get('artifact_type')!r}"
-        )
-    try:
-        return schema.model_validate(raw)
-    except ValidationError as error:
-        raise ArtifactCompatibilityError(
-            f"{expected_type} does not match its schema: {error}"
-        ) from error

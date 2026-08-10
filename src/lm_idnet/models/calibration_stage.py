@@ -10,10 +10,10 @@ import numpy as np
 
 from lm_idnet.algorithms.dirichlet_multinomial import log_probability
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
-from lm_idnet.artifact_schemas import ThresholdArtifact
 from lm_idnet.artifacts import load_artifact, save_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
+from lm_idnet.models.schemas import ThresholdArtifact
 from lm_idnet.partitioning import calibration_partition_for_threshold
 from lm_idnet.processing.schemas import WindowRecord
 from lm_idnet.processing.storage import load_processed_dataset
