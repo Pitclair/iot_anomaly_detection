@@ -12,3 +12,7 @@ preparation record and integration checklist.
 Run `./prepare_dataset.sh` after downloading to create the flat
 `data/raw/UNSW-Chromecast` input view using symbolic links. No PCAP bytes are
 duplicated.
+
+Run `./download_annotations.sh`, then
+`python prepare_labels.py` from the repository root to preserve the official
+Chromecast annotations and generate separate ten-minute label JSON files.

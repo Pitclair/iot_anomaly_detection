@@ -10,6 +10,11 @@ Update it whenever a preparation or integration decision changes.
 - License stated by the publisher: MIT-0
 - Source format: daily mixed-device PCAPNG captures, attack annotations, and
   `attackinfo.xlsx` device metadata
+- Chromecast annotation source: the publisher's
+  [`annotations.zip`](https://iotanalytics.unsw.edu.au/anomaly-data/annotations.zip),
+  file `f4f5d88f0a3c.csv`
+- Chromecast annotation SHA-256:
+  `e9b4d9d5374b8c6dcad2ac8e5947cfa44079d0cc35bda8e46bd1be16822d8655`
 - Selected device: Chromecast
 - Ethernet MAC address: `f4:f5:d8:8f:0a:3c`
 - IPv4 address recorded in `attackinfo.xlsx`: `192.168.1.119`
@@ -33,6 +38,28 @@ Ground-truth attack annotations are used only during evaluation.
    selected device remain visible.
 5. The existing ten-minute, UTC, epoch-aligned, half-open window policy is reused.
 6. Processed count windows and evaluation labels remain separate artifacts.
+7. Label capture membership and window bounds come from packet timestamps, not
+   the nominal PCAP filename date. A window is positive when an annotation
+   satisfies `attack_start < window_end and attack_end > window_start`.
+8. `attack_overlap_seconds` is the union of all annotated overlap within the
+   window, so overlapping annotations cannot produce more than 600 seconds.
+
+## Label preparation result
+
+The official Chromecast file contains 27 attack intervals. The retained captures
+match 21 intervals and produce 2,349 labeled windows, of which 38 are positive:
+
+| Partition/capture | Positive windows |
+| --- | ---: |
+| Development test, `2018-10-23` | 32 |
+| Final test, `2018-10-25` | 6 |
+| All other retained captures | 0 |
+
+The six unmatched annotations are three SSDP and three TCP SYN-reflection
+intervals from the deliberately removed October 24 capture. The October 21 source
+capture is structurally readable but ends after approximately seven hours; its
+label file therefore contains 42 windows rather than a full day. Evaluation must
+use only windows for which both a score and label exist.
 
 ## Frozen temporal partition plan
 
@@ -58,7 +85,7 @@ Ground-truth attack annotations are used only during evaluation.
 - [x] Add an isolated `configs/unsw_chromecast.json` configuration and namespaced outputs.
 - [ ] Validate and fingerprint all configured source captures.
 - [ ] Preprocess the retained captures and review per-capture coverage and counts.
-- [ ] Normalize the Chromecast attack annotations into separate window-label JSON files.
+- [x] Normalize the Chromecast attack annotations into separate window-label JSON files.
 - [ ] Train on the fit partition and calibrate on the calibration partition.
 - [ ] Score and evaluate the development-test partition.
 - [ ] Record any development-driven decisions and freeze the experiment.
@@ -72,3 +99,4 @@ Ground-truth attack annotations are used only during evaluation.
 | 2026-08-13 | Removed the staged October 24 file, renamed 17 retained captures to ISO dates, and updated the downloader to reproduce that selection. |
 | 2026-08-13 | Identified D-Link MAC `b0:c5:54:42:8f:88`; its configured captures use IPv4 `192.170.11.211` and later `192.170.11.210`, requiring an IP list. |
 | 2026-08-13 | Added address-based filtering, its tests and fingerprint policy, the isolated Chromecast config, and a 17-link prepared raw-data view. |
+| 2026-08-13 | Preserved the official Chromecast CSV and generated 17 separate label files plus a provenance manifest: 2,349 windows, 38 positive, 21/27 intervals retained. |

@@ -1,0 +1,127 @@
+{
+  "annotation_fingerprint": "sha256:e9b4d9d5374b8c6dcad2ac8e5947cfa44079d0cc35bda8e46bd1be16822d8655",
+  "annotation_interval_count": 27,
+  "captures": [
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-10",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-11",
+      "window_count": 146
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-12",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-13",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-14",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-15",
+      "window_count": 145
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-16",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-17",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-18",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-19",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-20",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-21",
+      "window_count": 42
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-22",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 32,
+      "capture_id": "2018-10-23",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 6,
+      "capture_id": "2018-10-25",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-26",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-10-27",
+      "window_count": 144
+    }
+  ],
+  "dataset": "unsw-iot-attack-traces",
+  "device_id": "UNSW-Chromecast",
+  "matched_interval_count": 21,
+  "source_annotation": "unsw_iot_attack_pcaps/annotations/f4f5d88f0a3c.csv",
+  "unmatched_intervals": [
+    {
+      "attack_type": "Ssdp100W2D2W",
+      "end_utc": "2018-10-23T17:41:10Z",
+      "start_utc": "2018-10-23T17:31:10Z"
+    },
+    {
+      "attack_type": "Ssdp1W2D2W",
+      "end_utc": "2018-10-23T17:01:10Z",
+      "start_utc": "2018-10-23T16:51:10Z"
+    },
+    {
+      "attack_type": "Ssdp10W2D2W",
+      "end_utc": "2018-10-23T17:21:10Z",
+      "start_utc": "2018-10-23T17:11:10Z"
+    },
+    {
+      "attack_type": "TcpSynReflection100W2D2W",
+      "end_utc": "2018-10-23T16:28:15Z",
+      "start_utc": "2018-10-23T16:18:15Z"
+    },
+    {
+      "attack_type": "TcpSynReflection1W2D2W",
+      "end_utc": "2018-10-23T15:48:15Z",
+      "start_utc": "2018-10-23T15:38:15Z"
+    },
+    {
+      "attack_type": "TcpSynReflection10W2D2W",
+      "end_utc": "2018-10-23T16:08:15Z",
+      "start_utc": "2018-10-23T15:58:15Z"
+    }
+  ]
+}
