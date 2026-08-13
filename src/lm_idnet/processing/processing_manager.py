@@ -20,6 +20,8 @@ class ProcessingManager:
         device_id: str,
         categories: list[str],
         capture_partitions: Mapping[str, str],
+        device_mac: str | None = None,
+        device_ips: tuple[str, ...] = (),
         window_minutes: int = 10,
     ) -> None:
         self.raw_root = Path(raw_root).resolve(strict=False)
@@ -28,7 +30,11 @@ class ProcessingManager:
         if not self.device_id:
             raise ValueError("device_id must not be empty")
         self.capture_partitions = dict(capture_partitions)
-        self.processor = PcapProcessor(categories=categories)
+        self.processor = PcapProcessor(
+            categories=categories,
+            device_mac=device_mac,
+            device_ips=device_ips,
+        )
         self.transformer = PacketTransformer(
             categories=categories,
             window_minutes=window_minutes,

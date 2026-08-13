@@ -6,3 +6,6 @@ __pycache__/
 .vscode/
 .idea/
 logs/
+/data/raw/UNSW-Chromecast/
+/unsw_iot_attack_pcaps/benign/
+/unsw_iot_attack_pcaps/mixed/

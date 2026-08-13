@@ -177,6 +177,8 @@ def _preprocess(config: AppConfig) -> None:
             capture_id: partition_name_for_capture(config, capture_id)
             for capture_id in all_capture_ids(config)
         },
+        device_mac=ingest.device_mac,
+        device_ips=tuple(str(address) for address in ingest.device_ips),
         window_minutes=ingest.window_minutes,
     )
     try:

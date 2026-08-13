@@ -99,6 +99,20 @@ def test_changing_window_length_changes_fingerprint(
     )
 
 
+def test_changing_device_filter_changes_fingerprint(
+    fingerprint_inputs: tuple[AppConfig, Path],
+) -> None:
+    config, _raw_directory = fingerprint_inputs
+    changed_data = config.model_dump(mode="json")
+    changed_data["ingest"]["device_mac"] = "00:11:22:33:44:55"
+    changed = AppConfig.model_validate(changed_data)
+
+    assert (
+        build_dataset_manifest(config)["dataset_version"]
+        != build_dataset_manifest(changed)["dataset_version"]
+    )
+
+
 def test_changing_date_assignment_changes_fingerprint(
     fingerprint_inputs: tuple[AppConfig, Path],
 ) -> None:

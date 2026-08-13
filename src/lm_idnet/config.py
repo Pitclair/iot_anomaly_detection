@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import date
+from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Literal
 
@@ -21,6 +22,7 @@ from lm_idnet.processing.categories import validate_categories
 from lm_idnet.processing.window_policy import validate_window_minutes
 
 _CAPTURE_DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
+_MAC_ADDRESS_PATTERN = re.compile(r"^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$")
 
 
 class StrictModel(BaseModel):
@@ -125,6 +127,8 @@ class IngestConfig(StrictModel):
     raw_root: Path
     processed_root: Path
     dataset_folder: str = Field(min_length=1)
+    device_mac: str | None = None
+    device_ips: tuple[IPv4Address, ...] = ()
     time_col: str = Field(default="timestamp", min_length=1)
     protocol_col: str = Field(default="protocol", min_length=1)
     window_minutes: int
@@ -143,6 +147,26 @@ class IngestConfig(StrictModel):
         if not isinstance(value, (list, tuple)):
             return value
         return validate_categories(value)
+
+    @field_validator("device_mac")
+    @classmethod
+    def normalize_device_mac(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if not _MAC_ADDRESS_PATTERN.fullmatch(normalized):
+            raise ValueError("device_mac must be a colon-separated MAC address")
+        return normalized
+
+    @field_validator("device_ips")
+    @classmethod
+    def device_ips_must_be_unique(
+        cls,
+        value: tuple[IPv4Address, ...],
+    ) -> tuple[IPv4Address, ...]:
+        if len(value) != len(set(value)):
+            raise ValueError("device_ips must be unique")
+        return value
 
     @model_validator(mode="after")
     def duplicate_explanations_must_reference_configured_captures(

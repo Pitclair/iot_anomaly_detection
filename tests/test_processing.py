@@ -84,6 +84,29 @@ def test_canonical_packet_classification_and_counts(tmp_path):
     assert transformer.to_numpy_matrix(windows).sum(axis=0).tolist() == [1, 1, 1, 1]
 
 
+def test_device_filter_matches_mac_ip_and_broadcast_arp(tmp_path):
+    device_mac = "f4:f5:d8:8f:0a:3c"
+    device_ip = "192.168.1.119"
+    packets = [
+        Ether(src=device_mac) / IP(src=device_ip) / TCP(dport=443),
+        Ether(dst="00:11:22:33:44:55") / IP(dst=device_ip) / UDP(dport=53),
+        Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=device_ip),
+        Ether() / IP(dst="192.0.2.1") / UDP(dport=53),
+    ]
+    pcap_path = tmp_path / "mixed-devices.pcap"
+    wrpcap(str(pcap_path), packets)
+    processor = PcapProcessor(
+        categories=list(CATEGORY_ORDER),
+        device_mac=device_mac,
+        device_ips=(device_ip,),
+    )
+
+    records = list(processor.process_pcap(pcap_path))
+
+    assert [category for _, category in records] == ["tcp", "udp", "arp"]
+    assert processor.filtered_count == 1
+
+
 def test_first_capture_in_fresh_process_loads_ethernet_layers(tmp_path):
     pcap_path = tmp_path / "first-capture.pcap"
     wrpcap(

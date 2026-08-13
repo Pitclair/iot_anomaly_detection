@@ -3,38 +3,42 @@
   "ingest": {
     "raw_root": "data/raw/",
     "processed_root": "data/processed/",
-    "device_mac": "b0:c5:54:42:8f:88",
-    "device_ips": ["192.170.11.211", "192.170.11.210"],
+    "dataset_folder": "UNSW-Chromecast",
+    "device_mac": "f4:f5:d8:8f:0a:3c",
+    "device_ips": ["192.168.1.119"],
     "time_col": "timestamp",
     "protocol_col": "protocol",
     "window_minutes": 10,
     "categories": ["tcp", "udp", "ssdp", "arp"],
-    "dataset_folder": "D-LinkDayCam5",
     "partitions": {
       "fit": [
-        "D-LinkDayCam5_88-2020-10-08",
-        "D-LinkDayCam5_88-2020-10-09",
-        "D-LinkDayCam5_88-2020-10-10",
-        "D-LinkDayCam5_88-2020-10-11",
-        "D-LinkDayCam5_88-2020-10-12",
-        "D-LinkDayCam5_88-2020-10-13"
+        "2018-10-10",
+        "2018-10-11",
+        "2018-10-12",
+        "2018-10-13",
+        "2018-10-14",
+        "2018-10-15"
       ],
       "calibration": [
-        "D-LinkDayCam5_88-2020-10-14",
-        "D-LinkDayCam5_88-2020-10-15"
+        "2018-10-16",
+        "2018-10-17",
+        "2018-10-18",
+        "2018-10-19"
       ],
       "development_test": [
-        "D-LinkDayCam5_88-2020-10-16",
-        "D-LinkDayCam5_88-2020-10-19"
+        "2018-10-20",
+        "2018-10-21",
+        "2018-10-22",
+        "2018-10-23"
       ],
       "final_test": [
-        "D-LinkDayCam5_88-2020-10-21",
-        "D-LinkDayCam5_88-2020-10-22"
+        "2018-10-25",
+        "2018-10-26",
+        "2018-10-27"
       ]
     },
     "allowed_duplicate_captures": []
   },
-
   "seeds": {
     "simulation": 1001,
     "model_fitting": 1002,
@@ -59,10 +63,10 @@
     "buffer_size": 1000
   },
   "outputs": {
-    "model_path": "data/processed/model_alpha.json",
-    "threshold_path": "artifacts/threshold.json",
-    "events_path": "artifacts/events.json",
-    "reports_dir": "reports"
+    "model_path": "artifacts/UNSW-Chromecast/model.json",
+    "threshold_path": "artifacts/UNSW-Chromecast/threshold.json",
+    "events_path": "artifacts/UNSW-Chromecast/events.json",
+    "reports_dir": "reports/UNSW-Chromecast"
   },
   "forecast": {
     "horizon_hours": 24

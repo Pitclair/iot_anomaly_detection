@@ -9,6 +9,9 @@ import pandas as pd
 # Otherwise, the first capture opened in a fresh process can become Raw packets.
 from scapy.layers import inet as _inet_layers  # noqa: F401
 from scapy.layers import l2 as _l2_layers  # noqa: F401
+from scapy.layers.inet import IP
+from scapy.layers.l2 import ARP, Ether
+from scapy.packet import Packet
 from scapy.utils import PcapReader
 
 from .categories import (
@@ -22,12 +25,39 @@ logger = logging.getLogger(__name__)
 
 
 class PcapProcessor:
-    def __init__(self, categories: list[str]):
+    def __init__(
+        self,
+        categories: list[str],
+        device_mac: str | None = None,
+        device_ips: tuple[str, ...] = (),
+    ):
         """Initialize the processor with protocol categories."""
         self.categories = validate_categories(categories)
+        self.device_mac = device_mac
+        self.device_ips = frozenset(device_ips)
         self.packet_count = 0
+        self.filtered_count = 0
         self.unsupported_count = 0
         self.protocol_count = {category: 0 for category in self.categories}
+
+    def _matches_device(self, packet: Packet) -> bool:
+        if self.device_mac is None and not self.device_ips:
+            return True
+        if packet.haslayer(Ether):
+            ethernet = packet.getlayer(Ether)
+            if self.device_mac in (ethernet.src.lower(), ethernet.dst.lower()):
+                return True
+        if packet.haslayer(IP):
+            ip = packet.getlayer(IP)
+            if ip.src in self.device_ips or ip.dst in self.device_ips:
+                return True
+        if packet.haslayer(ARP):
+            arp = packet.getlayer(ARP)
+            if self.device_mac in (arp.hwsrc.lower(), arp.hwdst.lower()):
+                return True
+            if arp.psrc in self.device_ips or arp.pdst in self.device_ips:
+                return True
+        return False
 
     def process_pcap(self, pcap_path: str | Path) -> Iterator[tuple[pd.Timestamp, str]]:
         """Yield normalized UTC timestamps and categories from a PCAP file."""
@@ -39,6 +69,9 @@ class PcapProcessor:
 
         with PcapReader(str(capture_path)) as reader:
             for packet_number, packet in enumerate(reader, start=1):
+                if not self._matches_device(packet):
+                    self.filtered_count += 1
+                    continue
                 try:
                     timestamp = normalize_utc_timestamp(packet.time)
                 except ValueError as error:
@@ -56,5 +89,6 @@ class PcapProcessor:
 
         logger.info("Finished processing PCAP file: %s", capture_path)
         logger.info("Total packets processed: %s", self.packet_count)
+        logger.info("Packets excluded by device filter: %s", self.filtered_count)
         logger.info("Unsupported packets: %s", self.unsupported_count)
         logger.info("Protocol counts: %s", self.protocol_count)

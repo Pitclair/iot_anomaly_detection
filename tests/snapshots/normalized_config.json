@@ -4,6 +4,11 @@
     "raw_root": "data/raw",
     "processed_root": "data/processed",
     "dataset_folder": "D-LinkDayCam5",
+    "device_mac": "b0:c5:54:42:8f:88",
+    "device_ips": [
+      "192.170.11.211",
+      "192.170.11.210"
+    ],
     "time_col": "timestamp",
     "protocol_col": "protocol",
     "window_minutes": 10,
