@@ -13,7 +13,7 @@ logic. Those features can be added when the formats need long-term stability.
 |---|---|
 | `model` | Fitted Dirichlet parameters, training provenance, and convergence diagnostics |
 | `threshold` | Score convention, quantile, threshold, and calibration IQR |
-| `anomaly_event` | Window decision, score, and calibrated severity |
+| `anomaly_event` | Device/window context, decision, severity, category residuals, and model fingerprint |
 | `experiment_manifest` | Run, command, data, configuration, and seed provenance |
 
 Schemas live with the application layer that owns their data:

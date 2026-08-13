@@ -4,7 +4,7 @@ from datetime import datetime
 from math import isclose, isfinite
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, NonNegativeInt, model_validator
 
 
 class ModelSchema(BaseModel):
@@ -126,9 +126,43 @@ class ThresholdArtifact(ModelSchema):
 
 class AnomalyEventArtifact(ModelSchema):
     artifact_type: Literal["anomaly_event"] = "anomaly_event"
-    event_id: str = Field(min_length=1)
-    window_id: str = Field(min_length=1)
-    score: float
-    threshold: float
+    device_id: str = Field(min_length=1)
+    capture_id: str = Field(min_length=1)
+    window_start_utc: datetime
+    window_end_utc: datetime
+    counts: dict[str, NonNegativeInt] = Field(min_length=2)
+    score_type: Literal["raw", "normalized"]
+    score: float = Field(allow_inf_nan=False)
+    threshold: float = Field(allow_inf_nan=False)
+    is_anomaly: bool
     severity: float = Field(ge=0, allow_inf_nan=False)
-    decision: bool
+    expected_profile: dict[str, float] = Field(min_length=2)
+    category_residuals: dict[str, float] = Field(min_length=2)
+    model_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def values_must_be_consistent(self) -> "AnomalyEventArtifact":
+        categories = self.counts.keys()
+        if (
+            self.expected_profile.keys() != categories
+            or self.category_residuals.keys() != categories
+        ):
+            raise ValueError("event category fields must have matching keys")
+        if self.window_end_utc <= self.window_start_utc:
+            raise ValueError("window end must be after window start")
+        if any(value < 0 for value in self.expected_profile.values()) or not isclose(
+            sum(self.expected_profile.values()), 1.0
+        ):
+            raise ValueError("expected profile must sum to one")
+        total = sum(self.counts.values())
+        if any(
+            not isclose(
+                self.category_residuals[category],
+                (self.counts[category] / total if total else 0.0) - expected,
+            )
+            for category, expected in self.expected_profile.items()
+        ):
+            raise ValueError("category residuals must equal observed minus expected")
+        if self.is_anomaly != (self.score < self.threshold):
+            raise ValueError("anomaly decision must match score and threshold")
+        return self

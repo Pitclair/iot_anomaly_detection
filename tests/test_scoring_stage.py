@@ -21,8 +21,11 @@ pytestmark = pytest.mark.unit
 def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> None:
     window = window_factory(tcp=1, udp=2, ssdp=3, arp=4)
     arguments = {
+        "device_id": "camera-001",
         "capture_id": "capture-001",
         "model_categories": window.categories,
+        "expected_profile": (0.1, 0.2, 0.3, 0.4),
+        "model_fingerprint": "0" * 64,
         "alpha": np.asarray([1.0, 2.0, 3.0, 4.0]),
         "log_likelihood": ScipyLogLikelihood(),
         "threshold": 0.0,
@@ -32,9 +35,12 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
 
     result = score_window(window, **arguments)
 
-    assert result["counts"] == window.counts
+    assert result["counts"] == dict(zip(window.categories, window.counts))
     assert result["is_anomaly"] == (result["score"] < result["threshold"])
     assert result["severity"] == max(0.0, -result["score"]) / 2.0
+    assert result["category_residuals"] == pytest.approx(
+        dict(zip(window.categories, (0.0, 0.0, 0.0, 0.0)))
+    )
 
     missing = WindowRecord(
         start_utc=window.start_utc,
@@ -161,21 +167,40 @@ def test_score_windows_writes_observed_and_silent_results(
     assert all(
         set(result)
         == {
+            "artifact_type",
+            "device_id",
             "capture_id",
             "window_start_utc",
             "window_end_utc",
             "counts",
+            "score_type",
             "score",
             "threshold",
             "severity",
             "is_anomaly",
+            "expected_profile",
+            "category_residuals",
+            "model_fingerprint",
         }
         for result in results
     )
     assert {result["capture_id"] for result in results} == set(
         config.ingest.partitions.development_test
     )
-    assert all(result["counts"] is not None for result in results)
+    assert all(
+        result["device_id"] == config.ingest.dataset_folder for result in results
+    )
+    assert all(result["score_type"] == score_type for result in results)
+    assert all(len(result["model_fingerprint"]) == 64 for result in results)
+    assert all(
+        result["expected_profile"]
+        == {"tcp": 0.1, "udp": 0.2, "ssdp": 0.3, "arp": 0.4}
+        for result in results
+    )
+    assert all(
+        set(result["counts"]) == set(config.ingest.categories)
+        for result in results
+    )
     assert all(
         result["is_anomaly"] == (result["score"] < result["threshold"])
         for result in results
@@ -187,7 +212,13 @@ def test_score_windows_writes_observed_and_silent_results(
     assert all(
         result["is_anomaly"] is False
         for result in results
-        if sum(result["counts"]) == 0
+        if sum(result["counts"].values()) == 0
+    )
+    silent = next(
+        result for result in results if not sum(result["counts"].values())
+    )
+    assert silent["category_residuals"] == pytest.approx(
+        {category: -value for category, value in silent["expected_profile"].items()}
     )
 
 

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from pathlib import Path
+
 import numpy as np
 
 from lm_idnet.algorithms.dirichlet_multinomial import anomaly_score
@@ -15,6 +17,7 @@ from lm_idnet.algorithms.log_likelihood import (
 from lm_idnet.artifacts import load_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
+from lm_idnet.models.schemas import AnomalyEventArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.schemas import WindowRecord
 from lm_idnet.processing.storage import load_processed_dataset
@@ -25,8 +28,11 @@ logger = logging.getLogger(__name__)
 def score_window(
     window: WindowRecord,
     *,
+    device_id: str,
     capture_id: str,
     model_categories: tuple[str, ...],
+    expected_profile: tuple[float, ...],
+    model_fingerprint: str,
     alpha: np.ndarray,
     log_likelihood: LogLikelihood,
     threshold: float,
@@ -45,16 +51,24 @@ def score_window(
 
     counts = np.asarray(window.counts, dtype=np.int64)
     score = anomaly_score(counts, alpha, log_likelihood, score_type)
-    return {
-        "capture_id": capture_id,
-        "window_start_utc": window.start_utc.isoformat().replace("+00:00", "Z"),
-        "window_end_utc": window.end_utc.isoformat().replace("+00:00", "Z"),
-        "counts": window.counts,
-        "score": score,
-        "threshold": threshold,
-        "severity": max(0.0, threshold - score) / score_iqr,
-        "is_anomaly": score < threshold,
-    }
+    total = int(counts.sum())
+    residuals = counts / total if total else np.zeros_like(counts)
+    residuals = residuals - expected_profile
+    return AnomalyEventArtifact(
+        device_id=device_id,
+        capture_id=capture_id,
+        window_start_utc=window.start_utc,
+        window_end_utc=window.end_utc,
+        counts=dict(zip(model_categories, window.counts)),
+        score_type=score_type,
+        score=score,
+        threshold=threshold,
+        is_anomaly=score < threshold,
+        severity=max(0.0, threshold - score) / score_iqr,
+        expected_profile=dict(zip(model_categories, expected_profile)),
+        category_residuals=dict(zip(model_categories, residuals)),
+        model_fingerprint=model_fingerprint,
+    ).model_dump(mode="json")
 
 
 def score_windows(config: AppConfig) -> dict[str, object]:
@@ -77,6 +91,14 @@ def score_windows(config: AppConfig) -> dict[str, object]:
     log_likelihood = initialize_log_likelihood(backend_name)
     alpha = np.asarray(model.alpha, dtype=np.float64)
     model_categories = model.categories
+    expected_profile = model.mean_probabilities
+    model_fingerprint = hashlib.sha256(
+        json.dumps(
+            model.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
     selection = development_partition_for_evaluation(config)
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     results: list[dict[str, object]] = []
@@ -102,8 +124,11 @@ def score_windows(config: AppConfig) -> dict[str, object]:
             results.append(
                 score_window(
                     window,
+                    device_id=dataset.metadata.device_id,
                     capture_id=capture_id,
                     model_categories=model_categories,
+                    expected_profile=expected_profile,
+                    model_fingerprint=model_fingerprint,
                     alpha=alpha,
                     log_likelihood=log_likelihood,
                     threshold=threshold.threshold,
