@@ -120,15 +120,21 @@ def test_load_calibration_windows_rejects_wrong_partition(
         load_calibration_windows(config, config.ingest.categories)
 
 
+@pytest.mark.parametrize("score_type", ["raw", "normalized"])
 def test_calibrate_threshold_scores_windows_and_saves_artifact(
     tmp_path,
     config_factory,
+    score_type: str,
 ) -> None:
     model_path = tmp_path / "model.json"
     threshold_path = tmp_path / "threshold.json"
     config = config_factory(
         ingest={"processed_root": tmp_path},
-        calibration={"quantile": 0.25, "minimum_samples": 4},
+        calibration={
+            "quantile": 0.25,
+            "minimum_samples": 4,
+            "score_type": score_type,
+        },
         outputs={
             "model_path": model_path,
             "threshold_path": threshold_path,
@@ -144,6 +150,7 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     )
 
     assert result["window_count"] == 4
+    assert result["score_type"] == threshold.score_type == score_type
     assert result["threshold"] == pytest.approx(threshold.threshold)
     assert threshold.calibration_capture_ids == (
         config.ingest.partitions.calibration

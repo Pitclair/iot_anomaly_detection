@@ -1,6 +1,6 @@
 {
   "artifact_type": "threshold",
-  "score_type": "raw_log_probability",
+  "score_type": "raw",
   "quantile": 0.01,
   "threshold": -22.504374145250928,
   "calibration_capture_ids": [

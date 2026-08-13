@@ -185,6 +185,7 @@ class EstimatorConfig(StrictModel):
 class CalibrationConfig(StrictModel):
     quantile: float = Field(gt=0, lt=1)
     minimum_samples: int = Field(default=30, gt=0)
+    score_type: Literal["raw", "normalized"] = "raw"
 
 
 class AdaptationConfig(StrictModel):

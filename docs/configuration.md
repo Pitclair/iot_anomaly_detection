@@ -22,8 +22,10 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   and fails until it is implemented. Neither backend includes the multinomial
   coefficient; the complete formulas and pipeline ownership are documented in
   [`likelihood-semantics.md`](likelihood-semantics.md).
-- `calibration`: lower-tail quantile strictly between zero and one and the
-  required positive sample count.
+- `calibration`: lower-tail quantile, required positive sample count, and
+  `raw` (default) or per-packet `normalized` anomaly score.
+  Compare them by running `calibrate` and `score` once per value with distinct
+  threshold and event output paths.
 - `adaptation`: whether adaptation is enabled, its non-negative safety margin,
   and positive buffer capacity. Adaptation remains disabled by default.
 - `outputs`: paths for model, threshold, event, and report artifacts.

@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 import numpy as np
 
-from lm_idnet.algorithms.dirichlet_multinomial import log_probability
+from lm_idnet.algorithms.dirichlet_multinomial import anomaly_score
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
 from lm_idnet.artifacts import load_artifact
 from lm_idnet.config import AppConfig
@@ -16,7 +16,6 @@ from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
-EXPECTED_SCORE_TYPE = "raw_log_probability"
 
 
 def score_windows(config: AppConfig) -> dict[str, object]:
@@ -26,9 +25,10 @@ def score_windows(config: AppConfig) -> dict[str, object]:
         config.outputs.threshold_path,
         expected_type="threshold",
     )
-    if threshold.score_type != EXPECTED_SCORE_TYPE:
+    score_type = config.calibration.score_type
+    if threshold.score_type != score_type:
         raise ArtifactCompatibilityError(
-            f"threshold score type must be {EXPECTED_SCORE_TYPE!r}; "
+            f"threshold score type must match configured {score_type!r}; "
             f"found {threshold.score_type!r}"
         )
 
@@ -62,7 +62,7 @@ def score_windows(config: AppConfig) -> dict[str, object]:
                 continue
 
             counts = np.asarray(window.counts, dtype=np.int64)
-            score = log_probability(counts, alpha, log_likelihood)
+            score = anomaly_score(counts, alpha, log_likelihood, score_type)
             results.append(
                 {
                     "capture_id": capture_id,
@@ -105,5 +105,6 @@ def score_windows(config: AppConfig) -> dict[str, object]:
         "capture_ids": list(selection.capture_ids),
         "window_count": len(results),
         "anomaly_count": anomaly_count,
+        "score_type": score_type,
         "events_path": str(output_path),
     }

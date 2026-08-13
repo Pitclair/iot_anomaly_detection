@@ -94,12 +94,15 @@ def write_development_captures(config) -> None:
         )
 
 
+@pytest.mark.parametrize("score_type", ["raw", "normalized"])
 def test_score_windows_writes_observed_and_silent_results(
     tmp_path,
     config_factory,
+    score_type: str,
 ) -> None:
     config = config_factory(
         ingest={"processed_root": tmp_path},
+        calibration={"score_type": score_type},
         outputs={
             "model_path": tmp_path / "model.json",
             "threshold_path": tmp_path / "threshold.json",
@@ -107,7 +110,7 @@ def test_score_windows_writes_observed_and_silent_results(
         },
     )
     write_model(config)
-    write_threshold(config, "raw_log_probability")
+    write_threshold(config, score_type)
     write_development_captures(config)
 
     summary = score_windows(config)
@@ -117,6 +120,7 @@ def test_score_windows_writes_observed_and_silent_results(
     ]
 
     assert summary["partition"] == "development_test"
+    assert summary["score_type"] == score_type
     assert summary["window_count"] == len(results) == 4
     assert summary["anomaly_count"] == 2
     assert all(
@@ -159,7 +163,7 @@ def test_score_windows_rejects_unexpected_score_type(
         }
     )
     write_model(config)
-    write_threshold(config, "normalized_log_probability")
+    write_threshold(config, "normalized")
 
     with pytest.raises(ArtifactCompatibilityError, match="score type"):
         score_windows(config)

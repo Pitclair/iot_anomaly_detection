@@ -22,6 +22,16 @@ def log_multinomial_coefficient(counts: NDArray[np.int64]) -> float:
 
 
 def log_probability(counts, alpha, log_likelihood) -> float:
-   coefficient = log_multinomial_coefficient(counts)
-   kernel = log_likelihood.calculate(counts[np.newaxis, :], alpha)
-   return coefficient + kernel
+    coefficient = log_multinomial_coefficient(counts)
+    kernel = log_likelihood.calculate(counts[np.newaxis, :], alpha)
+    return coefficient + kernel
+
+
+def anomaly_score(counts, alpha, log_likelihood, score_type: str) -> float:
+    """Return a raw or per-packet normalized anomaly score."""
+    score = log_probability(counts, alpha, log_likelihood)
+    if score_type == "raw":
+        return score
+    if score_type == "normalized":
+        return score / max(int(counts.sum()), 1)
+    raise DataValidationError(f"unknown anomaly score type: {score_type}")

@@ -36,7 +36,7 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
         },
         "threshold": {
             "artifact_type": "threshold",
-            "score_type": "raw_log_probability",
+            "score_type": "raw",
             "quantile": 0.01,
             "threshold": -42.5,
             "calibration_capture_ids": ["capture-003", "capture-004"],

@@ -48,7 +48,8 @@
   },
   "calibration": {
     "quantile": 0.01,
-    "minimum_samples": 30
+    "minimum_samples": 30,
+    "score_type": "raw"
   },
   "adaptation": {
     "enabled": false,

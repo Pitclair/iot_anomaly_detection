@@ -26,6 +26,7 @@ def test_load_known_valid_configuration() -> None:
     assert config.estimator.categories_k == 4
     assert config.estimator.initial_alpha_concentration == 10.0
     assert config.estimator.log_likelihood_backend == "scipy"
+    assert config.calibration.score_type == "raw"
     assert len(config.ingest.partitions.fit) == 6
 
 
@@ -139,6 +140,17 @@ def test_invalid_quantile_is_rejected(valid_data: dict, quantile: float) -> None
     valid_data["calibration"]["quantile"] = quantile
 
     with pytest.raises(ValidationError):
+        AppConfig.model_validate(valid_data)
+
+
+def test_calibration_score_type_defaults_to_raw_and_rejects_unknown(
+    valid_data: dict,
+) -> None:
+    del valid_data["calibration"]["score_type"]
+    assert AppConfig.model_validate(valid_data).calibration.score_type == "raw"
+
+    valid_data["calibration"]["score_type"] = "other"
+    with pytest.raises(ValidationError, match="score_type"):
         AppConfig.model_validate(valid_data)
 
 

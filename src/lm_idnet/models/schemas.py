@@ -110,7 +110,7 @@ class ModelArtifact(ModelSchema):
 
 class ThresholdArtifact(ModelSchema):
     artifact_type: Literal["threshold"] = "threshold"
-    score_type: str = Field(min_length=1)
+    score_type: Literal["raw", "normalized"]
     quantile: float = Field(gt=0, lt=1)
     threshold: float
     calibration_capture_ids: tuple[str, ...]

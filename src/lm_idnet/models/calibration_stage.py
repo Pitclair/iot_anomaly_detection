@@ -1,4 +1,6 @@
-"""Calibrate an anomaly threshold from normal calibration windows."""
+"""Calibrate an anomaly threshold from normal calibration windows.
+The baseline thesis should use empirical quantiles because they
+are interpretable and do not assume Gaussian score distributions."""
 
 from __future__ import annotations
 
@@ -8,7 +10,7 @@ from typing import Any
 
 import numpy as np
 
-from lm_idnet.algorithms.dirichlet_multinomial import log_probability
+from lm_idnet.algorithms.dirichlet_multinomial import anomaly_score
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
 from lm_idnet.artifacts import load_artifact, save_artifact
 from lm_idnet.config import AppConfig
@@ -81,10 +83,11 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
     alpha = np.asarray(model.alpha, dtype=np.float64)
     scores = np.asarray(
         [
-            log_probability(
+            anomaly_score(
                 np.asarray(window.counts, dtype=np.int64),
                 alpha,
                 log_likelihood,
+                config.calibration.score_type,
             )
             for window in windows
         ],
@@ -98,7 +101,7 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
         config.outputs.threshold_path,
         {
             "artifact_type": "threshold",
-            "score_type": "raw_log_probability",
+            "score_type": config.calibration.score_type,
             "quantile": quantile,
             "threshold": threshold_value,
             "calibration_capture_ids": selection.capture_ids,
@@ -124,6 +127,7 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
         "partition": "calibration",
         "capture_ids": list(selection.capture_ids),
         "window_count": len(windows),
+        "score_type": config.calibration.score_type,
         "quantile": quantile,
         "threshold": threshold.threshold,
         "threshold_path": str(config.outputs.threshold_path),
