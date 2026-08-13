@@ -42,7 +42,7 @@ Ground-truth attack annotations are used only during evaluation.
    satisfies `attack_start < window_end and attack_end > window_start`.
 8. `attack_overlap_seconds` is the union of all annotated overlap within the
    window, so overlapping annotations cannot produce more than 600 seconds.
-9. `device_name` remains the human-readable artifact identity. Packet selection
+9. `device_id` remains the human-readable artifact identity. Packet selection
    uses only `device_mac`; IP addresses are deliberately excluded because they
    may change across captures.
 
@@ -80,7 +80,7 @@ use only windows for which both a score and label exist.
 - [x] Rename all retained staged captures to `YYYY-MM-DD.pcap`.
 - [x] Update the downloader so a rerun reproduces the retained ISO-named files.
 - [x] Identify and validate the D-Link camera MAC address.
-- [x] Add required device-name and MAC ingest settings.
+- [x] Add required device-ID and MAC ingest settings.
 - [x] Filter Ethernet and ARP hardware addresses for the configured device MAC.
 - [x] Add focused MAC-filtering tests, including ARP hardware-address matching.
 - [x] Create the `UNSW-Chromecast` prepared raw-data view without duplicating PCAP data.
@@ -103,3 +103,4 @@ use only windows for which both a score and label exist.
 | 2026-08-13 | Added MAC-based filtering, its tests and fingerprint policy, the isolated Chromecast config, and a 17-link prepared raw-data view. |
 | 2026-08-13 | Preserved the official Chromecast CSV and generated 17 separate label files plus a provenance manifest: 2,349 windows, 38 positive, 21/27 intervals retained. |
 | 2026-08-13 | Retained human-readable device names and removed IP selectors; device traffic is now selected only by its stable MAC address. |
+| 2026-08-13 | Restored the `device_id` configuration name for backward compatibility. |

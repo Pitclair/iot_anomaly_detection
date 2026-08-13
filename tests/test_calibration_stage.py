@@ -57,7 +57,7 @@ def write_calibration_datasets(config, *, wrong_partition: bool = False) -> None
         )
         dataset = ProcessedDataset(
             metadata=Metadata(
-                device_id=config.ingest.device_name,
+                device_id=config.ingest.device_id,
                 capture_id=capture_id,
                 partition=partition,
                 date=capture_id,

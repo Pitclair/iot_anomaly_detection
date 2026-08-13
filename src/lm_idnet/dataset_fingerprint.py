@@ -77,7 +77,7 @@ def build_dataset_manifest(config: AppConfig) -> dict[str, Any]:
     }
     partition_definition = config.ingest.partitions.model_dump(mode="json")
     device_identity = {
-        "name": ingest.device_name,
+        "id": ingest.device_id,
         "mac": ingest.device_mac,
     }
 

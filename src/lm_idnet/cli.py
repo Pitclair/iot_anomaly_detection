@@ -171,7 +171,7 @@ def _preprocess(config: AppConfig) -> None:
     manager = ProcessingManager(
         raw_root=str(ingest.raw_root / ingest.dataset_folder),
         processed_root=str(_processed_path(config)),
-        device_name=ingest.device_name,
+        device_id=ingest.device_id,
         categories=list(ingest.categories),
         capture_partitions={
             capture_id: partition_name_for_capture(config, capture_id)

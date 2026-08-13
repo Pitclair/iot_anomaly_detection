@@ -126,7 +126,7 @@ class IngestConfig(StrictModel):
     raw_root: Path
     processed_root: Path
     dataset_folder: str = Field(min_length=1)
-    device_name: str = Field(min_length=1)
+    device_id: str = Field(min_length=1)
     device_mac: str
     time_col: str = Field(default="timestamp", min_length=1)
     protocol_col: str = Field(default="protocol", min_length=1)
@@ -147,13 +147,13 @@ class IngestConfig(StrictModel):
             return value
         return validate_categories(value)
 
-    @field_validator("device_name")
+    @field_validator("device_id")
     @classmethod
-    def device_name_must_not_be_blank(cls, value: str) -> str:
-        name = value.strip()
-        if not name:
-            raise ValueError("device_name must not be blank")
-        return name
+    def device_id_must_not_be_blank(cls, value: str) -> str:
+        identifier = value.strip()
+        if not identifier:
+            raise ValueError("device_id must not be blank")
+        return identifier
 
     @field_validator("device_mac")
     @classmethod

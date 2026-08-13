@@ -130,7 +130,7 @@ def write_development_captures(config) -> None:
         save_processed_dataset(
             ProcessedDataset(
                 metadata=Metadata(
-                    device_id=config.ingest.device_name,
+                    device_id=config.ingest.device_id,
                     capture_id=capture_id,
                     partition="development_test",
                     date=capture_id,
@@ -192,7 +192,7 @@ def test_score_windows_writes_observed_and_silent_results(
         config.ingest.partitions.development_test
     )
     assert all(
-        result["device_id"] == config.ingest.device_name for result in results
+        result["device_id"] == config.ingest.device_id for result in results
     )
     assert all(result["score_type"] == score_type for result in results)
     threshold = load_artifact(

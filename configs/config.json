@@ -3,7 +3,7 @@
   "ingest": {
     "raw_root": "data/raw/",
     "processed_root": "data/processed/",
-    "device_name": "D-Link Day Cam 5",
+    "device_id": "D-LinkDayCam5",
     "device_mac": "b0:c5:54:42:8f:88",
     "time_col": "timestamp",
     "protocol_col": "protocol",

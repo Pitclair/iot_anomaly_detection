@@ -4,7 +4,7 @@
     "raw_root": "data/raw/",
     "processed_root": "data/processed/",
     "dataset_folder": "UNSW-Chromecast",
-    "device_name": "Chromecast",
+    "device_id": "Chromecast",
     "device_mac": "f4:f5:d8:8f:0a:3c",
     "time_col": "timestamp",
     "protocol_col": "protocol",

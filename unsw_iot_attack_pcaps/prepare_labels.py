@@ -181,7 +181,7 @@ def main() -> None:
             matched.update(overlaps)
         document = {
             "dataset": DATASET,
-            "device_id": config.ingest.device_name,
+            "device_id": config.ingest.device_id,
             "capture_id": capture_id,
             "annotation_fingerprint": fingerprint,
             "windows": labels,
@@ -201,7 +201,7 @@ def main() -> None:
     unmatched = [interval for interval in annotations if interval not in matched]
     manifest = {
         "dataset": DATASET,
-        "device_id": config.ingest.device_name,
+        "device_id": config.ingest.device_id,
         "source_annotation": str(args.annotations),
         "annotation_fingerprint": fingerprint,
         "annotation_interval_count": len(annotations),

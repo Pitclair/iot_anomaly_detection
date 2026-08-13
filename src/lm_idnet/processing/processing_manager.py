@@ -17,7 +17,7 @@ class ProcessingManager:
         self,
         raw_root: str,
         processed_root: str,
-        device_name: str,
+        device_id: str,
         categories: list[str],
         capture_partitions: Mapping[str, str],
         device_mac: str | None = None,
@@ -25,9 +25,9 @@ class ProcessingManager:
     ) -> None:
         self.raw_root = Path(raw_root).resolve(strict=False)
         self.processed_root = Path(processed_root).resolve(strict=False)
-        self.device_name = device_name.strip()
-        if not self.device_name:
-            raise ValueError("device_name must not be empty")
+        self.device_id = device_id.strip()
+        if not self.device_id:
+            raise ValueError("device_id must not be empty")
         self.capture_partitions = dict(capture_partitions)
         self.processor = PcapProcessor(
             categories=categories,
@@ -43,7 +43,7 @@ class ProcessingManager:
         time_series = self.transformer.build_time_series(records)
         windows = self.transformer.to_windows(time_series)
         metadata = Metadata(
-            device_id=self.device_name,
+            device_id=self.device_id,
             capture_id=pcap_path.stem,
             partition=partition,
             date=pcap_path.stem,
