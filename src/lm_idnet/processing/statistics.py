@@ -68,7 +68,14 @@ class Statistics:
         self,
         matrix: np.ndarray,
         capture_id: str,
-    ) -> dict[str, float | int | bool]:
+    ) -> dict[str, float | int | bool] | None:
+        if not matrix.any():
+            logger.warning(
+                "Daily psi is unavailable for %s: no categorized packets observed",
+                capture_id,
+            )
+            return None
+
         try:
             fit = self.estimator.fit(matrix)
         except (DataValidationError, ValueError) as error:

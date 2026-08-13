@@ -214,6 +214,47 @@ def test_configured_category_order_flows_through_pipeline_and_report(
     assert "Daily psi fitted for capture-001" in caplog.text
 
 
+def test_statistics_reports_unavailable_psi_for_silent_capture(tmp_path, caplog):
+    dataset_path = tmp_path / "silent.json"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "metadata": {
+                    "device_id": "camera-01",
+                    "capture_id": "silent",
+                    "partition": "development_test",
+                    "date": "silent",
+                    "file_source": "fixture.pcap",
+                },
+                "windows": [
+                    {
+                        "start_utc": "2020-01-01T00:00:00Z",
+                        "end_utc": "2020-01-01T00:10:00Z",
+                        "categories": list(CATEGORY_ORDER),
+                        "counts": [0, 0, 0, 0],
+                        "state": "observed-silent",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    estimator = Mock()
+
+    with caplog.at_level(logging.WARNING):
+        report = Statistics(
+            processed_dir=tmp_path,
+            categories=CATEGORY_ORDER,
+            estimator=estimator,
+        ).build_report()
+
+    capture_report = report["captures"][0]
+    assert capture_report["dirichlet_fit"] is None
+    assert capture_report["silent_windows"] == {"count": 1, "percent": 100.0}
+    estimator.fit.assert_not_called()
+    assert "Daily psi is unavailable for silent" in caplog.text
+
+
 def test_packet_transformer_builds_windows_and_matrix():
     transformer = PacketTransformer(CATEGORY_ORDER, window_minutes=10)
     records = [
