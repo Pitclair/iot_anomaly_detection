@@ -14,17 +14,14 @@ from unsw_iot_attack_pcaps.prepare_labels import (
 pytestmark = pytest.mark.unit
 
 
-def test_raw_device_filter_matches_ethernet_ipv4_and_arp() -> None:
+def test_raw_device_filter_matches_ethernet_and_arp_mac() -> None:
     mac = bytes.fromhex("f4f5d88f0a3c")
-    ip = bytes((192, 168, 1, 119))
     ethernet_match = mac + bytes(8)
-    ipv4_match = bytes(12) + bytes.fromhex("0800") + bytes(16) + ip + bytes(4)
-    arp_match = bytes(12) + bytes.fromhex("0806") + bytes(24) + ip
+    arp_match = bytes(12) + bytes.fromhex("0806") + bytes(8) + mac + bytes(14)
 
-    assert _matches_device(ethernet_match, mac, frozenset({ip}))
-    assert _matches_device(ipv4_match, mac, frozenset({ip}))
-    assert _matches_device(arp_match, mac, frozenset({ip}))
-    assert not _matches_device(bytes(42), mac, frozenset({ip}))
+    assert _matches_device(ethernet_match, mac)
+    assert _matches_device(arp_match, mac)
+    assert not _matches_device(bytes(42), mac)
 
 
 def test_label_window_uses_half_open_overlap_and_unioned_duration() -> None:

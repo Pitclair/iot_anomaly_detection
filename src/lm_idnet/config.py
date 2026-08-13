@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import re
 from datetime import date
-from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Literal
 
@@ -127,8 +126,8 @@ class IngestConfig(StrictModel):
     raw_root: Path
     processed_root: Path
     dataset_folder: str = Field(min_length=1)
-    device_mac: str | None = None
-    device_ips: tuple[IPv4Address, ...] = ()
+    device_name: str = Field(min_length=1)
+    device_mac: str
     time_col: str = Field(default="timestamp", min_length=1)
     protocol_col: str = Field(default="protocol", min_length=1)
     window_minutes: int
@@ -148,25 +147,21 @@ class IngestConfig(StrictModel):
             return value
         return validate_categories(value)
 
+    @field_validator("device_name")
+    @classmethod
+    def device_name_must_not_be_blank(cls, value: str) -> str:
+        name = value.strip()
+        if not name:
+            raise ValueError("device_name must not be blank")
+        return name
+
     @field_validator("device_mac")
     @classmethod
-    def normalize_device_mac(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
+    def normalize_device_mac(cls, value: str) -> str:
         normalized = value.strip().lower()
         if not _MAC_ADDRESS_PATTERN.fullmatch(normalized):
             raise ValueError("device_mac must be a colon-separated MAC address")
         return normalized
-
-    @field_validator("device_ips")
-    @classmethod
-    def device_ips_must_be_unique(
-        cls,
-        value: tuple[IPv4Address, ...],
-    ) -> tuple[IPv4Address, ...]:
-        if len(value) != len(set(value)):
-            raise ValueError("device_ips must be unique")
-        return value
 
     @model_validator(mode="after")
     def duplicate_explanations_must_reference_configured_captures(

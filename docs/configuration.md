@@ -11,9 +11,9 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
 - `ingest`: raw/processed paths, dataset name, column names, window length,
   ordered protocol categories, and the fit/calibration/development/final
   capture partitions.
-  Optional `device_mac` and `device_ips` selectors restrict mixed-device PCAPs
-  before protocol counts are built. Multiple IPv4 addresses are supported
-  because a device address may change between captures.
+  Required `device_name` and `device_mac` fields identify the device. The name
+  is retained in processed metadata and anomaly events; only the stable MAC
+  address selects packets from mixed-device PCAPs.
   `allowed_duplicate_captures` documents exact, justified groups of captures
   that are intentionally byte-identical; it is empty by default.
 - `seeds`: independent non-negative seeds for simulation, model fitting,

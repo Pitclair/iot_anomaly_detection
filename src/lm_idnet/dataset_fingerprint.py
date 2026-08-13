@@ -76,9 +76,9 @@ def build_dataset_manifest(config: AppConfig) -> dict[str, Any]:
         "timestamp_timezone": "UTC",
     }
     partition_definition = config.ingest.partitions.model_dump(mode="json")
-    device_filter = {
+    device_identity = {
+        "name": ingest.device_name,
         "mac": ingest.device_mac,
-        "ipv4": [str(address) for address in ingest.device_ips],
     }
 
     components = {
@@ -86,7 +86,7 @@ def build_dataset_manifest(config: AppConfig) -> dict[str, Any]:
         "feature_taxonomy": feature_taxonomy,
         "window_policy": window_policy,
         "partition_definition": partition_definition,
-        "device_filter": device_filter,
+        "device_identity": device_identity,
     }
     component_hashes = {
         name: _canonical_hash(value) for name, value in components.items()

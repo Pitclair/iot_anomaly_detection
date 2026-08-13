@@ -17,7 +17,6 @@ Update it whenever a preparation or integration decision changes.
   `e9b4d9d5374b8c6dcad2ac8e5947cfa44079d0cc35bda8e46bd1be16822d8655`
 - Selected device: Chromecast
 - Ethernet MAC address: `f4:f5:d8:8f:0a:3c`
-- IPv4 address recorded in `attackinfo.xlsx`: `192.168.1.119`
 - Selected benign captures: October 10–19, 2018
 - Selected mixed attack-and-benign captures: October 20–23 and 25–27, 2018
 
@@ -43,6 +42,9 @@ Ground-truth attack annotations are used only during evaluation.
    satisfies `attack_start < window_end and attack_end > window_start`.
 8. `attack_overlap_seconds` is the union of all annotated overlap within the
    window, so overlapping annotations cannot produce more than 600 seconds.
+9. `device_name` remains the human-readable artifact identity. Packet selection
+   uses only `device_mac`; IP addresses are deliberately excluded because they
+   may change across captures.
 
 ## Label preparation result
 
@@ -73,14 +75,14 @@ use only windows for which both a score and label exist.
 ## Integration checklist
 
 - [x] Identify the available October devices and select Chromecast.
-- [x] Record the dataset source, device addresses, preparation rules, and partition plan.
+- [x] Record the dataset source, device identity, preparation rules, and partition plan.
 - [x] Remove the excluded October 24 staged capture.
 - [x] Rename all retained staged captures to `YYYY-MM-DD.pcap`.
 - [x] Update the downloader so a rerun reproduces the retained ISO-named files.
-- [x] Identify and validate the D-Link camera MAC and IPv4 addresses.
-- [x] Add optional MAC and IPv4 ingest settings used for packet filtering.
-- [x] Filter Ethernet, IPv4, and relevant ARP traffic for the configured device.
-- [x] Add focused filtering tests, including broadcast ARP addressed to Chromecast.
+- [x] Identify and validate the D-Link camera MAC address.
+- [x] Add required device-name and MAC ingest settings.
+- [x] Filter Ethernet and ARP hardware addresses for the configured device MAC.
+- [x] Add focused MAC-filtering tests, including ARP hardware-address matching.
 - [x] Create the `UNSW-Chromecast` prepared raw-data view without duplicating PCAP data.
 - [x] Add an isolated `configs/unsw_chromecast.json` configuration and namespaced outputs.
 - [ ] Validate and fingerprint all configured source captures.
@@ -97,6 +99,7 @@ use only windows for which both a score and label exist.
 | --- | --- |
 | 2026-08-13 | Created this record; selected Chromecast; excluded October 24; froze the initial partition plan. |
 | 2026-08-13 | Removed the staged October 24 file, renamed 17 retained captures to ISO dates, and updated the downloader to reproduce that selection. |
-| 2026-08-13 | Identified D-Link MAC `b0:c5:54:42:8f:88`; its configured captures use IPv4 `192.170.11.211` and later `192.170.11.210`, requiring an IP list. |
-| 2026-08-13 | Added address-based filtering, its tests and fingerprint policy, the isolated Chromecast config, and a 17-link prepared raw-data view. |
+| 2026-08-13 | Identified D-Link MAC `b0:c5:54:42:8f:88`. |
+| 2026-08-13 | Added MAC-based filtering, its tests and fingerprint policy, the isolated Chromecast config, and a 17-link prepared raw-data view. |
 | 2026-08-13 | Preserved the official Chromecast CSV and generated 17 separate label files plus a provenance manifest: 2,349 windows, 38 positive, 21/27 intervals retained. |
+| 2026-08-13 | Retained human-readable device names and removed IP selectors; device traffic is now selected only by its stable MAC address. |

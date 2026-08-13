@@ -2,7 +2,7 @@
   "annotation_fingerprint": "sha256:e9b4d9d5374b8c6dcad2ac8e5947cfa44079d0cc35bda8e46bd1be16822d8655",
   "capture_id": "2018-10-26",
   "dataset": "unsw-iot-attack-traces",
-  "device_id": "UNSW-Chromecast",
+  "device_id": "Chromecast",
   "windows": [
     {
       "affected_features": [],

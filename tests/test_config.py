@@ -22,11 +22,8 @@ def valid_data() -> dict:
 def test_load_known_valid_configuration() -> None:
     config = load_config(CONFIG_PATH)
 
+    assert config.ingest.device_name == "D-Link Day Cam 5"
     assert config.ingest.device_mac == "b0:c5:54:42:8f:88"
-    assert tuple(map(str, config.ingest.device_ips)) == (
-        "192.170.11.211",
-        "192.170.11.210",
-    )
     assert config.ingest.categories == ("tcp", "udp", "ssdp", "arp")
     assert config.estimator.categories_k == 4
     assert config.estimator.initial_alpha_concentration == 10.0
@@ -38,12 +35,11 @@ def test_load_known_valid_configuration() -> None:
 @pytest.mark.parametrize(
     ("field", "value"),
     [
+        ("device_name", " "),
         ("device_mac", "not-a-mac"),
-        ("device_ips", ["2001:db8::1"]),
-        ("device_ips", ["192.0.2.1", "192.0.2.1"]),
     ],
 )
-def test_invalid_device_addresses_are_rejected(
+def test_invalid_device_identity_is_rejected(
     valid_data: dict,
     field: str,
     value: object,

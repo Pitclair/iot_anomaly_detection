@@ -89,7 +89,7 @@
     }
   ],
   "dataset": "unsw-iot-attack-traces",
-  "device_id": "UNSW-Chromecast",
+  "device_id": "Chromecast",
   "matched_interval_count": 21,
   "source_annotation": "unsw_iot_attack_pcaps/annotations/f4f5d88f0a3c.csv",
   "unmatched_intervals": [

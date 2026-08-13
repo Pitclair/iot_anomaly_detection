@@ -50,7 +50,7 @@ def write_fit_datasets(config, processed_root, *, wrong_partition=False) -> None
         partition = "calibration" if wrong_partition and index == 0 else "fit"
         dataset = ProcessedDataset(
             metadata=Metadata(
-                device_id=config.ingest.dataset_folder,
+                device_id=config.ingest.device_name,
                 capture_id=capture_id,
                 partition=partition,
                 date=capture_id,

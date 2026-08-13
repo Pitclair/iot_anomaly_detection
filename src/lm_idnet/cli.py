@@ -171,14 +171,13 @@ def _preprocess(config: AppConfig) -> None:
     manager = ProcessingManager(
         raw_root=str(ingest.raw_root / ingest.dataset_folder),
         processed_root=str(_processed_path(config)),
-        device_id=ingest.dataset_folder,
+        device_name=ingest.device_name,
         categories=list(ingest.categories),
         capture_partitions={
             capture_id: partition_name_for_capture(config, capture_id)
             for capture_id in all_capture_ids(config)
         },
         device_mac=ingest.device_mac,
-        device_ips=tuple(str(address) for address in ingest.device_ips),
         window_minutes=ingest.window_minutes,
     )
     try:

@@ -16,10 +16,8 @@ from lm_idnet.partitioning import all_capture_ids
 from scapy.utils import RawPcapReader
 
 DATASET = "unsw-iot-attack-traces"
-DEVICE_ID = "UNSW-Chromecast"
 WINDOW_SECONDS = 600
 ETHERNET = 1
-IPV4 = 0x0800
 ARP = 0x0806
 VLAN_TYPES = {0x8100, 0x88A8}
 
@@ -52,10 +50,10 @@ def load_annotations(path: Path) -> tuple[AttackInterval, ...]:
     return tuple(intervals)
 
 
-def _matches_device(packet: bytes, mac: bytes | None, ips: frozenset[bytes]) -> bool:
+def _matches_device(packet: bytes, mac: bytes) -> bool:
     if len(packet) < 14:
         return False
-    if mac is not None and (packet[:6] == mac or packet[6:12] == mac):
+    if packet[:6] == mac or packet[6:12] == mac:
         return True
 
     ethertype = int.from_bytes(packet[12:14])
@@ -63,20 +61,10 @@ def _matches_device(packet: bytes, mac: bytes | None, ips: frozenset[bytes]) -> 
     while ethertype in VLAN_TYPES and len(packet) >= payload + 4:
         ethertype = int.from_bytes(packet[payload + 2 : payload + 4])
         payload += 4
-    if ethertype == IPV4 and len(packet) >= payload + 20:
-        return packet[payload + 12 : payload + 16] in ips or packet[
-            payload + 16 : payload + 20
-        ] in ips
     if ethertype == ARP and len(packet) >= payload + 28:
         return (
-            mac is not None
-            and (
-                packet[payload + 8 : payload + 14] == mac
-                or packet[payload + 18 : payload + 24] == mac
-            )
-        ) or (
-            packet[payload + 14 : payload + 18] in ips
-            or packet[payload + 24 : payload + 28] in ips
+            packet[payload + 8 : payload + 14] == mac
+            or packet[payload + 18 : payload + 24] == mac
         )
     return False
 
@@ -93,15 +81,14 @@ def _timestamp(metadata: object, reader: object) -> float:
 def capture_windows(config_path: Path, capture_id: str) -> tuple[tuple[datetime, datetime], ...]:
     config = load_config(config_path)
     ingest = config.ingest
-    mac = bytes.fromhex(ingest.device_mac.replace(":", "")) if ingest.device_mac else None
-    ips = frozenset(address.packed for address in ingest.device_ips)
+    mac = bytes.fromhex(ingest.device_mac.replace(":", ""))
     pcap = ingest.raw_root / ingest.dataset_folder / f"{capture_id}.pcap"
     first = last = None
     with RawPcapReader(str(pcap)) as reader:
         for packet, metadata in reader:
             if metadata.linktype != ETHERNET:
                 raise ValueError(f"capture is not Ethernet: {capture_id}")
-            if not _matches_device(packet, mac, ips):
+            if not _matches_device(packet, mac):
                 continue
             timestamp = _timestamp(metadata, reader)
             first = timestamp if first is None else first
@@ -194,7 +181,7 @@ def main() -> None:
             matched.update(overlaps)
         document = {
             "dataset": DATASET,
-            "device_id": DEVICE_ID,
+            "device_id": config.ingest.device_name,
             "capture_id": capture_id,
             "annotation_fingerprint": fingerprint,
             "windows": labels,
@@ -214,7 +201,7 @@ def main() -> None:
     unmatched = [interval for interval in annotations if interval not in matched]
     manifest = {
         "dataset": DATASET,
-        "device_id": DEVICE_ID,
+        "device_id": config.ingest.device_name,
         "source_annotation": str(args.annotations),
         "annotation_fingerprint": fingerprint,
         "annotation_interval_count": len(annotations),
