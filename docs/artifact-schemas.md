@@ -12,7 +12,7 @@ logic. Those features can be added when the formats need long-term stability.
 | Artifact type | Purpose |
 |---|---|
 | `model` | Fitted Dirichlet parameters, training provenance, and convergence diagnostics |
-| `threshold` | Score convention, quantile, threshold, and calibration IQR |
+| `threshold` | Model fingerprint, score convention, quantile, threshold, and calibration IQR |
 | `anomaly_event` | Device/window context, decision, severity, category residuals, and model fingerprint |
 | `experiment_manifest` | Run, command, data, configuration, and seed provenance |
 

@@ -12,7 +12,7 @@ import numpy as np
 
 from lm_idnet.algorithms.dirichlet_multinomial import anomaly_score
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
-from lm_idnet.artifacts import load_artifact, save_artifact
+from lm_idnet.artifacts import artifact_fingerprint, load_artifact, save_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.schemas import ThresholdArtifact
@@ -112,6 +112,7 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
         config.outputs.threshold_path,
         {
             "artifact_type": "threshold",
+            "model_fingerprint": artifact_fingerprint(model),
             "score_type": config.calibration.score_type,
             "quantile": quantile,
             "threshold": threshold_value,

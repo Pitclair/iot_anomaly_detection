@@ -110,6 +110,7 @@ class ModelArtifact(ModelSchema):
 
 class ThresholdArtifact(ModelSchema):
     artifact_type: Literal["threshold"] = "threshold"
+    model_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     score_type: Literal["raw", "normalized"]
     quantile: float = Field(gt=0, lt=1)
     threshold: float

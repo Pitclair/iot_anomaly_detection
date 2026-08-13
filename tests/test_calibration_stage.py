@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
-from lm_idnet.artifacts import load_artifact
+from lm_idnet.artifacts import artifact_fingerprint, load_artifact
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.calibration_stage import (
     calibrate_threshold,
@@ -152,6 +152,9 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     assert result["window_count"] == 4
     assert result["score_type"] == threshold.score_type == score_type
     assert result["threshold"] == pytest.approx(threshold.threshold)
+    assert threshold.model_fingerprint == artifact_fingerprint(
+        load_artifact(model_path, expected_type="model")
+    )
     assert threshold.calibration_capture_ids == (
         config.ingest.partitions.calibration
     )

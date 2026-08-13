@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 from pathlib import Path
@@ -14,7 +13,7 @@ from lm_idnet.algorithms.log_likelihood import (
     LogLikelihood,
     initialize_log_likelihood,
 )
-from lm_idnet.artifacts import load_artifact
+from lm_idnet.artifacts import artifact_fingerprint, load_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.schemas import AnomalyEventArtifact
@@ -78,6 +77,11 @@ def score_windows(config: AppConfig) -> dict[str, object]:
         config.outputs.threshold_path,
         expected_type="threshold",
     )
+    model_fingerprint = artifact_fingerprint(model)
+    if threshold.model_fingerprint != model_fingerprint:
+        raise ArtifactCompatibilityError(
+            "threshold model fingerprint does not match loaded model"
+        )
     score_type = config.calibration.score_type
     if threshold.score_type != score_type:
         raise ArtifactCompatibilityError(
@@ -92,13 +96,6 @@ def score_windows(config: AppConfig) -> dict[str, object]:
     alpha = np.asarray(model.alpha, dtype=np.float64)
     model_categories = model.categories
     expected_profile = model.mean_probabilities
-    model_fingerprint = hashlib.sha256(
-        json.dumps(
-            model.model_dump(mode="json"),
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
     selection = development_partition_for_evaluation(config)
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     results: list[dict[str, object]] = []

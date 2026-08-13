@@ -36,6 +36,7 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
         },
         "threshold": {
             "artifact_type": "threshold",
+            "model_fingerprint": HASH,
             "score_type": "raw",
             "quantile": 0.01,
             "threshold": -42.5,

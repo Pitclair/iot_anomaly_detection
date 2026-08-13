@@ -8,6 +8,7 @@ import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
 from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
+from lm_idnet.artifacts import artifact_fingerprint, load_artifact
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models.modeling_stage import save_model
@@ -71,12 +72,18 @@ def write_model(config) -> None:
     )
 
 
-def write_threshold(config, score_type: str) -> None:
+def write_threshold(
+    config,
+    score_type: str,
+    model_fingerprint: str | None = None,
+) -> None:
     start = datetime(2020, 10, 14, tzinfo=timezone.utc)
+    model = load_artifact(config.outputs.model_path, expected_type="model")
     save_threshold(
         config.outputs.threshold_path,
         {
             "artifact_type": "threshold",
+            "model_fingerprint": model_fingerprint or artifact_fingerprint(model),
             "score_type": score_type,
             "quantile": 0.01,
             "threshold": 0.0,
@@ -191,7 +198,13 @@ def test_score_windows_writes_observed_and_silent_results(
         result["device_id"] == config.ingest.dataset_folder for result in results
     )
     assert all(result["score_type"] == score_type for result in results)
-    assert all(len(result["model_fingerprint"]) == 64 for result in results)
+    threshold = load_artifact(
+        config.outputs.threshold_path, expected_type="threshold"
+    )
+    assert all(
+        result["model_fingerprint"] == threshold.model_fingerprint
+        for result in results
+    )
     assert all(
         result["expected_profile"]
         == {"tcp": 0.1, "udp": 0.2, "ssdp": 0.3, "arp": 0.4}
@@ -237,6 +250,26 @@ def test_score_windows_rejects_unexpected_score_type(
     write_threshold(config, "normalized")
 
     with pytest.raises(ArtifactCompatibilityError, match="score type"):
+        score_windows(config)
+
+    assert not config.outputs.events_path.exists()
+
+
+def test_score_windows_rejects_threshold_for_another_model(
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(
+        outputs={
+            "model_path": tmp_path / "model.json",
+            "threshold_path": tmp_path / "threshold.json",
+            "events_path": tmp_path / "events.jsonl",
+        }
+    )
+    write_model(config)
+    write_threshold(config, "raw", "f" * 64)
+
+    with pytest.raises(ArtifactCompatibilityError, match="model fingerprint"):
         score_windows(config)
 
     assert not config.outputs.events_path.exists()

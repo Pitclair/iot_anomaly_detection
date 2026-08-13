@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -28,6 +29,18 @@ SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
     "anomaly_event": AnomalyEventArtifact,
     "experiment_manifest": ExperimentManifestArtifact,
 }
+
+
+def artifact_fingerprint(artifact: BaseModel) -> str:
+    """Return a deterministic SHA-256 fingerprint for an artifact."""
+    canonical = json.dumps(
+        artifact.model_dump(mode="json"),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def validate_artifact(raw: dict, *, expected_type: str) -> Artifact:
