@@ -71,7 +71,7 @@ def score_window(
 
 
 def score_windows(config: AppConfig) -> dict[str, object]:
-    """Score every non-missing development-test window and save JSON Lines."""
+    """Score every non-missing development-test window and save JSON."""
     model = load_artifact(config.outputs.model_path, expected_type="model")
     threshold = load_artifact(
         config.outputs.threshold_path,
@@ -138,9 +138,7 @@ def score_windows(config: AppConfig) -> dict[str, object]:
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(
-            "".join(
-                json.dumps(result, sort_keys=True) + "\n" for result in results
-            ),
+            json.dumps(results, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
     except OSError as error:

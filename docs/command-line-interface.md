@@ -75,7 +75,7 @@ estimates Dirichlet parameters with Minka's fixed-point iteration and the
 configured likelihood backend, and saves a validated model artifact.
 `calibrate` scores the configured calibration captures and saves a validated
 lower-quantile threshold artifact. `score` applies that threshold to
-non-missing development-test windows and writes one JSON Lines result per
+non-missing development-test windows and writes a JSON array with one result per
 window. `evaluate`, `adapt`, and `benchmark` are registered stable interfaces
 but return
 `command_unavailable_error` (exit code 9) when executed. Their `--help` and

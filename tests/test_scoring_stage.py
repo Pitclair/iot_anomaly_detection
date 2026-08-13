@@ -154,7 +154,7 @@ def test_score_windows_writes_observed_and_silent_results(
         outputs={
             "model_path": tmp_path / "model.json",
             "threshold_path": tmp_path / "threshold.json",
-            "events_path": tmp_path / "events.jsonl",
+            "events_path": tmp_path / "events.json",
         },
     )
     write_model(config)
@@ -162,10 +162,7 @@ def test_score_windows_writes_observed_and_silent_results(
     write_development_captures(config)
 
     summary = score_windows(config)
-    results = [
-        json.loads(line)
-        for line in config.outputs.events_path.read_text(encoding="utf-8").splitlines()
-    ]
+    results = json.loads(config.outputs.events_path.read_text(encoding="utf-8"))
 
     assert summary["partition"] == "development_test"
     assert summary["score_type"] == score_type
@@ -243,7 +240,7 @@ def test_score_windows_rejects_unexpected_score_type(
         outputs={
             "model_path": tmp_path / "model.json",
             "threshold_path": tmp_path / "threshold.json",
-            "events_path": tmp_path / "events.jsonl",
+            "events_path": tmp_path / "events.json",
         }
     )
     write_model(config)
@@ -263,7 +260,7 @@ def test_score_windows_rejects_threshold_for_another_model(
         outputs={
             "model_path": tmp_path / "model.json",
             "threshold_path": tmp_path / "threshold.json",
-            "events_path": tmp_path / "events.jsonl",
+            "events_path": tmp_path / "events.json",
         }
     )
     write_model(config)

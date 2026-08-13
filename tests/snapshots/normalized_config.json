@@ -63,7 +63,7 @@
   "outputs": {
     "model_path": "data/processed/model_alpha.json",
     "threshold_path": "artifacts/threshold.json",
-    "events_path": "artifacts/events.jsonl",
+    "events_path": "artifacts/events.json",
     "reports_dir": "reports"
   },
   "forecast": {
