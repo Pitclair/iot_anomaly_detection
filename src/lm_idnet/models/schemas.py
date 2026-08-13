@@ -121,6 +121,7 @@ class ThresholdArtifact(ModelSchema):
     score_minimum: float
     score_median: float
     score_maximum: float
+    score_iqr: float = Field(gt=0, allow_inf_nan=False)
 
 
 class AnomalyEventArtifact(ModelSchema):
@@ -129,4 +130,5 @@ class AnomalyEventArtifact(ModelSchema):
     window_id: str = Field(min_length=1)
     score: float
     threshold: float
+    severity: float = Field(ge=0, allow_inf_nan=False)
     decision: bool

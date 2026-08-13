@@ -47,6 +47,7 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
             "score_minimum": -50.0,
             "score_median": -10.0,
             "score_maximum": -5.0,
+            "score_iqr": 2.5,
         },
         "anomaly_event": {
             "artifact_type": "anomaly_event",
@@ -54,6 +55,7 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
             "window_id": "window-001",
             "score": -50.0,
             "threshold": -42.5,
+            "severity": 3.0,
             "decision": True,
         },
         "experiment_manifest": {

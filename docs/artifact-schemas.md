@@ -12,8 +12,8 @@ logic. Those features can be added when the formats need long-term stability.
 | Artifact type | Purpose |
 |---|---|
 | `model` | Fitted Dirichlet parameters, training provenance, and convergence diagnostics |
-| `threshold` | Score convention, quantile, and threshold |
-| `anomaly_event` | Window decision and score |
+| `threshold` | Score convention, quantile, threshold, and calibration IQR |
+| `anomaly_event` | Window decision, score, and calibrated severity |
 | `experiment_manifest` | Run, command, data, configuration, and seed provenance |
 
 Schemas live with the application layer that owns their data:

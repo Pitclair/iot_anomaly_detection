@@ -26,6 +26,7 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
         "alpha": np.asarray([1.0, 2.0, 3.0, 4.0]),
         "log_likelihood": ScipyLogLikelihood(),
         "threshold": 0.0,
+        "score_iqr": 2.0,
         "score_type": "raw",
     }
 
@@ -33,6 +34,7 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
 
     assert result["counts"] == window.counts
     assert result["is_anomaly"] == (result["score"] < result["threshold"])
+    assert result["severity"] == max(0.0, -result["score"]) / 2.0
 
     missing = WindowRecord(
         start_utc=window.start_utc,
@@ -43,6 +45,10 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
     )
     with pytest.raises(DataValidationError, match="missing window"):
         score_window(missing, **arguments)
+
+    arguments["score_iqr"] = 0.0
+    with pytest.raises(DataValidationError, match="IQR must be positive"):
+        score_window(window, **arguments)
 
 
 def write_model(config) -> None:
@@ -76,6 +82,7 @@ def write_threshold(config, score_type: str) -> None:
             "score_minimum": -1.0,
             "score_median": -0.5,
             "score_maximum": 0.0,
+            "score_iqr": 1.0,
         },
     )
 
@@ -160,6 +167,7 @@ def test_score_windows_writes_observed_and_silent_results(
             "counts",
             "score",
             "threshold",
+            "severity",
             "is_anomaly",
         }
         for result in results
@@ -170,6 +178,10 @@ def test_score_windows_writes_observed_and_silent_results(
     assert all(result["counts"] is not None for result in results)
     assert all(
         result["is_anomaly"] == (result["score"] < result["threshold"])
+        for result in results
+    )
+    assert all(
+        result["severity"] == max(0.0, result["threshold"] - result["score"])
         for result in results
     )
     assert all(
