@@ -8,14 +8,49 @@ from pathlib import Path
 import numpy as np
 
 from lm_idnet.algorithms.dirichlet_multinomial import anomaly_score
-from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
+from lm_idnet.algorithms.log_likelihood import (
+    LogLikelihood,
+    initialize_log_likelihood,
+)
 from lm_idnet.artifacts import load_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.partitioning import development_partition_for_evaluation
+from lm_idnet.processing.schemas import WindowRecord
 from lm_idnet.processing.storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
+
+
+def score_window(
+    window: WindowRecord,
+    *,
+    capture_id: str,
+    model_categories: tuple[str, ...],
+    alpha: np.ndarray,
+    log_likelihood: LogLikelihood,
+    threshold: float,
+    score_type: str,
+) -> dict[str, object]:
+    """Score one prepared window without reading or writing external state."""
+    if window.categories != model_categories:
+        raise DataValidationError(
+            f"development-test categories do not match model: {capture_id}"
+        )
+    if window.counts is None:
+        raise DataValidationError("cannot score a missing window")
+
+    counts = np.asarray(window.counts, dtype=np.int64)
+    score = anomaly_score(counts, alpha, log_likelihood, score_type)
+    return {
+        "capture_id": capture_id,
+        "window_start_utc": window.start_utc.isoformat().replace("+00:00", "Z"),
+        "window_end_utc": window.end_utc.isoformat().replace("+00:00", "Z"),
+        "counts": window.counts,
+        "score": score,
+        "threshold": threshold,
+        "is_anomaly": score < threshold,
+    }
 
 
 def score_windows(config: AppConfig) -> dict[str, object]:
@@ -52,31 +87,24 @@ def score_windows(config: AppConfig) -> dict[str, object]:
             raise DataValidationError(
                 f"development-test capture has the wrong partition: {capture_id}"
             )
+        if any(window.categories != model_categories for window in dataset.windows):
+            raise DataValidationError(
+                f"development-test categories do not match model: {capture_id}"
+            )
 
         for window in dataset.windows:
-            if window.categories != model_categories:
-                raise DataValidationError(
-                    f"development-test categories do not match model: {capture_id}"
-                )
             if window.state == "missing":
                 continue
-
-            counts = np.asarray(window.counts, dtype=np.int64)
-            score = anomaly_score(counts, alpha, log_likelihood, score_type)
             results.append(
-                {
-                    "capture_id": capture_id,
-                    "window_start_utc": window.start_utc.isoformat().replace(
-                        "+00:00", "Z"
-                    ),
-                    "window_end_utc": window.end_utc.isoformat().replace(
-                        "+00:00", "Z"
-                    ),
-                    "counts": window.counts,
-                    "score": score,
-                    "threshold": threshold.threshold,
-                    "is_anomaly": score < threshold.threshold,
-                }
+                score_window(
+                    window,
+                    capture_id=capture_id,
+                    model_categories=model_categories,
+                    alpha=alpha,
+                    log_likelihood=log_likelihood,
+                    threshold=threshold.threshold,
+                    score_type=score_type,
+                )
             )
 
     output_path = Path(config.outputs.events_path)

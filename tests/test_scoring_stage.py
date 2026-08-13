@@ -7,14 +7,42 @@ import numpy as np
 import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
-from lm_idnet.exceptions import ArtifactCompatibilityError
+from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
+from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models.modeling_stage import save_model
-from lm_idnet.models.scoring_stage import score_windows
+from lm_idnet.models.scoring_stage import score_window, score_windows
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import save_processed_dataset
 
 pytestmark = pytest.mark.unit
+
+
+def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> None:
+    window = window_factory(tcp=1, udp=2, ssdp=3, arp=4)
+    arguments = {
+        "capture_id": "capture-001",
+        "model_categories": window.categories,
+        "alpha": np.asarray([1.0, 2.0, 3.0, 4.0]),
+        "log_likelihood": ScipyLogLikelihood(),
+        "threshold": 0.0,
+        "score_type": "raw",
+    }
+
+    result = score_window(window, **arguments)
+
+    assert result["counts"] == window.counts
+    assert result["is_anomaly"] == (result["score"] < result["threshold"])
+
+    missing = WindowRecord(
+        start_utc=window.start_utc,
+        end_utc=window.end_utc,
+        categories=window.categories,
+        counts=None,
+        state="missing",
+    )
+    with pytest.raises(DataValidationError, match="missing window"):
+        score_window(missing, **arguments)
 
 
 def write_model(config) -> None:
