@@ -4,7 +4,12 @@ from typing import Any
 
 import pytest
 
-from lm_idnet.artifacts import Artifact, load_artifact, validate_artifact
+from lm_idnet.artifacts import (
+    Artifact,
+    artifact_fingerprint,
+    load_artifact,
+    validate_artifact,
+)
 from lm_idnet.exceptions import ArtifactCompatibilityError
 
 pytestmark = pytest.mark.unit
@@ -108,6 +113,29 @@ def test_artifact_loads_from_disk(tmp_path) -> None:
     loaded = load_artifact(path, expected_type="model")
 
     assert loaded.alpha == (1.0, 2.0, 3.0, 4.0)
+
+
+def test_model_fingerprint_uses_only_scoring_inputs() -> None:
+    model = artifact_examples()["model"]
+    changed_runtime = deepcopy(model)
+    changed_runtime["fit_diagnostics"]["duration_seconds"] = 99.0
+    changed_alpha = deepcopy(model)
+    changed_alpha.update(
+        alpha=[2.0, 2.0, 3.0, 4.0],
+        concentration=11.0,
+        mean_probabilities=[2 / 11, 2 / 11, 3 / 11, 4 / 11],
+        psi=1 / 11,
+    )
+
+    fingerprint = artifact_fingerprint(
+        validate_artifact(model, expected_type="model")
+    )
+    assert fingerprint == artifact_fingerprint(
+        validate_artifact(changed_runtime, expected_type="model")
+    )
+    assert fingerprint != artifact_fingerprint(
+        validate_artifact(changed_alpha, expected_type="model")
+    )
 
 
 @pytest.mark.parametrize(

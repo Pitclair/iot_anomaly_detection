@@ -31,10 +31,14 @@ SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
 }
 
 
-def artifact_fingerprint(artifact: BaseModel) -> str:
-    """Return a deterministic SHA-256 fingerprint for an artifact."""
+def artifact_fingerprint(artifact: ModelArtifact) -> str:
+    """Fingerprint the model inputs that can change scoring."""
     canonical = json.dumps(
-        artifact.model_dump(mode="json"),
+        {
+            "alpha": artifact.alpha,
+            "categories": artifact.categories,
+            "log_likelihood_backend": artifact.log_likelihood_backend,
+        },
         ensure_ascii=False,
         allow_nan=False,
         sort_keys=True,
