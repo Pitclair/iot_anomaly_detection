@@ -146,7 +146,7 @@ def test_json_error_format_is_machine_readable(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "command",
-    ("evaluate", "adapt", "benchmark"),
+    ("adapt", "benchmark"),
 )
 def test_unimplemented_stage_fails_instead_of_claiming_success(
     command: str,

@@ -219,7 +219,6 @@ def _not_implemented(command: str) -> Callable[[AppConfig], None]:
 
 HANDLERS: dict[str, Callable[[AppConfig], None]] = {
     "preprocess": _preprocess,
-    "evaluate": _not_implemented("evaluate"),
     "adapt": _not_implemented("adapt"),
     "forecast": _forecast,
     "benchmark": _not_implemented("benchmark"),
@@ -365,6 +364,22 @@ def run_command(argv: Sequence[str] | None = None) -> None:
             json.dumps(
                 {
                     "command": "score",
+                    "status": "completed",
+                    **result,
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "evaluate":
+        from lm_idnet.evaluation.evaluation_stage import evaluate_scores
+
+        result = evaluate_scores(config)
+        print(
+            json.dumps(
+                {
+                    "command": "evaluate",
                     "status": "completed",
                     **result,
                 },

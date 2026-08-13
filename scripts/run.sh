@@ -23,5 +23,6 @@ exec docker run --rm \
   --volume "$ROOT_DIR/artifacts:/app/artifacts" \
   --volume "$ROOT_DIR/reports:/app/reports" \
   --volume "$ROOT_DIR/logs:/app/logs" \
+  --volume "$ROOT_DIR/unsw_iot_attack_pcaps:/app/unsw_iot_attack_pcaps:ro" \
   "$IMAGE_NAME" \
   "$@"
