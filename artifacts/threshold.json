@@ -13,5 +13,6 @@
   "quantile_method": "linear",
   "score_minimum": -23.414561471393426,
   "score_median": -11.989178880009945,
-  "score_maximum": -11.19408639518906
+  "score_maximum": -11.19408639518906,
+  "score_iqr": 0.5446958027807796
 }

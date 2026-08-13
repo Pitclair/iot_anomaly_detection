@@ -64,6 +64,16 @@ def save_threshold(
     return threshold
 
 
+def _score_iqr(scores: np.ndarray) -> float:
+    quartile_1, quartile_3 = np.quantile(
+        scores, (0.25, 0.75), method="linear"
+    )
+    score_iqr = float(quartile_3 - quartile_1)
+    if score_iqr <= 0:
+        raise DataValidationError("calibration score IQR must be positive")
+    return score_iqr
+
+
 def calibrate_threshold(config: AppConfig) -> dict[str, object]:
     """Calculate and save the configured lower-quantile threshold."""
     model = load_artifact(config.outputs.model_path, expected_type="model")
@@ -95,6 +105,7 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
     )
     quantile = config.calibration.quantile
     threshold_value = float(np.quantile(scores, quantile, method="linear"))
+    score_iqr = _score_iqr(scores)
     selection = calibration_partition_for_threshold(config)
 
     threshold = save_threshold(
@@ -114,6 +125,7 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
             "score_minimum": float(scores.min()),
             "score_median": float(np.median(scores)),
             "score_maximum": float(scores.max()),
+            "score_iqr": score_iqr,
         },
     )
     logger.info(

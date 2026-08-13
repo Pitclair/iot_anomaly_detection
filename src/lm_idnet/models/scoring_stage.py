@@ -30,6 +30,7 @@ def score_window(
     alpha: np.ndarray,
     log_likelihood: LogLikelihood,
     threshold: float,
+    score_iqr: float,
     score_type: str,
 ) -> dict[str, object]:
     """Score one prepared window without reading or writing external state."""
@@ -39,6 +40,8 @@ def score_window(
         )
     if window.counts is None:
         raise DataValidationError("cannot score a missing window")
+    if score_iqr <= 0:
+        raise DataValidationError("calibration score IQR must be positive")
 
     counts = np.asarray(window.counts, dtype=np.int64)
     score = anomaly_score(counts, alpha, log_likelihood, score_type)
@@ -49,6 +52,7 @@ def score_window(
         "counts": window.counts,
         "score": score,
         "threshold": threshold,
+        "severity": max(0.0, threshold - score) / score_iqr,
         "is_anomaly": score < threshold,
     }
 
@@ -103,6 +107,7 @@ def score_windows(config: AppConfig) -> dict[str, object]:
                     alpha=alpha,
                     log_likelihood=log_likelihood,
                     threshold=threshold.threshold,
+                    score_iqr=threshold.score_iqr,
                     score_type=score_type,
                 )
             )

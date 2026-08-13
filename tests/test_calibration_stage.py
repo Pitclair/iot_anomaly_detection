@@ -160,6 +160,7 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     assert threshold.quantile_method == "linear"
     assert threshold.score_minimum <= threshold.score_median
     assert threshold.score_median <= threshold.score_maximum
+    assert threshold.score_iqr > 0
 
 
 def test_calibrate_threshold_requires_minimum_samples(
