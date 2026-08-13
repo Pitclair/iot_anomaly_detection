@@ -10,7 +10,7 @@ from lm_idnet.config import AppConfig, load_config
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG_PATH = ROOT / "configs" / "config.json"
+CONFIG_PATH = ROOT / "configs" / "d_link_day_cam5.json"
 SNAPSHOT_PATH = Path(__file__).parent / "snapshots" / "normalized_config.json"
 
 

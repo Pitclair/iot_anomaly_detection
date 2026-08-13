@@ -2,7 +2,7 @@
 
 LM-IDNet reads one JSON file and validates the entire file before importing or
 running pipeline stages. The default file is
-[`configs/config.json`](../configs/config.json), and the typed schema is defined
+[`configs/d_link_day_cam5.json`](../configs/d_link_day_cam5.json), and the typed schema is defined
 in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
 
 ## Sections
@@ -69,7 +69,7 @@ starting. No partially validated dictionary is passed to the application.
 ```python
 from lm_idnet.config import load_config
 
-config = load_config("configs/config.json")
+config = load_config("configs/d_link_day_cam5.json")
 print(config.ingest.window_minutes)
 print(config.outputs.model_path)
 ```
@@ -82,7 +82,7 @@ attributes rather than nested dictionary `.get()` calls.
 After editing the JSON file, run:
 
 ```sh
-python -c "from lm_idnet.config import load_config; print(load_config('configs/config.json').model_dump_json(indent=2))"
+python -c "from lm_idnet.config import load_config; print(load_config('configs/d_link_day_cam5.json').model_dump_json(indent=2))"
 python -m pytest tests/test_config.py
 ```
 

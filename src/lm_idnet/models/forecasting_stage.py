@@ -10,11 +10,7 @@ from lm_idnet.evaluation.metrics import brier_score, js_divergence
 
 
 def run_forecasting(cfg: dict, dataset: str = 'camera_5') -> None:
-    model_path = Path(
-        cfg.get("outputs", {}).get(
-            "model_path", "data/processed/model_alpha.json"
-        )
-    )
+    model_path = Path(cfg["outputs"]["model_path"])
     model = load_artifact(model_path, expected_type="model")
     alpha = np.array(model.alpha, dtype=float)
 

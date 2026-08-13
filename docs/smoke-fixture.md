@@ -41,7 +41,7 @@ Run the infrastructure harness directly:
 ```sh
 python -m lm_idnet.smoke \
   --fixture tests/data/smoke/synthetic_packet_counts.json \
-  --config configs/config.json \
+  --config configs/d_link_day_cam5.json \
   --output /tmp/smoke_report.json
 ```
 

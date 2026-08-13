@@ -19,8 +19,8 @@ benchmark   Measure backend and pipeline performance
 includes its capture ID, temporal partition, descriptive category statistics,
 and a daily Dirichlet-multinomial fit with `psi`, iteration count, and
 convergence status. By default the report is
-`reports/capture_statistics.json`; use `--output PATH` to choose a different
-location.
+`reports/D-LinkDayCam5/capture_statistics.json`; use `--output PATH` to choose
+a different location.
 
 Run `lm-idnet --help` for the complete list or
 `lm-idnet <command> --help` for command-specific arguments.
@@ -30,13 +30,13 @@ Run `lm-idnet --help` for the complete list or
 Every command requires an explicit configuration:
 
 ```sh
-lm-idnet preprocess --config configs/config.json
+lm-idnet preprocess --config configs/d_link_day_cam5.json
 ```
 
 Every command also supports a non-mutating readiness check:
 
 ```sh
-lm-idnet score --config configs/config.json --dry-run
+lm-idnet score --config configs/d_link_day_cam5.json --dry-run
 ```
 
 A successful dry run means the command name, package wiring, and configuration
@@ -51,7 +51,7 @@ Informational application logs are written to `logs/lm_idnet.log`. Add the
 global `--verbose` option before the command to also show them in the terminal:
 
 ```sh
-lm-idnet --verbose preprocess --config configs/config.json
+lm-idnet --verbose preprocess --config configs/d_link_day_cam5.json
 ```
 
 Log timestamps use ISO 8601 UTC with millisecond precision and an explicit `Z`
@@ -61,7 +61,7 @@ or container timezone.
 Use JSON-formatted runtime errors when integrating with scripts:
 
 ```sh
-lm-idnet --error-format json train --config configs/config.json
+lm-idnet --error-format json train --config configs/d_link_day_cam5.json
 ```
 
 Argument-parser errors, such as a missing required `--config`, use argparse's

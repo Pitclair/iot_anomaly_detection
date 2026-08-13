@@ -19,7 +19,7 @@ pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "data" / "smoke" / "synthetic_packet_counts.json"
-CONFIG = ROOT / "configs" / "config.json"
+CONFIG = ROOT / "configs" / "d_link_day_cam5.json"
 
 
 def test_smoke_fixture_is_synthetic_payload_free_and_redistributable() -> None:

@@ -47,7 +47,7 @@ def count_matrix_factory() -> Callable[..., np.ndarray]:
 def window_factory() -> Callable[..., WindowRecord]:
     """Create valid processed-window schema instances."""
     config_data = json.loads(
-        (ROOT / "configs" / "config.json").read_text(encoding="utf-8")
+        (ROOT / "configs" / "d_link_day_cam5.json").read_text(encoding="utf-8")
     )
     category_order = AppConfig.model_validate(config_data).ingest.categories
 
@@ -75,7 +75,7 @@ def window_factory() -> Callable[..., WindowRecord]:
 def config_factory() -> Callable[..., AppConfig]:
     """Create independently mutable, validated application configurations."""
     baseline = json.loads(
-        (ROOT / "configs" / "config.json").read_text(encoding="utf-8")
+        (ROOT / "configs" / "d_link_day_cam5.json").read_text(encoding="utf-8")
     )
 
     def create(**section_overrides: dict[str, Any]) -> AppConfig:
@@ -94,8 +94,7 @@ def config_factory() -> Callable[..., AppConfig]:
 
 @pytest.fixture
 def artifact_store(tmp_path: Path) -> Path:
-    """Create an isolated artifact directory with the standard run layout."""
-    store = tmp_path / "artifacts"
-    for child in ("models", "thresholds", "events", "metrics", "logs"):
-        (store / child).mkdir(parents=True)
+    """Create an isolated dataset-specific artifact directory."""
+    store = tmp_path / "artifacts" / "D-LinkDayCam5"
+    store.mkdir(parents=True)
     return store

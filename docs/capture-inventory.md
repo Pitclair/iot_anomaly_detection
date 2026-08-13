@@ -8,17 +8,18 @@ Run it without preprocessing any packets:
 
 ```sh
 lm-idnet preprocess \
-  --config configs/config.json \
+  --config configs/d_link_day_cam5.json \
   --inventory-only
 ```
 
-The default report is `reports/capture_inventory.json`. Override it with:
+The default report is
+`reports/D-LinkDayCam5/capture_inventory.json`. Override it with:
 
 ```sh
 lm-idnet preprocess \
-  --config configs/config.json \
+  --config configs/d_link_day_cam5.json \
   --inventory-only \
-  --inventory-output reports/another_inventory.json
+  --inventory-output reports/D-LinkDayCam5/another_inventory.json
 ```
 
 ## Information recorded

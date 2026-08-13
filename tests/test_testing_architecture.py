@@ -46,15 +46,9 @@ def test_config_factory_returns_independent_valid_models(
 
 
 @pytest.mark.integration
-def test_artifact_store_is_isolated_and_complete(artifact_store: Path) -> None:
-    assert artifact_store.name == "artifacts"
-    assert {path.name for path in artifact_store.iterdir()} == {
-        "models",
-        "thresholds",
-        "events",
-        "metrics",
-        "logs",
-    }
+def test_artifact_store_is_dataset_namespaced(artifact_store: Path) -> None:
+    assert artifact_store.parent.name == "artifacts"
+    assert artifact_store.name == "D-LinkDayCam5"
 
 
 @pytest.mark.numerical

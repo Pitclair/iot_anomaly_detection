@@ -59,10 +59,10 @@
     "buffer_size": 1000
   },
   "outputs": {
-    "model_path": "data/processed/model_alpha.json",
-    "threshold_path": "artifacts/threshold.json",
-    "events_path": "artifacts/events.json",
-    "reports_dir": "reports"
+    "model_path": "artifacts/D-LinkDayCam5/model_alpha.json",
+    "threshold_path": "artifacts/D-LinkDayCam5/threshold.json",
+    "events_path": "artifacts/D-LinkDayCam5/events.json",
+    "reports_dir": "reports/D-LinkDayCam5"
   },
   "forecast": {
     "horizon_hours": 24

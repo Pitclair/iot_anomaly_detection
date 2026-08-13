@@ -7,11 +7,11 @@ Generate it with:
 
 ```sh
 lm-idnet preprocess \
-  --config configs/config.json \
+  --config configs/d_link_day_cam5.json \
   --fingerprint-only
 ```
 
-The default output is `reports/dataset_fingerprint.json`. Use
+The default output is `reports/D-LinkDayCam5/dataset_fingerprint.json`. Use
 `--fingerprint-output <path>` to override it.
 
 ## Hashed content

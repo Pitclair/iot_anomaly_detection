@@ -8,11 +8,11 @@ Run:
 
 ```sh
 lm-idnet preprocess \
-  --config configs/config.json \
+  --config configs/d_link_day_cam5.json \
   --validate-captures-only
 ```
 
-The default report is `reports/capture_validation.json`. Use
+The default report is `reports/D-LinkDayCam5/capture_validation.json`. Use
 `--validation-output <path>` to select another location.
 
 ## Validation performed

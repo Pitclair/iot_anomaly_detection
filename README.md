@@ -6,7 +6,7 @@ traffic using Dirichlet-based methods.
 Structure:
 
 - `src/lm_idnet/`: installable Python package
-- `configs/config.json`: default configuration
+- `configs/d_link_day_cam5.json`: default configuration
 - `tests/`: automated tests
 
 ## Run with Docker
@@ -19,10 +19,10 @@ Use the runner from the repository root:
 
 ```sh
 ./scripts/run.sh --help
-./scripts/run.sh preprocess --config configs/config.json
-./scripts/run.sh diagnose --config configs/config.json
-./scripts/run.sh train --config configs/config.json
-./scripts/run.sh forecast --config configs/config.json
+./scripts/run.sh preprocess --config configs/d_link_day_cam5.json
+./scripts/run.sh diagnose --config configs/d_link_day_cam5.json
+./scripts/run.sh train --config configs/d_link_day_cam5.json
+./scripts/run.sh forecast --config configs/d_link_day_cam5.json
 ```
 
 The runner builds `lm-idnet:latest` using Docker's build cache and then starts
@@ -31,7 +31,7 @@ and generated artifacts survive after the container exits:
 
 - `configs/` as read-only configuration
 - `data/` for raw and processed datasets
-- `artifacts/` for calibrated thresholds and detector output
+- `artifacts/` for dataset-specific models, thresholds, and detector output
 - `reports/` for generated reports
 - `logs/` for application logs
 
@@ -50,7 +50,7 @@ Override the image name or Python base version when needed:
 
 ```sh
 LM_IDNET_IMAGE_NAME=my-lm-idnet PYTHON_VERSION=3.12-slim \
-  ./scripts/run.sh diagnose --config configs/config.json
+  ./scripts/run.sh diagnose --config configs/d_link_day_cam5.json
 ```
 
 The equivalent manual build is:
@@ -77,10 +77,10 @@ Run the CLI without setting `PYTHONPATH`:
 
 ```sh
 lm-idnet --help
-lm-idnet preprocess --config configs/config.json
-lm-idnet diagnose --config configs/config.json
-lm-idnet train --config configs/config.json
-lm-idnet forecast --config configs/config.json
+lm-idnet preprocess --config configs/d_link_day_cam5.json
+lm-idnet diagnose --config configs/d_link_day_cam5.json
+lm-idnet train --config configs/d_link_day_cam5.json
+lm-idnet forecast --config configs/d_link_day_cam5.json
 ```
 
 The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,

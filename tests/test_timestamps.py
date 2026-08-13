@@ -15,7 +15,7 @@ from lm_idnet.processing.packet_transformer import PacketTransformer
 
 pytestmark = pytest.mark.unit
 CATEGORY_ORDER = load_config(
-    Path(__file__).resolve().parents[1] / "configs" / "config.json"
+    Path(__file__).resolve().parents[1] / "configs" / "d_link_day_cam5.json"
 ).ingest.categories
 
 

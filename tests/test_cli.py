@@ -13,7 +13,7 @@ from lm_idnet.cli import COMMANDS, LOG_DATE_FORMAT, LOG_FORMAT, UtcLogFormatter
 pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = ROOT / "configs" / "config.json"
+CONFIG = ROOT / "configs" / "d_link_day_cam5.json"
 
 
 def test_log_formatter_uses_explicit_iso_utc_timestamp() -> None:
