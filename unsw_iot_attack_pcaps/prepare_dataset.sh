@@ -2,13 +2,31 @@
 set -euo pipefail
 shopt -s nullglob
 
-source_root=$(cd "$(dirname "$0")" && pwd)
-workspace=$(cd "$source_root/.." && pwd)
-target="$workspace/data/raw/UNSW-Chromecast"
+root=$(cd "$(dirname "$0")" && pwd)
+workspace=$(cd "$root/.." && pwd)
+
+case ${1:-chromecast} in
+    chromecast)
+        source_root=$root
+        dataset=UNSW-Chromecast
+        expected=17
+        ;;
+    samsung-camera)
+        source_root="$root/Samsung camera"
+        dataset=UNSW-Samsung-Camera
+        expected=12
+        ;;
+    *)
+        echo "usage: $0 [chromecast|samsung-camera]" >&2
+        exit 2
+        ;;
+esac
+
+target="$workspace/data/raw/$dataset"
 sources=("$source_root"/benign/2018-*.pcap "$source_root"/mixed/2018-*.pcap)
 
-if ((${#sources[@]} != 17)); then
-    echo "expected 17 retained PCAPs, found ${#sources[@]}" >&2
+if ((${#sources[@]} != expected)); then
+    echo "expected $expected retained PCAPs, found ${#sources[@]}" >&2
     exit 1
 fi
 
@@ -17,5 +35,5 @@ for source in "${sources[@]}"; do
     filename=${source##*/}
     group=${source%/*}
     group=${group##*/}
-    ln -sfn "../../../unsw_iot_attack_pcaps/$group/$filename" "$target/$filename"
+    ln -sfn "$(realpath --relative-to="$target" "$source")" "$target/$filename"
 done

@@ -9,3 +9,6 @@ logs/
 /data/raw/UNSW-Chromecast/
 /unsw_iot_attack_pcaps/benign/
 /unsw_iot_attack_pcaps/mixed/
+/data/raw/UNSW-Samsung-Camera/
+/unsw_iot_attack_pcaps/Samsung camera/benign/
+/unsw_iot_attack_pcaps/Samsung camera/mixed/

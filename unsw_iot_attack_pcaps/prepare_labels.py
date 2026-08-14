@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create separate ten-minute ground-truth labels for the UNSW Chromecast data."""
+"""Create separate ten-minute ground-truth labels for one UNSW IoT device."""
 
 from __future__ import annotations
 

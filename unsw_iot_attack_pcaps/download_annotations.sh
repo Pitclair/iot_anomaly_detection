@@ -11,3 +11,4 @@ curl --fail --location --silent --show-error \
 python -m zipfile -e "$temporary/annotations.zip" "$temporary"
 mkdir -p "$root/annotations"
 cp "$temporary/annotations/f4f5d88f0a3c.csv" "$root/annotations/"
+cp "$temporary/annotations/00166cab6b88.csv" "$root/annotations/"

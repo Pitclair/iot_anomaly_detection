@@ -1,0 +1,1202 @@
+{
+  "annotation_fingerprint": "sha256:618bb6637c8d388aacc7091d336343a7ac3b2d6af2d07b311c0686bbcb6a450e",
+  "capture_id": "2018-06-03",
+  "dataset": "unsw-iot-attack-traces",
+  "device_id": "Samsung Camera",
+  "windows": [
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T00:10:00Z",
+      "window_start_utc": "2018-06-03T00:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T00:20:00Z",
+      "window_start_utc": "2018-06-03T00:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T00:30:00Z",
+      "window_start_utc": "2018-06-03T00:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T00:40:00Z",
+      "window_start_utc": "2018-06-03T00:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T00:50:00Z",
+      "window_start_utc": "2018-06-03T00:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T01:00:00Z",
+      "window_start_utc": "2018-06-03T00:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T01:10:00Z",
+      "window_start_utc": "2018-06-03T01:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T01:20:00Z",
+      "window_start_utc": "2018-06-03T01:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T01:30:00Z",
+      "window_start_utc": "2018-06-03T01:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T01:40:00Z",
+      "window_start_utc": "2018-06-03T01:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T01:50:00Z",
+      "window_start_utc": "2018-06-03T01:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T02:00:00Z",
+      "window_start_utc": "2018-06-03T01:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T02:10:00Z",
+      "window_start_utc": "2018-06-03T02:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T02:20:00Z",
+      "window_start_utc": "2018-06-03T02:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T02:30:00Z",
+      "window_start_utc": "2018-06-03T02:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T02:40:00Z",
+      "window_start_utc": "2018-06-03T02:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T02:50:00Z",
+      "window_start_utc": "2018-06-03T02:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T03:00:00Z",
+      "window_start_utc": "2018-06-03T02:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T03:10:00Z",
+      "window_start_utc": "2018-06-03T03:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T03:20:00Z",
+      "window_start_utc": "2018-06-03T03:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T03:30:00Z",
+      "window_start_utc": "2018-06-03T03:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T03:40:00Z",
+      "window_start_utc": "2018-06-03T03:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T03:50:00Z",
+      "window_start_utc": "2018-06-03T03:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T04:00:00Z",
+      "window_start_utc": "2018-06-03T03:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T04:10:00Z",
+      "window_start_utc": "2018-06-03T04:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T04:20:00Z",
+      "window_start_utc": "2018-06-03T04:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T04:30:00Z",
+      "window_start_utc": "2018-06-03T04:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T04:40:00Z",
+      "window_start_utc": "2018-06-03T04:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T04:50:00Z",
+      "window_start_utc": "2018-06-03T04:40:00Z"
+    },
+    {
+      "affected_features": [
+        "161IP149.171.36.232",
+        "Allfeatures",
+        "InternetUDPPort5000",
+        "Internetfeatures",
+        "Localfeatures",
+        "Udpfeatures",
+        "internetUdpPortAll"
+      ],
+      "attack_overlap_seconds": 86,
+      "attack_types": [
+        "Snmp1L2D2W"
+      ],
+      "is_attack": true,
+      "window_end_utc": "2018-06-03T05:00:00Z",
+      "window_start_utc": "2018-06-03T04:50:00Z"
+    },
+    {
+      "affected_features": [
+        "161IP149.171.36.232",
+        "Allfeatures",
+        "InternetUDPPort5000",
+        "Internetfeatures",
+        "Localfeatures",
+        "Udpfeatures",
+        "internetUdpPortAll"
+      ],
+      "attack_overlap_seconds": 587,
+      "attack_types": [
+        "Snmp10L2D2W",
+        "Snmp1L2D2W"
+      ],
+      "is_attack": true,
+      "window_end_utc": "2018-06-03T05:10:00Z",
+      "window_start_utc": "2018-06-03T05:00:00Z"
+    },
+    {
+      "affected_features": [
+        "161IP149.171.36.232",
+        "Allfeatures",
+        "InternetUDPPort5000",
+        "Internetfeatures",
+        "Localfeatures",
+        "Udpfeatures",
+        "internetUdpPortAll"
+      ],
+      "attack_overlap_seconds": 593,
+      "attack_types": [
+        "Snmp100L2D2W",
+        "Snmp10L2D2W"
+      ],
+      "is_attack": true,
+      "window_end_utc": "2018-06-03T05:20:00Z",
+      "window_start_utc": "2018-06-03T05:10:00Z"
+    },
+    {
+      "affected_features": [
+        "161IP149.171.36.232",
+        "Allfeatures",
+        "InternetUDPPort5000",
+        "Internetfeatures",
+        "Localfeatures",
+        "Udpfeatures",
+        "internetUdpPortAll"
+      ],
+      "attack_overlap_seconds": 535,
+      "attack_types": [
+        "Snmp100L2D2W"
+      ],
+      "is_attack": true,
+      "window_end_utc": "2018-06-03T05:30:00Z",
+      "window_start_utc": "2018-06-03T05:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T05:40:00Z",
+      "window_start_utc": "2018-06-03T05:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T05:50:00Z",
+      "window_start_utc": "2018-06-03T05:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T06:00:00Z",
+      "window_start_utc": "2018-06-03T05:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T06:10:00Z",
+      "window_start_utc": "2018-06-03T06:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T06:20:00Z",
+      "window_start_utc": "2018-06-03T06:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T06:30:00Z",
+      "window_start_utc": "2018-06-03T06:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T06:40:00Z",
+      "window_start_utc": "2018-06-03T06:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T06:50:00Z",
+      "window_start_utc": "2018-06-03T06:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T07:00:00Z",
+      "window_start_utc": "2018-06-03T06:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T07:10:00Z",
+      "window_start_utc": "2018-06-03T07:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T07:20:00Z",
+      "window_start_utc": "2018-06-03T07:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T07:30:00Z",
+      "window_start_utc": "2018-06-03T07:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T07:40:00Z",
+      "window_start_utc": "2018-06-03T07:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T07:50:00Z",
+      "window_start_utc": "2018-06-03T07:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T08:00:00Z",
+      "window_start_utc": "2018-06-03T07:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T08:10:00Z",
+      "window_start_utc": "2018-06-03T08:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T08:20:00Z",
+      "window_start_utc": "2018-06-03T08:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T08:30:00Z",
+      "window_start_utc": "2018-06-03T08:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T08:40:00Z",
+      "window_start_utc": "2018-06-03T08:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T08:50:00Z",
+      "window_start_utc": "2018-06-03T08:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T09:00:00Z",
+      "window_start_utc": "2018-06-03T08:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T09:10:00Z",
+      "window_start_utc": "2018-06-03T09:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T09:20:00Z",
+      "window_start_utc": "2018-06-03T09:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T09:30:00Z",
+      "window_start_utc": "2018-06-03T09:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T09:40:00Z",
+      "window_start_utc": "2018-06-03T09:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T09:50:00Z",
+      "window_start_utc": "2018-06-03T09:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T10:00:00Z",
+      "window_start_utc": "2018-06-03T09:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T10:10:00Z",
+      "window_start_utc": "2018-06-03T10:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T10:20:00Z",
+      "window_start_utc": "2018-06-03T10:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T10:30:00Z",
+      "window_start_utc": "2018-06-03T10:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T10:40:00Z",
+      "window_start_utc": "2018-06-03T10:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T10:50:00Z",
+      "window_start_utc": "2018-06-03T10:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T11:00:00Z",
+      "window_start_utc": "2018-06-03T10:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T11:10:00Z",
+      "window_start_utc": "2018-06-03T11:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T11:20:00Z",
+      "window_start_utc": "2018-06-03T11:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T11:30:00Z",
+      "window_start_utc": "2018-06-03T11:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T11:40:00Z",
+      "window_start_utc": "2018-06-03T11:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T11:50:00Z",
+      "window_start_utc": "2018-06-03T11:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T12:00:00Z",
+      "window_start_utc": "2018-06-03T11:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T12:10:00Z",
+      "window_start_utc": "2018-06-03T12:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T12:20:00Z",
+      "window_start_utc": "2018-06-03T12:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T12:30:00Z",
+      "window_start_utc": "2018-06-03T12:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T12:40:00Z",
+      "window_start_utc": "2018-06-03T12:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T12:50:00Z",
+      "window_start_utc": "2018-06-03T12:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T13:00:00Z",
+      "window_start_utc": "2018-06-03T12:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T13:10:00Z",
+      "window_start_utc": "2018-06-03T13:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T13:20:00Z",
+      "window_start_utc": "2018-06-03T13:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T13:30:00Z",
+      "window_start_utc": "2018-06-03T13:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T13:40:00Z",
+      "window_start_utc": "2018-06-03T13:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T13:50:00Z",
+      "window_start_utc": "2018-06-03T13:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T14:00:00Z",
+      "window_start_utc": "2018-06-03T13:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T14:10:00Z",
+      "window_start_utc": "2018-06-03T14:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T14:20:00Z",
+      "window_start_utc": "2018-06-03T14:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T14:30:00Z",
+      "window_start_utc": "2018-06-03T14:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T14:40:00Z",
+      "window_start_utc": "2018-06-03T14:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T14:50:00Z",
+      "window_start_utc": "2018-06-03T14:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T15:00:00Z",
+      "window_start_utc": "2018-06-03T14:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T15:10:00Z",
+      "window_start_utc": "2018-06-03T15:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T15:20:00Z",
+      "window_start_utc": "2018-06-03T15:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T15:30:00Z",
+      "window_start_utc": "2018-06-03T15:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T15:40:00Z",
+      "window_start_utc": "2018-06-03T15:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T15:50:00Z",
+      "window_start_utc": "2018-06-03T15:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T16:00:00Z",
+      "window_start_utc": "2018-06-03T15:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T16:10:00Z",
+      "window_start_utc": "2018-06-03T16:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T16:20:00Z",
+      "window_start_utc": "2018-06-03T16:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T16:30:00Z",
+      "window_start_utc": "2018-06-03T16:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T16:40:00Z",
+      "window_start_utc": "2018-06-03T16:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T16:50:00Z",
+      "window_start_utc": "2018-06-03T16:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T17:00:00Z",
+      "window_start_utc": "2018-06-03T16:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T17:10:00Z",
+      "window_start_utc": "2018-06-03T17:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T17:20:00Z",
+      "window_start_utc": "2018-06-03T17:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T17:30:00Z",
+      "window_start_utc": "2018-06-03T17:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T17:40:00Z",
+      "window_start_utc": "2018-06-03T17:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T17:50:00Z",
+      "window_start_utc": "2018-06-03T17:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T18:00:00Z",
+      "window_start_utc": "2018-06-03T17:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T18:10:00Z",
+      "window_start_utc": "2018-06-03T18:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T18:20:00Z",
+      "window_start_utc": "2018-06-03T18:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T18:30:00Z",
+      "window_start_utc": "2018-06-03T18:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T18:40:00Z",
+      "window_start_utc": "2018-06-03T18:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T18:50:00Z",
+      "window_start_utc": "2018-06-03T18:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T19:00:00Z",
+      "window_start_utc": "2018-06-03T18:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T19:10:00Z",
+      "window_start_utc": "2018-06-03T19:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T19:20:00Z",
+      "window_start_utc": "2018-06-03T19:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T19:30:00Z",
+      "window_start_utc": "2018-06-03T19:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T19:40:00Z",
+      "window_start_utc": "2018-06-03T19:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T19:50:00Z",
+      "window_start_utc": "2018-06-03T19:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T20:00:00Z",
+      "window_start_utc": "2018-06-03T19:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T20:10:00Z",
+      "window_start_utc": "2018-06-03T20:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T20:20:00Z",
+      "window_start_utc": "2018-06-03T20:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T20:30:00Z",
+      "window_start_utc": "2018-06-03T20:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T20:40:00Z",
+      "window_start_utc": "2018-06-03T20:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T20:50:00Z",
+      "window_start_utc": "2018-06-03T20:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T21:00:00Z",
+      "window_start_utc": "2018-06-03T20:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T21:10:00Z",
+      "window_start_utc": "2018-06-03T21:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T21:20:00Z",
+      "window_start_utc": "2018-06-03T21:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T21:30:00Z",
+      "window_start_utc": "2018-06-03T21:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T21:40:00Z",
+      "window_start_utc": "2018-06-03T21:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T21:50:00Z",
+      "window_start_utc": "2018-06-03T21:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T22:00:00Z",
+      "window_start_utc": "2018-06-03T21:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T22:10:00Z",
+      "window_start_utc": "2018-06-03T22:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T22:20:00Z",
+      "window_start_utc": "2018-06-03T22:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T22:30:00Z",
+      "window_start_utc": "2018-06-03T22:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T22:40:00Z",
+      "window_start_utc": "2018-06-03T22:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T22:50:00Z",
+      "window_start_utc": "2018-06-03T22:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T23:00:00Z",
+      "window_start_utc": "2018-06-03T22:50:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T23:10:00Z",
+      "window_start_utc": "2018-06-03T23:00:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T23:20:00Z",
+      "window_start_utc": "2018-06-03T23:10:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T23:30:00Z",
+      "window_start_utc": "2018-06-03T23:20:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T23:40:00Z",
+      "window_start_utc": "2018-06-03T23:30:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-03T23:50:00Z",
+      "window_start_utc": "2018-06-03T23:40:00Z"
+    },
+    {
+      "affected_features": [],
+      "attack_overlap_seconds": 0,
+      "attack_types": [],
+      "is_attack": false,
+      "window_end_utc": "2018-06-04T00:00:00Z",
+      "window_start_utc": "2018-06-03T23:50:00Z"
+    }
+  ]
+}

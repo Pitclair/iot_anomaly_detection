@@ -1,0 +1,71 @@
+{
+  "annotation_fingerprint": "sha256:618bb6637c8d388aacc7091d336343a7ac3b2d6af2d07b311c0686bbcb6a450e",
+  "annotation_interval_count": 42,
+  "captures": [
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-05-28",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-05-29",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-05-30",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-05-31",
+      "window_count": 81
+    },
+    {
+      "attack_window_count": 24,
+      "capture_id": "2018-06-01",
+      "window_count": 124
+    },
+    {
+      "attack_window_count": 42,
+      "capture_id": "2018-06-02",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 4,
+      "capture_id": "2018-06-03",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-06-04",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 6,
+      "capture_id": "2018-06-05",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 6,
+      "capture_id": "2018-06-06",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-06-07",
+      "window_count": 144
+    },
+    {
+      "attack_window_count": 0,
+      "capture_id": "2018-06-08",
+      "window_count": 144
+    }
+  ],
+  "dataset": "unsw-iot-attack-traces",
+  "device_id": "Samsung Camera",
+  "matched_interval_count": 42,
+  "source_annotation": "unsw_iot_attack_pcaps/annotations/00166cab6b88.csv",
+  "unmatched_intervals": []
+}
