@@ -1,0 +1,44 @@
+{
+  "artifact_type": "model",
+  "categories": [
+    "tcp",
+    "udp",
+    "ssdp",
+    "arp"
+  ],
+  "alpha": [
+    6.3602739909336234,
+    0.029417426021532148,
+    8.871699863527667,
+    2.132715466455331
+  ],
+  "concentration": 17.394106746938153,
+  "mean_probabilities": [
+    0.3656568332865503,
+    0.0016912294749893055,
+    0.5100405552638875,
+    0.12261138197457298
+  ],
+  "psi": 0.05749073606070791,
+  "training_capture_ids": [
+    "2018-05-28",
+    "2018-05-29",
+    "2018-05-30"
+  ],
+  "log_likelihood_backend": "scipy",
+  "fit_diagnostics": {
+    "initial_alpha": [
+      5.368185156588389,
+      0.03465094819306604,
+      3.838647106457506,
+      0.7585167887610402
+    ],
+    "iterations": 583,
+    "converged": true,
+    "tolerance": 2e-9,
+    "max_iterations": 100000,
+    "initial_log_likelihood": -191965.77441309058,
+    "final_log_likelihood": -191562.03851854466,
+    "duration_seconds": 0.03590500820428133
+  }
+}

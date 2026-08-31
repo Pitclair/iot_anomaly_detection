@@ -1,0 +1,485 @@
+{
+  "report_type": "capture_statistics",
+  "captures": [
+    {
+      "capture_id": "2018-05-28",
+      "partition": "fit",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.1472185138914492,
+        "iterations": 270,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 706.9305555555555,
+          "variance": 2753370.638500388,
+          "dispersion_index": 3894.824770074617
+        },
+        {
+          "category": "udp",
+          "mean": 5.409722222222222,
+          "variance": 298.9568278943288,
+          "dispersion_index": 55.26287961076168
+        },
+        {
+          "category": "ssdp",
+          "mean": 256.0138888888889,
+          "variance": 4930.475330225332,
+          "dispersion_index": 19.258624411448157
+        },
+        {
+          "category": "arp",
+          "mean": 46.166666666666664,
+          "variance": 81.17482517482524,
+          "dispersion_index": 1.758299462270583
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-05-29",
+      "partition": "fit",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.0009418420343133864,
+        "iterations": 14499,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 138.93055555555554,
+          "variance": 146.05108780108773,
+          "dispersion_index": 1.0512524564309025
+        },
+        {
+          "category": "udp",
+          "mean": 0.2569444444444444,
+          "variance": 2.4579933954934043,
+          "dispersion_index": 9.5662445662446
+        },
+        {
+          "category": "ssdp",
+          "mean": 225.65277777777777,
+          "variance": 18.214257964257957,
+          "dispersion_index": 0.08071807554789025
+        },
+        {
+          "category": "arp",
+          "mean": 46.6875,
+          "variance": 32.55201048951049,
+          "dispersion_index": 0.6972318177137453
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-05-30",
+      "partition": "fit",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.003321317248881964,
+        "iterations": 4842,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 143.91666666666666,
+          "variance": 870.3566433566424,
+          "dispersion_index": 6.047643150133011
+        },
+        {
+          "category": "udp",
+          "mean": 0.7222222222222222,
+          "variance": 18.439782439782434,
+          "dispersion_index": 25.53200645508337
+        },
+        {
+          "category": "ssdp",
+          "mean": 226.09722222222223,
+          "variance": 14.36810411810411,
+          "dispersion_index": 0.0635483442781188
+        },
+        {
+          "category": "arp",
+          "mean": 47.0,
+          "variance": 37.65034965034965,
+          "dispersion_index": 0.8010712691563756
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-05-31",
+      "partition": "calibration",
+      "total_instances": 81,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.008272428768540476,
+        "iterations": 2242,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 151.92592592592592,
+          "variance": 13282.469444444441,
+          "dispersion_index": 87.42727328132617
+        },
+        {
+          "category": "udp",
+          "mean": 0.25925925925925924,
+          "variance": 1.8444444444444419,
+          "dispersion_index": 7.114285714285705
+        },
+        {
+          "category": "ssdp",
+          "mean": 223.76543209876544,
+          "variance": 285.3817901234568,
+          "dispersion_index": 1.2753613793103449
+        },
+        {
+          "category": "arp",
+          "mean": 47.333333333333336,
+          "variance": 51.15000000000001,
+          "dispersion_index": 1.0806338028169016
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-01",
+      "partition": "development_test",
+      "total_instances": 124,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.20102158116149155,
+        "iterations": 218,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 1256.3467741935483,
+          "variance": 14248216.39096512,
+          "dispersion_index": 11340.99014988205
+        },
+        {
+          "category": "udp",
+          "mean": 4.92741935483871,
+          "variance": 794.0353396275946,
+          "dispersion_index": 161.14628823866076
+        },
+        {
+          "category": "ssdp",
+          "mean": 227.74193548387098,
+          "variance": 149.75399947547874,
+          "dispersion_index": 0.657560054354085
+        },
+        {
+          "category": "arp",
+          "mean": 201.20967741935485,
+          "variance": 695225.6629950174,
+          "dispersion_index": 3455.2297479511885
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-02",
+      "partition": "development_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.20913222386895633,
+        "iterations": 208,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 487.47222222222223,
+          "variance": 5402919.509712498,
+          "dispersion_index": 11083.543355726817
+        },
+        {
+          "category": "udp",
+          "mean": 329.06944444444446,
+          "variance": 3933881.7573815132,
+          "dispersion_index": 11954.564070884604
+        },
+        {
+          "category": "ssdp",
+          "mean": 379.5625,
+          "variance": 448801.01704545453,
+          "dispersion_index": 1182.4166429651364
+        },
+        {
+          "category": "arp",
+          "mean": 51.375,
+          "variance": 115.06118881118881,
+          "dispersion_index": 2.2396338454732616
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-03",
+      "partition": "development_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 30,
+        "percent": 20.833333333333332
+      },
+      "dirichlet_fit": {
+        "psi": 0.06416226639569086,
+        "iterations": 493,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 110.23611111111111,
+          "variance": 3289.636169386172,
+          "dispersion_index": 29.84172914146458
+        },
+        {
+          "category": "udp",
+          "mean": 112.85416666666667,
+          "variance": 880212.2932692295,
+          "dispersion_index": 7799.555118501571
+        },
+        {
+          "category": "ssdp",
+          "mean": 178.35416666666666,
+          "variance": 8490.384178321652,
+          "dispersion_index": 47.604069683382704
+        },
+        {
+          "category": "arp",
+          "mean": 38.09722222222222,
+          "variance": 412.8296425796432,
+          "dispersion_index": 10.836213731583781
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-04",
+      "partition": "development_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.0008955733079901399,
+        "iterations": 16050,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 140.30555555555554,
+          "variance": 149.40248640248635,
+          "dispersion_index": 1.0648365690931516
+        },
+        {
+          "category": "udp",
+          "mean": 0.2222222222222222,
+          "variance": 1.7404817404817414,
+          "dispersion_index": 7.832167832167837
+        },
+        {
+          "category": "ssdp",
+          "mean": 225.90277777777777,
+          "variance": 23.94852369852368,
+          "dispersion_index": 0.10601252421111006
+        },
+        {
+          "category": "arp",
+          "mean": 46.61805555555556,
+          "variance": 36.78316822066823,
+          "dispersion_index": 0.7890326566030426
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-05",
+      "partition": "final_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 19,
+        "percent": 13.194444444444445
+      },
+      "dirichlet_fit": {
+        "psi": 0.06015516694655035,
+        "iterations": 526,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 468.38194444444446,
+          "variance": 5216141.412538851,
+          "dispersion_index": 11136.512571435267
+        },
+        {
+          "category": "udp",
+          "mean": 0.18055555555555555,
+          "variance": 1.3378010878010873,
+          "dispersion_index": 7.40935987089833
+        },
+        {
+          "category": "ssdp",
+          "mean": 192.91666666666666,
+          "variance": 5895.643356643359,
+          "dispersion_index": 30.56057031521396
+        },
+        {
+          "category": "arp",
+          "mean": 40.44444444444444,
+          "variance": 295.7591297591301,
+          "dispersion_index": 7.312725735802667
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-06",
+      "partition": "final_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.05090931966778507,
+        "iterations": 610,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 487.03472222222223,
+          "variance": 7447112.3274572585,
+          "dispersion_index": 15290.721559805586
+        },
+        {
+          "category": "udp",
+          "mean": 0.22916666666666666,
+          "variance": 1.7443181818181843,
+          "dispersion_index": 7.611570247933895
+        },
+        {
+          "category": "ssdp",
+          "mean": 227.27083333333334,
+          "variance": 29.09396853146853,
+          "dispersion_index": 0.12801452832619759
+        },
+        {
+          "category": "arp",
+          "mean": 47.625,
+          "variance": 49.08916083916084,
+          "dispersion_index": 1.0307435346805425
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-07",
+      "partition": "final_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.004597099787107861,
+        "iterations": 4183,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 141.10416666666666,
+          "variance": 184.5834790209791,
+          "dispersion_index": 1.3081362753590724
+        },
+        {
+          "category": "udp",
+          "mean": 0.2916666666666667,
+          "variance": 3.5227272727272765,
+          "dispersion_index": 12.07792207792209
+        },
+        {
+          "category": "ssdp",
+          "mean": 245.32638888888889,
+          "variance": 3489.913704351204,
+          "dispersion_index": 14.225594401635389
+        },
+        {
+          "category": "arp",
+          "mean": 46.854166666666664,
+          "variance": 29.901660839160872,
+          "dispersion_index": 0.6381857360069906
+        }
+      ]
+    },
+    {
+      "capture_id": "2018-06-08",
+      "partition": "final_test",
+      "total_instances": 144,
+      "silent_windows": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "dirichlet_fit": {
+        "psi": 0.0008757044023692188,
+        "iterations": 18538,
+        "converged": true
+      },
+      "categories": [
+        {
+          "category": "tcp",
+          "mean": 139.77083333333334,
+          "variance": 138.1918706293707,
+          "dispersion_index": 0.9887032031912047
+        },
+        {
+          "category": "udp",
+          "mean": 0.2222222222222222,
+          "variance": 1.7404817404817428,
+          "dispersion_index": 7.832167832167843
+        },
+        {
+          "category": "ssdp",
+          "mean": 404.24305555555554,
+          "variance": 964.8006507381508,
+          "dispersion_index": 2.3866845391127747
+        },
+        {
+          "category": "arp",
+          "mean": 46.61805555555556,
+          "variance": 36.82512626262625,
+          "dispersion_index": 0.7899326950421838
+        }
+      ]
+    }
+  ]
+}
