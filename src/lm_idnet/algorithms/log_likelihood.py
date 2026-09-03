@@ -49,8 +49,10 @@ class ScipyLogLikelihood(LogLikelihood):
 
     @staticmethod
     def _validate_inputs(counts: np.ndarray, alpha: np.ndarray) -> None:
-        if counts.ndim != 2 or counts.shape[0] == 0:
-            raise DataValidationError("count matrix must have at least one row")
+        if counts.ndim != 2 or counts.shape[0] == 0 or counts.shape[1] < 2:
+            raise DataValidationError(
+                "count matrix must have at least one row and two columns"
+            )
         if alpha.ndim != 1 or alpha.shape[0] != counts.shape[1]:
             raise DataValidationError(
                 "alpha length must match the count matrix columns"
