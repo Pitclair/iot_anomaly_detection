@@ -809,4 +809,258 @@ Rebuilt runtime LM_time_lib.so:
 74c827713a213f0f750cf24319e0257fb2df595f530684bf9488b62c5b3d081c
 \end{verbatim}
 
+\section{Change 006: Reuse of Matrix-Invariant LM Setup}
+
+\subsection{Status}
+
+Implemented in the runtime matrix entry point, rebuilt into the versioned
+shared library, and validated for numerical equivalence, failure behavior,
+thread-safe adapter use, and performance.
+
+\subsection{Files Changed}
+
+\begin{verbatim}
+src/lm_idnet/algorithms/native/LM_time_lib.c
+src/lm_idnet/algorithms/native/LM_time_lib.so
+reports/D-LinkDayCam5/lm_backend_benchmark.json
+\end{verbatim}
+
+The corresponding source under \path{lm-algorithm/code/} remains unchanged.
+No header or Python interface change was required.
+
+\subsection{Motivation}
+
+Change 004 deliberately implemented the matrix operation by routing every row
+through the existing single-vector setup and evaluation sequence. This was the
+smallest safe integration path, but profiling the 846-by-4 Camera 5 training
+matrix showed that most of the resulting LM penalty was repeated setup rather
+than likelihood arithmetic.
+
+For every row, the first matrix implementation called \texttt{init\_params} and
+\texttt{loggamma\_LM}. Consequently, every row:
+
+\begin{enumerate}
+
+\item released and allocated the same four category-length parameter arrays;
+
+\item reconstructed \(\psi/p_k\) and \(\log p_k\) from the same alpha vector;
+
+\item searched again for an Euler--Maclaurin expansion order and horizontal
+shift satisfying the same requested error bound; and
+
+\item only then evaluated the row-specific count vector.
+
+\end{enumerate}
+
+The expansion-order and horizontal-shift search in
+\texttt{opterrNoPrint\_logL} depends on the category count, requested
+precision, \(\psi\), \(\psi/p_k\), and the coefficient tables. These values are
+constant for every row in one matrix call. The search does not read the row
+count vector \texttt{X} or its total \texttt{N}; its parameter named
+\texttt{n} is unused. Repeating it once per row therefore produced the same
+answer while adding allocation and search overhead 846 times.
+
+This explained why SciPy's vectorized matrix evaluation was substantially
+faster even though the native LM method was competitive on one count vector.
+The purpose of this change is to remove that redundant work without pooling
+rows, changing the statistical model, or weakening numerical checks.
+
+\subsection{Applied Modification}
+
+The public signature and return contract of \texttt{loggamma\_LM\_matrix} are
+unchanged. Its internal sequence is now:
+
+\begin{enumerate}
+
+\item validate dimensions, pointers, coefficient state, \(\psi\), and the
+probability vector as before;
+
+\item call \texttt{init\_params} once, allocating one matrix-call workspace;
+
+\item calculate the invariant \(\psi/p_k\) and \(\log p_k\) vectors once;
+
+\item call \texttt{opterrNoPrint\_logL} once and retain the selected expansion
+order and horizontal shift in the existing native state;
+
+\item for each row, validate its counts, copy them into \texttt{X}, calculate
+its total \texttt{N}, and calculate its asymptotic magnitude estimate;
+
+\item apply the existing double-precision magnitude check separately to that
+row;
+
+\item evaluate the row through \texttt{logL\_diretta\_global}, using the one
+expansion order and horizontal shift selected for the matrix call; and
+
+\item sum the finite row values and release the parameter workspace once on
+success or failure.
+
+\end{enumerate}
+
+The existing \texttt{loggamma\_LM} function was not removed or modified. It
+remains available for compatibility with single-vector native callers. The
+matrix entry point no longer calls it once per row because the matrix entry
+point now performs the invariant part of that sequence once itself.
+
+\subsection{Preserved Row-Wise Semantics and Safety}
+
+Every input row remains one independent Dirichlet--Multinomial observation.
+The returned value is still
+
+\[
+\sum_{r=1}^{R} K(\mathbf{x}_r;\boldsymbol{\alpha}),
+\]
+
+not \(K(\sum_r\mathbf{x}_r;\boldsymbol{\alpha})\). No count vectors are
+aggregated and the order of the row summation is unchanged.
+
+The selected expansion order and horizontal shift are identical to those that
+the previous wrapper independently selected for each row because their inputs
+are matrix-invariant. The following remain row-specific:
+
+\begin{itemize}
+
+\item count validation;
+
+\item the count vector \texttt{X};
+
+\item the row total \texttt{N};
+
+\item the asymptotic magnitude estimate; and
+
+\item the precision-limit decision based on that magnitude.
+
+\end{itemize}
+
+Invalid input, allocation failure, error-search failure, a row precision
+failure, a non-finite row value, or a non-finite accumulated result still
+reaches the single cleanup label and returns \texttt{NAN}. The Python adapter
+continues to serialize native calls with its existing lock, which remains
+necessary because the supplied LM implementation stores calculation state in
+global variables.
+
+\subsection{Effect on the LM Numerical Method}
+
+This change does not alter an LM formula, coefficient, requested error bound,
+expansion-order rule, horizontal-shift rule, or stopping condition. It changes
+only the lifetime of values that are provably constant during one matrix call.
+
+It also does not change Minka's fixed-point updates, likelihood semantics,
+calibration, scoring, artifact formats, configuration, or the Python/C
+function signature.
+
+\subsection{Numerical Verification}
+
+The pre-change and post-change native libraries were loaded through the same
+Python adapter in one process. A deterministic stress comparison evaluated
+1,000 matrices with 1--49 rows, four categories, counts from 0 through 100,000,
+and alpha values sampled logarithmically from \(10^{-4}\) through \(10^2\).
+
+The largest absolute difference between the old and optimized LM libraries was
+exactly zero. The largest absolute difference between optimized LM and SciPy
+was \(6.71\times10^{-8}\).
+
+The focused native-adapter and likelihood suites reported:
+
+\begin{verbatim}
+38 passed
+\end{verbatim}
+
+These checks cover independent-row summation, zero categories, silent rows,
+invalid inputs, numerical failure translation, reuse across matrix shapes,
+working-directory independence, and concurrent Python calls.
+
+The normal project regression suite reported:
+
+\begin{verbatim}
+232 passed, 10 deselected
+\end{verbatim}
+
+The fresh end-to-end backend benchmark again produced identical anomaly counts
+and zero decision mismatches across 270 development windows. The fitted alpha,
+threshold, and scores retained the previously measured LM/SciPy numerical
+agreement.
+
+\subsection{Performance Verification}
+
+For a controlled before/after comparison, the previous and rebuilt shared
+libraries were exercised through the same Python adapter in one process. The
+likelihood measurement used nine interleaved batches of 1,000 calls at the
+fitted Camera 5 alpha. The full-fit measurement used seven interleaved runs.
+
+\begin{center}
+\begin{tabular}{l r r r}
+\textbf{Operation} & \textbf{Previous LM} & \textbf{Optimized LM} &
+\textbf{Reduction} \\
+\hline
+846-by-4 likelihood & 114.68 us & 55.58 us & 51.5\% \\
+Complete model fit & 0.30410 s & 0.19486 s & 35.9\% \\
+\end{tabular}
+\end{center}
+
+The independent production benchmark written to
+\path{reports/D-LinkDayCam5/lm_backend_benchmark.json} measured:
+
+\begin{center}
+\begin{tabular}{l r r r}
+\textbf{Operation} & \textbf{SciPy} & \textbf{Optimized LM} &
+\textbf{LM/SciPy} \\
+\hline
+846-by-4 likelihood & 49.96 us & 55.46 us & 1.110 \\
+Complete model fit & 0.18129 s & 0.19297 s & 1.064 \\
+Single-window score & 13.39 us & 12.04 us & 0.899 \\
+\end{tabular}
+\end{center}
+
+The optimization therefore removes most of the former matrix penalty. On this
+workload, optimized LM is about 6.4\% slower for the complete fit and about
+10.1\% faster for single-window scoring than SciPy. The full-fit difference is
+within the 10\% ``no significant speed difference'' criterion used in the IoT
+paper, while LM retains its numerical advantage in low-\(\psi\) regimes.
+
+\subsection{Build and Artifact Verification}
+
+The versioned runtime library was rebuilt from the changed source using the
+existing project compiler image and production flags:
+
+\begin{verbatim}
+gcc -O3 -fPIC -shared LM_time_lib.c -lm -o .LM_time_lib.so.tmp
+mv .LM_time_lib.so.tmp LM_time_lib.so
+\end{verbatim}
+
+The rebuilt file is a dynamically linked 64-bit x86-64 ELF shared object and
+exports \texttt{initBern\_logL\_paths} and
+\texttt{loggamma\_LM\_matrix}. A diagnostic build with
+\texttt{-Wall -Wextra} also succeeded. It reported only the unused legacy
+parameters and variables already identified at the previous checkpoint.
+
+The final digests after Change 006 are:
+
+\begin{verbatim}
+Runtime LM_time_lib.c:
+c0c24ee32dfc5720784eb2bb6f11361b24a7eba56ea3a17ae97ac19c207598bc
+
+Reference LM_time_lib.c (unchanged):
+306b33aae05db49e519909c36e91d25112b5fce75a3fb144858ed0d727f22d66
+
+Runtime LM_time_lib.so:
+02f236eaba98f990e337f0da9bdc74a7f50b9a7e1bda91b47569d494eed5f02e
+
+Runtime LM_hor_shift.h (unchanged by Change 006):
+824c2c72cddd983cd5c0d44809fd82e40dbd172e5756aba8b788fb2eada6dd0f
+
+Reference LM_hor_shift.h (unchanged):
+3ba1ac510b0fba74a64ae4bc63be5301c214ee783a2fbde0e883188f32a3be96
+\end{verbatim}
+
+\subsection{Short Report for the Native-Code Authors}
+
+The matrix wrapper previously repeated parameter-workspace allocation and the
+same Euler--Maclaurin order/horizontal-shift search for every observation. The
+project copy now performs that matrix-invariant setup once, retains the
+row-specific magnitude guard and likelihood evaluation, and frees the
+workspace once at the matrix boundary. Results were bit-for-bit identical to
+the former wrapper across 1,000 stress matrices. The change reduced the
+846-row likelihood time by 51.5\% and complete fitting time by 35.9\%, without
+aggregating rows or modifying the LM numerical method.
+
 \end{document}

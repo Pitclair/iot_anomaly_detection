@@ -121,7 +121,8 @@ are controlled.
 
 ## Direct architecture comparison on the 846-row fit
 
-Using the current 846-by-4 training matrix and the professor's initialization:
+Using the 846-by-4 training matrix and the professor's initialization, before
+the native optimization was installed:
 
 | Operation | SciPy | LM | LM / SciPy |
 |---|---:|---:|---:|
@@ -144,7 +145,7 @@ on another dataset could still flip.
 
 ## The overlooked native cost
 
-The current matrix adapter does more than iterate over rows. For every row it:
+The previous matrix adapter did more than iterate over rows. For every row it:
 
 1. frees and reallocates four native work arrays;
 2. recomputes the adaptive Euler--Maclaurin order and horizontal shift;
@@ -154,20 +155,22 @@ The second step depends on alpha, category probabilities, requested precision,
 and category count. It does **not** depend on a row's observed counts, so doing
 it 846 times per call is redundant.
 
-A disposable C variant initialized the arrays once and moved that adaptive
-search outside the row loop. It retained the current row-wise likelihood and
-matched SciPy in 1,000 seeded stress cases with a worst absolute difference of
-6.71e-8.
+The initial disposable C variant initialized the arrays once and moved that
+adaptive search outside the row loop. The optimization has now been installed
+in the runtime source and shared library. The old and optimized LM libraries
+were bit-for-bit identical in 1,000 seeded stress cases; optimized LM differed
+from SciPy by at most 6.71e-8.
 
-| Correct row-wise operation | SciPy | Current LM | Optimized LM |
+| Correct row-wise operation | SciPy | Previous LM | Optimized LM |
 |---|---:|---:|---:|
-| One 846-by-4 likelihood | 49.92 us | 114.34 us | 51.02 us |
-| Complete model fit, median of 7 | 0.18109 s | 0.30274 s | 0.18237 s |
+| One 846-by-4 likelihood | 49.96 us | 114.68 us | 55.46 us |
+| Complete model fit, median of 7 | 0.18129 s | 0.30410 s | 0.19297 s |
 
-This removes 55% of the LM likelihood-call time and 40% of its full-fit time.
-The optimized full fit is only 0.7% slower than SciPy, within ordinary benchmark
-noise, while keeping the model contract intact. The disposable native binary
-was not installed into the repository.
+This removes about 51.5% of the LM likelihood-call time and 35.9% of its
+full-fit time. The production full fit is 6.4% slower than SciPy, within the
+paper's 10% equivalence criterion, while keeping the model contract intact.
+The implementation and verification are recorded as Change 006 in
+[`lm_backend_change_record.tex`](lm_backend_change_record.tex).
 
 ## Where LM actually adds numerical value
 
@@ -209,10 +212,10 @@ Three facts explain all observed behavior:
 Do not adopt aggregate convergence in the production anomaly detector. Keep it
 as a named paper-reproduction experiment.
 
-If the measured result is worth implementing, apply the native invariant-setup
-optimization and keep the current row-wise likelihood contract. It reduces the
-LM/SciPy full-fit ratio from 1.67 to about 1.01, preserves all numerical results,
-and retains LM's large accuracy advantage for genuinely low-`psi` workloads.
+The native invariant-setup optimization has now been applied while retaining
+the row-wise likelihood contract. It reduces the LM/SciPy full-fit ratio from
+about 1.67 to 1.064, preserves all numerical results, and retains LM's large
+accuracy advantage for genuinely low-`psi` workloads.
 
 Separately, replace the synthetic forecast scaffold with held-out daily data if
 forecasting is meant to support a thesis claim. That change evaluates the model;

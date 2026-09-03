@@ -597,6 +597,8 @@ double loggamma_LM_matrix(
 {
 	double result = 0.0;
 	double probability_total = 0.0;
+	double toterr;
+	long maxprec;
 
 	if (precision_digits <= 0 || counts == NULL || rows <= 0 ||
 		categories < 2 || probabilities == NULL ||
@@ -613,20 +615,39 @@ double loggamma_LM_matrix(
 	if (!isfinite(probability_total) || fabs(probability_total - 1.0) > 1e-12)
 		goto fail;
 
+	if (init_params(precision_digits, (double *)counts, categories) < 0)
+		goto fail;
+	psi = psi_0;
+	for (int category = 0; category < categories; category++)
+	{
+		psioverprobs[category] = psi / probabilities[category];
+		logprobs[category] = log(probabilities[category]);
+	}
+	/* The error search depends on alpha and precision, not row counts. */
+	if (opterrNoPrint_logL(&maxprec, &toterr, 0.0) == NULL)
+		goto fail;
+	m_global = vect_logL[0];
+	hor_shift_global = vect_logL[1];
+
 	for (long row = 0; row < rows; row++)
 	{
 		const double *row_counts = counts + row * categories;
+		N = 0.0;
+		asymp = 0.0;
 		for (int category = 0; category < categories; category++)
 		{
 			if (!isfinite(row_counts[category]) || row_counts[category] < 0.0 ||
 				floor(row_counts[category]) != row_counts[category])
 				goto fail;
+			X[category] = row_counts[category];
+			N += X[category];
+			asymp += logprobs[category] * X[category];
 		}
 
-		if (init_params(precision_digits, (double *)row_counts, categories) < 0)
+		if (log10(fabs(asymp)) > SIGDIG - PRECISION - 2)
 			goto fail;
-		double row_result = loggamma_LM((double *)probabilities, psi_0);
-		if (!isfinite(row_result) || row_result == 99.0)
+		double row_result = logL_diretta_global();
+		if (!isfinite(row_result))
 			goto fail;
 		result += row_result;
 		if (!isfinite(result))
