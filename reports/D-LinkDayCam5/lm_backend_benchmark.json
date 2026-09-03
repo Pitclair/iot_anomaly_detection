@@ -1,0 +1,81 @@
+{
+  "backends": {
+    "lm": {
+      "anomaly_count": 3,
+      "final_log_likelihood": -476052.5888109615,
+      "initial_log_likelihood": -477950.7955895391,
+      "likelihood_matrix_median_seconds": 0.00011309400666505098,
+      "model_fit_iterations": 1882,
+      "model_fit_median_seconds": 0.30243328679353,
+      "model_fit_samples_seconds": [
+        0.3088227091357112,
+        0.3086688509210944,
+        0.301568940281868,
+        0.301766780205071,
+        0.30243328679353
+      ],
+      "single_window_score_median_seconds": 1.282626111060381e-05,
+      "threshold": -22.504377031673194
+    },
+    "scipy": {
+      "anomaly_count": 3,
+      "final_log_likelihood": -476052.588811236,
+      "initial_log_likelihood": -477950.7955887165,
+      "likelihood_matrix_median_seconds": 5.287157371640205e-05,
+      "model_fit_iterations": 1879,
+      "model_fit_median_seconds": 0.190569837577641,
+      "model_fit_samples_seconds": [
+        0.1991019193083048,
+        0.190569837577641,
+        0.18985120300203562,
+        0.1940254969522357,
+        0.19005867093801498
+      ],
+      "single_window_score_median_seconds": 1.43418675288558e-05,
+      "threshold": -22.504374145250928
+    }
+  },
+  "comparisons": {
+    "alpha_maximum_absolute_difference": 1.658685064853671e-05,
+    "alpha_maximum_relative_difference": 3.857063953689753e-07,
+    "decision_mismatch_count": 0,
+    "likelihood_absolute_difference": 2.6746420189738274e-07,
+    "lm_over_scipy_runtime_ratio": {
+      "likelihood_matrix_median_seconds": 2.1390323517071037,
+      "model_fit_median_seconds": 1.5869945141256372,
+      "single_window_score_median_seconds": 0.8943229384037613
+    },
+    "score_maximum_absolute_difference": 1.0916599876509281e-05,
+    "score_median_absolute_difference": 3.152908334413951e-07,
+    "threshold_absolute_difference": 2.8864222656466154e-06
+  },
+  "dataset": "D-LinkDayCam5",
+  "environment": {
+    "numpy": "2.4.6",
+    "platform": "Linux-6.12.0-211.22.1.el10_2.x86_64-x86_64-with-glibc2.41",
+    "python": "3.11.16",
+    "scipy": "1.17.1"
+  },
+  "method": {
+    "likelihood_calls_per_batch": 200,
+    "model_fit_measurements": 5,
+    "model_fit_scope": "estimator fit only; excludes data loading and saving",
+    "score_calls_per_batch": 1000,
+    "timing_batches": 5
+  },
+  "precision_digits": 6,
+  "report_type": "lm_backend_benchmark",
+  "workload": {
+    "representative_window_counts": [
+      44,
+      112,
+      88,
+      166
+    ],
+    "scored_window_count": 270,
+    "training_matrix_shape": [
+      846,
+      4
+    ]
+  }
+}

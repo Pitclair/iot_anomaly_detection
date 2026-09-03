@@ -146,7 +146,7 @@ def test_json_error_format_is_machine_readable(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "command",
-    ("adapt", "benchmark"),
+    ("adapt",),
 )
 def test_unimplemented_stage_fails_instead_of_claiming_success(
     command: str,
@@ -156,6 +156,33 @@ def test_unimplemented_stage_fails_instead_of_claiming_success(
     assert result.returncode == 9
     assert "command_unavailable_error" in result.stderr
     assert '"status": "completed"' not in result.stdout
+
+
+def test_benchmark_command_runs_backend_benchmark(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from lm_idnet import cli
+    from lm_idnet.evaluation import benchmark_stage
+
+    expected_result = {
+        "dataset": "D-LinkDayCam5",
+        "report_path": "reports/D-LinkDayCam5/lm_backend_benchmark.json",
+    }
+    monkeypatch.setenv("LM_IDNET_LOG_PATH", os.devnull)
+    monkeypatch.setattr(
+        benchmark_stage,
+        "benchmark_backends",
+        lambda _config: expected_result,
+    )
+
+    cli.run_command(["benchmark", "--config", str(CONFIG)])
+
+    assert json.loads(capsys.readouterr().out) == {
+        "command": "benchmark",
+        "status": "completed",
+        **expected_result,
+    }
 
 
 def test_score_command_runs_scoring_stage(

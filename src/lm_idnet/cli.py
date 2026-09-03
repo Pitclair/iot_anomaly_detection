@@ -221,7 +221,6 @@ HANDLERS: dict[str, Callable[[AppConfig], None]] = {
     "preprocess": _preprocess,
     "adapt": _not_implemented("adapt"),
     "forecast": _forecast,
-    "benchmark": _not_implemented("benchmark"),
 }
 
 
@@ -380,6 +379,22 @@ def run_command(argv: Sequence[str] | None = None) -> None:
             json.dumps(
                 {
                     "command": "evaluate",
+                    "status": "completed",
+                    **result,
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "benchmark":
+        from lm_idnet.evaluation.benchmark_stage import benchmark_backends
+
+        result = benchmark_backends(config)
+        print(
+            json.dumps(
+                {
+                    "command": "benchmark",
                     "status": "completed",
                     **result,
                 },
