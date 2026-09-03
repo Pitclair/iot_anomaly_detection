@@ -194,7 +194,7 @@ def _diagnose(config: AppConfig, output_path: Path) -> None:
     Statistics(
         processed_dir=_processed_path(config),
         categories=list(ingest.categories),
-        estimator=create_estimator(config.estimator),
+        estimator=create_estimator(config.estimator, config.precision_digits),
         dates=list(all_capture_ids(config)),
     ).write_report(output_path)
 

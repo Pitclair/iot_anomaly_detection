@@ -142,7 +142,7 @@ def train_model(config: AppConfig) -> dict[str, object]:
     """Fit the configured normal-traffic model and save it."""
     training = load_training_matrix(config)
     backend = config.estimator.log_likelihood_backend
-    estimator = create_estimator(config.estimator)
+    estimator = create_estimator(config.estimator, config.precision_digits)
 
     logger.info(
         "Starting model fit: rows=%d, categories=%d, backend=%s, "

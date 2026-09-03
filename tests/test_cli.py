@@ -214,6 +214,48 @@ def test_calibrate_command_runs_calibration_stage(
     }
 
 
+def test_diagnose_forwards_configured_precision(
+    tmp_path: Path,
+    config_factory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from lm_idnet import cli
+    from lm_idnet.algorithms import estimator_factory
+    from lm_idnet.processing import statistics
+
+    config = config_factory(
+        precision_digits=8,
+        estimator={"log_likelihood_backend": "lm"},
+    )
+    output_path = tmp_path / "diagnostics.json"
+    estimator = object()
+    recorded = {}
+
+    def create_estimator(estimator_config, precision_digits=6):
+        recorded["backend"] = estimator_config.log_likelihood_backend
+        recorded["precision_digits"] = precision_digits
+        return estimator
+
+    class RecordingStatistics:
+        def __init__(self, **arguments):
+            recorded["estimator"] = arguments["estimator"]
+
+        def write_report(self, path):
+            recorded["output_path"] = path
+
+    monkeypatch.setattr(estimator_factory, "create_estimator", create_estimator)
+    monkeypatch.setattr(statistics, "Statistics", RecordingStatistics)
+
+    cli._diagnose(config, output_path)
+
+    assert recorded == {
+        "backend": "lm",
+        "precision_digits": 8,
+        "estimator": estimator,
+        "output_path": output_path,
+    }
+
+
 def test_preprocess_inventory_only_writes_accepted_report(tmp_path: Path) -> None:
     raw_directory = tmp_path / "raw" / "camera"
     raw_directory.mkdir(parents=True)

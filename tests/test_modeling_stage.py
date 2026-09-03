@@ -8,6 +8,7 @@ import pytest
 
 from lm_idnet.artifacts import load_artifact
 from lm_idnet.exceptions import ConvergenceError, DataValidationError
+from lm_idnet.models import modeling_stage
 from lm_idnet.models.modeling_stage import (
     load_training_matrix,
     train_model,
@@ -82,20 +83,35 @@ def test_training_fits_and_saves_model(
     tmp_path,
     config_factory,
     caplog,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     model_path = tmp_path / "model.json"
     config = config_factory(
+        precision_digits=8,
         ingest={"processed_root": tmp_path},
         estimator={"tolerance_delta": 1e-4, "max_iterations": 2000},
         outputs={"model_path": model_path},
     )
     write_fit_datasets(config, tmp_path)
+    precision_values = []
+    original_create_estimator = modeling_stage.create_estimator
+
+    def create_estimator_with_recording(estimator_config, precision_digits=6):
+        precision_values.append(precision_digits)
+        return original_create_estimator(estimator_config, precision_digits)
+
+    monkeypatch.setattr(
+        modeling_stage,
+        "create_estimator",
+        create_estimator_with_recording,
+    )
 
     with caplog.at_level(logging.INFO):
         result = train_model(config)
     saved = load_artifact(model_path, expected_type="model").model_dump(mode="json")
 
     assert result["stage"] == "dirichlet_multinomial_training"
+    assert precision_values == [8]
     assert result["matrix_shape"] == [12, 4]
     assert result["initial_alpha"] == pytest.approx([2.8, 1.6, 2.4, 3.2])
     assert (np.asarray(result["alpha"]) > 0).all()

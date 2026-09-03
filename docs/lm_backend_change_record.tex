@@ -1124,4 +1124,163 @@ LM backend now validates inputs using the same rules as the SciPy reference and
 then delegates to the previously documented native adapter. No native source,
 coefficient, numerical method, or compiled artifact was changed.
 
+\section{Change 008: Propagate Precision Through Every Construction Path}
+
+\subsection{Status}
+
+Implemented and validated across estimator construction, model training, daily
+diagnostics, threshold calibration, and development-window scoring.
+
+\subsection{Files Changed}
+
+\begin{verbatim}
+src/lm_idnet/algorithms/estimator_factory.py
+src/lm_idnet/cli.py
+src/lm_idnet/models/modeling_stage.py
+src/lm_idnet/models/calibration_stage.py
+src/lm_idnet/models/scoring_stage.py
+tests/test_estimator_factory.py
+tests/test_cli.py
+tests/test_modeling_stage.py
+tests/test_calibration_stage.py
+tests/test_scoring_stage.py
+docs/lm_backend_change_record.tex
+\end{verbatim}
+
+No native source, header, coefficient table, shared object, or reference file
+was modified.
+
+\subsection{Single Precision Source}
+
+The existing top-level \texttt{AppConfig.precision\_digits} value remains the
+only application precision setting. No second setting was added to
+\texttt{EstimatorConfig} or any model stage.
+
+\texttt{create\_estimator} now accepts an optional precision argument and
+passes it to \texttt{initialize\_log\_likelihood}:
+
+\begin{verbatim}
+create_estimator(config, precision_digits=6)
+\end{verbatim}
+
+The default preserves existing direct callers and tests. Application call sites
+now pass the validated top-level configuration value explicitly.
+
+\subsection{Updated Construction Paths}
+
+The completed wiring is:
+
+\begin{center}
+\begin{tabular}{p{3.8cm} p{6.0cm} p{4.5cm}}
+\textbf{Operation} & \textbf{Backend source} & \textbf{Precision source} \\
+\hline
+Model training & \texttt{config.estimator.log\_likelihood\_backend} &
+\texttt{config.precision\_digits} \\
+Daily diagnostics & \texttt{config.estimator.log\_likelihood\_backend} &
+\texttt{config.precision\_digits} \\
+Threshold calibration & fitted model artifact &
+\texttt{config.precision\_digits} \\
+Window scoring & fitted model artifact &
+\texttt{config.precision\_digits} \\
+\end{tabular}
+\end{center}
+
+The training stage and diagnostic command pass both estimator configuration and
+precision through \texttt{create\_estimator}. Calibration and scoring pass the
+backend recorded by the fitted model plus the current validated precision
+directly to \texttt{initialize\_log\_likelihood}.
+
+Calibration and scoring deliberately do not use the current estimator backend
+selection. This preserves artifact compatibility: a model fitted with LM is
+evaluated with LM even if the current configuration's estimator selection is
+different.
+
+\subsection{Verification}
+
+The focused wiring tests verify the following behavior:
+
+\begin{itemize}
+
+\item the estimator factory constructs \texttt{LmLogLikelihood} with an
+explicit precision of eight;
+
+\item model training forwards the top-level precision value to the estimator
+factory;
+
+\item daily diagnostics forwards both the configured \texttt{lm} selection and
+precision value;
+
+\item calibration reads \texttt{lm} from the fitted model artifact while
+reading precision eight from the current configuration; and
+
+\item scoring uses the same artifact-backend/configuration-precision split.
+
+\end{itemize}
+
+For the calibration and scoring checks, the current estimator configuration was
+deliberately set to \texttt{scipy} while the saved model recorded \texttt{lm}.
+Both paths requested \texttt{("lm", 8)}, proving that the backend name was not
+silently taken from the current estimator configuration.
+
+The focused estimator, training, diagnostic, calibration, and scoring suites
+reported:
+
+\begin{verbatim}
+66 passed
+\end{verbatim}
+
+The complete project regression suite reported:
+
+\begin{verbatim}
+207 passed, 10 deselected
+\end{verbatim}
+
+\subsection{Digests After Change 008}
+
+\begin{verbatim}
+estimator_factory.py:
+42e6244cacfac042f02757ba86a9967251a4b975b9f0bd3b3c59d2d9ae6af2a2
+
+modeling_stage.py:
+79bf02524cb742408a4460ac8587aa56ebfd536f9f89aeda3da6dab00002b72d
+
+cli.py:
+f68fc459efafa8c933b5a5a4a3ecc2bffdc213b7ad97886f29e276419163fb95
+
+calibration_stage.py:
+174c144b388570778d770c2915055a5929462f572ed25a82e378e9a1d338742f
+
+scoring_stage.py:
+62c64906342e7e87631b32ffcd52589616d022c19d5386768b24363165d3ed6c
+
+test_estimator_factory.py:
+5ea05bbe48850de57ea7af43a965cb479ab9ef94113fedb7251d4cc47b77d879
+
+test_modeling_stage.py:
+8d6948dabff10a4f65a832b8880af6b57d355b0ad7c3e69617dae0ac8da5b0c3
+
+test_cli.py:
+c7788b773f887c84fdbfd7d9f1a727814f9a29875130fcc7d020b92ac4edbc59
+
+test_calibration_stage.py:
+c6eae75ad249b0ecefaee47ecfbd705ef38d550c6d742767d13325ad3ab14172
+
+test_scoring_stage.py:
+234532d56253ff88ff502cb0a4e1750f143ffb430882264c08ddaa3d68b97217
+
+Runtime LM_time_lib.c (unchanged in this step):
+60963e19d7e17daa8901192187142ba581a240064652286742ac2d1dcb550a05
+
+Runtime LM_time_lib.so (unchanged in this step):
+74c827713a213f0f750cf24319e0257fb2df595f530684bf9488b62c5b3d081c
+\end{verbatim}
+
+\subsection{Short Report for the Native-Code Authors}
+
+This step changes only Python configuration wiring. The existing application
+precision setting is now passed consistently to every LM construction path.
+Calibration and scoring continue to select their backend from the fitted model
+artifact. No native implementation, numerical method, coefficient, or compiled
+library was changed.
+
 \end{document}

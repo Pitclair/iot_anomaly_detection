@@ -6,8 +6,10 @@ import numpy as np
 import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
+from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
 from lm_idnet.artifacts import artifact_fingerprint, load_artifact
 from lm_idnet.exceptions import DataValidationError
+from lm_idnet.models import calibration_stage
 from lm_idnet.models.calibration_stage import (
     calibrate_threshold,
     load_calibration_windows,
@@ -71,7 +73,7 @@ def write_calibration_datasets(config, *, wrong_partition: bool = False) -> None
         )
 
 
-def write_model(config) -> None:
+def write_model(config, log_likelihood_backend: str = "scipy") -> None:
     alpha = np.asarray([1.0, 2.0, 3.0, 4.0])
     fit = DirichletFit(
         initial_alpha=alpha.copy(),
@@ -88,7 +90,7 @@ def write_model(config) -> None:
         categories=config.ingest.categories,
         fit=fit,
         training_capture_ids=config.ingest.partitions.fit,
-        log_likelihood_backend="scipy",
+        log_likelihood_backend=log_likelihood_backend,
         tolerance=config.estimator.tolerance_delta,
         max_iterations=config.estimator.max_iterations,
         duration_seconds=0.1,
@@ -125,11 +127,14 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     tmp_path,
     config_factory,
     score_type: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     model_path = tmp_path / "model.json"
     threshold_path = tmp_path / "threshold.json"
     config = config_factory(
+        precision_digits=8,
         ingest={"processed_root": tmp_path},
+        estimator={"log_likelihood_backend": "scipy"},
         calibration={
             "quantile": 0.25,
             "minimum_samples": 4,
@@ -140,8 +145,19 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
             "threshold_path": threshold_path,
         },
     )
-    write_model(config)
+    write_model(config, log_likelihood_backend="lm")
     write_calibration_datasets(config)
+    backend_calls = []
+
+    def initialize_backend(backend_name, precision_digits=6):
+        backend_calls.append((backend_name, precision_digits))
+        return ScipyLogLikelihood()
+
+    monkeypatch.setattr(
+        calibration_stage,
+        "initialize_log_likelihood",
+        initialize_backend,
+    )
 
     result = calibrate_threshold(config)
     threshold = load_artifact(
@@ -150,6 +166,7 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     )
 
     assert result["window_count"] == 4
+    assert backend_calls == [("lm", 8)]
     assert result["score_type"] == threshold.score_type == score_type
     assert result["threshold"] == pytest.approx(threshold.threshold)
     assert threshold.model_fingerprint == artifact_fingerprint(

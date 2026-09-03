@@ -92,7 +92,10 @@ def score_windows(config: AppConfig) -> dict[str, object]:
     backend_name = model.log_likelihood_backend
     if not isinstance(backend_name, str):
         raise DataValidationError("model does not record a likelihood backend")
-    log_likelihood = initialize_log_likelihood(backend_name)
+    log_likelihood = initialize_log_likelihood(
+        backend_name,
+        config.precision_digits,
+    )
     alpha = np.asarray(model.alpha, dtype=np.float64)
     model_categories = model.categories
     expected_profile = model.mean_probabilities

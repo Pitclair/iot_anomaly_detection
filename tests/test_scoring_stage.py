@@ -11,6 +11,7 @@ from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
 from lm_idnet.artifacts import artifact_fingerprint, load_artifact
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.calibration_stage import save_threshold
+from lm_idnet.models import scoring_stage
 from lm_idnet.models.modeling_stage import save_model
 from lm_idnet.models.scoring_stage import score_window, score_windows
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
@@ -58,14 +59,14 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
         score_window(window, **arguments)
 
 
-def write_model(config) -> None:
+def write_model(config, log_likelihood_backend: str = "scipy") -> None:
     alpha = np.asarray([1.0, 2.0, 3.0, 4.0])
     save_model(
         config.outputs.model_path,
         config.ingest.categories,
         DirichletFit(alpha.copy(), alpha, 10.0, 0.1, 1, True, -10.0, -9.0),
         config.ingest.partitions.fit,
-        "scipy",
+        log_likelihood_backend,
         config.estimator.tolerance_delta,
         config.estimator.max_iterations,
         0.1,
@@ -147,9 +148,12 @@ def test_score_windows_writes_observed_and_silent_results(
     tmp_path,
     config_factory,
     score_type: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = config_factory(
+        precision_digits=8,
         ingest={"processed_root": tmp_path},
+        estimator={"log_likelihood_backend": "scipy"},
         calibration={"score_type": score_type},
         outputs={
             "model_path": tmp_path / "model.json",
@@ -157,14 +161,26 @@ def test_score_windows_writes_observed_and_silent_results(
             "events_path": tmp_path / "events.json",
         },
     )
-    write_model(config)
+    write_model(config, log_likelihood_backend="lm")
     write_threshold(config, score_type)
     write_development_captures(config)
+    backend_calls = []
+
+    def initialize_backend(backend_name, precision_digits=6):
+        backend_calls.append((backend_name, precision_digits))
+        return ScipyLogLikelihood()
+
+    monkeypatch.setattr(
+        scoring_stage,
+        "initialize_log_likelihood",
+        initialize_backend,
+    )
 
     summary = score_windows(config)
     results = json.loads(config.outputs.events_path.read_text(encoding="utf-8"))
 
     assert summary["partition"] == "development_test"
+    assert backend_calls == [("lm", 8)]
     assert summary["score_type"] == score_type
     assert summary["window_count"] == len(results) == 4
     assert summary["anomaly_count"] == 2
