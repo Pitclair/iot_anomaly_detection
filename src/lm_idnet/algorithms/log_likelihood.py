@@ -6,7 +6,8 @@ from typing import Literal
 import numpy as np
 from scipy.special import gammaln
 
-from lm_idnet.exceptions import CommandUnavailableError, DataValidationError
+from lm_idnet.algorithms.lm_native import NativeLmKernel
+from lm_idnet.exceptions import DataValidationError
 
 LogLikelihoodBackend = Literal["scipy", "lm"]
 
@@ -63,12 +64,16 @@ class ScipyLogLikelihood(LogLikelihood):
 
 
 class LmLogLikelihood(LogLikelihood):
-    """Placeholder for the future Languasco-Migliardi kernel implementation."""
+    """DM likelihood kernel calculated with the bundled LM implementation."""
+
+    def __init__(self, precision_digits: int = 6) -> None:
+        self.kernel = NativeLmKernel(precision_digits)
 
     def calculate(self, counts: np.ndarray, alpha: np.ndarray) -> float:
-        raise CommandUnavailableError(
-            "the LM likelihood-kernel implementation is not available yet"
-        )
+        counts = np.asarray(counts)
+        alpha = np.asarray(alpha, dtype=np.float64)
+        ScipyLogLikelihood._validate_inputs(counts, alpha)
+        return self.kernel.calculate(counts, alpha)
 
 
 _IMPLEMENTATIONS: dict[str, type[LogLikelihood]] = {
@@ -77,9 +82,16 @@ _IMPLEMENTATIONS: dict[str, type[LogLikelihood]] = {
 }
 
 
-def initialize_log_likelihood(backend: LogLikelihoodBackend) -> LogLikelihood:
+def initialize_log_likelihood(
+    backend: LogLikelihoodBackend,
+    precision_digits: int = 6,
+) -> LogLikelihood:
     """Instantiate the configured likelihood-kernel implementation."""
     implementation = _IMPLEMENTATIONS.get(backend)
     if implementation is None:
         raise DataValidationError(f"unknown log-likelihood backend: {backend}")
-    return implementation()
+    return (
+        implementation(precision_digits)
+        if implementation is LmLogLikelihood
+        else implementation()
+    )

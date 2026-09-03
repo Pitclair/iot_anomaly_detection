@@ -998,4 +998,130 @@ serializes all access to the native global state, converts Dirichlet parameters
 to the probability/\(\psi\) representation, and maps load and numerical failures
 to application exceptions. No native algorithm or source file was changed.
 
+\section{Change 007: Activate the LM Likelihood Backend}
+
+\subsection{Status}
+
+Implemented and validated. The placeholder behavior has been removed and the
+public likelihood factory can now construct a working native LM backend.
+
+\subsection{Files Changed}
+
+\begin{verbatim}
+src/lm_idnet/algorithms/log_likelihood.py
+tests/test_likelihood.py
+docs/lm_backend_change_record.tex
+\end{verbatim}
+
+No native C source, header, coefficient table, shared object, or reference file
+was modified in this step.
+
+\subsection{Backend Activation}
+
+\texttt{LmLogLikelihood} now owns a \texttt{NativeLmKernel}. Its constructor
+accepts \texttt{precision\_digits} and retains the current project default of
+six significant digits:
+
+\begin{verbatim}
+LmLogLikelihood(precision_digits=6)
+\end{verbatim}
+
+Its \texttt{calculate} method converts counts and alpha to NumPy arrays, invokes
+the existing \texttt{ScipyLogLikelihood.\_validate\_inputs} method, and delegates
+the validated arrays to \texttt{NativeLmKernel.calculate}.
+
+Reusing the existing validator gives both backends the same checks for:
+
+\begin{itemize}
+
+\item a nonempty two-dimensional count matrix;
+
+\item matching alpha and category dimensions;
+
+\item finite, non-negative, whole-number counts; and
+
+\item finite, strictly positive alpha values.
+
+\end{itemize}
+
+No validation rule was copied into a second implementation.
+
+\subsection{Factory Interface}
+
+The public factory now accepts an optional precision argument:
+
+\begin{verbatim}
+initialize_log_likelihood(backend, precision_digits=6)
+\end{verbatim}
+
+For the \texttt{lm} selection, the factory passes this value to
+\texttt{LmLogLikelihood}. For the \texttt{scipy} selection, it continues to use
+the parameterless SciPy constructor because SciPy does not use this setting.
+
+Existing one-argument callers remain compatible and currently receive six
+digits. Passing \texttt{config.precision\_digits} through every application
+construction path remains the next planned step; consequently, a non-default
+configuration value is not yet propagated by those callers.
+
+An unknown backend continues to raise the existing \texttt{DataValidationError}
+without attempting native initialization.
+
+\subsection{Verification}
+
+The likelihood tests now confirm that:
+
+\begin{itemize}
+
+\item \texttt{initialize\_log\_likelihood("lm", precision\_digits=6)} returns a
+working \texttt{LmLogLikelihood};
+
+\item the constructed backend retains the requested precision;
+
+\item its multirow result matches the SciPy kernel for a known case;
+
+\item invalid fractional counts are rejected by the shared Python validator;
+and
+
+\item an unknown backend retains its previous validation failure.
+
+\end{itemize}
+
+The focused likelihood and native-adapter suites reported:
+
+\begin{verbatim}
+14 passed
+\end{verbatim}
+
+The complete project regression suite reported:
+
+\begin{verbatim}
+205 passed, 10 deselected
+\end{verbatim}
+
+\subsection{Digests After Change 007}
+
+\begin{verbatim}
+log_likelihood.py:
+b23b1aaa42250f1b62d07a9ae30fd448b98a46871d4b4bd2257db6a57d3b4982
+
+test_likelihood.py:
+90b8e0b7c390fac5e29ff1b84cbe5526d27383142c710b43c98c071267a8fef0
+
+lm_native.py (unchanged in this step):
+4ebfd2340e52e925dcdd32762d93d6cb12f99f1a98aa36e908afe87e4c0d7a53
+
+Runtime LM_time_lib.c (unchanged in this step):
+60963e19d7e17daa8901192187142ba581a240064652286742ac2d1dcb550a05
+
+Runtime LM_time_lib.so (unchanged in this step):
+74c827713a213f0f750cf24319e0257fb2df595f530684bf9488b62c5b3d081c
+\end{verbatim}
+
+\subsection{Short Report for the Native-Code Authors}
+
+This step changes only the application-facing Python likelihood selection. The
+LM backend now validates inputs using the same rules as the SciPy reference and
+then delegates to the previously documented native adapter. No native source,
+coefficient, numerical method, or compiled artifact was changed.
+
 \end{document}
