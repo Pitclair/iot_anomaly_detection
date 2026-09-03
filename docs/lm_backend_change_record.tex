@@ -805,4 +805,197 @@ Rebuilt runtime LM_time_lib.so:
 74c827713a213f0f750cf24319e0257fb2df595f530684bf9488b62c5b3d081c
 \end{verbatim}
 
+\section{Change 006: Thread-Safe Python Native Adapter}
+
+\subsection{Status}
+
+Implemented and validated directly. The adapter is not yet selected by
+\texttt{LmLogLikelihood}; that application-facing connection is the next
+integration step.
+
+\subsection{Files Changed}
+
+\begin{verbatim}
+src/lm_idnet/algorithms/lm_native.py
+tests/test_lm_native_matrix.py
+docs/lm_backend_change_record.tex
+\end{verbatim}
+
+No native C source, header, coefficient file, or shared object was modified in
+this step. In particular, the reference files under \path{lm-algorithm/code/}
+remain unchanged.
+
+\subsection{Adapter Structure}
+
+The previously empty \path{lm_native.py} module now defines the
+\texttt{NativeLmKernel} class. It is the only Python source or test module that
+imports \texttt{ctypes} or directly names the two native integration functions.
+
+The module contains:
+
+\begin{itemize}
+
+\item an absolute native directory derived from the module's
+\texttt{\_\_file\_\_} path;
+
+\item one shared \texttt{double *} declaration;
+
+\item one process-wide \texttt{threading.Lock}; and
+
+\item the small adapter class.
+
+\end{itemize}
+
+No new dependency, loader abstraction, or build mechanism was added.
+
+\subsection{Construction and Initialization}
+
+\texttt{NativeLmKernel} first requires \texttt{precision\_digits} to be a
+positive Python integer. Boolean, floating-point, zero, and negative values are
+rejected with \texttt{DataValidationError} before native loading begins.
+
+The constructor loads this exact path:
+
+\begin{verbatim}
+src/lm_idnet/algorithms/native/LM_time_lib.so
+\end{verbatim}
+
+It then declares the \texttt{argtypes} and \texttt{restype} contracts for:
+
+\begin{verbatim}
+initBern_logL_paths
+loggamma_LM_matrix
+\end{verbatim}
+
+An absent shared object, loader failure, or missing required symbol is translated
+to \texttt{CommandUnavailableError}. This prevents a low-level
+\texttt{OSError} or \texttt{AttributeError} from escaping into the application.
+
+While holding the process-wide lock, the constructor calls
+\texttt{initBern\_logL\_paths} with filesystem-encoded absolute paths to the two
+required coefficient files. A nonzero native status is translated to
+\texttt{CommandUnavailableError} and the status value is retained in the
+message.
+
+The absolute module-relative paths were validated after changing the Python
+process current directory to an unrelated temporary directory.
+
+\subsection{Calculation Path}
+
+For each call, \texttt{NativeLmKernel.calculate}:
+
+\begin{enumerate}
+
+\item converts the count matrix to contiguous NumPy \texttt{float64} storage;
+
+\item calculates
+
+\[
+\alpha_0=\sum_k\alpha_k,
+\qquad
+p_k=\frac{\alpha_k}{\alpha_0},
+\qquad
+\psi=\frac{1}{\alpha_0};
+\]
+
+\item converts the probability vector to contiguous NumPy \texttt{float64}
+storage;
+
+\item calls \texttt{loggamma\_LM\_matrix} while holding the same process-wide
+lock used for coefficient initialization;
+
+\item converts the returned value to a Python \texttt{float}; and
+
+\item translates a non-finite native result to
+\texttt{NumericalPrecisionError}, including the requested significant-digit
+setting in the message.
+
+\end{enumerate}
+
+The lock covers every native initialization and matrix calculation because the
+shared object stores coefficient, dimension, parameter, and workspace state in
+global variables. It does not attempt to make the professor's native code
+internally concurrent.
+
+\subsection{Validation Boundary}
+
+The adapter assumes that its NumPy inputs have already passed the common
+likelihood validation. Connecting that validator is intentionally reserved for
+\texttt{LmLogLikelihood} in the next step. The C matrix wrapper still rejects
+invalid pointers and numerical inputs defensively, and any resulting
+\texttt{NAN} becomes \texttt{NumericalPrecisionError} here.
+
+This separation avoids duplicating dimension, whole-count, non-negativity, and
+positive-alpha checks in both Python layers.
+
+\subsection{Verification}
+
+The existing matrix test was refactored to call \texttt{NativeLmKernel} rather
+than importing \texttt{ctypes}. Its coverage now includes:
+
+\begin{itemize}
+
+\item row-wise agreement with the SciPy backend;
+
+\item a non-contiguous input matrix, proving that the adapter creates contiguous
+storage;
+
+\item a different result from an intentionally aggregated matrix;
+
+\item an exactly zero silent matrix;
+
+\item rejection of four invalid precision values;
+
+\item missing-library and missing-coefficient errors;
+
+\item translation of a native precision failure; and
+
+\item 200 calls through four Python worker threads, alternating parameter and
+count inputs, with every result matching its SciPy reference.
+
+\end{itemize}
+
+The focused adapter test result was:
+
+\begin{verbatim}
+8 passed
+\end{verbatim}
+
+The complete project regression suite reported:
+
+\begin{verbatim}
+203 passed, 10 deselected
+\end{verbatim}
+
+A source scan confirmed that \path{lm_native.py} is the only Python module
+containing \texttt{ctypes}, \texttt{initBern\_logL\_paths}, or
+\texttt{loggamma\_LM\_matrix} references.
+
+\subsection{Digests After Change 006}
+
+\begin{verbatim}
+lm_native.py:
+4ebfd2340e52e925dcdd32762d93d6cb12f99f1a98aa36e908afe87e4c0d7a53
+
+test_lm_native_matrix.py:
+5a16f57b8eda9a9c0ca2a23687c507755bc4e677555d1170357a1185f76ba8ae
+
+Runtime LM_time_lib.c (unchanged in this step):
+60963e19d7e17daa8901192187142ba581a240064652286742ac2d1dcb550a05
+
+Runtime LM_hor_shift.h (unchanged in this step):
+824c2c72cddd983cd5c0d44809fd82e40dbd172e5756aba8b788fb2eada6dd0f
+
+Runtime LM_time_lib.so (unchanged in this step):
+74c827713a213f0f750cf24319e0257fb2df595f530684bf9488b62c5b3d081c
+\end{verbatim}
+
+\subsection{Short Report for the Native-Code Authors}
+
+This step adds only the Python boundary around the native matrix function. It
+loads the project shared object and coefficient files by absolute path,
+serializes all access to the native global state, converts Dirichlet parameters
+to the probability/\(\psi\) representation, and maps load and numerical failures
+to application exceptions. No native algorithm or source file was changed.
+
 \end{document}
