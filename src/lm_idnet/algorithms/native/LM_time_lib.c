@@ -453,7 +453,6 @@ long* opterrNoPrint_logL(long *maxprec, double *toterr, double n)
 	}
 	if (ok == 0)
 	{
-		printf("Horizontal shift [logL] too large (>1000) for the required accuracy; ask for a smaller accuracy");
 		free(workspace);
 		return NULL;
 	}
@@ -555,10 +554,6 @@ double loggamma_LM( double probabilities[],  double psi_0)
 	double bound = SIGDIG - PRECISION -2 ;
 	if ( log10(fabs(asymp)) > bound)
 	{
-		printf("N = %f\nK = %ld\n",	N, K);
- 		printf("logL of this case is asymptotic to (psi -> 0+) = %32.30f\n", asymp);
-	 	fprintf(stderr, "ERROR: LogL too large to assure the desired precision in double; switch to multiprecision\n");
-		printf("***** END PROGRAM *****\n");
 		free_params();
 		return 99;
 		//exit(1);
@@ -590,4 +585,58 @@ double loggamma_LM( double probabilities[],  double psi_0)
 
 	res_logL = logL_diretta_global();//opt_m_logL, hor_shift_logL);
 	return res_logL;
+}
+
+double loggamma_LM_matrix(
+	int precision_digits,
+	const double *counts,
+	long rows,
+	int categories,
+	const double *probabilities,
+	double psi_0)
+{
+	double result = 0.0;
+	double probability_total = 0.0;
+
+	if (precision_digits <= 0 || counts == NULL || rows <= 0 ||
+		categories < 2 || probabilities == NULL ||
+		vec_evenbernoullinorm == NULL || vec_errcoeff == NULL ||
+		!isfinite(psi_0) || psi_0 <= 0.0)
+		goto fail;
+
+	for (int category = 0; category < categories; category++)
+	{
+		if (!isfinite(probabilities[category]) || probabilities[category] <= 0.0)
+			goto fail;
+		probability_total += probabilities[category];
+	}
+	if (!isfinite(probability_total) || fabs(probability_total - 1.0) > 1e-12)
+		goto fail;
+
+	for (long row = 0; row < rows; row++)
+	{
+		const double *row_counts = counts + row * categories;
+		for (int category = 0; category < categories; category++)
+		{
+			if (!isfinite(row_counts[category]) || row_counts[category] < 0.0 ||
+				floor(row_counts[category]) != row_counts[category])
+				goto fail;
+		}
+
+		if (init_params(precision_digits, (double *)row_counts, categories) < 0)
+			goto fail;
+		double row_result = loggamma_LM((double *)probabilities, psi_0);
+		if (!isfinite(row_result) || row_result == 99.0)
+			goto fail;
+		result += row_result;
+		if (!isfinite(result))
+			goto fail;
+	}
+
+	free_params();
+	return result;
+
+fail:
+	free_params();
+	return NAN;
 }

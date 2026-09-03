@@ -521,8 +521,288 @@ err_coeff-100.txt (unchanged):
 48eb77cf4c9527a204022899469a1877fd667fc53d38ab164fabf1a0d6adebf6
 \end{verbatim}
 
-The versioned \path{LM_time_lib.so} was not replaced. All native checks used
-a temporary shared library, so the normal application still uses its existing
-backend behavior until the remaining integration steps are completed.
+At the Changes 001--003 checkpoint, the versioned \path{LM_time_lib.so} had not
+yet been replaced. All native checks at that checkpoint used a temporary shared
+library. Change 005 below records the subsequent controlled rebuild.
+
+\section{Change 004: Matrix-Level Log-Likelihood Entry Point}
+
+\subsection{Status}
+
+Implemented, exported, and validated against SciPy and direct failure cases.
+
+\subsection{Files Changed}
+
+\begin{verbatim}
+src/lm_idnet/algorithms/native/LM_time_lib.c
+src/lm_idnet/algorithms/native/LM_hor_shift.h
+\end{verbatim}
+
+The corresponding files under \path{lm-algorithm/code/} remain unchanged.
+
+\subsection{Application-Facing Interface}
+
+The following function was added to the runtime C source and declared in the
+runtime header:
+
+\begin{verbatim}
+double loggamma_LM_matrix(
+    int precision_digits,
+    const double *counts,
+    long rows,
+    int categories,
+    const double *probabilities,
+    double psi
+);
+\end{verbatim}
+
+The count matrix is interpreted as contiguous row-major \texttt{double}
+storage. Every row is one independent observation. The function evaluates each
+row with the supplied LM routine and returns the sum; it does not aggregate the
+count vectors before evaluation.
+
+\subsection{Boundary Validation}
+
+The wrapper returns \texttt{NAN} without entering the LM calculation if any of
+the following conditions is found:
+
+\begin{itemize}
+
+\item the requested precision or row count is nonpositive;
+
+\item there are fewer than two categories;
+
+\item the count or probability pointer is null;
+
+\item either required coefficient table is uninitialized;
+
+\item \(\psi\) is non-finite or nonpositive;
+
+\item a probability is non-finite or nonpositive;
+
+\item the probabilities do not sum to one within an absolute tolerance of
+\(10^{-12}\); or
+
+\item a count is non-finite, negative, or non-integral.
+
+\end{itemize}
+
+The probability-sum and count checks were added at the native trust boundary so
+that callers other than the planned Python adapter cannot send values for which
+the Dirichlet--Multinomial parameterization is undefined.
+
+\subsection{Row Evaluation and Failure Semantics}
+
+For every row, the wrapper:
+
+\begin{enumerate}
+
+\item calls the checked \texttt{init\_params} function with that row;
+
+\item evaluates it through the existing \texttt{loggamma\_LM} function;
+
+\item rejects the existing precision-limit sentinel value 99;
+
+\item rejects any non-finite row value; and
+
+\item adds the finite row value to the matrix total and verifies that the total
+remains finite.
+
+\end{enumerate}
+
+One cleanup label calls \texttt{free\_params} on every wrapper return, including
+successful completion, invalid input, initialization failure, precision
+failure, horizontal-shift failure, and non-finite output. This completes the
+``last matrix row'' ownership connection planned in Change 003.
+
+The wrapper returns the finite sum on success and \texttt{NAN} for every
+failure. This deliberately provides one unambiguous failure value for the
+future Python adapter.
+
+\subsection{Removal of Reachable Native Output}
+
+Two existing numerical-failure branches were reachable from the new wrapper:
+
+\begin{itemize}
+
+\item failure to find a sufficient horizontal shift; and
+
+\item failure of the existing double-precision magnitude check.
+
+\end{itemize}
+
+Their \texttt{printf} and \texttt{fprintf} calls were removed from the runtime
+project copy. Their return behavior remains available programmatically:
+\texttt{opterrNoPrint\_logL} returns \texttt{NULL}, and
+\texttt{loggamma\_LM} retains its existing value 99 for the precision check.
+The matrix wrapper converts both paths to \texttt{NAN}. It therefore does not
+print, call \texttt{exit}, or terminate the host Python process.
+
+No other functions containing active printing or process termination are
+called by \texttt{loggamma\_LM\_matrix}. Legacy dataset-file initializers were
+not modified because they are outside the application call path.
+
+\subsection{Effect on the LM Numerical Method}
+
+The new function only validates, sequences, sums, and cleans up calls to the
+existing row algorithm. It does not change:
+
+\begin{itemize}
+
+\item the conversion between probabilities, \(\psi\), and Dirichlet
+parameters;
+
+\item the Euler--Maclaurin expansion;
+
+\item any coefficient;
+
+\item error-bound calculations;
+
+\item expansion-order selection; or
+
+\item the horizontal-shift search.
+
+\end{itemize}
+
+\subsection{Native Verification}
+
+For the matrix
+
+\[
+X=
+\begin{pmatrix}
+2 & 0\\
+1 & 1
+\end{pmatrix},
+\qquad
+\boldsymbol{\alpha}=(1,1),
+\]
+
+the wrapper returned:
+
+\begin{verbatim}
+LM matrix result:       -2.8903717578961645
+SciPy row-wise result:  -2.8903717578961645
+Aggregated-row result:  -2.9957322735610155
+\end{verbatim}
+
+The equality with the row-wise reference and the different aggregated result
+confirm that observations are evaluated independently. A three-row silent
+matrix returned exactly zero.
+
+Direct checks also confirmed that the wrapper returns \texttt{NAN} for an
+uninitialized coefficient state, null pointers, invalid dimensions,
+nonpositive precision, invalid \(\psi\), unnormalized probabilities, negative
+counts, fractional counts, and the existing precision-limit condition. A valid
+call after those failures returned the original reference result, confirming
+that no stale parameter workspace remained.
+
+A lifecycle stress check made 10,000 matrix calls while alternating between
+shapes (2\times4) and (64\times4). Process resident memory changed from
+27,372 KiB to 27,464 KiB and did not grow in proportion to the call or row
+count.
+
+A separate larger-count comparison was made against 80-decimal-digit arithmetic.
+At a request of eight significant digits, the absolute difference was about
+\(1.03\times10^{-7}\) on a result of magnitude 390.61, corresponding to a
+relative difference of about \(2.64\times10^{-10}\). This is within eight
+significant digits but illustrates why validation should use the implementation's
+significant-digit interpretation rather than treating the setting as a fixed
+number of decimal places. No numerical method was changed in response to this
+observation.
+
+\subsection{Persistent Regression Check}
+
+A direct native contract test was added:
+
+\begin{verbatim}
+tests/test_lm_native_matrix.py
+\end{verbatim}
+
+It loads the rebuilt shared object, initializes coefficients by absolute path,
+compares the matrix result with \texttt{ScipyLogLikelihood}, proves that rows
+are not aggregated, checks a silent matrix, and checks representative invalid
+input and precision failures.
+
+\subsection{Short Report for the Native-Code Authors}
+
+The runtime project copy now exposes a matrix-level library function. It calls
+the supplied LM likelihood once per observation and sums the results. The
+wrapper validates the native boundary, translates the existing failure signals
+to \texttt{NAN}, and releases parameter memory on every return. Diagnostic
+printing was removed from the two numerical-failure branches reachable through
+this interface so that it is safe to call from Python. The LM approximation and
+its error-control mathematics were not modified.
+
+\section{Change 005: Rebuilt Runtime Shared Library}
+
+\subsection{Status}
+
+Completed using the project's existing Docker compiler and entry point. No new
+build system or dependency was introduced.
+
+\subsection{Build Procedure}
+
+The repository was mounted at \path{/app} in the existing
+\texttt{lm-idnet:latest} image and the standard container entry point was run.
+That entry point compiled the native source through its temporary-output path
+and atomically replaced the runtime library using the equivalent of:
+
+\begin{verbatim}
+gcc -O3 -fPIC -shared LM_time_lib.c -lm -o .LM_time_lib.so.tmp
+mv .LM_time_lib.so.tmp LM_time_lib.so
+\end{verbatim}
+
+The container was run with the host numeric user and group identifiers so the
+rebuilt artifact retained normal repository ownership.
+
+\subsection{Artifact Verification}
+
+The rebuilt file is a dynamically linked, 64-bit x86-64 ELF shared object. Its
+dynamic symbol table contains both required integration symbols:
+
+\begin{verbatim}
+initBern_logL_paths
+loggamma_LM_matrix
+\end{verbatim}
+
+Loading the versioned shared object with \texttt{ctypes} and executing the new
+persistent contract test succeeded.
+
+An additional diagnostic build with \texttt{-Wall -Wextra} succeeded. Its
+warnings concerned unused parameters and variables already present in the
+supplied implementation. There were no missing declarations, missing symbols,
+or math-library linkage errors introduced by the integration.
+
+The complete project regression suite after the source and binary rebuild
+reported:
+
+\begin{verbatim}
+196 passed, 10 deselected
+\end{verbatim}
+
+The additional passing test is the new native matrix contract check.
+
+\subsection{Digests After Changes 004--005}
+
+\begin{verbatim}
+Runtime LM_time_lib.c:
+60963e19d7e17daa8901192187142ba581a240064652286742ac2d1dcb550a05
+
+Reference LM_time_lib.c (unchanged):
+306b33aae05db49e519909c36e91d25112b5fce75a3fb144858ed0d727f22d66
+
+Runtime LM_hor_shift.h:
+824c2c72cddd983cd5c0d44809fd82e40dbd172e5756aba8b788fb2eada6dd0f
+
+Reference LM_hor_shift.h (unchanged):
+3ba1ac510b0fba74a64ae4bc63be5301c214ee783a2fbde0e883188f32a3be96
+
+Previous runtime LM_time_lib.so:
+553eb6bf0826501e2b6aacb26887d3a530b24846fa7c3d5804734e94d8cdefc2
+
+Rebuilt runtime LM_time_lib.so:
+74c827713a213f0f750cf24319e0257fb2df595f530684bf9488b62c5b3d081c
+\end{verbatim}
 
 \end{document}
