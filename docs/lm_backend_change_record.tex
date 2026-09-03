@@ -3,6 +3,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath}
+\usepackage{array}
 \usepackage{hyperref}
 
 \title{Native LM Backend: Project Change Record}
@@ -228,5 +229,300 @@ for this input. The guard is necessary for sparse protocol vectors and fully
 silent IoT traffic windows. It does not alter any positive-count calculation or
 any part of the LM approximation and error-control method. The original capsule
 source remains unchanged.
+
+\section{Change 002: Explicit Paths and Checked Coefficient Loading}
+
+\subsection{Status}
+
+Implemented and validated at the native shared-library boundary. The Python adapter that
+will translate the returned statuses into application exceptions remains a later
+integration step.
+
+\subsection{Files Changed}
+
+\begin{verbatim}
+src/lm_idnet/algorithms/native/LM_time_lib.c
+src/lm_idnet/algorithms/native/LM_hor_shift.h
+\end{verbatim}
+
+The corresponding files under \path{lm-algorithm/code/} were not changed.
+
+\subsection{Problem Being Addressed}
+
+The supplied \texttt{initBern\_logL} function opened the two coefficient files by
+bare filename. Its success therefore depended on the process current working
+directory. It also wrote through allocated pointers without checking whether
+the files opened, whether allocation succeeded, or whether all coefficients
+were read. Used as a library, these failure modes could cause invalid state or
+a process crash.
+
+\subsection{Applied Modification}
+
+A checked initializer was added and declared in \path{LM_hor_shift.h}:
+
+\begin{verbatim}
+int initBern_logL_paths(
+    const char *bernoulli_path,
+    const char *error_path
+);
+\end{verbatim}
+
+This function:
+
+\begin{enumerate}
+
+\item rejects null path pointers;
+
+\item opens the two caller-supplied paths;
+
+\item allocates temporary 100-element arrays;
+
+\item verifies all 100 reads from each file;
+
+\item closes both files on every path after they have been opened;
+
+\item preserves the previously loaded tables if opening, allocation, or
+parsing fails; and
+
+\item replaces and releases the old tables only after both new tables have
+been read successfully.
+
+\end{enumerate}
+
+The return statuses are:
+
+\begin{center}
+\begin{tabular}{>{\ttfamily}l p{10cm}}
+0 & both tables loaded successfully; \\
+1 & a path was null or a file could not be opened; \\
+2 & memory allocation failed; \\
+3 & a file did not contain all 100 parseable coefficients. \\
+\end{tabular}
+\end{center}
+
+The original no-argument \texttt{initBern\_logL} symbol remains available for
+compatibility. It delegates to the checked function with the original relative
+filenames and writes one diagnostic to standard error if loading fails. The
+new Python integration will call \texttt{initBern\_logL\_paths} with absolute
+paths instead.
+
+Only the following tables are loaded by this likelihood-specific initializer:
+
+\begin{verbatim}
+bernreal-norm-100.txt
+err_coeff-100.txt
+\end{verbatim}
+
+No coefficient value or file was modified.
+
+\subsection{Native Verification}
+
+The modified library was loaded after changing the test process current
+directory to \path{/tmp}. Initialization with absolute paths succeeded. The
+following failure cases returned the expected nonzero status without crashing:
+
+\begin{itemize}
+
+\item two null paths: status 1;
+
+\item a missing file: status 1; and
+
+\item a nonnumeric file in place of a coefficient table: status 3.
+
+\end{itemize}
+
+After a valid load, an attempted malformed reload returned status 3, and a
+subsequent likelihood calculation still succeeded. This confirms that a failed
+reload does not destroy the previously valid coefficient state.
+
+The initializer was also called successfully 1,000 times. Process resident
+memory remained at 11,644 KiB before and after those reloads in this stress
+check.
+
+\subsection{Effect on the LM Numerical Method}
+
+This change affects file location, validation, and table ownership only. It
+does not change the coefficient files, their in-memory values, or any LM
+formula.
+
+\subsection{Short Report for the Native-Code Authors}
+
+The project copy adds an explicit-path, status-returning initializer for the two
+tables used by the log-likelihood path. It reads into temporary storage and
+commits the replacement only after both complete tables have been validated.
+The original initializer remains as a compatibility wrapper. The change removes
+the current-working-directory dependency and makes initialization failures
+recoverable by a library caller.
+
+\section{Change 003: Explicit Workspace Ownership and Allocation Checks}
+
+\subsection{Status}
+
+Implemented for every allocation exercised by the current parameter and
+log-likelihood path. Final cleanup after a matrix calculation will be connected
+when the matrix-level entry point is added; that entry point does not yet exist.
+
+\subsection{Problem Being Addressed}
+
+The native implementation retained four parameter arrays in global pointers.
+Every call to \texttt{init\_params} replaced those pointers with new allocations
+without releasing the preceding arrays. In addition,
+\texttt{opterrNoPrint\_logL} allocated two temporary arrays on every likelihood
+calculation and did not release them. Repeated fitting iterations would
+therefore continually increase native memory use.
+
+The allocation results were not checked before their pointers were used.
+
+\subsection{Applied Modifications}
+
+A private \texttt{free\_params} helper now releases the arrays referenced by
+\texttt{X}, \texttt{probs}, \texttt{psioverprobs}, and \texttt{logprobs}, then
+sets all four pointers to \texttt{NULL}. The parameter initializer invokes it
+before allocating a replacement workspace and again if any replacement
+allocation fails.
+
+\texttt{init\_params} now rejects a null count pointer, a nonpositive category
+count, or a nonpositive precision value by returning \texttt{-1}. It also
+returns \texttt{-1} if any of its four allocations fails. No pointer is written
+through after a failed allocation.
+
+Within \texttt{opterrNoPrint\_logL}, the two category-length temporary arrays
+were replaced by one allocation of \texttt{2*K} doubles, divided into two
+non-overlapping halves. This keeps the same values and indexing while requiring
+only one allocation check. The block is freed on both existing return paths:
+
+\begin{itemize}
+
+\item failure to meet the requested accuracy within the horizontal-shift
+limit; and
+
+\item successful selection of the expansion order and horizontal shift.
+
+\end{itemize}
+
+If that temporary allocation fails, or if the requested accuracy cannot be met
+within the existing horizontal-shift limit, \texttt{opterrNoPrint\_logL}
+returns \texttt{NULL}. \texttt{loggamma\_LM} checks that return and propagates
+the failure as \texttt{NAN}. The future matrix wrapper can therefore reject the
+non-finite value rather than mistaking the failure for a valid likelihood
+result.
+
+\texttt{loggamma\_LM} also invokes \texttt{free\_params} before returning
+its existing precision-limit sentinel. Thus, both failure returns currently
+visible in that function release the active parameter workspace.
+
+The coefficient arrays have a separate, longer lifetime. The private
+\texttt{freeBern\_logL} helper releases and nulls those two pointers only when
+a complete replacement pair has been loaded successfully.
+
+\subsection{Ownership After This Change}
+
+\begin{center}
+\begin{tabular}{p{4.2cm} p{5.3cm} p{4.0cm}}
+\textbf{Storage} & \textbf{Lifetime} & \textbf{Released by} \\
+\hline
+Coefficient tables & Across likelihood calls, until a successful reload &
+\texttt{freeBern\_logL} before replacement \\
+Parameter arrays & From successful \texttt{init\_params} until replacement or
+the future matrix boundary & \texttt{free\_params} \\
+Error-search workspace & One \texttt{opterrNoPrint\_logL} call & The function
+itself on success or failure \\
+\end{tabular}
+\end{center}
+
+\subsection{Deliberately Deferred Connection Point}
+
+There is not yet a matrix-level native function, so there is currently no
+``last row'' boundary at which to invoke \texttt{free\_params}. The helper is
+private in the same C translation unit and is ready to be called from the
+matrix wrapper in the next implementation step. Until then, the most recent
+parameter workspace remains live for the next \texttt{loggamma\_LM} call and is
+released before the next \texttt{init\_params} call. This preserves the calling
+sequence expected by the supplied API without introducing a speculative public
+cleanup API.
+
+\subsection{Native Verification}
+
+The following checks were made through \texttt{ctypes} against a temporary
+shared library:
+
+\begin{itemize}
+
+\item valid initialization and likelihood evaluation produced the finite
+value \texttt{-8.923657799857487};
+
+\item null counts, zero categories, and zero precision were rejected with
+\texttt{-1};
+
+\item the existing precision-limit path returned its documented value of 99,
+after which parameter initialization and a normal likelihood call succeeded;
+
+\item 20,000 alternating three-category and 256-category initializations
+increased resident memory by only 68 KiB (11,576 to 11,644 KiB); and
+
+\item 10,000 repeated 256-category likelihood evaluations returned the same
+finite value each time while resident memory remained at 11,644 KiB.
+
+\end{itemize}
+
+The small resident-memory differences are consistent with allocator and process
+bookkeeping; importantly, growth was not proportional to the number of calls.
+
+\subsection{Effect on the LM Numerical Method}
+
+The contents, length, and indexing of the working arrays are unchanged. No
+formula, loop termination condition, coefficient, error bound, expansion order,
+or horizontal-shift rule was changed.
+
+\subsection{Short Report for the Native-Code Authors}
+
+The project copy now gives the parameter arrays and per-likelihood error-search
+arrays explicit owners. Existing arrays are released before replacement,
+temporary arrays are released on all returns, pointers are nulled after release,
+and allocations are checked. Repeated calls no longer leak these workspaces.
+The final parameter cleanup call will sit in the forthcoming matrix wrapper,
+where the end of a calculation is unambiguous.
+
+\section{Consolidated Verification After Changes 001--003}
+
+The source was compiled using the existing project Docker image with
+\texttt{gcc -O3 -Wall -Wextra -fPIC -shared} and linked with
+\texttt{-lm}. Compilation succeeded. The reported warnings concern unused
+parameters or variables already present in the supplied implementation; no
+invalid declaration, missing symbol, or linkage warning was reported.
+
+The Python regression results after Changes 001--003 are:
+
+\begin{verbatim}
+Focused likelihood/factory tests: 5 passed
+Normal project suite:             195 passed, 10 deselected
+git diff --check:                 passed
+\end{verbatim}
+
+The final SHA-256 digests at this checkpoint are:
+
+\begin{verbatim}
+Runtime LM_time_lib.c:
+8ddea61941d64977562c640c8264d75d5127ff353150240be4c019f9fe6b6c3d
+
+Reference LM_time_lib.c (unchanged):
+306b33aae05db49e519909c36e91d25112b5fce75a3fb144858ed0d727f22d66
+
+Runtime LM_hor_shift.h:
+1ce8a17c4a50057f4d92a6cbf580045320ba221d6b4883236f8bbbbb2d6580fa
+
+Reference LM_hor_shift.h (unchanged):
+3ba1ac510b0fba74a64ae4bc63be5301c214ee783a2fbde0e883188f32a3be96
+
+bernreal-norm-100.txt (unchanged):
+5072a78dbf4af4e317704e714d25fa4ea559bbb169d2652a60328381553e09dd
+
+err_coeff-100.txt (unchanged):
+48eb77cf4c9527a204022899469a1877fd667fc53d38ab164fabf1a0d6adebf6
+\end{verbatim}
+
+The versioned \path{LM_time_lib.so} was not replaced. All native checks used
+a temporary shared library, so the normal application still uses its existing
+backend behavior until the remaining integration steps are completed.
 
 \end{document}

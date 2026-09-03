@@ -167,27 +167,67 @@ void initBern()
 	}
 }
 
-void initBern_logL()
+static void freeBern_logL()
 {
-	FILE* f2 = fopen("bernreal-norm-100.txt", "r");
-	FILE* f4 = fopen("err_coeff-100.txt", "r");
-	int i = 0;
-	vec_evenbernoullinorm = (double*)malloc(100*sizeof(double));
-	vec_errcoeff = (double*)malloc(100*sizeof(double));
+	free(vec_evenbernoullinorm);
+	free(vec_errcoeff);
+	vec_evenbernoullinorm = NULL;
+	vec_errcoeff = NULL;
+}
 
-	for(i=0;i<100;i++)
-	{
-		fscanf(f2, "%lf", &(vec_evenbernoullinorm[i]));
-		fscanf(f4, "%lf", &(vec_errcoeff[i]));
-	}
+int initBern_logL_paths(const char *bernoulli_path, const char *error_path)
+    {
+    if (bernoulli_path == NULL || error_path == NULL)
+        return 1;
+
+    FILE* f2 = fopen(bernoulli_path, "r");
+	FILE* f4 = fopen(error_path, "r");
+	if (f2 == NULL || f4 == NULL)
+		{
+		if (f2 != NULL) fclose(f2);
+		if (f4 != NULL) fclose(f4);
+		return 1;
+		}
+	double* bernoulli = (double*)malloc(100*sizeof(double));
+	double* errors = (double*)malloc(100*sizeof(double));
+	if (bernoulli == NULL || errors == NULL)
+		{
+		free(bernoulli);
+		free(errors);
+		fclose(f2);
+		fclose(f4);
+		return 2;
+		}
+	for(int i=0;i<100;i++)
+		{
+		if (fscanf(f2, "%lf", &(bernoulli[i])) != 1 ||
+			fscanf(f4, "%lf", &(errors[i])) != 1)
+			{
+			free(bernoulli);
+			free(errors);
+			fclose(f2);
+			fclose(f4);
+			return 3;
+			}
+		}
 
 	fclose(f2);
 	fclose(f4);
+	freeBern_logL();
+	vec_evenbernoullinorm = bernoulli;
+	vec_errcoeff = errors;
 
-	for(i=0;i<2;i++)
+	for(int i=0;i<2;i++)
 	{
 		vect_logL[i] = 0;
 	}
+	return 0;
+}
+
+void initBern_logL()
+{
+	if (initBern_logL_paths("bernreal-norm-100.txt", "err_coeff-100.txt") != 0)
+		fprintf(stderr, "Cannot initialize LM coefficient tables\n");
 }
 
 
@@ -203,6 +243,10 @@ double LM_logL(double x, double y, long m, int hor_shift)
 
 	/* inderted by AL 23/04/2023 */
 	/* special values */
+	if (y == 0)
+		{
+		return 0.0;
+		}
 	if (y == 1)
 		{
 		retval = -log(x);
@@ -300,10 +344,11 @@ long* opterrNoPrint_logL(long *maxprec, double *toterr, double n)
 	double aux_psioverprobs = 0;
 	double psi_pow = 0;
 	double step_psi = 0;
-	double* psioverprobs_pow;
-	psioverprobs_pow = (double*)malloc(K*sizeof(double));
-	double* step_psioverprobs;
-	step_psioverprobs = (double*)malloc(K*sizeof(double));
+	double* workspace = (double*)malloc(2*K*sizeof(double));
+	if (workspace == NULL)
+		return NULL;
+	double* psioverprobs_pow = workspace;
+	double* step_psioverprobs = workspace + K;
 	long counter = 0;
 
 	while (ok == 0 && j < max_hor_shift)
@@ -409,9 +454,8 @@ long* opterrNoPrint_logL(long *maxprec, double *toterr, double n)
 	if (ok == 0)
 	{
 		printf("Horizontal shift [logL] too large (>1000) for the required accuracy; ask for a smaller accuracy");
-		vect_logL[0] = 0;
-		vect_logL[1] = 0;
-		return vect_logL;
+		free(workspace);
+		return NULL;
 	}
 
 	//printf("minimal error = %32.30f\n", (K+1.0)* (*toterr));
@@ -423,16 +467,32 @@ long* opterrNoPrint_logL(long *maxprec, double *toterr, double n)
 	//printf("total number of iterations (err_logL) = %ld\n", counter);
 	vect_logL[0] = m_opt;
 	vect_logL[1] = hor_shift;
+	free(workspace);
 	return vect_logL;
 }
 
+
+static void free_params()
+{
+	free(X);
+	free(probs);
+	free(psioverprobs);
+	free(logprobs);
+	X = NULL;
+	probs = NULL;
+	psioverprobs = NULL;
+	logprobs = NULL;
+}
 
 /*BY Sherenaz*/
 long init_params(int PREC, double counts[], int categories ){
 	//initializes: K(number of categories) , X (vector of counts), and (N) total counts , PRECISION(equal to prec, by Sherenaz), LM_accuracy, SIGDIG
 	//allocates memory for X, probs, psioverprobs, and logprobs
 
-	long i = 0;
+    if (counts == NULL || categories <= 0 || PREC <= 0)
+        return -1;
+
+    long i = 0;
 	K = categories;
 	N = 0;
 	long NN=0;
@@ -445,10 +505,16 @@ long init_params(int PREC, double counts[], int categories ){
 	LM_accuracy = LM_accuracy / (K + 1.0) ;
 
 	//allocate vector X, and other vectors
+	free_params();
 	X = (double*)malloc(K*sizeof(double));
  	probs = (double*)malloc(K*sizeof(double));
  	psioverprobs = (double*)malloc(K*sizeof(double));
  	logprobs = (double*)malloc(K*sizeof(double));
+	if (X == NULL || probs == NULL || psioverprobs == NULL || logprobs == NULL)
+	{
+		free_params();
+		return -1;
+	}
 
 	//fillup only vector X, and integral N
 	for(i = 0; i < K ; i++){
@@ -493,6 +559,7 @@ double loggamma_LM( double probabilities[],  double psi_0)
  		printf("logL of this case is asymptotic to (psi -> 0+) = %32.30f\n", asymp);
 	 	fprintf(stderr, "ERROR: LogL too large to assure the desired precision in double; switch to multiprecision\n");
 		printf("***** END PROGRAM *****\n");
+		free_params();
 		return 99;
 		//exit(1);
 	}
@@ -505,7 +572,11 @@ double loggamma_LM( double probabilities[],  double psi_0)
  	long opt_m_logL = 0;
 	double res_logL = 0;
 
-	opterrNoPrint_logL(&maxprec, &toterr, pown);
+	if (opterrNoPrint_logL(&maxprec, &toterr, pown) == NULL)
+	{
+		free_params();
+		return NAN;
+	}
 
 	//opt_m_logL = vect_logL[0];
 	//hor_shift_logL = vect_logL[1];
@@ -520,5 +591,3 @@ double loggamma_LM( double probabilities[],  double psi_0)
 	res_logL = logL_diretta_global();//opt_m_logL, hor_shift_logL);
 	return res_logL;
 }
-
-
