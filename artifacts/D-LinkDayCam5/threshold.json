@@ -1,9 +1,9 @@
 {
   "artifact_type": "threshold",
-  "model_fingerprint": "da3c9d23b0e39060228b7ac9239722f5d171f2452d7fc6c25cb4c4480b9bf48e",
+  "model_fingerprint": "48de3db973212b5bd7a3e9d725b426630a1fc6f2b79d8140452ec28d624887da",
   "score_type": "raw",
   "quantile": 0.01,
-  "threshold": -22.504374145250928,
+  "threshold": -22.504377031673194,
   "calibration_capture_ids": [
     "D-LinkDayCam5_88-2020-10-14",
     "D-LinkDayCam5_88-2020-10-15"
@@ -12,8 +12,8 @@
   "calibration_start_utc": "2020-10-13T16:00:00Z",
   "calibration_end_utc": "2020-10-15T16:00:00Z",
   "quantile_method": "linear",
-  "score_minimum": -23.414561471393426,
-  "score_median": -11.989178880009945,
-  "score_maximum": -11.19408639518906,
-  "score_iqr": 0.5446958027807796
+  "score_minimum": -23.41456467797741,
+  "score_median": -11.989178575524988,
+  "score_maximum": -11.194085956774984,
+  "score_iqr": 0.5446961256338057
 }

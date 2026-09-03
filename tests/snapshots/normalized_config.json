@@ -50,7 +50,7 @@
     "initial_alpha_concentration": 10.0,
     "tolerance_delta": 2e-9,
     "max_iterations": 100000,
-    "log_likelihood_backend": "scipy"
+    "log_likelihood_backend": "lm"
   },
   "calibration": {
     "quantile": 0.01,

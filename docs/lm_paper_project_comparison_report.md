@@ -24,16 +24,15 @@ decisions. There is no evidence here of an LM numerical-correctness bug.
 The main mistaken assumption would be to conclude that the paper promises that
 LM must make the current project faster or more accurate. It does not. The
 paper's large speed advantage is principally against YS, on different data and
-with different likelihood-call semantics. In the current implementation, LM is
-about 1.67 times slower than SciPy for a complete model fit, although it is
-about 10% faster for one single-window score.
+with different likelihood-call semantics. After reusing matrix-invariant native
+setup, LM is about 6.4% slower than SciPy for a complete model fit and about
+10% faster for one single-window score on the Camera 5 benchmark.
 
 There are two concrete project issues:
 
-- The accepted Camera 5 model is presently fitted with the **SciPy backend**, not
-  LM (`"log_likelihood_backend": "scipy"`). LM is exercised only by the backend
-  benchmark unless the configuration is changed and the downstream artifacts
-  are regenerated.
+- All three versioned research configurations now select LM. Their models,
+  thresholds, and development-test events were regenerated through the normal
+  pipeline, with no decision changes relative to the previous SciPy artifacts.
 - The current `forecast` stage is a scaffold. It generates synthetic "actual"
   observations from the same fitted probabilities, ignores the supplied dataset
   argument, and does not evaluate held-out Camera 5 traffic. Its Brier Score and
@@ -57,9 +56,10 @@ There are two concrete project issues:
 - Likelihood definition used by LM-IDNet:
   [`likelihood-semantics.md`](likelihood-semantics.md)
 
-No repository code was edited and no commit was created. The professor's code
-was copied to disposable directories under `/tmp` for execution. The only
-repository change made by this investigation is this requested report.
+The professor's code was copied to disposable directories under `/tmp` for the
+original investigation. Later project changes optimized the native matrix
+adapter and enabled LM in the versioned experiments; those changes are reported
+below and in the native backend change record.
 
 ## 1. What LM is doing
 
@@ -277,16 +277,17 @@ The fresh benchmark used:
 
 | Operation | SciPy | LM | LM / SciPy | Interpretation |
 |---|---:|---:|---:|---|
-| Full 846-by-4 model fit | 0.183641 s | 0.307252 s | 1.673 | LM is 67% slower |
-| One 846-by-4 likelihood | 50.212 us | 114.816 us | 2.287 | LM is 2.29x slower |
-| One complete window score | 13.525 us | 12.139 us | 0.898 | LM is about 10% faster |
+| Full 846-by-4 model fit | 0.181286 s | 0.192974 s | 1.064 | LM is 6.4% slower |
+| One 846-by-4 likelihood | 49.961 us | 55.457 us | 1.110 | LM is 11.0% slower |
+| One complete window score | 13.394 us | 12.044 us | 0.899 | LM is about 10% faster |
 
-The likely reason is structural rather than contradictory: SciPy evaluates the
-whole matrix with vectorized native operations, while the adapted LM matrix
-entry point loops over 846 rows and initializes per-row native state. That
-overhead hurts the matrix and full-fit cases but is small for a single window.
-The professor's capsule instead reduces a matrix to one aggregate count vector
-before the timed likelihood call.
+SciPy evaluates the whole matrix with vectorized native operations, while LM
+still evaluates the 846 independent rows in C. The optimized LM entry point now
+allocates its workspace and computes probability- and precision-dependent
+Euler--Maclaurin setup once per matrix instead of once per row. This removed
+51.5% of the previous LM likelihood-call time without aggregating rows or
+changing results. The professor's capsule instead reduces a matrix to one
+aggregate count vector before the timed likelihood call.
 
 ### Numerical and detector agreement
 
@@ -306,11 +307,24 @@ This is strong practical agreement at the configured precision. For the
 current Camera 5 workload, LM is an accurate substitute for SciPy, but not a
 full-fit speed improvement.
 
-The existing committed benchmark artifact records almost the same timings and
-exactly the same numerical comparisons under Python 3.11.16 and SciPy 1.17.1,
-so the conclusion is stable across these two local software environments.
+The native library was built with GCC 14.2.0 using
+`-O3 -fPIC -shared ... -lm`. The complete regression suite passed with **232
+tests passed and 10 deselected**.
 
-The focused native and benchmark checks also passed: **9 tests passed**.
+### Production adoption across versioned experiments
+
+All configurations use six LM digits. The table compares the regenerated LM
+artifacts with the previously committed SciPy artifacts; fit time is the
+observed LM training-stage duration, not a controlled benchmark.
+
+| Dataset | Fit rows | LM fit | Max relative `alpha` difference | Threshold difference | Max score difference | Anomalies, SciPy / LM | Decision mismatches |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| D-Link Day Cam 5 | 846 | 0.194 s | 3.857e-7 | 2.886e-6 | 1.092e-5 | 3 / 3 | 0 |
+| UNSW Chromecast | 867 | 0.260 s | 1.708e-6 | 1.247e-5 | 1.778e-4 | 17 / 17 | 0 |
+| UNSW Samsung Camera | 432 | 0.044 s | 8.557e-7 | 5.008e-7 | 5.433e-5 | 52 / 52 | 0 |
+
+Each regenerated threshold records the fingerprint of its LM model, and each
+event file was then produced from that model-threshold pair.
 
 ## 5. Paper dataset versus project dataset construction
 
@@ -400,8 +414,9 @@ and is not directly comparable with a per-distribution JSD.
   forecast.
 
 Therefore, the current project does **not contradict** the paper when LM is
-slower than SciPy for fitting. The paper's main speed claim is LM versus YS,
-and its Table V already shows LM slightly slower than standard `lgamma`.
+slightly slower than SciPy for fitting. The paper's main speed claim is LM
+versus YS, and its Table V already shows LM slightly slower than standard
+`lgamma`.
 
 Likewise, the paper's better BS/JSD does not imply that LM-IDNet should find
 more anomalies than SciPy. On the current workload the backends make identical
@@ -415,17 +430,18 @@ A defensible thesis statement based on the evidence is:
 > LM-IDNet integrates a hardened C-wrapped Languasco--Migliardi likelihood
 > backend. On the D-Link Camera 5 workload it agrees with SciPy to small
 > numerical tolerances and produces identical anomaly decisions. It is about
-> 10% faster for isolated single-window scoring but about 67% slower for the
-> complete fitted workload in the current row-wise matrix adapter. These
-> results validate backend correctness; they do not reproduce the forecasting
+> 10% faster for isolated single-window scoring and about 6.4% slower for the
+> complete fitted workload in the optimized row-wise matrix adapter. All
+> versioned research configurations use LM and retain the previous SciPy
+> anomaly decisions. These results validate backend correctness; they do not
+> reproduce the forecasting
 > comparison in ALM_IoT-CR.
 
 Avoid claiming any of the following from current evidence:
 
 - that the project reproduces the paper's 14x average speedup;
 - that LM improves anomaly-detection accuracy;
-- that the current Brier/JSD output validates three-day forecasting;
-- that the accepted project model currently uses LM.
+- that the current Brier/JSD output validates three-day forecasting.
 
 ## 9. Minimum work needed for a true paper comparison
 
@@ -449,5 +465,5 @@ detector, the smallest valid experiment is:
 
 Before that work, the current backend benchmark is already sufficient for its
 narrow purpose: LM is integrated correctly and yields the same detector
-decisions as SciPy, but it is not presently the faster fitting backend.
-
+decisions as SciPy. It remains slightly slower for pooled fitting and slightly
+faster for single-window scoring on the measured Camera 5 workload.

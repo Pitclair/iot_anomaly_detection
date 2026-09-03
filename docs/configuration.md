@@ -20,11 +20,15 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   bootstrap procedures, and other randomized algorithms.
 - `estimator`: category count, positive initial alpha concentration, positive
   convergence tolerance, positive iteration limit, and the selected
-  likelihood-kernel backend. `scipy` is the working pipeline backend; `lm`
-  selects the placeholder for the future Languasco-Migliardi implementation
-  and fails until it is implemented. Neither backend includes the multinomial
-  coefficient; the complete formulas and pipeline ownership are documented in
-  [`likelihood-semantics.md`](likelihood-semantics.md).
+  likelihood-kernel backend. `lm` selects the bundled native
+  Languasco--Migliardi implementation and is used by the versioned research
+  configurations. `scipy` selects the reference implementation based on
+  `scipy.special.gammaln`. Both implement the same row-wise kernel and neither
+  includes the multinomial coefficient; the complete formulas and pipeline
+  ownership are documented in
+  [`likelihood-semantics.md`](likelihood-semantics.md). The top-level
+  `precision_digits` value controls LM evaluation in training, diagnostics,
+  calibration, and scoring; it is accepted but not needed by SciPy.
 - `calibration`: lower-tail quantile, required positive sample count, and
   `raw` (default) or per-packet `normalized` anomaly score.
   Compare them by running `calibrate` and `score` once per value with distinct

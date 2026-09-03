@@ -115,7 +115,7 @@ def test_training_fits_and_saves_model(
     assert result["matrix_shape"] == [12, 4]
     assert result["initial_alpha"] == pytest.approx([2.8, 1.6, 2.4, 3.2])
     assert (np.asarray(result["alpha"]) > 0).all()
-    assert result["log_likelihood_backend"] == "scipy"
+    assert result["log_likelihood_backend"] == "lm"
     assert result["final_log_likelihood"] > result["initial_log_likelihood"]
     assert result["model_path"] == str(model_path)
     assert saved["alpha"] == pytest.approx(result["alpha"])
@@ -126,7 +126,7 @@ def test_training_fits_and_saves_model(
     )
     assert saved["psi"] == pytest.approx(result["psi"])
     assert saved["training_capture_ids"] == list(config.ingest.partitions.fit)
-    assert saved["log_likelihood_backend"] == "scipy"
+    assert saved["log_likelihood_backend"] == "lm"
     assert saved["fit_diagnostics"] == {
         "initial_alpha": pytest.approx(result["initial_alpha"]),
         "iterations": result["iterations"],

@@ -55,9 +55,9 @@ comparison of backends and architectures on LM-IDNet data, not an exact
 reproduction of the paper's tables.
 
 Environment: Python 3.12.14, NumPy 2.5.1, SciPy 1.18.0, Linux x86-64. The
-optimized native probe was compiled with `-O3` in the existing local
-`lm-idnet:latest` image and loaded into the same Python process as the other
-backends.
+optimized native probe was compiled with GCC 14.2.0 and
+`-O3 -fPIC -shared ... -lm` in the existing local `lm-idnet:latest` image and
+loaded into the same Python process as the other backends.
 
 ## Paper-style modeling results
 
@@ -202,9 +202,9 @@ Three facts explain all observed behavior:
    every independent row but tests convergence with `K(sum(rows); alpha)` rather
    than `sum(K(row; alpha))`. These are different functions, not equivalent
    rearrangements.
-3. **The current LM slowdown is mostly redundant native setup.** Aggregation
-   hides that cost by reducing 846 evaluations to one, but computing invariant
-   setup once achieves nearly the same speed without changing the statistical
+3. **The previous LM slowdown was mostly redundant native setup.** Aggregation
+   hid that cost by reducing 846 evaluations to one, but computing invariant
+   setup once achieved nearly the same speed without changing the statistical
    model.
 
 ## Recommendation
@@ -216,6 +216,15 @@ The native invariant-setup optimization has now been applied while retaining
 the row-wise likelihood contract. It reduces the LM/SciPy full-fit ratio from
 about 1.67 to 1.064, preserves all numerical results, and retains LM's large
 accuracy advantage for genuinely low-`psi` workloads.
+
+Following that result, all three versioned research configurations were
+switched from SciPy to six-digit LM and their model, threshold, and event
+artifacts were regenerated through `train`, `calibrate`, and `score`. Relative
+to the prior SciPy artifacts, the largest relative alpha difference was
+1.71e-6, the largest score difference was 1.78e-4, and all 1,300 development
+windows retained their anomaly decisions (3 D-Link, 17 Chromecast, and 52
+Samsung-camera anomalies). Each new threshold fingerprint matches its LM
+model.
 
 Separately, replace the synthetic forecast scaffold with held-out daily data if
 forecasting is meant to support a thesis claim. That change evaluates the model;

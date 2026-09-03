@@ -37,10 +37,19 @@ kernel over all rows.
 
 Both configured backends have the same semantics:
 
-- `scipy` is the temporary implementation of the kernel using
-  `scipy.special.gammaln`;
-- `lm` will be the Languasco-Migliardi implementation of the same kernel;
+- `lm` is the production native Languasco--Migliardi implementation. It
+  evaluates paired log-gamma differences with the configured
+  `precision_digits` value;
+- `scipy` is the reference implementation using `scipy.special.gammaln`;
 - neither backend includes the multinomial coefficient.
+
+The LM adapter sends the complete matrix to the bundled C library in one call.
+The native implementation reuses setup that is constant for that call while
+still evaluating and summing each row independently. Its project-specific
+changes cover integration, validation, zero counts, memory lifecycle, and the
+matrix boundary; they do not change the underlying LM approximation. The
+original licence and attribution remain in
+[`native/LICENSE.`](../src/lm_idnet/algorithms/native/LICENSE.).
 
 The multinomial coefficient is excluded during parameter estimation because it
 depends only on the observed counts. It is constant while alpha is updated, so
