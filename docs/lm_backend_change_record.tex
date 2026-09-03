@@ -1,0 +1,232 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\title{Native LM Backend: Project Change Record}
+\date{3 September 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Purpose of This Record}
+
+This document records every project-specific change made while integrating the
+native Languasco--Migliardi (LM) log-likelihood implementation into LM-IDNet.
+It is intended to make the integration reviewable and to provide a concise
+account that can be reported to the authors of the native implementation.
+
+The original reference copy under \path{lm-algorithm/code/} is kept unchanged.
+All integration edits are made to the runtime project copy under
+\path{src/lm_idnet/algorithms/native/}.
+
+\section{Baseline Before Native Changes}
+
+Before modifying the native source, the following checks were completed:
+
+\begin{itemize}
+
+\item The focused likelihood and estimator-factory tests passed: 5 passed.
+
+\item The normal project suite passed: 195 passed and 10 tests were deselected
+by the configured test markers.
+
+\item The runtime C sources, headers, and coefficient tables were compared with
+the reference capsule.
+
+\item The two copies of \path{LM_time_lib.c} were identical before the first
+edit, with SHA-256 digest:
+
+\begin{verbatim}
+306b33aae05db49e519909c36e91d25112b5fce75a3fb144858ed0d727f22d66
+\end{verbatim}
+
+\end{itemize}
+
+\section{Change 001: Exact Handling of a Zero Count}
+
+\subsection{Status}
+
+Implemented and directly validated against a temporary shared library compiled
+from the modified source.
+
+\subsection{File Changed}
+
+\begin{verbatim}
+src/lm_idnet/algorithms/native/LM_time_lib.c
+\end{verbatim}
+
+The corresponding reference file was not changed:
+
+\begin{verbatim}
+lm-algorithm/code/LM_time_lib.c
+\end{verbatim}
+
+After this change, the digests are:
+
+\begin{verbatim}
+Project copy:
+e948740488ed6ef731a7eabc7f02dcdbd83f666fcfbd793010ac14003bdf5e15
+
+Reference copy:
+306b33aae05db49e519909c36e91d25112b5fce75a3fb144858ed0d727f22d66
+\end{verbatim}
+
+\subsection{Problem Being Addressed}
+
+The function \texttt{LM\_logL} evaluates a paired log-gamma difference. In the
+application parameterization, its mathematical contribution is of the form
+
+\[
+D(\alpha,y)=\log\Gamma(\alpha+y)-\log\Gamma(\alpha),
+\]
+
+where \(y\) is a non-negative packet count. Network-traffic windows commonly
+contain categories for which \(y=0\). A completely silent window also has a
+total count \(N=0\).
+
+For zero counts, the exact value is
+
+\[
+D(\alpha,0)
+=\log\Gamma(\alpha)-\log\Gamma(\alpha)
+=0.
+\]
+
+The supplied implementation already contained exact special cases for
+\(y=1\) and \(y=2\), but it did not contain the corresponding base case for
+\(y=0\). Sending zero through the general Euler--Maclaurin expression is
+unnecessary and does not directly express this exact identity.
+
+\subsection{Applied Modification}
+
+The following guard was inserted at the beginning of the existing special-value
+section in \texttt{LM\_logL}, before the cases for one and two:
+
+\begin{verbatim}
+if (y == 0)
+    {
+    return 0.0;
+    }
+\end{verbatim}
+
+The semantic source diff is:
+
+\begin{verbatim}
+ /* special values */
++if (y == 0)
++    {
++    return 0.0;
++    }
+ if (y == 1)
+\end{verbatim}
+
+The patching tool also normalized one redundant blank line at the end of the C
+file. That whitespace-only difference has no effect on compilation or behavior.
+
+\subsection{Why the Change Was Made in This Function}
+
+Handling the case in \texttt{LM\_logL} covers both places where a zero can
+occur:
+
+\begin{itemize}
+
+\item a category contribution with \(x_k=0\); and
+
+\item the concentration contribution for a completely silent row with
+\(N=0\).
+
+\end{itemize}
+
+Placing the guard in the shared paired-difference function avoids duplicating
+zero checks in the future matrix wrapper or in Python. It also ensures that any
+other caller of \texttt{LM\_logL} receives the same exact behavior.
+
+\subsection{Effect on the LM Numerical Method}
+
+This change does not modify:
+
+\begin{itemize}
+
+\item the Euler--Maclaurin expansion;
+
+\item coefficient values;
+
+\item truncation-order selection;
+
+\item error-bound calculations;
+
+\item horizontal shifting; or
+
+\item results for positive counts.
+
+\end{itemize}
+
+It only returns a known exact identity before the approximation is entered.
+
+\subsection{Native Verification}
+
+The host development environment did not contain a C compiler. The modified
+source was therefore compiled using the existing \texttt{lm-idnet:latest}
+Docker image, which is the supported project toolchain. The shared object was
+written only to a temporary directory; the versioned project binary was not
+replaced.
+
+The compiler invocation was equivalent to:
+
+\begin{verbatim}
+gcc -O3 -fPIC -shared LM_time_lib.c -lm -o LM_time_lib.so
+\end{verbatim}
+
+The compiled \texttt{LM\_logL} function was then called through
+\texttt{ctypes} with three different positive reciprocal parameters, expansion
+orders, and horizontal-shift values. All three calls returned exactly zero:
+
+\begin{verbatim}
+zero-count values: [0.0, 0.0, 0.0]
+\end{verbatim}
+
+A four-category silent row was also evaluated by combining the concentration
+term and four category terms in the same form as the native likelihood:
+
+\begin{verbatim}
+silent-row kernel: 0.0
+\end{verbatim}
+
+The existing focused Python tests were rerun after the source edit:
+
+\begin{verbatim}
+tests/test_likelihood.py          4 passed
+tests/test_estimator_factory.py   1 passed
+Total                             5 passed
+\end{verbatim}
+
+The normal project suite was also rerun after the native change:
+
+\begin{verbatim}
+195 passed, 10 deselected
+\end{verbatim}
+
+Finally, \texttt{git diff --check} reported no whitespace errors.
+
+\subsection{Current Limitation}
+
+This change has been tested directly at the native function boundary, but the
+public Python LM backend is still a placeholder. An end-to-end Python test for
+silent matrices will be added when the native adapter and matrix entry point are
+implemented. Until then, the modified shared object is compiled only for direct
+verification and is not used by normal application commands.
+
+\subsection{Short Report for the Native-Code Authors}
+
+The project copy adds an exact \(y=0\) base case to
+\texttt{LM\_logL}. The mathematical paired log-gamma difference is exactly zero
+for this input. The guard is necessary for sparse protocol vectors and fully
+silent IoT traffic windows. It does not alter any positive-count calculation or
+any part of the LM approximation and error-control method. The original capsule
+source remains unchanged.
+
+\end{document}
