@@ -1,0 +1,819 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+\setlist{itemsep=0.35em, topsep=0.5em}
+
+\title{Review and Improvement of the Temporal Validation Architecture\\[0.4em]
+\large A Plain-Language Guide for LM-IDNet}
+\author{}
+\date{4 September 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Purpose of This Document}
+
+LM-IDNet converts network traffic into consecutive ten-minute count windows.
+Neighbouring windows are often related: a burst of traffic can continue for
+more than ten minutes, a device can remain in the same operating state for
+hours, and traffic can follow a daily routine. This creates an important
+question:
+
+\begin{quote}
+Does the current dataset split give an honest measurement of how the detector
+will behave on future traffic, or can temporal similarity make the reported
+performance look better than it really is?
+\end{quote}
+
+This document reviews the current architecture, explains the relevant concepts
+without assuming previous knowledge of time-series validation, reports checks
+performed on the project data, and proposes a stronger validation design.
+
+The main conclusion is:
+
+\begin{quote}
+The current split is a sound foundation because it is chronological and keeps
+whole captures together. It should not be replaced by a random window split.
+However, the project should add actual-timestamp overlap checks and grouped
+rolling-origin validation before making a strong claim about performance on
+future days. The existing locked final-test partition should remain untouched.
+\end{quote}
+
+\section{The Basic Unit: One Ten-Minute Window}
+
+For each ten-minute interval $t$, LM-IDNet creates a count vector such as
+
+\[
+\mathbf{x}_t =
+\left(
+x_{t,\mathrm{TCP}},
+x_{t,\mathrm{UDP}},
+x_{t,\mathrm{SSDP}},
+x_{t,\mathrm{ARP}}
+\right).
+\]
+
+One row therefore describes how many packets of each category appeared in one
+ten-minute period. The intervals are half-open:
+
+\[
+[t,t+10\text{ minutes}).
+\]
+
+This means a packet at exactly the starting time belongs to the window, while a
+packet at exactly the ending time belongs to the next window. Consequently,
+the windows produced from one continuous capture do not overlap.
+
+Non-overlapping does not mean unrelated. Consider the following example:
+
+\begin{verbatim}
+10:00-10:10  cloud upload begins
+10:10-10:20  cloud upload continues
+10:20-10:30  cloud upload finishes
+\end{verbatim}
+
+The three rows cover different packets, but they were produced by one continuing
+activity. Their counts can therefore be similar.
+
+\section{Concepts Needed to Understand the Problem}
+
+\subsection{Temporal Dependence and Autocorrelation}
+
+Two observations are temporally dependent when knowing an earlier observation
+provides information about a later one. In LM-IDNet, a high-traffic window may
+make another high-traffic window immediately afterwards more likely.
+
+\emph{Autocorrelation} is a numerical summary of this relationship. A lag-one
+autocorrelation compares every window with the next window:
+
+\[
+\operatorname{corr}(x_t,x_{t+1}).
+\]
+
+For ten-minute windows, lag one means ten minutes later, lag six means one hour
+later, and lag 144 means one day later. A value close to $1$ means that the
+two measurements tend to rise and fall together. A value close to $0$ means
+that a simple linear relationship is weak. A negative value means that high
+values tend to be followed by low values, or vice versa.
+
+Autocorrelation does not by itself prove that a model is wrong. It tells us that
+the windows should not be treated as if they were independent repetitions of
+the same experiment when calculating uncertainty or designing validation.
+
+\subsection{What the Dirichlet--Multinomial Model Does and Does Not Model}
+
+The Dirichlet--Multinomial model captures variation in the composition of TCP,
+UDP, SSDP, and ARP traffic. It is useful when the category proportions vary
+more than an ordinary Multinomial model expects.
+
+The current model gives a probability to each window separately. In simplified
+form, fitting several windows uses
+
+\[
+P(\mathbf{x}_1,\ldots,\mathbf{x}_R\mid\boldsymbol{\alpha})
+=
+\prod_{r=1}^{R}
+P(\mathbf{x}_r\mid\boldsymbol{\alpha}).
+\]
+
+This treats the rows as exchangeable: their order does not change the fitted
+model. The model does not contain a rule saying that the traffic in window
+$t+1$ depends on the traffic in window $t$.
+
+That is acceptable if the research goal is to learn the general distribution
+of individual windows. It is not enough if the goal is to forecast the next
+window from recent history or to claim that all window-level results are
+statistically independent.
+
+\subsection{Data Leakage}
+
+Data leakage occurs when information that would not be available at deployment
+time influences training or configuration choices. For example, a random split
+could put a window from Monday morning in training and the immediately following
+window in testing. Because those windows can be extremely similar, the test no
+longer represents a genuinely unseen future period.
+
+Leakage is more serious than ordinary temporal dependence. Dependence is a
+property of the real traffic. Leakage is an experimental mistake that lets
+future information influence the past.
+
+\subsection{Pseudoreplication}
+
+Pseudoreplication means counting related observations as if every one were a
+fully independent experiment. Suppose a single continuing incident causes six
+adjacent windows to be anomalous. Reporting this as six independent incidents
+would exaggerate the amount of evidence.
+
+Similarly, 144 windows from one day do not provide the same evidence as 144
+windows drawn independently from 144 different days. The windows are still
+useful, but confidence intervals and claims about repeatability should respect
+their grouping by capture or day.
+
+\subsection{Fitting, Calibration, Development Testing, and Final Testing}
+
+LM-IDNet uses four chronological roles:
+
+\begin{description}
+
+\item[Fitting.] Estimate the Dirichlet parameter vector
+\(\boldsymbol{\alpha}\), which describes normal traffic.
+
+\item[Calibration.] Score separate known-normal windows and choose the lower
+likelihood threshold. Calibration is part of model construction; it is not an
+independent performance test.
+
+\item[Development testing.] Compare possible design choices, find problems,
+and improve the system. Results from this partition may influence the design.
+
+\item[Final testing.] Measure the frozen system once after all design choices
+have been made. Repeatedly inspecting the final set would gradually turn it
+into another development set.
+
+\end{description}
+
+This separation is particularly important for anomaly detection. If the
+threshold were chosen from the same attack-labelled data used to report recall,
+the result would be optimistic.
+
+\subsection{Time-Series Split and Rolling-Origin Validation}
+
+A time-series split preserves the direction of time: earlier data train the
+system and later data evaluate it. Rolling-origin validation repeats this idea
+at several points in history. The end of the training period is called the
+\emph{origin}; it rolls forward between folds.
+
+An expanding version looks like this:
+
+\begin{verbatim}
+Fold 1: fit [Day 1 Day 2]       -> validate Day 3
+Fold 2: fit [Day 1 Day 2 Day 3] -> validate Day 4
+Fold 3: fit [Day 1 ... Day 4]   -> validate Day 5
+\end{verbatim}
+
+An expanding window retains all earlier data. A sliding window instead retains
+only a fixed amount of recent history:
+
+\begin{verbatim}
+Fold 1: fit [Day 1 Day 2] -> validate Day 3
+Fold 2: fit [Day 2 Day 3] -> validate Day 4
+Fold 3: fit [Day 3 Day 4] -> validate Day 5
+\end{verbatim}
+
+Expanding windows answer, ``How well does the detector work as it accumulates
+history?'' Sliding windows answer, ``How well does the detector work if old
+behaviour is forgotten?'' Expanding validation is the appropriate first choice
+for the current non-adaptive system. Sliding validation becomes more relevant
+when the project studies behavioural drift and adaptation.
+
+\subsection{Grouped Validation}
+
+Grouped validation treats a complete capture or day as one indivisible unit.
+All windows from that capture remain together. This prevents highly related
+neighbours from being randomly distributed between fitting and evaluation.
+
+For this project, the natural group is a source capture after timestamp overlap
+has been resolved. A day is also useful for reporting because it corresponds to
+a real future operating period.
+
+\subsection{A Gap, Purge, or Embargo}
+
+Some time-series evaluations leave an unused interval between training and
+testing. This interval is variously called a gap, purge, or embargo. It is
+necessary when observations overlap, when a feature uses future values, or when
+the intended deployment question concerns performance after a period of time
+rather than performance in the immediately following window.
+
+An arbitrary gap is not automatically more scientific. If the detector will
+score the very next ten-minute window in production, evaluating that next
+window is realistic. The mandatory rule here is to eliminate actual duplicate
+or overlapping evidence. A one- or two-hour gap can then be added as a
+sensitivity experiment if training-only autocorrelation analysis shows that the
+conclusion depends strongly on immediate neighbours.
+
+\subsection{Block Bootstrap}
+
+A bootstrap repeatedly resamples data to estimate how uncertain a metric is.
+A normal row-by-row bootstrap would break the temporal groups and pretend that
+all windows were independent. A block bootstrap resamples complete days or
+captures instead. It therefore preserves much of the dependence inside each
+block and gives more honest uncertainty intervals.
+
+\section{Review of the Existing LM-IDNet Split}
+
+\subsection{Current Structure}
+
+The project configuration declares four lists of capture identifiers:
+
+\begin{verbatim}
+fit
+calibration
+development_test
+final_test
+\end{verbatim}
+
+The validator requires every list to be chronological, prevents a capture
+identifier from appearing twice, and requires each partition to end before the
+next partition begins. Purpose-specific functions expose only the appropriate
+capture list to training, calibration, development evaluation, or final
+evaluation.
+
+Relevant implementation files are:
+
+\begin{itemize}
+
+\item
+\path{src/lm_idnet/config.py}, which validates the configured partition dates;
+
+\item
+\path{src/lm_idnet/partitioning.py}, which exposes immutable capture groups by
+purpose; and
+
+\item
+\path{src/lm_idnet/processing/packet_transformer.py}, which produces UTC,
+half-open, non-overlapping windows inside each capture.
+
+\end{itemize}
+
+\subsection{What Is Already Good}
+
+The following architectural decisions should be retained:
+
+\begin{enumerate}
+
+\item The split is chronological rather than random.
+
+\item A complete capture is assigned to one partition. Individual windows from
+the same capture are not deliberately scattered among partitions.
+
+\item Model fitting and threshold calibration use different captures.
+
+\item Training and calibration cannot request the locked final-test identifiers
+through their normal partition accessors.
+
+\item The category order and window policy are centrally configured and
+included in the dataset fingerprint.
+
+\item Missing capture coverage is represented differently from an observed
+silent window. Absence of packets is therefore not automatically confused with
+absence of evidence.
+
+\end{enumerate}
+
+This is already much more meaningful than applying an ordinary random
+train--test split to all ten-minute rows.
+
+\subsection{Limitation: Dates Are Validated, Not the Actual Time Ranges}
+
+The current configuration validator extracts a date from each capture name. It
+does not compare the timestamps contained in the processed data. A filename can
+therefore look correctly ordered even when its contents overlap another file.
+
+The review found the following D-Link overlap:
+
+\begin{itemize}
+
+\item The nominal October 8 capture runs from 8 October at 08:10 UTC until
+9 October at 16:00 UTC.
+
+\item The nominal October 9 capture runs from 8 October at 16:00 UTC until
+9 October at 16:00 UTC.
+
+\item The files consequently share 144 ten-minute window identities.
+
+\item Of those shared windows, 135 have identical count vectors and nine have
+different count vectors.
+
+\end{itemize}
+
+Both files belong to the fitting partition. This is not leakage from testing
+into training, but it gives the overlapping period approximately twice the
+intended influence on the model. It is a form of duplicate evidence.
+
+Three single-window timestamp overlaps were also found among Chromecast fitting
+captures. Their counts differ, which is consistent with source files meeting
+at a boundary or representing partial observations. They should still be
+resolved explicitly rather than treated as independent windows.
+
+No actual timestamp overlap was found between different configured partitions.
+Thus the current accepted artifacts do not contain a detected fitting-to-test
+timestamp leak, but the input uniqueness guarantee is incomplete.
+
+\subsection{Limitation: One Chronological Split Gives One Version of History}
+
+The current fixed split answers a useful but narrow question:
+
+\begin{quote}
+How did the model fitted on these particular earlier dates perform on these
+particular later dates?
+\end{quote}
+
+It does not show whether the conclusion remains stable when the boundary moves
+by one or two days. A threshold can work well on one future day and poorly on
+another because of traffic drift, weekday effects, device state, or changes in
+traffic volume.
+
+The locked final set should not be used repeatedly to solve this problem.
+Rolling-origin folds inside the development history provide repeated future
+tests while preserving the final set for one unbiased evaluation.
+
+\subsection{Limitation: Window Counts Can Be Mistaken for Independent Evidence}
+
+The calibration minimum is currently expressed as a number of windows. A
+one-day calibration set with 144 correlated windows may pass a requirement of
+30 samples, even though it represents only one day of device behaviour.
+
+Likewise, pooling every window into one confusion matrix is useful for counting
+decisions, but it can hide large differences between days. A detector that
+works on three days and fails on one should not be presented as uniformly
+stable simply because the successful days contained more windows.
+
+\section{Evidence of Temporal Dependence in the Current Data}
+
+The following diagnostic correlations were calculated within individual
+captures. Pairs were never created across capture boundaries. Values were
+centred within each capture before the pairs were combined, which reduces the
+effect of different daily averages.
+
+\begin{table}[ht]
+\centering
+\caption{Examples of lag-one correlation in ten-minute observations.}
+\begin{tabular}{lll}
+\toprule
+Dataset & Traffic measurement & Lag-one correlation \\
+\midrule
+D-Link Day Cam 5 & UDP, SSDP, and ARP counts & $0.46$ to $0.54$ \\
+UNSW Chromecast & total packet count & $0.86$ \\
+UNSW Samsung Camera & category proportions & $0.46$ to $0.60$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The current development anomaly scores also had lag-one correlations of about
+$0.05$ for D-Link, $0.39$ for Chromecast, and $0.42$ for Samsung Camera.
+This is encouraging for D-Link because the score is much less persistent than
+several raw categories. Chromecast and Samsung still show meaningful clustering
+of similar scores across neighbouring windows.
+
+These values demonstrate dependence; they do not by themselves select a new
+model or a mandatory gap size. That decision should be based on whether the
+dependence causes unstable thresholds, clustered false alarms, or poor
+future-day performance.
+
+\section{A Small Rolling-Origin Diagnostic}
+
+A read-only diagnostic was performed to see whether moving the fitting and
+calibration boundary changes the result. Each fold used earlier captures for
+fitting, the next capture for calibration, and the following presumed-benign
+capture for validation. The configured one-percent lower-tail threshold was
+used. The D-Link October 8 capture was omitted from this diagnostic because of
+its overlap with October 9.
+
+\begin{table}[ht]
+\centering
+\caption{Variation across preliminary chronological folds.}
+\begin{tabular}{lcc}
+\toprule
+Dataset & Future benign windows flagged & Threshold range \\
+\midrule
+D-Link Day Cam 5 & $0.00\%$ to $2.78\%$ & $-27.22$ to $-20.63$ \\
+UNSW Chromecast & $0.00\%$ to $13.19\%$ & $-27.87$ to $-16.79$ \\
+UNSW Samsung Camera & one fold available & insufficient for a range \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A one-percent calibration quantile does not guarantee a one-percent false-alarm
+rate on the next day. It guarantees only that the selected threshold lies near
+the bottom one percent of the calibration scores. If the next day's traffic
+distribution changes, its false-alarm rate can be much larger or smaller.
+
+The Chromecast range shows why several chronological origins are valuable. The
+current one-split result may be correct for its selected dates while still
+failing to describe normal day-to-day variability.
+
+This diagnostic is evidence for improving the protocol, not a final experiment.
+The D-Link days are only presumed benign, the folds were not preregistered, and
+Samsung has too little pre-attack history for repeated folds.
+
+\section{Recommended Architecture}
+
+The recommended design is a \emph{canonical unique timeline followed by
+grouped, three-way, expanding rolling-origin validation and one locked final
+test}.
+
+\begin{verbatim}
+Raw captures
+    |
+    v
+Validate actual timestamps and construct one unique timeline
+    |
+    v
+Group complete captures/days
+    |
+    +--> Fold 1: past fit -> later calibration -> next validation
+    |
+    +--> Fold 2: more past fit -> later calibration -> next validation
+    |
+    +--> Fold 3: more past fit -> later calibration -> next validation
+    |
+    v
+Freeze every design choice
+    |
+    v
+Evaluate the locked final period once
+\end{verbatim}
+
+\subsection{Stage 0: Construct a Canonical Unique Timeline}
+
+Before statistical splitting, the project should establish one identity for
+every device window:
+
+\[
+(\text{device},\text{window start},\text{window end}).
+\]
+
+The validation boundary should:
+
+\begin{enumerate}
+
+\item load the actual UTC start and end times from every processed capture;
+
+\item reject any window identity that occurs in more than one source capture;
+
+\item report the capture names, timestamps, counts, and whether the counts are
+identical;
+
+\item prevent model fitting until each overlap has a documented resolution;
+and
+
+\item verify again that no resolved window crosses two statistical partitions.
+
+\end{enumerate}
+
+The application should not silently discard one D-Link copy. The nine
+disagreeing windows show that ``keep the first'' or ``keep the last'' would be
+an unexplained scientific choice. The source captures should first be inspected
+to decide whether one is authoritative, whether packets were duplicated, or
+whether the files contain complementary partial traffic. The resolution and
+its effect on the dataset fingerprint should be recorded.
+
+\subsection{Stage 1: Keep Captures or Days Intact}
+
+After overlap resolution, a complete capture or day should remain the atomic
+validation group. Random row-level splitting should be forbidden for the main
+anomaly-detection evaluation.
+
+Random 10\%, 15\%, 20\%, and 25\% row samples remain appropriate in a separate
+paper-reproduction experiment whose purpose is to measure estimator behaviour
+as sample size changes. They should not be presented as chronological
+validation of future detection.
+
+\subsection{Stage 2: Use Three Ordered Blocks in Every Development Fold}
+
+Ordinary time-series cross-validation commonly contains only training and
+validation. LM-IDNet needs a middle calibration block because its anomaly
+threshold is learned from data:
+
+\begin{verbatim}
+earlier normal captures
+        -> fit alpha
+later normal captures
+        -> calibrate threshold
+following captures
+        -> measure future performance
+\end{verbatim}
+
+The same score definition, quantile, window duration, and other choices must be
+used consistently within a fold. All fold definitions and random seeds should
+be written before reading their outcomes.
+
+\subsection{Stage 3: Report by Day Before Pooling}
+
+Each validation capture should produce its own report containing:
+
+\begin{itemize}
+
+\item number of observed, silent, and missing windows;
+
+\item fitted concentration and
+\(\psi=1/\sum_k\alpha_k\);
+
+\item calibration threshold and calibration-score distribution;
+
+\item number and percentage of false alarms on known-normal windows;
+
+\item precision, recall, and F1 score when attack labels exist;
+
+\item number of contiguous anomaly episodes, not only the number of anomalous
+windows; and
+
+\item fitting and scoring runtime.
+
+\end{itemize}
+
+The summary should then report the median, minimum, and maximum across captures.
+If uncertainty intervals are required, complete captures or days should be
+resampled as blocks.
+
+\subsection{Stage 4: Freeze the System and Use Final Data Once}
+
+Rolling-origin results may be used to choose:
+
+\begin{itemize}
+
+\item raw or per-packet-normalised scoring;
+
+\item calibration quantile;
+
+\item window duration;
+
+\item minimum amount of fitting and calibration history;
+
+\item whether a temporal gap is needed; and
+
+\item whether time-of-day conditioning is justified.
+
+\end{itemize}
+
+After these decisions, the configuration, code commit, dataset fingerprint,
+and evaluation protocol must be frozen. The final-test captures are then scored
+once. A later experiment may deliberately define a new protocol, but it must
+not overwrite or replace the first final result without disclosure.
+
+\section{Dataset-Specific Fold Suggestions}
+
+These folds are examples to be reviewed after timestamp overlaps and benign
+assumptions are resolved. They illustrate the design; they are not yet frozen
+experimental specifications.
+
+\subsection{D-Link Day Cam 5}
+
+After resolving the October 8/9 overlap, two useful development folds are:
+
+\begin{verbatim}
+Fold 1
+  Fit:         October 8-11
+  Calibration: October 12-13
+  Validation:  October 14-15
+
+Fold 2
+  Fit:         October 8-13
+  Calibration: October 14-15
+  Validation:  October 16 and 19
+
+Locked final test
+  October 21 and 22
+\end{verbatim}
+
+Because attack labels are not available for these D-Link captures, these folds
+can support claims about model stability, score drift, and false-alarm behaviour
+only if the validation days are credibly documented as benign. They cannot
+support a measured attack recall claim.
+
+\subsection{UNSW Chromecast}
+
+The known-benign period permits two preliminary stability folds:
+
+\begin{verbatim}
+Fold 1
+  Fit:         October 10-13
+  Calibration: October 14-15
+  Validation:  October 16-17
+
+Fold 2
+  Fit:         October 10-15
+  Calibration: October 16-17
+  Validation:  October 18-19
+
+Attack-labelled development evaluation
+  October 20-23
+
+Locked final test
+  October 25-27
+\end{verbatim}
+
+The benign folds measure threshold stability and false alarms. The labelled
+development period measures attack detection. These are related but distinct
+questions and should be reported separately.
+
+\subsection{UNSW Samsung Camera}
+
+Only four benign days precede the attack period. One preliminary chronological
+check is possible:
+
+\begin{verbatim}
+Fit:         May 28-29
+Calibration: May 30
+Validation:  May 31
+\end{verbatim}
+
+The current attack-labelled development period is June 1--4 and the locked
+final period is June 5--8. One benign fold is not enough to estimate variation
+across origins. Samsung should therefore provide supporting evidence alongside
+the other devices rather than being described as a repeated rolling-origin
+study by itself.
+
+\section{When a More Temporal Model Becomes Necessary}
+
+Better splitting makes evaluation more honest; it does not change the model.
+The current marginal Dirichlet--Multinomial detector may remain sufficient if
+rolling-origin performance is stable and score autocorrelation does not cause
+long clusters of false alarms.
+
+If the improved evaluation exposes a problem, extensions should be introduced
+one at a time and compared against the unchanged baseline.
+
+\begin{description}
+
+\item[Time-of-day profiles.] Fit a small number of profiles for broad periods,
+such as night, morning, afternoon, and evening. This addresses a regular daily
+schedule. Too many hourly profiles would leave too little data per model.
+
+\item[Persistence rule.] Require two or more consecutive low scores before
+opening an incident. This reduces isolated alerts, but it also delays detection
+and must be evaluated explicitly.
+
+\item[Sequential score monitor.] Apply a simple cumulative or exponentially
+weighted monitor to the DM scores. This detects a sustained moderate change
+that may not make any single window extreme.
+
+\item[Sliding training window.] Use only recent known-safe history when fitting
+a candidate model. This belongs to the later adaptation study because it raises
+questions about drift, poisoning, promotion, and rollback.
+
+\end{description}
+
+None of these should be added merely because raw traffic is autocorrelated.
+They are justified only when the grouped rolling-origin results demonstrate a
+specific failure of the simpler detector.
+
+\section{Recommended Implementation Order}
+
+\begin{enumerate}
+
+\item \textbf{Resolve duplicate time windows.} Investigate the D-Link October
+8/9 overlap before producing another accepted model.
+
+\item \textbf{Validate actual time ranges globally.} Add a fail-closed check for
+duplicate window identities and cross-partition timestamp overlap.
+
+\item \textbf{Define rolling folds as experiment data.} Store capture-level
+fold definitions rather than computing random window splits.
+
+\item \textbf{Run three-way development folds.} Fit, calibrate, and validate in
+chronological order without touching final-test captures.
+
+\item \textbf{Report results per capture.} Preserve daily values and then
+summarise them; do not retain only one pooled metric.
+
+\item \textbf{Estimate uncertainty by blocks.} Resample days or captures if
+confidence intervals are needed.
+
+\item \textbf{Freeze the experiment.} Record configuration, dataset
+fingerprint, code commit, LM precision, and chosen settings.
+
+\item \textbf{Run final evaluation once.} Use the explicit locked-final
+boundary only after supervisor review of the frozen protocol.
+
+\end{enumerate}
+
+\section{Acceptance Checklist}
+
+The improved architecture is ready when all of the following are true:
+
+\begin{itemize}
+
+\item Every processed device/window identity is globally unique or has a
+documented, reproducible overlap resolution.
+
+\item Actual timestamps, not only dates in filenames, are verified to move
+forward across partitions.
+
+\item No capture or day is divided among fitting, calibration, and evaluation.
+
+\item Every rolling fold has fitting, calibration, and later validation blocks.
+
+\item Fold definitions are fixed before their results are inspected.
+
+\item Final-test captures are absent from all development folds.
+
+\item Thresholds are recalibrated independently inside every fold.
+
+\item Results are retained per capture or day as well as pooled.
+
+\item Uncertainty calculations treat captures or days as blocks.
+
+\item The experiment manifest records the configuration, dataset fingerprint,
+code revision, precision, seeds, folds, and artifact hashes.
+
+\item A separate, explicit command or gate is used for the one-time final
+evaluation.
+
+\end{itemize}
+
+\section{What Can Be Claimed After This Improvement}
+
+With the proposed architecture, the thesis can reasonably claim that:
+
+\begin{itemize}
+
+\item validation always predicts later traffic from earlier traffic;
+
+\item neighbouring windows from one capture were not randomly divided between
+training and testing;
+
+\item duplicate timestamps were prevented from acting as repeated evidence;
+
+\item threshold and detector stability were measured at several chronological
+origins where the available data permitted it;
+
+\item day-to-day variation remained visible instead of being hidden by one
+pooled result; and
+
+\item the final result came from an untouched period used after the design was
+frozen.
+
+\end{itemize}
+
+It should still avoid claiming that every ten-minute window is independent, or
+that a high number of windows automatically provides a high number of
+independent experimental repetitions.
+
+\section{Final Recommendation}
+
+The current fixed chronological split should remain the outer research
+protocol. It already protects the final period and is preferable to random
+window sampling. The project should strengthen it with two additions:
+
+\begin{enumerate}
+
+\item a canonical, timestamp-unique dataset boundary; and
+
+\item grouped three-way rolling-origin validation inside the development
+history.
+
+\end{enumerate}
+
+This design is more meaningful because it measures the actual deployment
+question---learning from the past and detecting changes in the future---at
+several points in time, without sacrificing the honesty of the locked final
+test. It also separates two different concerns correctly: rolling validation
+makes the evaluation realistic, while a temporal model should be added only if
+that realistic evaluation shows it is needed.
+
+\end{document}
