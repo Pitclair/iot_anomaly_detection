@@ -1,0 +1,887 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{hyperref}
+
+\title{Implementation Plan for the LM Log-Likelihood Backend}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Purpose}
+
+This document gives a practical, step-by-step plan for connecting the existing
+Languasco--Migliardi (LM) C implementation to the LM-IDNet Python application.
+The completed backend will evaluate the parameter-dependent
+Dirichlet--Multinomial log-likelihood kernel during model fitting, calibration,
+and anomaly scoring.
+
+The work is an integration task. It will not redesign the LM approximation,
+the Euler--Maclaurin expansion, the supplied coefficients, or Minka's
+fixed-point estimator. The aim is to expose the existing numerical method
+through a small, safe native interface and make it satisfy the Python backend
+contract already used by the SciPy implementation.
+
+\section{Definition of Done}
+
+The work is complete when all of the following statements are true:
+
+\begin{itemize}
+
+\item selecting \texttt{lm} creates a working backend instead of raising the
+placeholder error;
+
+\item the LM backend accepts the same count matrices and Dirichlet parameter
+vectors as the SciPy backend;
+
+\item it returns the same row-wise likelihood kernel, within the requested
+numerical accuracy;
+
+\item zero-count categories and completely silent windows are handled
+correctly;
+
+\item coefficient files are found independently of the current working
+directory;
+
+\item repeated calls do not leak native working memory or reuse stale data;
+
+\item native failures become Python application exceptions instead of
+terminating the process;
+
+\item the requested precision is passed from application configuration to the
+C implementation for training, diagnostics, calibration, and scoring;
+
+\item the targeted numerical tests and the complete test suite pass; and
+
+\item at least one complete \texttt{train}, \texttt{calibrate}, and
+\texttt{score} run succeeds with the LM backend.
+
+\end{itemize}
+
+\section{Current Starting Point}
+
+The current codebase already provides most of the surrounding structure:
+
+\begin{itemize}
+
+\item \path{src/lm_idnet/algorithms/log_likelihood.py} defines the common
+backend interface and a working SciPy reference implementation.
+
+\item \texttt{LmLogLikelihood} is registered under the configuration value
+\texttt{lm}, but it is currently a placeholder.
+
+\item \path{src/lm_idnet/algorithms/lm_native.py} exists and is ready to hold
+the Python-to-C adapter.
+
+\item The runtime copy of the C implementation, its headers, coefficient
+tables, licence, and attribution are already stored in
+\path{src/lm_idnet/algorithms/native/}.
+
+\item The source capsule under \path{lm-algorithm/} contains the original
+experimental program and remains useful as reference material. It will not be
+used directly by the application and will not be modified during this task.
+
+\item \path{scripts/docker-entrypoint.sh} already compiles
+\path{LM_time_lib.c} into \path{LM_time_lib.so} before running a command in
+Docker.
+
+\item The validated application configuration already contains
+\texttt{precision\_digits} and the selectable likelihood backend.
+
+\item Training stores the chosen backend in the model artifact. Calibration
+and scoring reload that backend name from the model.
+
+\item The multinomial coefficient used for complete anomaly scores is already
+calculated separately in
+\path{src/lm_idnet/algorithms/dirichlet_multinomial.py}.
+
+\end{itemize}
+
+The task should therefore reuse these pieces rather than create a second
+estimator, a second likelihood abstraction, or a Python translation of the C
+algorithm.
+
+\section{Required Likelihood Semantics}
+
+For one count vector
+
+\[
+\mathbf{x}=(x_1,\ldots,x_K),
+\qquad
+N=\sum_{k=1}^{K}x_k,
+\]
+
+and positive Dirichlet parameters
+
+\[
+\boldsymbol{\alpha}=(\alpha_1,\ldots,\alpha_K),
+\qquad
+\alpha_0=\sum_{k=1}^{K}\alpha_k,
+\]
+
+the backend must calculate
+
+\[
+K(\mathbf{x};\boldsymbol{\alpha})
+=
+\log\Gamma(\alpha_0)
+-\log\Gamma(\alpha_0+N)
++\sum_{k=1}^{K}
+\left[
+\log\Gamma(\alpha_k+x_k)-\log\Gamma(\alpha_k)
+\right].
+\]
+
+For a count matrix
+
+\[
+X\in\mathbb{N}_0^{R\times K},
+\]
+
+each row is an independent observation window. The backend result is
+
+\[
+K(X;\boldsymbol{\alpha})
+=
+\sum_{r=1}^{R}K(\mathbf{x}_r;\boldsymbol{\alpha}).
+\]
+
+The rows must not be added together before evaluation. Aggregating them would
+describe one different observation and would not match the existing backend
+contract.
+
+The backend must not include the multinomial coefficient
+
+\[
+\log\frac{N!}{\prod_{k=1}^{K}x_k!}.
+\]
+
+That count-only term is already added outside the backend when a complete
+window probability is needed. Keeping it outside preserves identical semantics
+for LM and SciPy and keeps model-fitting convergence values separate from
+complete anomaly scores.
+
+\section{Conversion to the Native Parameterization}
+
+The Python application works with \(\boldsymbol{\alpha}\). The existing C
+implementation works with category probabilities and the dispersion parameter
+\(\psi\). The adapter will perform the conversion once per matrix call:
+
+\[
+\alpha_0=\sum_{k=1}^{K}\alpha_k,
+\qquad
+p_k=\frac{\alpha_k}{\alpha_0},
+\qquad
+\psi=\frac{1}{\alpha_0}.
+\]
+
+Inside the existing C code,
+
+\[
+\frac{\psi}{p_k}=\frac{1}{\alpha_k},
+\]
+
+which is the reciprocal parameter expected by the LM paired log-gamma
+difference calculation.
+
+This conversion belongs in the Python native adapter. It should not be
+duplicated in training, calibration, or scoring code.
+
+\section{Implementation Decisions}
+
+The following decisions keep the integration small and consistent with the
+current application.
+
+\begin{enumerate}
+
+\item Modify only the runtime project copy in
+\path{src/lm_idnet/algorithms/native/}. Keep \path{lm-algorithm/} unchanged as
+the reference capsule.
+
+\item Add the minimum application-facing functions directly to
+\path{LM_time_lib.c} and declare them in \path{LM_hor_shift.h}. A separate C
+framework or a second copy of the numerical implementation is unnecessary.
+
+\item Send an entire row-major count matrix through one Python-to-C call. The
+C wrapper will evaluate and sum the rows independently.
+
+\item Retain the current native global state and serialize access with one
+Python lock. A native context structure is unnecessary for the current
+single-stream command-line pipeline.
+
+\item Initialize the two coefficient tables needed by the log-likelihood
+calculation using absolute paths supplied by Python. The Python process will
+not change its working directory.
+
+\item Reuse the existing Python input validation before entering C. The native
+wrapper will still reject invalid dimensions, failed allocations, missing
+coefficient state, and non-finite results defensively.
+
+\item Keep SciPy as the numerical reference backend. Do not remove it and do
+not silently fall back to it when LM fails.
+
+\item Keep the current artifact schema unchanged in this task. The backend name
+is already recorded in the model, while precision comes from the validated
+configuration used for the run. Persisting precision inside standalone model
+artifacts would require a separate artifact-versioning decision.
+
+\end{enumerate}
+
+\section{Step-by-Step Work Plan}
+
+\subsection{Step 1: Record a clean baseline}
+
+Before editing code, run the existing focused tests:
+
+\begin{verbatim}
+python -m pytest tests/test_likelihood.py tests/test_estimator_factory.py
+\end{verbatim}
+
+Then run the normal suite:
+
+\begin{verbatim}
+python -m pytest
+\end{verbatim}
+
+The purpose is to separate existing failures from failures introduced by the
+integration. The current placeholder test is expected to pass at this stage
+because it verifies that LM is unavailable.
+
+\textbf{Checkpoint:} record the commands used and confirm that the worktree has
+no unrelated changes that could be overwritten.
+
+\subsection{Step 2: Establish the native source boundary}
+
+Use the files under \path{src/lm_idnet/algorithms/native/} as the runtime source
+of truth. Compare them with the corresponding files under
+\path{lm-algorithm/code/} before editing so that project-specific changes can be
+identified later.
+
+Only the log-likelihood portion of the native code is required. Do not import
+the experimental Python scripts, dataset files, estimator implementation,
+digamma routines, trigamma routines, or benchmark driver from the capsule.
+Minka's estimator already exists in the application.
+
+\textbf{Checkpoint:} identify the existing functions used by the likelihood
+path: coefficient initialization, parameter initialization,
+\texttt{LM\_logL}, error-bound selection, and \texttt{loggamma\_LM}.
+
+\subsection{Step 3: Make zero counts mathematically correct}
+
+Add an early case to the paired log-gamma difference function:
+
+\begin{verbatim}
+if (y == 0) {
+    return 0.0;
+}
+\end{verbatim}
+
+This implements
+
+\[
+\log\Gamma(\alpha+0)-\log\Gamma(\alpha)=0.
+\]
+
+It is required because protocol categories can be absent from a window and a
+valid silent window can contain only zeros. Existing special cases for counts
+one and two remain unchanged.
+
+\textbf{Checkpoint:} a zero category contributes zero, and an all-zero row
+produces a row kernel of zero.
+
+\subsection{Step 4: Load coefficient tables by explicit path}
+
+Replace the current-working-directory assumption with an initializer similar
+to:
+
+\begin{verbatim}
+int initBern_logL_paths(
+    const char *bernoulli_path,
+    const char *error_path
+);
+\end{verbatim}
+
+Only two supplied files are needed for the log-likelihood path:
+
+\begin{itemize}
+
+\item \path{bernreal-norm-100.txt}; and
+
+\item \path{err_coeff-100.txt}.
+
+\end{itemize}
+
+The initializer must open both files, allocate both 100-element tables, verify
+all 100 reads from each file, and return a nonzero status if any operation
+fails. New tables should replace existing tables only after both files have
+been read successfully. Previously allocated tables must be released before
+replacement.
+
+Python will build the paths from the location of \path{lm_native.py}; it will
+not assume that the command was launched from the repository root.
+
+\textbf{Checkpoint:} initialization succeeds after changing the process to an
+unrelated working directory, and a missing or malformed table produces a clear
+Python exception.
+
+\subsection{Step 5: Define and clean up native workspace ownership}
+
+The existing native parameter initializer allocates arrays for counts,
+probabilities, reciprocal parameters, and logarithms. Add one cleanup helper
+that frees these arrays and sets their pointers to \texttt{NULL}.
+
+Call the cleanup helper:
+
+\begin{itemize}
+
+\item before replacing an existing workspace;
+
+\item after the last row of a matrix has been evaluated; and
+
+\item before returning from a calculation failure.
+
+\end{itemize}
+
+Check every allocation before writing through its pointer. A failed allocation
+must be reported to the matrix wrapper; it must not become a segmentation
+fault.
+
+Coefficient tables have a longer lifetime than per-row workspace. They may
+remain initialized for the lifetime of the loaded backend, but repeated backend
+construction must not leak the previous tables.
+
+\textbf{Checkpoint:} repeated calls with different row and category counts do
+not reuse stale data and do not continually increase native allocations.
+
+\subsection{Step 6: Add one matrix-level C entry point}
+
+Expose a function that receives the whole contiguous count matrix, its shape,
+the converted probability vector, \(\psi\), and the requested precision. A
+minimal interface may return the result directly and use \texttt{NAN} for a
+native failure:
+
+\begin{verbatim}
+double loggamma_LM_matrix(
+    int precision_digits,
+    const double *counts,
+    long rows,
+    int categories,
+    const double *probabilities,
+    double psi
+);
+\end{verbatim}
+
+The function must perform the following work in order:
+
+\begin{enumerate}
+
+\item reject nonpositive row counts, fewer than two categories, null pointers,
+or uninitialized coefficient tables;
+
+\item initialize the native parameters from the first row;
+
+\item evaluate that row with the existing LM numerical routine;
+
+\item repeat initialization and evaluation for each remaining row;
+
+\item add the row results to one \texttt{double};
+
+\item stop on a precision, allocation, or non-finite-result failure;
+
+\item release per-row workspace; and
+
+\item return the finite sum on success or \texttt{NAN} on failure.
+
+\end{enumerate}
+
+Any existing native path that prints and exits must not be reachable through
+this library entry point. Existing special sentinel values must be converted
+to a failure before returning to Python.
+
+This step changes only the application boundary and lifecycle around the LM
+calculation. The expansion, error coefficients, error bound, term selection,
+and horizontal-shift mathematics remain unchanged.
+
+\textbf{Checkpoint:} one C call can evaluate a multirow matrix without
+aggregating its rows.
+
+\subsection{Step 7: Rebuild the shared library}
+
+Compile the edited source locally from the native directory:
+
+\begin{verbatim}
+cd src/lm_idnet/algorithms/native
+gcc -O3 -fPIC -shared LM_time_lib.c -lm -o LM_time_lib.so
+\end{verbatim}
+
+The existing Docker entry point already performs the equivalent compilation
+through a temporary output file before each command. Verify that the new
+symbols are present by loading the library through a small Python check or by
+running the focused likelihood tests.
+
+Do not add a new build framework or dependency for this integration. The
+current Linux and Docker execution path already has the required compiler and
+linker configuration.
+
+\textbf{Checkpoint:} the shared library builds without warnings that indicate
+an invalid declaration, missing symbol, or missing math-library linkage.
+
+\subsection{Step 8: Implement the Python native adapter}
+
+Implement \path{src/lm_idnet/algorithms/lm_native.py} as the only module that
+knows about \texttt{ctypes}.
+
+The module should contain:
+
+\begin{itemize}
+
+\item a native-directory path derived from \texttt{\_\_file\_\_};
+
+\item the common \texttt{double *} type declaration;
+
+\item one process-wide \texttt{threading.Lock}; and
+
+\item a small \texttt{NativeLmKernel} class.
+
+\end{itemize}
+
+During construction, \texttt{NativeLmKernel} will:
+
+\begin{enumerate}
+
+\item validate and retain the requested precision digits;
+
+\item load \path{LM_time_lib.so} from the native directory;
+
+\item declare \texttt{argtypes} and \texttt{restype} for the two public C
+functions;
+
+\item pass absolute paths for the two coefficient files while holding the
+global lock; and
+
+\item raise \texttt{CommandUnavailableError} if the library or tables cannot
+be loaded.
+
+\end{enumerate}
+
+For each calculation, it will:
+
+\begin{enumerate}
+
+\item make the count matrix contiguous with NumPy \texttt{float64} storage;
+
+\item calculate concentration, probabilities, and \(\psi\) from
+\(\boldsymbol{\alpha}\);
+
+\item make the probability vector contiguous;
+
+\item call the matrix-level native function while holding the global lock;
+
+\item convert the result to a Python \texttt{float}; and
+
+\item raise \texttt{NumericalPrecisionError} if the result is not finite.
+
+\end{enumerate}
+
+The lock must cover native initialization and every native calculation because
+the loaded library stores dimensions, parameters, coefficient pointers, and
+workspace in global variables.
+
+\textbf{Checkpoint:} no other Python module imports \texttt{ctypes} or calls a
+native LM function directly.
+
+\subsection{Step 9: Replace the Python placeholder}
+
+Update \path{src/lm_idnet/algorithms/log_likelihood.py} so that
+\texttt{LmLogLikelihood} owns a \texttt{NativeLmKernel}.
+
+Its \texttt{calculate} method should:
+
+\begin{enumerate}
+
+\item convert counts and alpha to NumPy arrays;
+
+\item reuse the same validation currently used by
+\texttt{ScipyLogLikelihood}; and
+
+\item delegate the valid arrays to the native adapter.
+
+\end{enumerate}
+
+Do not duplicate the dimension, integer-count, non-negativity, finiteness, or
+positive-alpha checks. Move the validator to the common base only if doing so
+makes the code shorter; otherwise reuse the existing static validator.
+
+Allow \texttt{LmLogLikelihood} and \texttt{initialize\_log\_likelihood} to
+receive \texttt{precision\_digits}, with the current configured default of six
+digits. The SciPy constructor does not need this setting.
+
+\textbf{Checkpoint:} \texttt{initialize\_log\_likelihood("lm", 6)} returns a
+working \texttt{LmLogLikelihood}, while an unknown backend still raises the
+existing validation error.
+
+\subsection{Step 10: Pass precision through every construction path}
+
+Update \path{src/lm_idnet/algorithms/estimator_factory.py} so that
+\texttt{create\_estimator} accepts the precision setting and forwards it to
+\texttt{initialize\_log\_likelihood}.
+
+Then pass \texttt{config.precision\_digits} at every current application call
+site:
+
+\begin{itemize}
+
+\item model fitting in \path{src/lm_idnet/models/modeling_stage.py};
+
+\item daily diagnostics in \path{src/lm_idnet/cli.py};
+
+\item threshold calibration in
+\path{src/lm_idnet/models/calibration_stage.py}; and
+
+\item window scoring in \path{src/lm_idnet/models/scoring_stage.py}.
+
+\end{itemize}
+
+Calibration and scoring must continue to take the backend name from the model
+artifact, not from the current estimator selection. They use the current
+validated configuration only for the precision value.
+
+Keep a default precision argument where it preserves existing direct calls and
+tests. Do not create a second precision setting inside the estimator section.
+
+\textbf{Checkpoint:} selecting LM through configuration reaches the same
+backend in diagnostics, fitting, calibration, and scoring.
+
+\subsection{Step 11: Replace the placeholder test with numerical tests}
+
+Update \path{tests/test_likelihood.py}. Remove the test that expects the LM
+backend to be unavailable and add the following checks.
+
+\begin{enumerate}
+
+\item \textbf{Known small matrix.} Compare LM and SciPy on a small manually
+understandable count matrix.
+
+\item \textbf{Zero categories.} Include rows in which individual categories
+are zero.
+
+\item \textbf{Silent row.} Include an all-zero row and confirm that it changes
+the matrix kernel by exactly zero.
+
+\item \textbf{Independent rows.} Compare a multirow call with the sum of calls
+made one row at a time. This prevents accidental row aggregation.
+
+\item \textbf{Seeded stress sample.} Generate deterministic matrices with
+different row counts, counts up to approximately \(10^5\), and alpha values
+spanning small and large magnitudes. Compare LM with SciPy using an absolute
+tolerance of \(10^{-6}\) for six requested digits.
+
+\item \textbf{Repeated dimensions.} Reuse one backend for successive matrices
+of different shapes to expose stale native state or cleanup errors.
+
+\item \textbf{Working-directory independence.} Change to a temporary directory
+before constructing the backend and confirm that coefficient initialization
+still succeeds.
+
+\item \textbf{Existing validation.} Run invalid dimensions, negative or
+fractional counts, and invalid alpha values through both backends and confirm
+that both reject them consistently.
+
+\end{enumerate}
+
+Keep the random seed fixed and report the largest observed absolute difference
+if a test fails. Do not use randomly changing test data.
+
+Update \path{tests/test_estimator_factory.py} only as needed to verify that the
+selected backend and precision reach the estimator. Update downstream tests
+whose expected backend changes only when the corresponding test configuration
+is deliberately changed to LM.
+
+\textbf{Checkpoint:} the numerical tests would fail if rows were aggregated,
+zero counts were mishandled, coefficient paths were relative, or native state
+leaked between calls.
+
+\subsection{Step 12: Run the focused and complete test suites}
+
+After rebuilding the shared library, run:
+
+\begin{verbatim}
+python -m pytest tests/test_likelihood.py tests/test_estimator_factory.py
+python -m pytest -m numerical
+python -m pytest
+\end{verbatim}
+
+If a test fails, determine whether the failure is caused by the C calculation,
+the parameter conversion, the row-wise wrapper, precision propagation, or the
+test expectation. Do not weaken the tolerance merely to make an unexplained
+difference pass.
+
+Run the same focused tests inside Docker so that the compiled environment used
+by normal commands is also covered.
+
+\textbf{Checkpoint:} all existing SciPy behavior remains valid and every new LM
+test passes locally and in Docker.
+
+\subsection{Step 13: Exercise the complete pipeline}
+
+Use a copied configuration or temporary artifact paths for the first LM run so
+that accepted SciPy artifacts are not overwritten during validation. Set:
+
+\begin{verbatim}
+"log_likelihood_backend": "lm"
+\end{verbatim}
+
+Then run, in order:
+
+\begin{verbatim}
+lm-idnet diagnose  --config <lm-config>
+lm-idnet train     --config <lm-config>
+lm-idnet calibrate --config <lm-config>
+lm-idnet score     --config <lm-config>
+\end{verbatim}
+
+Confirm that:
+
+\begin{itemize}
+
+\item model fitting converges;
+
+\item initial and final kernel values are finite;
+
+\item the model records \texttt{lm} as its backend;
+
+\item calibration uses the LM backend recorded by the model;
+
+\item scoring uses that same backend;
+
+\item silent windows remain valid; and
+
+\item all saved artifacts pass their existing schema validation.
+
+\end{itemize}
+
+Run the same data once with SciPy and compare fitted alpha values, thresholds,
+and anomaly decisions. Small numerical differences are acceptable within the
+requested precision. Unexplained convergence or decision changes are not.
+
+\textbf{Checkpoint:} the complete LM path works without a SciPy fallback and
+without changing the mathematical meaning of saved scores.
+
+\subsection{Step 14: Measure performance without assuming a speedup}
+
+Record at least:
+
+\begin{itemize}
+
+\item total model-fitting time;
+
+\item likelihood time for a representative matrix;
+
+\item single-window scoring latency; and
+
+\item the equivalent SciPy measurements on the same data and machine.
+
+\end{itemize}
+
+The acceptance criterion is that runtime remains practical for the pipeline.
+The integration must not claim that LM is faster than vectorized SciPy unless
+the measurements demonstrate it. The primary reason for LM is controlled
+evaluation of paired log-gamma differences in difficult numerical regimes.
+
+\textbf{Checkpoint:} numerical and detection comparisons are recorded together
+with runtime measurements.
+
+\subsection{Step 15: Enable LM in the selected research configurations}
+
+Only after the numerical and end-to-end checks pass, change the intended
+versioned experiment configurations from \texttt{scipy} to \texttt{lm}. Keep
+SciPy available as the reference implementation and keep configuration
+validation restricted to the two known names.
+
+Regenerate affected model, threshold, and event artifacts through their normal
+pipeline commands. Do not edit numerical artifact values by hand. Review the
+diff before accepting regenerated artifacts.
+
+\textbf{Checkpoint:} each regenerated model records the LM backend and every
+dependent threshold was calibrated from that model.
+
+\subsection{Step 16: Update user-facing documentation}
+
+Update the following documentation after the implementation is proven:
+
+\begin{itemize}
+
+\item \path{docs/likelihood-semantics.md}: describe LM as the working native
+implementation and SciPy as the reference;
+
+\item \path{docs/configuration.md}: remove the placeholder warning and explain
+the two backend choices;
+
+\item \path{README.md}: change it only if the actual build or run instructions
+differ from the existing Docker compilation flow; and
+
+\item the experiment report: record numerical agreement, detection agreement,
+runtime, compiler environment, and configured precision.
+
+\end{itemize}
+
+Preserve the existing native licence and author attribution. Document that the
+project copy contains integration and lifecycle changes, while making no claim
+that those changes alter the underlying LM method.
+
+\textbf{Checkpoint:} no documentation still describes \texttt{lm} as a
+placeholder.
+
+\section{Files Expected to Change}
+
+The main implementation should be limited to the following files:
+
+\begin{itemize}
+
+\item \path{src/lm_idnet/algorithms/native/LM_time_lib.c};
+
+\item \path{src/lm_idnet/algorithms/native/LM_hor_shift.h};
+
+\item \path{src/lm_idnet/algorithms/lm_native.py};
+
+\item \path{src/lm_idnet/algorithms/log_likelihood.py};
+
+\item \path{src/lm_idnet/algorithms/estimator_factory.py};
+
+\item \path{src/lm_idnet/models/modeling_stage.py};
+
+\item \path{src/lm_idnet/models/calibration_stage.py};
+
+\item \path{src/lm_idnet/models/scoring_stage.py};
+
+\item \path{src/lm_idnet/cli.py};
+
+\item \path{tests/test_likelihood.py};
+
+\item \path{tests/test_estimator_factory.py}, if precision wiring needs an
+explicit assertion;
+
+\item \path{docs/likelihood-semantics.md}; and
+
+\item \path{docs/configuration.md}.
+
+\end{itemize}
+
+The Docker entry point, artifact schemas, estimator mathematics, and
+Dirichlet--Multinomial score composition should not require changes. Dataset
+configuration and generated artifact files change only after validation when
+LM is selected for an experiment.
+
+\section{Important Failure Modes to Guard Against}
+
+\begin{itemize}
+
+\item \textbf{Aggregating rows:} produces the likelihood of one combined count
+vector instead of the sum of independent-window kernels.
+
+\item \textbf{Including the multinomial coefficient twice:} changes anomaly
+scores because the application already adds this term outside the backend.
+
+\item \textbf{Incorrect parameter conversion:} passing \(\alpha_0\) instead of
+\(1/\alpha_0\), or passing alpha directly as probabilities, changes the model.
+
+\item \textbf{Relative coefficient paths:} makes commands work only from one
+directory.
+
+\item \textbf{Missing zero-count handling:} breaks common sparse windows and
+silent observations.
+
+\item \textbf{Unlocked global state:} permits one call to overwrite another
+call's dimensions or buffers.
+
+\item \textbf{Stale shared library:} Python may load an old binary after the C
+source changes. Rebuild before every native test.
+
+\item \textbf{Silent fallback:} hiding an LM error by running SciPy would make
+the recorded backend provenance false.
+
+\item \textbf{Sentinel values treated as likelihoods:} native error markers
+must be converted to explicit failures before the result reaches the pipeline.
+
+\end{itemize}
+
+\section{Work Deliberately Outside This Task}
+
+The following work should not be added unless a demonstrated requirement
+appears:
+
+\begin{itemize}
+
+\item rewriting the LM calculation in Python;
+
+\item replacing Minka's fixed-point estimator;
+
+\item integrating unused digamma or trigamma native routines;
+
+\item introducing a native context-object API for concurrent calls;
+
+\item adding a new foreign-function or build dependency;
+
+\item designing cross-platform binary distribution outside the current Linux
+and Docker target;
+
+\item removing the SciPy backend;
+
+\item automatically falling back from LM to SciPy;
+
+\item changing the model-artifact schema solely to store precision; or
+
+\item modifying the LM expansion, coefficients, error analysis, or horizontal
+shift algorithm.
+
+\end{itemize}
+
+These items can be reconsidered only if testing, deployment, or measured
+concurrency requirements show that the smaller design is insufficient.
+
+\section{Final Acceptance Checklist}
+
+Before declaring the backend complete, verify each item below:
+
+\begin{enumerate}
+
+\item The native library compiles successfully in the supported Docker image.
+
+\item LM and SciPy implement the same kernel semantics.
+
+\item Multirow results equal the sum of individual-row results.
+
+\item Zero categories and silent rows return correct finite values.
+
+\item Coefficient lookup works from an arbitrary working directory.
+
+\item Repeated calls with different shapes remain correct.
+
+\item Requested precision reaches the C function from every pipeline command.
+
+\item Native loading, coefficient, allocation, precision, and numerical errors
+do not terminate the Python process.
+
+\item Seeded numerical comparisons satisfy the stated tolerance.
+
+\item The focused, numerical, and complete test suites pass.
+
+\item Training, calibration, and scoring complete with LM and produce valid
+artifacts.
+
+\item LM and SciPy experiment results have been compared and any material
+difference has been explained.
+
+\item Documentation no longer calls LM a placeholder and does not claim an
+unmeasured performance advantage.
+
+\item The original licence and attribution remain with the native source.
+
+\end{enumerate}
+
+\end{document}
