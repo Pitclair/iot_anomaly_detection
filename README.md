@@ -70,7 +70,7 @@ Install the package directly only when the local machine already has all
 required build tools:
 
 ```sh
-python -m pip install -e .
+python -m pip install -e '.[test]'
 ```
 
 Run the CLI without setting `PYTHONPATH`:
