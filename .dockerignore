@@ -16,4 +16,6 @@ reports
 # The container compiles this library for its own platform.
 src/lm_idnet/algorithms/native/*.so
 
-/unsw_iot_attack_pcaps
+/unsw_iot_attack_pcaps/benign
+/unsw_iot_attack_pcaps/mixed
+/unsw_iot_attack_pcaps/Samsung camera

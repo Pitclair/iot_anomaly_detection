@@ -70,7 +70,7 @@ standard exit code 2 and usage output.
 ## Implementation status
 
 At this milestone, `preprocess`, `diagnose`, `train`, `calibrate`, `score`,
-`evaluate`, and `forecast` have callable handlers. `train` loads the
+`evaluate`, `forecast`, and `benchmark` have callable handlers. `train` loads the
 fit-partition matrix, estimates Dirichlet parameters with Minka's fixed-point
 iteration and the configured likelihood backend, and saves a validated model artifact.
 `calibrate` scores the configured calibration captures and saves a validated
@@ -78,14 +78,15 @@ lower-quantile threshold artifact. `score` applies that threshold to
 non-missing development-test windows and writes a JSON array with one result per
 window. `evaluate` compares development-test anomaly decisions with matching
 window labels and writes `evaluation_statistics.json` under the configured
-reports directory. `adapt` and `benchmark` are registered stable interfaces but return
-`command_unavailable_error` (exit code 9) when executed. Their `--help` and
-`--dry-run` paths work normally.
+reports directory. `benchmark` compares LM and SciPy on the same training,
+calibration, and scoring workload and writes `lm_backend_benchmark.json` under
+the configured reports directory. Only `adapt` remains a registered but
+unavailable interface: executing it returns `command_unavailable_error` (exit
+code 9), while its `--help` and `--dry-run` paths work normally.
 
 This explicit failure prevents automation from mistaking an empty placeholder
-for successful model training or anomaly detection. Each later roadmap task
-replaces its unavailable handler only when that stage has a real implementation
-and acceptance tests.
+for successful adaptation. A later roadmap task will replace the unavailable
+handler only when that stage has a real implementation and acceptance tests.
 
 ## Stage isolation
 
