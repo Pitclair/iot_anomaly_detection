@@ -8,6 +8,7 @@ from lm_idnet.artifacts import (
     Artifact,
     artifact_fingerprint,
     load_artifact,
+    load_model,
     validate_artifact,
 )
 from lm_idnet.exceptions import ArtifactCompatibilityError
@@ -21,13 +22,19 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
     return {
         "model": {
             "artifact_type": "model",
+            "dataset": "dataset-001",
+            "device_id": "camera-001",
             "categories": ["tcp", "udp", "ssdp", "arp"],
             "alpha": [1.0, 2.0, 3.0, 4.0],
             "concentration": 10.0,
             "mean_probabilities": [0.1, 0.2, 0.3, 0.4],
             "psi": 0.1,
-            "training_capture_ids": ["capture-001", "capture-002"],
             "log_likelihood_backend": "scipy",
+            "precision_digits": 6,
+            "training_capture_ids": ["capture-001", "capture-002"],
+            "training_window_count": 288,
+            "training_start_utc": "2020-01-01T00:00:00Z",
+            "training_end_utc": "2020-01-03T00:00:00Z",
             "fit_diagnostics": {
                 "initial_alpha": [2.5, 2.5, 2.5, 2.5],
                 "iterations": 25,
@@ -126,6 +133,8 @@ def test_model_fingerprint_uses_only_scoring_inputs() -> None:
         mean_probabilities=[2 / 11, 2 / 11, 3 / 11, 4 / 11],
         psi=1 / 11,
     )
+    changed_precision = deepcopy(model)
+    changed_precision["precision_digits"] = 8
 
     fingerprint = artifact_fingerprint(
         validate_artifact(model, expected_type="model")
@@ -135,6 +144,9 @@ def test_model_fingerprint_uses_only_scoring_inputs() -> None:
     )
     assert fingerprint != artifact_fingerprint(
         validate_artifact(changed_alpha, expected_type="model")
+    )
+    assert fingerprint != artifact_fingerprint(
+        validate_artifact(changed_precision, expected_type="model")
     )
 
 
@@ -158,15 +170,89 @@ def test_model_rejects_inconsistent_derived_parameters(
         validate_artifact(model, expected_type="model")
 
 
-def test_model_rejects_partial_training_provenance() -> None:
-    model = deepcopy(artifact_examples()["model"])
-    model["fit_diagnostics"] = None
+@pytest.mark.parametrize(
+    "field",
+    [
+        "dataset",
+        "device_id",
+        "log_likelihood_backend",
+        "precision_digits",
+        "training_capture_ids",
+        "training_window_count",
+        "training_start_utc",
+        "training_end_utc",
+    ],
+)
+def test_model_requires_training_identity_and_provenance(field: str) -> None:
+    model = artifact_examples()["model"]
+    del model[field]
 
-    with pytest.raises(
-        ArtifactCompatibilityError,
-        match="must be provided together",
-    ):
+    with pytest.raises(ArtifactCompatibilityError, match="Field required"):
         validate_artifact(model, expected_type="model")
+
+
+def test_model_rejects_invalid_training_range() -> None:
+    model = artifact_examples()["model"]
+    model["training_end_utc"] = model["training_start_utc"]
+
+    with pytest.raises(ArtifactCompatibilityError, match="after training start"):
+        validate_artifact(model, expected_type="model")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("dataset", " "),
+        ("device_id", " "),
+        ("log_likelihood_backend", "unknown"),
+        ("precision_digits", True),
+        ("precision_digits", 0),
+        ("training_capture_ids", []),
+        ("training_capture_ids", ["capture-001", "capture-001"]),
+        ("training_window_count", True),
+        ("training_window_count", 0),
+        ("training_start_utc", "2020-01-01T00:00:00"),
+    ],
+)
+def test_model_rejects_invalid_training_provenance(
+    field: str,
+    value: object,
+) -> None:
+    model = artifact_examples()["model"]
+    model[field] = value
+
+    with pytest.raises(ArtifactCompatibilityError):
+        validate_artifact(model, expected_type="model")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("dataset", "other-dataset"),
+        ("device_id", "other-device"),
+        ("categories", ("tcp", "udp", "arp", "ssdp")),
+        ("training_capture_ids", ("2020-01-01",)),
+    ],
+)
+def test_model_rejects_another_configured_dataset(
+    field: str,
+    value: object,
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(outputs={"model_path": tmp_path / "model.json"})
+    model = artifact_examples()["model"]
+    model.update(
+        dataset=config.ingest.dataset_folder,
+        device_id=config.ingest.device_id,
+        categories=config.ingest.categories,
+        training_capture_ids=config.ingest.partitions.fit,
+    )
+    model[field] = value
+    config.outputs.model_path.write_text(json.dumps(model), encoding="utf-8")
+
+    with pytest.raises(ArtifactCompatibilityError, match=field.replace("_", " ")):
+        load_model(config)
 
 
 def test_wrong_artifact_type_is_rejected() -> None:

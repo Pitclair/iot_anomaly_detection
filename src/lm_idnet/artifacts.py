@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 from pydantic import BaseModel, ValidationError
 
@@ -15,6 +16,9 @@ from lm_idnet.models.schemas import (
     ModelArtifact,
     ThresholdArtifact,
 )
+
+if TYPE_CHECKING:
+    from lm_idnet.config import AppConfig
 
 Artifact = (
     ModelArtifact
@@ -38,6 +42,7 @@ def artifact_fingerprint(artifact: ModelArtifact) -> str:
             "alpha": artifact.alpha,
             "categories": artifact.categories,
             "log_likelihood_backend": artifact.log_likelihood_backend,
+            "precision_digits": artifact.precision_digits,
         },
         ensure_ascii=False,
         allow_nan=False,
@@ -83,6 +88,28 @@ def load_artifact(path: str | Path, *, expected_type: str) -> Artifact:
             f"{expected_type} must be a JSON object: {artifact_path}"
         )
     return validate_artifact(raw, expected_type=expected_type)
+
+
+def load_model(config: "AppConfig") -> ModelArtifact:
+    """Load a model and reject provenance from another configured dataset."""
+    model = cast(
+        ModelArtifact,
+        load_artifact(config.outputs.model_path, expected_type="model"),
+    )
+    expected_fields = {
+        "dataset": config.ingest.dataset_folder,
+        "device_id": config.ingest.device_id,
+        "categories": config.ingest.categories,
+        "training_capture_ids": config.ingest.partitions.fit,
+    }
+    for field, expected in expected_fields.items():
+        actual = getattr(model, field)
+        if actual != expected:
+            raise ArtifactCompatibilityError(
+                f"model {field.replace('_', ' ')} does not match configuration: "
+                f"expected {expected!r}, found {actual!r}"
+            )
+    return model
 
 
 def save_artifact(path: str | Path, artifact: Artifact) -> None:

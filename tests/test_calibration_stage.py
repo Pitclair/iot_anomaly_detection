@@ -14,7 +14,7 @@ from lm_idnet.models.calibration_stage import (
     calibrate_threshold,
     load_calibration_windows,
 )
-from lm_idnet.models.modeling_stage import save_model
+from lm_idnet.models.modeling_stage import TrainingMatrix, save_model
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import save_processed_dataset
 
@@ -73,7 +73,11 @@ def write_calibration_datasets(config, *, wrong_partition: bool = False) -> None
         )
 
 
-def write_model(config, log_likelihood_backend: str = "scipy") -> None:
+def write_model(
+    config,
+    log_likelihood_backend: str = "scipy",
+    precision_digits: int | None = None,
+) -> None:
     alpha = np.asarray([1.0, 2.0, 3.0, 4.0])
     fit = DirichletFit(
         initial_alpha=alpha.copy(),
@@ -85,14 +89,26 @@ def write_model(config, log_likelihood_backend: str = "scipy") -> None:
         initial_log_likelihood=-10.0,
         final_log_likelihood=-9.0,
     )
+    start = datetime(2020, 10, 8, tzinfo=timezone.utc)
+    model_config = config.model_copy(
+        update={
+            "precision_digits": precision_digits or config.precision_digits,
+            "estimator": config.estimator.model_copy(
+                update={"log_likelihood_backend": log_likelihood_backend}
+            ),
+        }
+    )
     save_model(
-        path=config.outputs.model_path,
-        categories=config.ingest.categories,
+        config=model_config,
         fit=fit,
-        training_capture_ids=config.ingest.partitions.fit,
-        log_likelihood_backend=log_likelihood_backend,
-        tolerance=config.estimator.tolerance_delta,
-        max_iterations=config.estimator.max_iterations,
+        training=TrainingMatrix(
+            counts=np.ones((1, len(config.ingest.categories)), dtype=np.int64),
+            capture_ids=config.ingest.partitions.fit,
+            start_utc=start,
+            end_utc=start + timedelta(minutes=10),
+            missing_window_count=0,
+            silent_window_count=0,
+        ),
         duration_seconds=0.1,
     )
 
@@ -145,7 +161,7 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
             "threshold_path": threshold_path,
         },
     )
-    write_model(config, log_likelihood_backend="lm")
+    write_model(config, log_likelihood_backend="lm", precision_digits=7)
     write_calibration_datasets(config)
     backend_calls = []
 
@@ -166,7 +182,7 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     )
 
     assert result["window_count"] == 4
-    assert backend_calls == [("lm", 8)]
+    assert backend_calls == [("lm", 7)]
     assert result["score_type"] == threshold.score_type == score_type
     assert result["threshold"] == pytest.approx(threshold.threshold)
     assert threshold.model_fingerprint == artifact_fingerprint(

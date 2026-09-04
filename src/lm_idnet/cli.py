@@ -202,10 +202,7 @@ def _diagnose(config: AppConfig, output_path: Path) -> None:
 def _forecast(config: AppConfig) -> None:
     from lm_idnet.models.forecasting_stage import run_forecasting
 
-    run_forecasting(
-        config.model_dump(mode="json"),
-        dataset=str(_processed_path(config)),
-    )
+    run_forecasting(config)
 
 
 def _not_implemented(command: str) -> Callable[[AppConfig], None]:

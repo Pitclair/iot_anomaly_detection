@@ -19,7 +19,13 @@ from lm_idnet.processing.storage import save_processed_dataset
 pytestmark = pytest.mark.unit
 
 
-def write_fit_datasets(config, processed_root, *, wrong_partition=False) -> None:
+def write_fit_datasets(
+    config,
+    processed_root,
+    *,
+    wrong_partition=False,
+    wrong_device=False,
+) -> None:
     categories = config.ingest.categories
     processed_dir = processed_root / config.ingest.dataset_folder
     start = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -51,7 +57,11 @@ def write_fit_datasets(config, processed_root, *, wrong_partition=False) -> None
         partition = "calibration" if wrong_partition and index == 0 else "fit"
         dataset = ProcessedDataset(
             metadata=Metadata(
-                device_id=config.ingest.device_id,
+                device_id=(
+                    "another-device"
+                    if wrong_device and index == 0
+                    else config.ingest.device_id
+                ),
                 capture_id=capture_id,
                 partition=partition,
                 date=capture_id,
@@ -75,6 +85,8 @@ def test_load_training_matrix_uses_only_observed_fit_windows(
     assert training.counts.shape == (capture_count * 2, 4)
     assert training.counts.dtype == np.int64
     assert training.capture_ids == config.ingest.partitions.fit
+    assert training.start_utc == datetime(2020, 1, 1, tzinfo=timezone.utc)
+    assert training.end_utc == datetime(2020, 1, 1, 0, 20, tzinfo=timezone.utc)
     assert training.silent_window_count == capture_count
     assert training.missing_window_count == capture_count
 
@@ -119,6 +131,8 @@ def test_training_fits_and_saves_model(
     assert result["final_log_likelihood"] > result["initial_log_likelihood"]
     assert result["model_path"] == str(model_path)
     assert saved["alpha"] == pytest.approx(result["alpha"])
+    assert saved["dataset"] == config.ingest.dataset_folder
+    assert saved["device_id"] == config.ingest.device_id
     assert saved["categories"] == list(config.ingest.categories)
     assert saved["concentration"] == pytest.approx(result["concentration"])
     assert saved["mean_probabilities"] == pytest.approx(
@@ -127,6 +141,10 @@ def test_training_fits_and_saves_model(
     assert saved["psi"] == pytest.approx(result["psi"])
     assert saved["training_capture_ids"] == list(config.ingest.partitions.fit)
     assert saved["log_likelihood_backend"] == "lm"
+    assert saved["precision_digits"] == 8
+    assert saved["training_window_count"] == 12
+    assert saved["training_start_utc"] == "2020-01-01T00:00:00Z"
+    assert saved["training_end_utc"] == "2020-01-01T00:20:00Z"
     assert saved["fit_diagnostics"] == {
         "initial_alpha": pytest.approx(result["initial_alpha"]),
         "iterations": result["iterations"],
@@ -167,4 +185,15 @@ def test_training_rejects_dataset_with_wrong_partition(
     write_fit_datasets(config, tmp_path, wrong_partition=True)
 
     with pytest.raises(DataValidationError, match="not marked as fit"):
+        load_training_matrix(config)
+
+
+def test_training_rejects_dataset_for_another_device(
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(ingest={"processed_root": tmp_path})
+    write_fit_datasets(config, tmp_path, wrong_device=True)
+
+    with pytest.raises(DataValidationError, match="device does not match"):
         load_training_matrix(config)

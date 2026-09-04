@@ -12,7 +12,7 @@ import numpy as np
 
 from lm_idnet.algorithms.dirichlet_multinomial import anomaly_score
 from lm_idnet.algorithms.log_likelihood import initialize_log_likelihood
-from lm_idnet.artifacts import artifact_fingerprint, load_artifact, save_artifact
+from lm_idnet.artifacts import artifact_fingerprint, load_model, save_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.schemas import ThresholdArtifact
@@ -76,7 +76,7 @@ def _score_iqr(scores: np.ndarray) -> float:
 
 def calibrate_threshold(config: AppConfig) -> dict[str, object]:
     """Calculate and save the configured lower-quantile threshold."""
-    model = load_artifact(config.outputs.model_path, expected_type="model")
+    model = load_model(config)
     windows = load_calibration_windows(config, model.categories)
 
     if len(windows) < config.calibration.minimum_samples:
@@ -85,13 +85,9 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
             f"{config.calibration.minimum_samples} windows; found {len(windows)}"
         )
 
-    backend_name = model.log_likelihood_backend
-    if not isinstance(backend_name, str):
-        raise DataValidationError("model does not record a likelihood backend")
-
     log_likelihood = initialize_log_likelihood(
-        backend_name,
-        config.precision_digits,
+        model.log_likelihood_backend,
+        model.precision_digits,
     )
     alpha = np.asarray(model.alpha, dtype=np.float64)
     scores = np.asarray(

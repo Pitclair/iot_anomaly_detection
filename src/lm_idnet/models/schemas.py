@@ -4,7 +4,15 @@ from datetime import datetime
 from math import isclose, isfinite
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, NonNegativeInt, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    NonNegativeInt,
+    StrictInt,
+    model_validator,
+)
 
 
 class ModelSchema(BaseModel):
@@ -36,14 +44,20 @@ class FitDiagnostics(ModelSchema):
 
 class ModelArtifact(ModelSchema):
     artifact_type: Literal["model"] = "model"
+    dataset: str = Field(min_length=1)
+    device_id: str = Field(min_length=1)
     categories: tuple[str, ...] = Field(min_length=2)
     alpha: tuple[float, ...] = Field(min_length=2)
     concentration: float = Field(gt=0, allow_inf_nan=False)
     mean_probabilities: tuple[float, ...] = Field(min_length=2)
     psi: float = Field(gt=0, allow_inf_nan=False)
-    training_capture_ids: tuple[str, ...]
-    log_likelihood_backend: Literal["scipy", "lm"] | None
-    fit_diagnostics: FitDiagnostics | None
+    log_likelihood_backend: Literal["scipy", "lm"]
+    precision_digits: StrictInt = Field(gt=0)
+    training_capture_ids: tuple[str, ...] = Field(min_length=1)
+    training_window_count: StrictInt = Field(gt=0)
+    training_start_utc: AwareDatetime
+    training_end_utc: AwareDatetime
+    fit_diagnostics: FitDiagnostics
 
     @model_validator(mode="after")
     def parameters_must_be_consistent(self) -> "ModelArtifact":
@@ -85,25 +99,15 @@ class ModelArtifact(ModelSchema):
         ):
             raise ValueError("mean probabilities must equal alpha / concentration")
 
+        if not self.dataset.strip() or not self.device_id.strip():
+            raise ValueError("dataset and device ID must not be blank")
         if len(self.training_capture_ids) != len(set(self.training_capture_ids)):
             raise ValueError("training capture IDs must be unique")
         if any(not capture_id.strip() for capture_id in self.training_capture_ids):
             raise ValueError("training capture IDs must not be blank")
-
-        provenance_fields_present = (
-            bool(self.training_capture_ids),
-            self.log_likelihood_backend is not None,
-            self.fit_diagnostics is not None,
-        )
-        if any(provenance_fields_present) and not all(provenance_fields_present):
-            raise ValueError(
-                "training captures, likelihood backend, and fit diagnostics "
-                "must be provided together"
-            )
-        if (
-            self.fit_diagnostics is not None
-            and len(self.fit_diagnostics.initial_alpha) != category_count
-        ):
+        if self.training_end_utc <= self.training_start_utc:
+            raise ValueError("training end must be after training start")
+        if len(self.fit_diagnostics.initial_alpha) != category_count:
             raise ValueError("initial alpha length must match categories length")
         return self
 

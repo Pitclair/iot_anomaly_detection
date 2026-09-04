@@ -13,7 +13,7 @@ from lm_idnet.algorithms.log_likelihood import (
     LogLikelihood,
     initialize_log_likelihood,
 )
-from lm_idnet.artifacts import artifact_fingerprint, load_artifact
+from lm_idnet.artifacts import artifact_fingerprint, load_artifact, load_model
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.schemas import AnomalyEventArtifact
@@ -72,7 +72,7 @@ def score_window(
 
 def score_windows(config: AppConfig) -> dict[str, object]:
     """Score every non-missing development-test window and save JSON."""
-    model = load_artifact(config.outputs.model_path, expected_type="model")
+    model = load_model(config)
     threshold = load_artifact(
         config.outputs.threshold_path,
         expected_type="threshold",
@@ -89,12 +89,9 @@ def score_windows(config: AppConfig) -> dict[str, object]:
             f"found {threshold.score_type!r}"
         )
 
-    backend_name = model.log_likelihood_backend
-    if not isinstance(backend_name, str):
-        raise DataValidationError("model does not record a likelihood backend")
     log_likelihood = initialize_log_likelihood(
-        backend_name,
-        config.precision_digits,
+        model.log_likelihood_backend,
+        model.precision_digits,
     )
     alpha = np.asarray(model.alpha, dtype=np.float64)
     model_categories = model.categories

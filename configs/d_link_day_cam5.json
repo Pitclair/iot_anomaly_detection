@@ -59,7 +59,7 @@
     "buffer_size": 1000
   },
   "outputs": {
-    "model_path": "artifacts/D-LinkDayCam5/model_alpha.json",
+    "model_path": "artifacts/D-LinkDayCam5/model.json",
     "threshold_path": "artifacts/D-LinkDayCam5/threshold.json",
     "events_path": "artifacts/D-LinkDayCam5/events.json",
     "reports_dir": "reports/D-LinkDayCam5"

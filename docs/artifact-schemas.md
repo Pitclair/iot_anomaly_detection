@@ -39,7 +39,7 @@ Consumers load artifacts through the shared validation boundary:
 from lm_idnet.artifacts import load_artifact
 
 model = load_artifact(
-    "artifacts/D-LinkDayCam5/model_alpha.json", expected_type="model"
+    "artifacts/D-LinkDayCam5/model.json", expected_type="model"
 )
 ```
 

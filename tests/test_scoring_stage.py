@@ -12,7 +12,7 @@ from lm_idnet.artifacts import artifact_fingerprint, load_artifact
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models import scoring_stage
-from lm_idnet.models.modeling_stage import save_model
+from lm_idnet.models.modeling_stage import TrainingMatrix, save_model
 from lm_idnet.models.scoring_stage import score_window, score_windows
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import save_processed_dataset
@@ -59,16 +59,32 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
         score_window(window, **arguments)
 
 
-def write_model(config, log_likelihood_backend: str = "scipy") -> None:
+def write_model(
+    config,
+    log_likelihood_backend: str = "scipy",
+    precision_digits: int | None = None,
+) -> None:
     alpha = np.asarray([1.0, 2.0, 3.0, 4.0])
+    start = datetime(2020, 10, 8, tzinfo=timezone.utc)
+    model_config = config.model_copy(
+        update={
+            "precision_digits": precision_digits or config.precision_digits,
+            "estimator": config.estimator.model_copy(
+                update={"log_likelihood_backend": log_likelihood_backend}
+            ),
+        }
+    )
     save_model(
-        config.outputs.model_path,
-        config.ingest.categories,
+        model_config,
         DirichletFit(alpha.copy(), alpha, 10.0, 0.1, 1, True, -10.0, -9.0),
-        config.ingest.partitions.fit,
-        log_likelihood_backend,
-        config.estimator.tolerance_delta,
-        config.estimator.max_iterations,
+        TrainingMatrix(
+            counts=np.ones((1, len(config.ingest.categories)), dtype=np.int64),
+            capture_ids=config.ingest.partitions.fit,
+            start_utc=start,
+            end_utc=start + timedelta(minutes=10),
+            missing_window_count=0,
+            silent_window_count=0,
+        ),
         0.1,
     )
 
@@ -161,7 +177,7 @@ def test_score_windows_writes_observed_and_silent_results(
             "events_path": tmp_path / "events.json",
         },
     )
-    write_model(config, log_likelihood_backend="lm")
+    write_model(config, log_likelihood_backend="lm", precision_digits=7)
     write_threshold(config, score_type)
     write_development_captures(config)
     backend_calls = []
@@ -180,7 +196,7 @@ def test_score_windows_writes_observed_and_silent_results(
     results = json.loads(config.outputs.events_path.read_text(encoding="utf-8"))
 
     assert summary["partition"] == "development_test"
-    assert backend_calls == [("lm", 8)]
+    assert backend_calls == [("lm", 7)]
     assert summary["score_type"] == score_type
     assert summary["window_count"] == len(results) == 4
     assert summary["anomaly_count"] == 2

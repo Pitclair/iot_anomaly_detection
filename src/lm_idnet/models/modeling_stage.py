@@ -1,8 +1,8 @@
 """Fit and save the Dirichlet-multinomial normal-traffic model."""
 
 from dataclasses import dataclass
+from datetime import datetime
 import logging
-from pathlib import Path
 from time import perf_counter
 
 import numpy as np
@@ -26,6 +26,8 @@ class TrainingMatrix:
 
     counts: np.ndarray
     capture_ids: tuple[str, ...]
+    start_utc: datetime
+    end_utc: datetime
     missing_window_count: int
     silent_window_count: int
 
@@ -33,6 +35,7 @@ class TrainingMatrix:
 def _validate_training_dataset(
     dataset: ProcessedDataset,
     capture_id: str,
+    device_id: str,
     categories: tuple[str, ...],
 ) -> None:
     if dataset.metadata.capture_id != capture_id:
@@ -42,6 +45,10 @@ def _validate_training_dataset(
     if dataset.metadata.partition != "fit":
         raise DataValidationError(
             f"training capture is not marked as fit: {capture_id}"
+        )
+    if dataset.metadata.device_id != device_id:
+        raise DataValidationError(
+            f"training device does not match configuration: {capture_id}"
         )
     if any(window.categories != categories for window in dataset.windows):
         raise DataValidationError(
@@ -55,6 +62,8 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     categories = config.ingest.categories
     rows: list[tuple[int, ...]] = []
+    starts: list[datetime] = []
+    ends: list[datetime] = []
     missing_window_count = 0
     silent_window_count = 0
 
@@ -67,12 +76,23 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
         dataset_path = processed_dir / f"{capture_id}.json"
         logger.info("Loading training capture: %s", capture_id)
         dataset = load_processed_dataset(dataset_path)
-        _validate_training_dataset(dataset, capture_id, categories)
+        _validate_training_dataset(
+            dataset,
+            capture_id,
+            config.ingest.device_id,
+            categories,
+        )
 
         observed_windows = [
             window for window in dataset.windows if window.state != "missing"
         ]
-        rows.extend(window.counts for window in observed_windows if window.counts is not None)
+        rows.extend(
+            window.counts
+            for window in observed_windows
+            if window.counts is not None
+        )
+        starts.extend(window.start_utc for window in observed_windows)
+        ends.extend(window.end_utc for window in observed_windows)
         missing_window_count += len(dataset.windows) - len(observed_windows)
         silent_window_count += sum(
             window.state == "observed-silent" for window in observed_windows
@@ -99,42 +119,46 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
     return TrainingMatrix(
         counts=counts,
         capture_ids=selection.capture_ids,
+        start_utc=min(starts),
+        end_utc=max(ends),
         missing_window_count=missing_window_count,
         silent_window_count=silent_window_count,
     )
 
 
 def save_model(
-    path: str | Path,
-    categories: tuple[str, ...],
+    config: AppConfig,
     fit: DirichletFit,
-    training_capture_ids: tuple[str, ...],
-    log_likelihood_backend: str,
-    tolerance: float,
-    max_iterations: int,
+    training: TrainingMatrix,
     duration_seconds: float,
 ) -> ModelArtifact:
     """Save fitted parameters and their training provenance."""
     model = ModelArtifact(
-        categories=categories,
+        dataset=config.ingest.dataset_folder,
+        device_id=config.ingest.device_id,
+        categories=config.ingest.categories,
         alpha=fit.alpha.tolist(),
         concentration=fit.concentration,
         mean_probabilities=(fit.alpha / fit.concentration).tolist(),
         psi=fit.psi,
-        training_capture_ids=training_capture_ids,
-        log_likelihood_backend=log_likelihood_backend,
+        log_likelihood_backend=config.estimator.log_likelihood_backend,
+        precision_digits=config.precision_digits,
+        training_capture_ids=training.capture_ids,
+        training_window_count=training.counts.shape[0],
+        training_start_utc=training.start_utc,
+        training_end_utc=training.end_utc,
         fit_diagnostics={
             "initial_alpha": fit.initial_alpha.tolist(),
             "iterations": fit.iterations,
             "converged": fit.converged,
-            "tolerance": tolerance,
-            "max_iterations": max_iterations,
+            "tolerance": config.estimator.tolerance_delta,
+            "max_iterations": config.estimator.max_iterations,
             "initial_log_likelihood": fit.initial_log_likelihood,
             "final_log_likelihood": fit.final_log_likelihood,
             "duration_seconds": duration_seconds,
         },
     )
-    save_artifact(path, model)
+    save_artifact(config.outputs.model_path, model)
     return model
 
 
@@ -167,13 +191,9 @@ def train_model(config: AppConfig) -> dict[str, object]:
         raise ConvergenceError(message)
 
     save_model(
-        path=config.outputs.model_path,
-        categories=config.ingest.categories,
+        config=config,
         fit=fit,
-        training_capture_ids=training.capture_ids,
-        log_likelihood_backend=backend,
-        tolerance=config.estimator.tolerance_delta,
-        max_iterations=config.estimator.max_iterations,
+        training=training,
         duration_seconds=duration_seconds,
     )
     logger.info(

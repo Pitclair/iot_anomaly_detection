@@ -1,22 +1,19 @@
-"""
-Forecasting stage: generate horizon forecasts (24h) and compute Brier Score and JSD against actuals.
-"""
-from typing import Optional
-import numpy as np
-from pathlib import Path
+"""Generate horizon forecasts and compare them with synthetic actuals."""
 
-from lm_idnet.artifacts import load_artifact
+import numpy as np
+
+from lm_idnet.artifacts import load_model
+from lm_idnet.config import AppConfig
 from lm_idnet.evaluation.metrics import brier_score, js_divergence
 
 
-def run_forecasting(cfg: dict, dataset: str = 'camera_5') -> None:
-    model_path = Path(cfg["outputs"]["model_path"])
-    model = load_artifact(model_path, expected_type="model")
+def run_forecasting(config: AppConfig) -> None:
+    model = load_model(config)
     alpha = np.array(model.alpha, dtype=float)
 
     # expected probabilities from Dirichlet mean
     probs = alpha / alpha.sum()
-    horizon_hours = cfg.get('forecast', {}).get('horizon_hours', 24)
+    horizon_hours = config.forecast.horizon_hours
 
     # synthetic actual: sample from multinomial with same total counts per hour (for scaffold)
     total_per_hour = 100
