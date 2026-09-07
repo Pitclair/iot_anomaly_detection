@@ -10,8 +10,8 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 from scapy.layers.inet import IP, TCP, UDP
-from scapy.layers.l2 import ARP, Ether
-from scapy.utils import wrpcap
+from scapy.layers.l2 import ARP, Dot1Q, Ether
+from scapy.utils import RawPcapWriter, wrpcap
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
 from lm_idnet.config import load_config
@@ -90,6 +90,7 @@ def test_device_filter_matches_ethernet_and_arp_mac(tmp_path):
         Ether(src=device_mac) / IP() / TCP(dport=443),
         Ether(dst=device_mac) / IP() / UDP(dport=53),
         Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(hwdst=device_mac),
+        Ether(dst="ff:ff:ff:ff:ff:ff") / Dot1Q() / ARP(hwdst=device_mac),
         Ether() / IP(dst="192.0.2.1") / UDP(dport=53),
     ]
     pcap_path = tmp_path / "mixed-devices.pcap"
@@ -101,8 +102,32 @@ def test_device_filter_matches_ethernet_and_arp_mac(tmp_path):
 
     records = list(processor.process_pcap(pcap_path))
 
-    assert [category for _, category in records] == ["tcp", "udp", "arp"]
+    assert [category for _, category in records] == ["tcp", "udp", "arp", "arp"]
     assert processor.filtered_count == 1
+
+
+def test_nanosecond_capture_timestamp_remains_exact(tmp_path):
+    pcap_path = tmp_path / "nanosecond.pcap"
+    writer = RawPcapWriter(str(pcap_path), linktype=1, nano=True, sync=True)
+    try:
+        writer.write_header(None)
+        writer.write_packet(
+            bytes(Ether() / IP() / TCP(dport=443)),
+            sec=1_600_000_000,
+            usec=123_456_789,
+        )
+    finally:
+        writer.close()
+
+    records = list(
+        PcapProcessor(categories=list(CATEGORY_ORDER)).process_pcap(pcap_path)
+    )
+
+    assert records[0][0] == pd.Timestamp(
+        1_600_000_000_123_456_789,
+        unit="ns",
+        tz="UTC",
+    )
 
 
 def test_first_capture_in_fresh_process_loads_ethernet_layers(tmp_path):
