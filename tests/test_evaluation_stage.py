@@ -9,7 +9,7 @@ from lm_idnet.evaluation.evaluation_stage import evaluate_scores
 pytestmark = pytest.mark.unit
 
 
-def test_evaluate_scores_writes_classification_statistics(
+def test_evaluate_scores_writes_window_and_episode_statistics(
     tmp_path,
     config_factory,
 ) -> None:
@@ -26,11 +26,20 @@ def test_evaluate_scores_writes_classification_statistics(
     labels_dir.mkdir(parents=True)
 
     events = []
-    truths = (True, True, False, False)
-    predictions = (True, False, True, False)
-    for index, (truth, prediction) in enumerate(zip(truths, predictions)):
-        start = f"2020-10-16T00:{index * 10:02d}:00Z"
-        end = f"2020-10-16T00:{(index + 1) * 10:02d}:00Z"
+    periods = (
+        ("00:00", "00:10"),
+        ("00:10", "00:20"),
+        ("00:20", "00:30"),
+        ("00:30", "00:40"),
+        ("00:40", "00:50"),
+        ("00:50", "01:00"),
+        ("01:10", "01:20"),
+    )
+    truths = (True, True, True, False, True, False, False)
+    predictions = (False, True, True, False, False, True, True)
+    for (start, end), truth, prediction in zip(periods, truths, predictions):
+        start = f"2020-10-16T{start}:00Z"
+        end = f"2020-10-16T{end}:00Z"
         events.append(
             {
                 "artifact_type": "anomaly_event",
@@ -91,12 +100,31 @@ def test_evaluate_scores_writes_classification_statistics(
     )
 
     assert report == {key: value for key, value in result.items() if key != "report_path"}
-    assert report["matched_window_count"] == 4
-    assert report["true_positive"] == 1
+    assert report["matched_window_count"] == 7
+    assert report["true_positive"] == 2
     assert report["true_negative"] == 1
-    assert report["false_positive"] == 1
-    assert report["false_negative"] == 1
-    assert report["accuracy"] == 0.5
+    assert report["false_positive"] == 2
+    assert report["false_negative"] == 2
+    assert report["accuracy"] == pytest.approx(3 / 7)
     assert report["precision"] == 0.5
     assert report["recall"] == 0.5
     assert report["f1_score"] == 0.5
+    assert report["predicted_alert_episode_count"] == 3
+    assert report["ground_truth_attack_episode_count"] == 2
+    assert report["detected_attack_episode_count"] == 1
+    assert report["missed_attack_episode_count"] == 1
+    assert report["false_alert_episode_count"] == 2
+    assert report["attack_episode_recall"] == 0.5
+    assert report["evaluated_duration_days"] == pytest.approx(7 / 144)
+    assert report["false_alert_episodes_per_day"] == pytest.approx(288 / 7)
+    assert report["median_detection_delay_minutes"] == 20
+
+    first_capture = report["evaluation_by_capture"][0]
+    assert first_capture["capture_id"] == capture_ids[0]
+    assert first_capture["matched_window_count"] == 7
+    assert first_capture["ground_truth_attack_episode_count"] == 2
+
+    empty_capture = report["evaluation_by_capture"][1]
+    assert empty_capture["capture_id"] == capture_ids[1]
+    assert empty_capture["matched_window_count"] == 0
+    assert empty_capture["attack_episode_recall"] is None

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from statistics import median
 
 from pydantic import ValidationError
 
@@ -12,6 +13,8 @@ from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.schemas import AnomalyEventArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
+
+WindowKey = tuple[str, datetime, datetime]
 
 
 def _read_json(path: Path) -> object:
@@ -30,6 +33,90 @@ def _timestamp(value: object) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _ratio(numerator: float, denominator: float) -> float | None:
+    return numerator / denominator if denominator else None
+
+
+def _episodes(
+    keys: set[WindowKey],
+    flags: dict[WindowKey, bool],
+) -> list[list[WindowKey]]:
+    """Group exactly adjacent flagged windows without crossing captures or gaps."""
+    episodes: list[list[WindowKey]] = []
+    for key in sorted(keys):
+        if not flags[key]:
+            continue
+        if (
+            episodes
+            and episodes[-1][-1][0] == key[0]
+            and episodes[-1][-1][2] == key[1]
+        ):
+            episodes[-1].append(key)
+        else:
+            episodes.append([key])
+    return episodes
+
+
+def _statistics(
+    keys: set[WindowKey],
+    predictions: dict[WindowKey, bool],
+    labels: dict[WindowKey, bool],
+) -> dict[str, object]:
+    true_positive = sum(predictions[key] and labels[key] for key in keys)
+    true_negative = sum(not predictions[key] and not labels[key] for key in keys)
+    false_positive = sum(predictions[key] and not labels[key] for key in keys)
+    false_negative = sum(not predictions[key] and labels[key] for key in keys)
+    precision = _ratio(true_positive, true_positive + false_positive)
+    recall = _ratio(true_positive, true_positive + false_negative)
+
+    alert_episodes = _episodes(keys, predictions)
+    attack_episodes = _episodes(keys, labels)
+    detection_delays = [
+        (
+            next(key for key in episode if predictions[key])[2] - episode[0][1]
+        ).total_seconds()
+        / 60
+        for episode in attack_episodes
+        if any(predictions[key] for key in episode)
+    ]
+    false_alert_episode_count = sum(
+        not any(labels[key] for key in episode) for episode in alert_episodes
+    )
+    evaluated_duration_days = sum(
+        (end - start).total_seconds() for _, start, end in keys
+    ) / (24 * 60 * 60)
+
+    return {
+        "matched_window_count": len(keys),
+        "true_positive": true_positive,
+        "true_negative": true_negative,
+        "false_positive": false_positive,
+        "false_negative": false_negative,
+        "accuracy": _ratio(true_positive + true_negative, len(keys)),
+        "precision": precision,
+        "recall": recall,
+        "f1_score": (
+            2 * precision * recall / (precision + recall)
+            if precision is not None and recall is not None and precision + recall
+            else None
+        ),
+        "predicted_alert_episode_count": len(alert_episodes),
+        "ground_truth_attack_episode_count": len(attack_episodes),
+        "detected_attack_episode_count": len(detection_delays),
+        "missed_attack_episode_count": len(attack_episodes) - len(detection_delays),
+        "false_alert_episode_count": false_alert_episode_count,
+        "attack_episode_recall": _ratio(len(detection_delays), len(attack_episodes)),
+        "evaluated_duration_days": evaluated_duration_days,
+        "false_alert_episodes_per_day": _ratio(
+            false_alert_episode_count,
+            evaluated_duration_days,
+        ),
+        "median_detection_delay_minutes": (
+            median(detection_delays) if detection_delays else None
+        ),
+    }
+
+
 def evaluate_scores(config: AppConfig) -> dict[str, object]:
     """Evaluate development-test anomaly decisions and save a JSON report."""
     selection = development_partition_for_evaluation(config)
@@ -42,7 +129,7 @@ def evaluate_scores(config: AppConfig) -> dict[str, object]:
     except ValidationError as error:
         raise DataValidationError(f"invalid scoring result: {error}") from error
 
-    predictions: dict[tuple[str, datetime, datetime], bool] = {}
+    predictions: dict[WindowKey, bool] = {}
     for event in events:
         if event.capture_id not in selection.capture_ids:
             raise DataValidationError(
@@ -53,7 +140,7 @@ def evaluate_scores(config: AppConfig) -> dict[str, object]:
             raise DataValidationError(f"duplicate scored window: {event.capture_id}")
         predictions[key] = event.is_anomaly
 
-    labels: dict[tuple[str, datetime, datetime], bool] = {}
+    labels: dict[WindowKey, bool] = {}
     labels_dir = (
         config.ingest.processed_root.parent
         / "labels"
@@ -88,34 +175,37 @@ def evaluate_scores(config: AppConfig) -> dict[str, object]:
     if not matched:
         raise DataValidationError("no scored windows match the evaluation labels")
 
-    true_positive = sum(predictions[key] and labels[key] for key in matched)
-    true_negative = sum(not predictions[key] and not labels[key] for key in matched)
-    false_positive = sum(predictions[key] and not labels[key] for key in matched)
-    false_negative = sum(not predictions[key] and labels[key] for key in matched)
-
-    def ratio(numerator: int, denominator: int) -> float | None:
-        return numerator / denominator if denominator else None
-
-    precision = ratio(true_positive, true_positive + false_positive)
-    recall = ratio(true_positive, true_positive + false_negative)
     report = {
         "partition": selection.name,
         "capture_ids": list(selection.capture_ids),
-        "matched_window_count": len(matched),
         "unmatched_score_count": len(predictions.keys() - labels.keys()),
         "unmatched_label_count": len(labels.keys() - predictions.keys()),
-        "true_positive": true_positive,
-        "true_negative": true_negative,
-        "false_positive": false_positive,
-        "false_negative": false_negative,
-        "accuracy": (true_positive + true_negative) / len(matched),
-        "precision": precision,
-        "recall": recall,
-        "f1_score": (
-            2 * precision * recall / (precision + recall)
-            if precision is not None and recall is not None and precision + recall
-            else None
-        ),
+        **_statistics(matched, predictions, labels),
+        "evaluation_by_capture": [
+            {
+                "capture_id": capture_id,
+                "unmatched_score_count": len(
+                    {
+                        key
+                        for key in predictions.keys() - labels.keys()
+                        if key[0] == capture_id
+                    }
+                ),
+                "unmatched_label_count": len(
+                    {
+                        key
+                        for key in labels.keys() - predictions.keys()
+                        if key[0] == capture_id
+                    }
+                ),
+                **_statistics(
+                    {key for key in matched if key[0] == capture_id},
+                    predictions,
+                    labels,
+                ),
+            }
+            for capture_id in selection.capture_ids
+        ],
     }
     output_path = config.outputs.reports_dir / "evaluation_statistics.json"
     try:
