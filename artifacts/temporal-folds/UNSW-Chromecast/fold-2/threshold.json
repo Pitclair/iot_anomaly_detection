@@ -1,0 +1,19 @@
+{
+  "artifact_type": "threshold",
+  "model_fingerprint": "c3ba305f91a6a29d3baf7c008be13e9b27098eb4c4c7b5671d67fa669875e6a7",
+  "score_type": "raw",
+  "quantile": 0.01,
+  "threshold": -25.98564773880491,
+  "calibration_capture_ids": [
+    "2018-10-16",
+    "2018-10-17"
+  ],
+  "calibration_window_count": 288,
+  "calibration_start_utc": "2018-10-15T13:00:00Z",
+  "calibration_end_utc": "2018-10-17T13:00:00Z",
+  "quantile_method": "linear",
+  "score_minimum": -32.290197290869855,
+  "score_median": -13.70717399577154,
+  "score_maximum": -11.188872281376803,
+  "score_iqr": 1.7298077145507023
+}

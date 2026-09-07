@@ -12,7 +12,6 @@
     "dataset_folder": "D-LinkDayCam5",
     "partitions": {
       "fit": [
-        "D-LinkDayCam5_88-2020-10-08",
         "D-LinkDayCam5_88-2020-10-09",
         "D-LinkDayCam5_88-2020-10-10",
         "D-LinkDayCam5_88-2020-10-11",

@@ -15,6 +15,15 @@ from lm_idnet.models.schemas import AnomalyEventArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 
 WindowKey = tuple[str, datetime, datetime]
+CAPTURE_SUMMARY_FIELDS = (
+    "precision",
+    "recall",
+    "attack_episode_recall",
+    "false_positive",
+    "false_alert_episodes_per_day",
+    "median_detection_delay_minutes",
+    "ground_truth_attack_episode_count",
+)
 
 
 def _read_json(path: Path) -> object:
@@ -117,6 +126,28 @@ def _statistics(
     }
 
 
+def _capture_summary(
+    capture_reports: list[dict[str, object]],
+) -> dict[str, dict[str, float | int] | None]:
+    summary = {}
+    for field in CAPTURE_SUMMARY_FIELDS:
+        values = [
+            value
+            for capture in capture_reports
+            if (value := capture[field]) is not None
+        ]
+        summary[field] = (
+            {
+                "minimum": min(values),
+                "median": median(values),
+                "maximum": max(values),
+            }
+            if values
+            else None
+        )
+    return summary
+
+
 def evaluate_scores(config: AppConfig) -> dict[str, object]:
     """Evaluate development-test anomaly decisions and save a JSON report."""
     selection = development_partition_for_evaluation(config)
@@ -175,37 +206,43 @@ def evaluate_scores(config: AppConfig) -> dict[str, object]:
     if not matched:
         raise DataValidationError("no scored windows match the evaluation labels")
 
+    evaluation_by_capture = [
+        {
+            "capture_id": capture_id,
+            "unmatched_score_count": len(
+                {
+                    key
+                    for key in predictions.keys() - labels.keys()
+                    if key[0] == capture_id
+                }
+            ),
+            "unmatched_label_count": len(
+                {
+                    key
+                    for key in labels.keys() - predictions.keys()
+                    if key[0] == capture_id
+                }
+            ),
+            **_statistics(
+                {key for key in matched if key[0] == capture_id},
+                predictions,
+                labels,
+            ),
+        }
+        for capture_id in selection.capture_ids
+    ]
     report = {
+        "dataset_folder": config.ingest.dataset_folder,
         "partition": selection.name,
         "capture_ids": list(selection.capture_ids),
+        "score_type": config.calibration.score_type,
+        "calibration_quantile": config.calibration.quantile,
+        "window_minutes": config.ingest.window_minutes,
         "unmatched_score_count": len(predictions.keys() - labels.keys()),
         "unmatched_label_count": len(labels.keys() - predictions.keys()),
         **_statistics(matched, predictions, labels),
-        "evaluation_by_capture": [
-            {
-                "capture_id": capture_id,
-                "unmatched_score_count": len(
-                    {
-                        key
-                        for key in predictions.keys() - labels.keys()
-                        if key[0] == capture_id
-                    }
-                ),
-                "unmatched_label_count": len(
-                    {
-                        key
-                        for key in labels.keys() - predictions.keys()
-                        if key[0] == capture_id
-                    }
-                ),
-                **_statistics(
-                    {key for key in matched if key[0] == capture_id},
-                    predictions,
-                    labels,
-                ),
-            }
-            for capture_id in selection.capture_ids
-        ],
+        "evaluation_by_capture": evaluation_by_capture,
+        "capture_summary": _capture_summary(evaluation_by_capture),
     }
     output_path = config.outputs.reports_dir / "evaluation_statistics.json"
     try:

@@ -1,0 +1,122 @@
+{
+  "accepted": true,
+  "capture_count": 17,
+  "dataset_folder": "UNSW-Chromecast",
+  "device_id": "Chromecast",
+  "errors": [],
+  "overlap_count": 0,
+  "overlaps": [],
+  "partition_order_violations": [],
+  "partition_ranges": {
+    "calibration": {
+      "end_utc": "2018-10-19T13:00:00+00:00",
+      "start_utc": "2018-10-15T13:00:00+00:00"
+    },
+    "development_test": {
+      "end_utc": "2018-10-23T13:00:00+00:00",
+      "start_utc": "2018-10-19T13:00:00+00:00"
+    },
+    "final_test": {
+      "end_utc": "2018-10-27T13:00:00+00:00",
+      "start_utc": "2018-10-24T13:00:00+00:00"
+    },
+    "fit": {
+      "end_utc": "2018-10-15T13:00:00+00:00",
+      "start_utc": "2018-10-09T13:00:00+00:00"
+    }
+  },
+  "resolved_window_count": 3,
+  "resolved_windows": [
+    {
+      "capture_ids": [
+        "2018-10-10",
+        "2018-10-11"
+      ],
+      "merged_counts": [
+        268,
+        14208,
+        0,
+        70
+      ],
+      "reason": "Packet audit found complementary fragments and no duplicate device packets",
+      "source_counts": {
+        "2018-10-10": [
+          268,
+          14189,
+          0,
+          70
+        ],
+        "2018-10-11": [
+          0,
+          19,
+          0,
+          0
+        ]
+      },
+      "target_capture_id": "2018-10-10",
+      "window_end_utc": "2018-10-10T13:00:00+00:00",
+      "window_start_utc": "2018-10-10T12:50:00+00:00"
+    },
+    {
+      "capture_ids": [
+        "2018-10-11",
+        "2018-10-12"
+      ],
+      "merged_counts": [
+        286,
+        12957,
+        0,
+        64
+      ],
+      "reason": "Packet audit found complementary fragments and no duplicate device packets",
+      "source_counts": {
+        "2018-10-11": [
+          0,
+          6,
+          0,
+          0
+        ],
+        "2018-10-12": [
+          286,
+          12951,
+          0,
+          64
+        ]
+      },
+      "target_capture_id": "2018-10-12",
+      "window_end_utc": "2018-10-11T13:10:00+00:00",
+      "window_start_utc": "2018-10-11T13:00:00+00:00"
+    },
+    {
+      "capture_ids": [
+        "2018-10-14",
+        "2018-10-15"
+      ],
+      "merged_counts": [
+        308,
+        26778,
+        0,
+        56
+      ],
+      "reason": "Packet audit found complementary fragments and no duplicate device packets",
+      "source_counts": {
+        "2018-10-14": [
+          308,
+          26774,
+          0,
+          56
+        ],
+        "2018-10-15": [
+          0,
+          4,
+          0,
+          0
+        ]
+      },
+      "target_capture_id": "2018-10-14",
+      "window_end_utc": "2018-10-14T13:00:00+00:00",
+      "window_start_utc": "2018-10-14T12:50:00+00:00"
+    }
+  ],
+  "window_count": 2346
+}

@@ -17,7 +17,6 @@
     ],
     "partitions": {
       "fit": [
-        "D-LinkDayCam5_88-2020-10-08",
         "D-LinkDayCam5_88-2020-10-09",
         "D-LinkDayCam5_88-2020-10-10",
         "D-LinkDayCam5_88-2020-10-11",
@@ -37,7 +36,8 @@
         "D-LinkDayCam5_88-2020-10-22"
       ]
     },
-    "allowed_duplicate_captures": []
+    "allowed_duplicate_captures": [],
+    "window_fragment_merges": []
   },
   "seeds": {
     "simulation": 1001,

@@ -16,6 +16,10 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   address selects packets from mixed-device PCAPs.
   `allowed_duplicate_captures` documents exact, justified groups of captures
   that are intentionally byte-identical; it is empty by default.
+  `window_fragment_merges` documents exact overlapping windows whose source
+  captures contain complementary packet fragments. The listed counts are
+  summed into one canonical window only when all named captures belong to the
+  same current partition.
 - `seeds`: independent non-negative seeds for simulation, model fitting,
   bootstrap procedures, and other randomized algorithms.
 - `estimator`: category count, positive initial alpha concentration, positive
@@ -56,6 +60,9 @@ Configuration validation is intentionally strict:
 - `estimator.categories_k` must equal the number of configured categories.
 - Every temporal partition must be non-empty, internally chronological, and
   disjoint from every other partition.
+- A configured window-fragment merge must name configured captures from one
+  partition, name one of them as its target, include aware timestamps, and
+  provide a non-blank scientific reason.
 - Partition boundaries must move forward in the order fit, calibration,
   development-test, and final-test.
 - Window sizes and count-like settings must be positive.

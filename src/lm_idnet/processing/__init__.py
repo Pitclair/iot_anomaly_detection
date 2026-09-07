@@ -8,5 +8,6 @@ __all__ = [
     "schemas",
     "statistics",
     "storage",
+    "timeline",
     "window_policy",
 ]

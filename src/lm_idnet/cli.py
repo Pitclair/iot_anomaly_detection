@@ -129,6 +129,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="fingerprint JSON path (default: <reports_dir>/dataset_fingerprint.json)",
     )
+    capture_mode.add_argument(
+        "--validate-timeline-only",
+        action="store_true",
+        help="validate the canonical processed timeline without preprocessing",
+    )
+    command_parsers["preprocess"].add_argument(
+        "--timeline-output",
+        type=Path,
+        help="timeline JSON path (default: <reports_dir>/timeline_validation.json)",
+    )
     command_parsers["diagnose"].add_argument(
         "--output",
         type=Path,
@@ -297,6 +307,26 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                     "dataset_version": manifest["dataset_version"],
                     "fingerprint": str(output_path),
                     "status": "completed",
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "preprocess" and args.validate_timeline_only:
+        from lm_idnet.processing.timeline import validate_unique_timeline
+
+        output_path = (
+            args.timeline_output
+            or config.outputs.reports_dir / "timeline_validation.json"
+        )
+        validate_unique_timeline(config, output_path)
+        print(
+            json.dumps(
+                {
+                    "command": "preprocess",
+                    "status": "completed",
+                    "timeline_validation": str(output_path),
                 },
                 sort_keys=True,
             )

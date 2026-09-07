@@ -353,6 +353,17 @@ No actual timestamp overlap was found between different configured partitions.
 Thus the current accepted artifacts do not contain a detected fitting-to-test
 timestamp leak, but the input uniqueness guarantee is incomplete.
 
+\paragraph{Implemented resolution.}
+The October 8 D-Link capture is now excluded from configured experiments. A
+packet-level audit found repeated packet occurrences in that file, while the
+October 9 capture is the cleaner source for their shared interval. The three
+Chromecast boundary windows were found to contain complementary fragments with
+no identical device packets across their paired source files. Their counts are
+therefore summed through three explicit, fingerprinted configuration entries.
+The pipeline now constructs this canonical view, rejects every unresolved
+overlap, verifies actual partition time ranges, and writes a timeline-validation
+report before model fitting.
+
 \subsection{Limitation: One Chronological Split Gives One Version of History}
 
 The current fixed split answers a useful but narrow question:

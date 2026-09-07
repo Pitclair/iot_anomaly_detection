@@ -8,13 +8,15 @@ The frozen configuration is:
 
 | Partition | Capture dates | Allowed purpose |
 |---|---|---|
-| `fit` | 2020-10-08 through 2020-10-13 | Estimate normal-model parameters |
+| `fit` | 2020-10-09 through 2020-10-13 | Estimate normal-model parameters |
 | `calibration` | 2020-10-14 through 2020-10-15 | Select anomaly-score thresholds |
 | `development_test` | 2020-10-16 and 2020-10-19 | Debug and evaluate before the locked result |
 | `final_test` | 2020-10-21 through 2020-10-22 | One locked final evaluation only |
 
-This uses all 12 currently configured and validated D-Link captures: 6 fit, 2
-calibration, 2 development-test, and 2 final-test captures.
+This uses 11 validated D-Link captures: 5 fit, 2 calibration, 2
+development-test, and 2 final-test captures. The October 8 capture is excluded
+because it overlaps October 9 and contains repeated packet occurrences; October
+9 is the cleaner source for the shared period.
 
 ## Why complete captures are grouped
 
@@ -24,8 +26,9 @@ training and testing, allowing information about the test period to leak into
 the fitted model.
 
 The configuration therefore stores only capture identifiers at partition
-boundaries. When processed windows are later loaded, every window inherits the
-partition of its source capture. There is no random window-partitioning API.
+boundaries. The active configuration assigns the experimental role; the role
+stored during preprocessing is retained only as historical metadata. There is
+no random window-partitioning API.
 
 ## Enforced invariants
 
@@ -71,3 +74,6 @@ begins, the lists must not be adjusted to improve reported results.
 This split does not by itself prove that every fit or calibration interval is
 benign. Dataset provenance and benign-interval assumptions require their own
 review. It only establishes chronological, disjoint usage boundaries.
+
+The predefined expanding development folds and their commands are documented
+in [Temporal rolling folds](temporal-folds.md).

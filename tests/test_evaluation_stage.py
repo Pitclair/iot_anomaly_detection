@@ -118,6 +118,10 @@ def test_evaluate_scores_writes_window_and_episode_statistics(
     assert report["evaluated_duration_days"] == pytest.approx(7 / 144)
     assert report["false_alert_episodes_per_day"] == pytest.approx(288 / 7)
     assert report["median_detection_delay_minutes"] == 20
+    assert report["dataset_folder"] == config.ingest.dataset_folder
+    assert report["score_type"] == config.calibration.score_type
+    assert report["calibration_quantile"] == config.calibration.quantile
+    assert report["window_minutes"] == config.ingest.window_minutes
 
     first_capture = report["evaluation_by_capture"][0]
     assert first_capture["capture_id"] == capture_ids[0]
@@ -128,3 +132,13 @@ def test_evaluate_scores_writes_window_and_episode_statistics(
     assert empty_capture["capture_id"] == capture_ids[1]
     assert empty_capture["matched_window_count"] == 0
     assert empty_capture["attack_episode_recall"] is None
+    assert report["capture_summary"]["recall"] == {
+        "minimum": 0.5,
+        "median": 0.5,
+        "maximum": 0.5,
+    }
+    assert report["capture_summary"]["false_positive"] == {
+        "minimum": 0,
+        "median": 1.0,
+        "maximum": 2,
+    }

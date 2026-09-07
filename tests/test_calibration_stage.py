@@ -128,14 +128,15 @@ def test_load_calibration_windows_keeps_observed_and_silent_windows(
     }
 
 
-def test_load_calibration_windows_rejects_wrong_partition(
+def test_calibration_role_comes_from_current_fold_configuration(
     tmp_path,
     config_factory,
 ) -> None:
     config = config_factory(ingest={"processed_root": tmp_path})
     write_calibration_datasets(config, wrong_partition=True)
-    with pytest.raises(DataValidationError, match="wrong partition"):
-        load_calibration_windows(config, config.ingest.categories)
+    windows = load_calibration_windows(config, config.ingest.categories)
+
+    assert len(windows) == len(config.ingest.partitions.calibration) * 2
 
 
 @pytest.mark.parametrize("score_type", ["raw", "normalized"])

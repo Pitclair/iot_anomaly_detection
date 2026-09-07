@@ -15,7 +15,10 @@ from lm_idnet.exceptions import ConvergenceError, DataValidationError
 from lm_idnet.models.schemas import ModelArtifact
 from lm_idnet.partitioning import fit_partition_for_training
 from lm_idnet.processing.schemas import ProcessedDataset
-from lm_idnet.processing.storage import load_processed_dataset
+from lm_idnet.processing.timeline import (
+    load_canonical_partition,
+    validate_unique_timeline,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +44,6 @@ def _validate_training_dataset(
     if dataset.metadata.capture_id != capture_id:
         raise DataValidationError(
             f"processed capture ID does not match filename: {capture_id}"
-        )
-    if dataset.metadata.partition != "fit":
-        raise DataValidationError(
-            f"training capture is not marked as fit: {capture_id}"
         )
     if dataset.metadata.device_id != device_id:
         raise DataValidationError(
@@ -72,10 +71,10 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
         len(selection.capture_ids),
         processed_dir,
     )
+    datasets = load_canonical_partition(config, selection.capture_ids)
     for capture_id in selection.capture_ids:
-        dataset_path = processed_dir / f"{capture_id}.json"
         logger.info("Loading training capture: %s", capture_id)
-        dataset = load_processed_dataset(dataset_path)
+        dataset = datasets[capture_id]
         _validate_training_dataset(
             dataset,
             capture_id,
@@ -164,6 +163,10 @@ def save_model(
 
 def train_model(config: AppConfig) -> dict[str, object]:
     """Fit the configured normal-traffic model and save it."""
+    validate_unique_timeline(
+        config,
+        config.outputs.reports_dir / "timeline_validation.json",
+    )
     training = load_training_matrix(config)
     backend = config.estimator.log_likelihood_backend
     estimator = create_estimator(config.estimator, config.precision_digits)

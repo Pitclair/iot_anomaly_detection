@@ -18,7 +18,7 @@ from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.schemas import ThresholdArtifact
 from lm_idnet.partitioning import calibration_partition_for_threshold
 from lm_idnet.processing.schemas import WindowRecord
-from lm_idnet.processing.storage import load_processed_dataset
+from lm_idnet.processing.timeline import load_canonical_partition
 
 logger = logging.getLogger(__name__)
 
@@ -29,20 +29,15 @@ def load_calibration_windows(
 ) -> tuple[WindowRecord, ...]:
     """Load observed windows from the configured calibration captures."""
     selection = calibration_partition_for_threshold(config)
-    processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     windows: list[WindowRecord] = []
+    datasets = load_canonical_partition(config, selection.capture_ids)
     for capture_id in selection.capture_ids:
-        dataset = load_processed_dataset(processed_dir / f"{capture_id}.json")
+        dataset = datasets[capture_id]
 
         if dataset.metadata.capture_id != capture_id:
             raise DataValidationError(
                 f"processed capture ID does not match filename: {capture_id}"
             )
-        if dataset.metadata.partition != "calibration":
-            raise DataValidationError(
-                f"calibration capture has the wrong partition: {capture_id}"
-            )
-
         for window in dataset.windows:
             if window.categories != model_categories:
                 raise DataValidationError(

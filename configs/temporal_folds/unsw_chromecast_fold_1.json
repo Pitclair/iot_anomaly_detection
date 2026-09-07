@@ -1,0 +1,55 @@
+{
+  "precision_digits": 6,
+  "ingest": {
+    "raw_root": "data/raw/",
+    "processed_root": "data/processed/",
+    "dataset_folder": "UNSW-Chromecast",
+    "device_id": "Chromecast",
+    "device_mac": "f4:f5:d8:8f:0a:3c",
+    "time_col": "timestamp",
+    "protocol_col": "protocol",
+    "window_minutes": 10,
+    "categories": ["tcp", "udp", "ssdp", "arp"],
+    "partitions": {
+      "fit": ["2018-10-10", "2018-10-11", "2018-10-12", "2018-10-13"],
+      "calibration": ["2018-10-14", "2018-10-15"],
+      "development_test": ["2018-10-16", "2018-10-17"],
+      "final_test": ["2018-10-25", "2018-10-26", "2018-10-27"]
+    },
+    "allowed_duplicate_captures": [],
+    "window_fragment_merges": [
+      {
+        "capture_ids": ["2018-10-10", "2018-10-11"],
+        "target_capture_id": "2018-10-10",
+        "window_start_utc": "2018-10-10T12:50:00Z",
+        "window_end_utc": "2018-10-10T13:00:00Z",
+        "reason": "Packet audit found complementary fragments and no duplicate device packets"
+      },
+      {
+        "capture_ids": ["2018-10-11", "2018-10-12"],
+        "target_capture_id": "2018-10-12",
+        "window_start_utc": "2018-10-11T13:00:00Z",
+        "window_end_utc": "2018-10-11T13:10:00Z",
+        "reason": "Packet audit found complementary fragments and no duplicate device packets"
+      },
+      {
+        "capture_ids": ["2018-10-14", "2018-10-15"],
+        "target_capture_id": "2018-10-14",
+        "window_start_utc": "2018-10-14T12:50:00Z",
+        "window_end_utc": "2018-10-14T13:00:00Z",
+        "reason": "Packet audit found complementary fragments and no duplicate device packets"
+      }
+    ]
+  },
+  "seeds": {"simulation": 1001, "model_fitting": 1002, "bootstrap": 1003, "randomized_algorithms": 1004},
+  "estimator": {"categories_k": 4, "initial_alpha_concentration": 10.0, "tolerance_delta": 2e-9, "max_iterations": 100000, "log_likelihood_backend": "lm"},
+  "calibration": {"quantile": 0.01, "minimum_samples": 30, "score_type": "raw"},
+  "adaptation": {"enabled": false, "safe_margin": 0.0, "buffer_size": 1000},
+  "outputs": {
+    "model_path": "artifacts/temporal-folds/UNSW-Chromecast/fold-1/model.json",
+    "threshold_path": "artifacts/temporal-folds/UNSW-Chromecast/fold-1/threshold.json",
+    "events_path": "artifacts/temporal-folds/UNSW-Chromecast/fold-1/events.json",
+    "reports_dir": "reports/temporal-folds/UNSW-Chromecast/fold-1"
+  },
+  "forecast": {"horizon_hours": 24}
+}

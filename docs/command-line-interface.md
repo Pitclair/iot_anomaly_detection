@@ -67,6 +67,15 @@ lm-idnet --error-format json train --config configs/d_link_day_cam5.json
 Argument-parser errors, such as a missing required `--config`, use argparse's
 standard exit code 2 and usage output.
 
+Validate the processed timeline without fitting anything:
+
+```sh
+lm-idnet preprocess --config configs/unsw_chromecast.json --validate-timeline-only
+```
+
+This writes `timeline_validation.json` under the configured report directory.
+Training runs the same fail-closed validation automatically.
+
 ## Implementation status
 
 At this milestone, `preprocess`, `diagnose`, `train`, `calibrate`, `score`,
@@ -77,8 +86,9 @@ iteration and the configured likelihood backend, and saves a validated model art
 lower-quantile threshold artifact. `score` applies that threshold to
 non-missing development-test windows and writes a JSON array with one result per
 window. `evaluate` compares development-test anomaly decisions with matching
-window labels and writes `evaluation_statistics.json` under the configured
-reports directory. `benchmark` compares LM and SciPy on the same training,
+window labels and writes window, episode, and per-capture summaries to
+`evaluation_statistics.json` under the configured reports directory.
+`benchmark` compares LM and SciPy on the same training,
 calibration, and scoring workload and writes `lm_backend_benchmark.json` under
 the configured reports directory. Only `adapt` remains a registered but
 unavailable interface: executing it returns `command_unavailable_error` (exit

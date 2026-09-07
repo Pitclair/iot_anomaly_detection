@@ -1,0 +1,31 @@
+{
+  "accepted": true,
+  "capture_count": 12,
+  "dataset_folder": "UNSW-Samsung-Camera",
+  "device_id": "Samsung Camera",
+  "errors": [],
+  "overlap_count": 0,
+  "overlaps": [],
+  "partition_order_violations": [],
+  "partition_ranges": {
+    "calibration": {
+      "end_utc": "2018-05-31T13:30:00+00:00",
+      "start_utc": "2018-05-31T00:00:00+00:00"
+    },
+    "development_test": {
+      "end_utc": "2018-06-05T00:00:00+00:00",
+      "start_utc": "2018-06-01T03:20:00+00:00"
+    },
+    "final_test": {
+      "end_utc": "2018-06-09T00:00:00+00:00",
+      "start_utc": "2018-06-05T00:00:00+00:00"
+    },
+    "fit": {
+      "end_utc": "2018-05-31T00:00:00+00:00",
+      "start_utc": "2018-05-28T00:00:00+00:00"
+    }
+  },
+  "resolved_window_count": 0,
+  "resolved_windows": [],
+  "window_count": 1645
+}

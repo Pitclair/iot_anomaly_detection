@@ -85,6 +85,10 @@ def build_dataset_manifest(config: AppConfig) -> dict[str, Any]:
         "ordered_files": ordered_files,
         "feature_taxonomy": feature_taxonomy,
         "window_policy": window_policy,
+        "window_fragment_merges": [
+            merge.model_dump(mode="json")
+            for merge in ingest.window_fragment_merges
+        ],
         "partition_definition": partition_definition,
         "device_identity": device_identity,
     }

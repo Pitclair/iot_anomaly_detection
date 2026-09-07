@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import pytest
 
-from lm_idnet.config import AppConfig
+from lm_idnet.config import AppConfig, load_config
 from lm_idnet.partitioning import (
     all_capture_ids,
     calibration_partition_for_threshold,
@@ -11,6 +13,8 @@ from lm_idnet.partitioning import (
 )
 
 pytestmark = pytest.mark.unit
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_partitions_are_disjoint_and_cover_whole_captures(
@@ -80,3 +84,29 @@ def test_every_capture_resolves_to_one_capture_level_partition(
         "development_test",
         "final_test",
     }
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    ("unsw_chromecast", "unsw_samsung_camera"),
+)
+def test_temporal_folds_expand_history_and_keep_outputs_separate(prefix: str) -> None:
+    configs = [
+        load_config(path)
+        for path in sorted(
+            (ROOT / "configs" / "temporal_folds").glob(f"{prefix}_*.json")
+        )
+    ]
+
+    assert len(configs) >= 2
+    assert all(
+        set(earlier.ingest.partitions.fit) < set(later.ingest.partitions.fit)
+        for earlier, later in zip(configs, configs[1:])
+    )
+    assert all(
+        earlier.ingest.partitions.final_test == later.ingest.partitions.final_test
+        for earlier, later in zip(configs, configs[1:])
+    )
+    assert len({config.outputs.model_path for config in configs}) == len(configs)
+    assert len({config.outputs.threshold_path for config in configs}) == len(configs)
+    assert len({config.outputs.events_path for config in configs}) == len(configs)

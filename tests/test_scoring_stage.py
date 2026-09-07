@@ -93,6 +93,7 @@ def write_threshold(
     config,
     score_type: str,
     model_fingerprint: str | None = None,
+    calibration_capture_ids: tuple[str, ...] | None = None,
 ) -> None:
     start = datetime(2020, 10, 14, tzinfo=timezone.utc)
     model = load_artifact(config.outputs.model_path, expected_type="model")
@@ -104,7 +105,10 @@ def write_threshold(
             "score_type": score_type,
             "quantile": 0.01,
             "threshold": 0.0,
-            "calibration_capture_ids": config.ingest.partitions.calibration,
+            "calibration_capture_ids": (
+                calibration_capture_ids
+                or config.ingest.partitions.calibration
+            ),
             "calibration_window_count": 1,
             "calibration_start_utc": start,
             "calibration_end_utc": start + timedelta(minutes=10),
@@ -299,6 +303,26 @@ def test_score_windows_rejects_threshold_for_another_model(
     write_threshold(config, "raw", "f" * 64)
 
     with pytest.raises(ArtifactCompatibilityError, match="model fingerprint"):
+        score_windows(config)
+
+    assert not config.outputs.events_path.exists()
+
+
+def test_score_windows_rejects_threshold_from_another_fold(
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(
+        outputs={
+            "model_path": tmp_path / "model.json",
+            "threshold_path": tmp_path / "threshold.json",
+            "events_path": tmp_path / "events.json",
+        }
+    )
+    write_model(config)
+    write_threshold(config, "raw", calibration_capture_ids=("camera-2020-01-01",))
+
+    with pytest.raises(ArtifactCompatibilityError, match="calibration captures"):
         score_windows(config)
 
     assert not config.outputs.events_path.exists()

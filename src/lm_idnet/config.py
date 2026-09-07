@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Literal
 
 from pydantic import (
+    AwareDatetime,
     BaseModel,
     ConfigDict,
     Field,
@@ -51,6 +52,47 @@ class DuplicateCaptureGroup(StrictModel):
         if not reason:
             raise ValueError("duplicate explanation reason must not be blank")
         return reason
+
+
+class WindowFragmentMerge(StrictModel):
+    """Document complementary capture fragments that form one time window."""
+
+    capture_ids: tuple[str, ...] = Field(min_length=2)
+    target_capture_id: str = Field(min_length=1)
+    window_start_utc: AwareDatetime
+    window_end_utc: AwareDatetime
+    reason: str = Field(min_length=1)
+
+    @field_validator("capture_ids")
+    @classmethod
+    def capture_ids_must_be_unique(
+        cls,
+        value: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        if len(set(value)) != len(value):
+            raise ValueError("window fragment merge contains repeated capture IDs")
+        return value
+
+    @field_validator("window_start_utc", "window_end_utc")
+    @classmethod
+    def timestamps_must_be_utc(cls, value: datetime) -> datetime:
+        return value.astimezone(timezone.utc)
+
+    @field_validator("reason")
+    @classmethod
+    def reason_must_not_be_blank(cls, value: str) -> str:
+        reason = value.strip()
+        if not reason:
+            raise ValueError("window fragment merge reason must not be blank")
+        return reason
+
+    @model_validator(mode="after")
+    def merge_must_be_consistent(self) -> "WindowFragmentMerge":
+        if self.target_capture_id not in self.capture_ids:
+            raise ValueError("window fragment target must be one of its captures")
+        if self.window_end_utc <= self.window_start_utc:
+            raise ValueError("window fragment end must be after its start")
+        return self
 
 
 def _date_from_capture_id(capture_id: str) -> date:
@@ -134,6 +176,7 @@ class IngestConfig(StrictModel):
     categories: tuple[str, ...] = Field(min_length=2)
     partitions: TemporalPartitions
     allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
+    window_fragment_merges: tuple[WindowFragmentMerge, ...] = ()
 
     @field_validator("window_minutes", mode="before")
     @classmethod
@@ -183,6 +226,39 @@ class IngestConfig(StrictModel):
                     + ", ".join(sorted(repeated_ids))
                 )
             explained_ids.update(group.capture_ids)
+
+        partition_by_capture = {
+            capture_id: partition_name
+            for partition_name in (
+                "fit",
+                "calibration",
+                "development_test",
+                "final_test",
+            )
+            for capture_id in getattr(self.partitions, partition_name)
+        }
+        merge_keys = set()
+        for merge in self.window_fragment_merges:
+            unknown_ids = set(merge.capture_ids) - configured_ids
+            if unknown_ids:
+                raise ValueError(
+                    "window fragment merge references unconfigured captures: "
+                    + ", ".join(sorted(unknown_ids))
+                )
+            owners = {
+                partition_by_capture[capture_id]
+                for capture_id in merge.capture_ids
+            }
+            if len(owners) != 1:
+                raise ValueError("window fragments cannot be merged across partitions")
+            key = (
+                merge.window_start_utc,
+                merge.window_end_utc,
+                frozenset(merge.capture_ids),
+            )
+            if key in merge_keys:
+                raise ValueError("window fragment merge is configured more than once")
+            merge_keys.add(key)
         return self
 
 

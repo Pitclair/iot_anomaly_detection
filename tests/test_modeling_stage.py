@@ -31,24 +31,25 @@ def write_fit_datasets(
     start = datetime(2020, 1, 1, tzinfo=timezone.utc)
 
     for index, capture_id in enumerate(config.ingest.partitions.fit):
+        capture_start = start + timedelta(days=index)
         windows = (
             WindowRecord(
-                start_utc=start,
-                end_utc=start + timedelta(minutes=10),
+                start_utc=capture_start,
+                end_utc=capture_start + timedelta(minutes=10),
                 categories=categories,
                 counts=(index + 1, 2, 3, 4),
                 state="observed",
             ),
             WindowRecord(
-                start_utc=start + timedelta(minutes=10),
-                end_utc=start + timedelta(minutes=20),
+                start_utc=capture_start + timedelta(minutes=10),
+                end_utc=capture_start + timedelta(minutes=20),
                 categories=categories,
                 counts=(0, 0, 0, 0),
                 state="observed-silent",
             ),
             WindowRecord(
-                start_utc=start + timedelta(minutes=20),
-                end_utc=start + timedelta(minutes=30),
+                start_utc=capture_start + timedelta(minutes=20),
+                end_utc=capture_start + timedelta(minutes=30),
                 categories=categories,
                 counts=None,
                 state="missing",
@@ -86,7 +87,10 @@ def test_load_training_matrix_uses_only_observed_fit_windows(
     assert training.counts.dtype == np.int64
     assert training.capture_ids == config.ingest.partitions.fit
     assert training.start_utc == datetime(2020, 1, 1, tzinfo=timezone.utc)
-    assert training.end_utc == datetime(2020, 1, 1, 0, 20, tzinfo=timezone.utc)
+    assert training.end_utc == datetime(2020, 1, 1, tzinfo=timezone.utc) + timedelta(
+        days=capture_count - 1,
+        minutes=20,
+    )
     assert training.silent_window_count == capture_count
     assert training.missing_window_count == capture_count
 
@@ -117,6 +121,7 @@ def test_training_fits_and_saves_model(
         "create_estimator",
         create_estimator_with_recording,
     )
+    monkeypatch.setattr(modeling_stage, "validate_unique_timeline", lambda *_: {})
 
     with caplog.at_level(logging.INFO):
         result = train_model(config)
@@ -124,8 +129,13 @@ def test_training_fits_and_saves_model(
 
     assert result["stage"] == "dirichlet_multinomial_training"
     assert precision_values == [8]
-    assert result["matrix_shape"] == [12, 4]
-    assert result["initial_alpha"] == pytest.approx([2.8, 1.6, 2.4, 3.2])
+    assert result["matrix_shape"] == [
+        len(config.ingest.partitions.fit) * 2,
+        4,
+    ]
+    assert result["initial_alpha"] == pytest.approx(
+        [2.5, 5 / 3, 2.5, 10 / 3]
+    )
     assert (np.asarray(result["alpha"]) > 0).all()
     assert result["log_likelihood_backend"] == "lm"
     assert result["final_log_likelihood"] > result["initial_log_likelihood"]
@@ -142,9 +152,14 @@ def test_training_fits_and_saves_model(
     assert saved["training_capture_ids"] == list(config.ingest.partitions.fit)
     assert saved["log_likelihood_backend"] == "lm"
     assert saved["precision_digits"] == 8
-    assert saved["training_window_count"] == 12
+    assert saved["training_window_count"] == len(config.ingest.partitions.fit) * 2
     assert saved["training_start_utc"] == "2020-01-01T00:00:00Z"
-    assert saved["training_end_utc"] == "2020-01-01T00:20:00Z"
+    assert datetime.fromisoformat(
+        saved["training_end_utc"].replace("Z", "+00:00")
+    ) == datetime(2020, 1, 1, tzinfo=timezone.utc) + timedelta(
+        days=len(config.ingest.partitions.fit) - 1,
+        minutes=20,
+    )
     assert saved["fit_diagnostics"] == {
         "initial_alpha": pytest.approx(result["initial_alpha"]),
         "iterations": result["iterations"],
@@ -162,6 +177,7 @@ def test_training_fits_and_saves_model(
 def test_training_does_not_save_unconverged_model(
     tmp_path,
     config_factory,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     model_path = tmp_path / "model.json"
     config = config_factory(
@@ -170,6 +186,7 @@ def test_training_does_not_save_unconverged_model(
         outputs={"model_path": model_path},
     )
     write_fit_datasets(config, tmp_path)
+    monkeypatch.setattr(modeling_stage, "validate_unique_timeline", lambda *_: {})
 
     with pytest.raises(ConvergenceError, match="did not converge"):
         train_model(config)
@@ -177,15 +194,34 @@ def test_training_does_not_save_unconverged_model(
     assert not model_path.exists()
 
 
-def test_training_rejects_dataset_with_wrong_partition(
+def test_training_rejects_timeline_before_loading_windows(
+    tmp_path,
+    config_factory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = config_factory(outputs={"model_path": tmp_path / "model.json"})
+
+    def reject_timeline(*_arguments) -> None:
+        raise DataValidationError("duplicate timestamp")
+
+    monkeypatch.setattr(modeling_stage, "validate_unique_timeline", reject_timeline)
+
+    with pytest.raises(DataValidationError, match="duplicate timestamp"):
+        train_model(config)
+
+    assert not config.outputs.model_path.exists()
+
+
+def test_training_role_comes_from_current_fold_configuration(
     tmp_path,
     config_factory,
 ) -> None:
     config = config_factory(ingest={"processed_root": tmp_path})
     write_fit_datasets(config, tmp_path, wrong_partition=True)
 
-    with pytest.raises(DataValidationError, match="not marked as fit"):
-        load_training_matrix(config)
+    training = load_training_matrix(config)
+
+    assert training.capture_ids == config.ingest.partitions.fit
 
 
 def test_training_rejects_dataset_for_another_device(

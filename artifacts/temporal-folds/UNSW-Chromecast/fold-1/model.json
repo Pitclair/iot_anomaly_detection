@@ -1,0 +1,51 @@
+{
+  "artifact_type": "model",
+  "dataset": "UNSW-Chromecast",
+  "device_id": "Chromecast",
+  "categories": [
+    "tcp",
+    "udp",
+    "ssdp",
+    "arp"
+  ],
+  "alpha": [
+    2.2108231532368983,
+    39.434440488403496,
+    0.0013448936575993396,
+    0.7222601977800691
+  ],
+  "concentration": 42.36886873307807,
+  "mean_probabilities": [
+    0.05218036778760799,
+    0.9307409347376883,
+    0.000031742496267061274,
+    0.017046954978436533
+  ],
+  "psi": 0.023602235082082416,
+  "log_likelihood_backend": "lm",
+  "precision_digits": 6,
+  "training_capture_ids": [
+    "2018-10-10",
+    "2018-10-11",
+    "2018-10-12",
+    "2018-10-13"
+  ],
+  "training_window_count": 576,
+  "training_start_utc": "2018-10-09T13:00:00Z",
+  "training_end_utc": "2018-10-13T13:00:00Z",
+  "fit_diagnostics": {
+    "initial_alpha": [
+      0.3490214699773435,
+      9.58846834042858,
+      0.0002339494245209703,
+      0.06227624016955485
+    ],
+    "iterations": 2535,
+    "converged": true,
+    "tolerance": 2e-9,
+    "max_iterations": 100000,
+    "initial_log_likelihood": -966902.9670043354,
+    "final_log_likelihood": -965780.1225473059,
+    "duration_seconds": 0.35384169314056635
+  }
+}

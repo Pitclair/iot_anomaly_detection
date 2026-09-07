@@ -1,0 +1,2513 @@
+[
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.021539792035007402,
+      "ssdp": 0.05439134763149195,
+      "tcp": -0.030177791015221,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 43,
+      "ssdp": 226,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.62939261515669,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T00:10:00Z",
+    "window_start_utc": "2018-05-31T00:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.013488209736718992,
+      "ssdp": 0.0631164934045289,
+      "tcp": -0.0739309385599844,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 56,
+      "ssdp": 224,
+      "tcp": 121,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.825308230827147,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T00:20:00Z",
+    "window_start_utc": "2018-05-31T00:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.01802338343039181,
+      "ssdp": 0.030094397481545687,
+      "tcp": -0.045444016330673964,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 62,
+      "ssdp": 226,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.933927771530819,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T00:30:00Z",
+    "window_start_utc": "2018-05-31T00:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.016673611986345593,
+      "ssdp": 0.05195825760716105,
+      "tcp": -0.0326108810395519,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 45,
+      "ssdp": 225,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.652290232337293,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T00:40:00Z",
+    "window_start_utc": "2018-05-31T00:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025672467002804733,
+      "ssdp": 0.05843457076015951,
+      "tcp": -0.030088339176091217,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.598694240070586,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T00:50:00Z",
+    "window_start_utc": "2018-05-31T00:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.017203825308839016,
+      "ssdp": 0.05172849850074729,
+      "tcp": -0.03185090861064471,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 45,
+      "ssdp": 226,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.658870854414602,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T01:00:00Z",
+    "window_start_utc": "2018-05-31T00:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.007954983977587426,
+      "ssdp": 0.0315718256621203,
+      "tcp": -0.03685304505844417,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 57,
+      "ssdp": 224,
+      "tcp": 144,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.844426621998139,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T01:10:00Z",
+    "window_start_utc": "2018-05-31T01:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.021539792035007402,
+      "ssdp": 0.056824437655822846,
+      "tcp": -0.0326108810395519,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 43,
+      "ssdp": 227,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.632337851036823,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T01:20:00Z",
+    "window_start_utc": "2018-05-31T01:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.018611175667048466,
+      "ssdp": 0.021675473528589506,
+      "tcp": -0.0003905332802774941,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 47,
+      "ssdp": 226,
+      "tcp": 164,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.750983395694448,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T01:30:00Z",
+    "window_start_utc": "2018-05-31T01:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025672467002804733,
+      "ssdp": 0.055983590368002656,
+      "tcp": -0.027637358783934363,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 225,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.595845308142884,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T01:40:00Z",
+    "window_start_utc": "2018-05-31T01:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.02347317652866887,
+      "ssdp": 0.05952522707158375,
+      "tcp": -0.03337828596165138,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 42,
+      "ssdp": 227,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.616066965376945,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T01:50:00Z",
+    "window_start_utc": "2018-05-31T01:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0017607492056380264,
+      "ssdp": 0.04039816959682335,
+      "tcp": -0.03596365580992178,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 52,
+      "ssdp": 224,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.759205010441633,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T02:00:00Z",
+    "window_start_utc": "2018-05-31T01:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.012910184600883085,
+      "ssdp": 0.01003176592961802,
+      "tcp": -0.02026818594923757,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 63,
+      "ssdp": 229,
+      "tcp": 161,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.992104898257423,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T02:10:00Z",
+    "window_start_utc": "2018-05-31T02:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.004444285992930619,
+      "ssdp": 0.0462791119179114,
+      "tcp": -0.03916106134371722,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 51,
+      "ssdp": 227,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.754598574435022,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T02:20:00Z",
+    "window_start_utc": "2018-05-31T02:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.0007408902182562682,
+      "ssdp": 0.07304092091443443,
+      "tcp": -0.0711080465514271,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 50,
+      "ssdp": 224,
+      "tcp": 120,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.720449511282823,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T02:30:00Z",
+    "window_start_utc": "2018-05-31T02:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025201124619697646,
+      "ssdp": 0.047782232901939226,
+      "tcp": -0.03913811293174729,
+      "udp": 0.016557004649505668
+    },
+    "counts": {
+      "arp": 42,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 8
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -15.243017189645457,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T02:40:00Z",
+    "window_start_utc": "2018-05-31T02:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025672467002804733,
+      "ssdp": 0.055983590368002656,
+      "tcp": -0.027637358783934363,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 225,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.595845308142884,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T02:50:00Z",
+    "window_start_utc": "2018-05-31T02:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025425562344135372,
+      "ssdp": 0.05488155250125887,
+      "tcp": -0.026782225575859964,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 224,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.590935915999921,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T03:00:00Z",
+    "window_start_utc": "2018-05-31T02:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.008374201542774573,
+      "ssdp": 0.05018607905578537,
+      "tcp": -0.03913811293174729,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 227,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.721618347709068,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T03:10:00Z",
+    "window_start_utc": "2018-05-31T03:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.021539792035007402,
+      "ssdp": 0.05195825760716105,
+      "tcp": -0.027744700990890103,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 43,
+      "ssdp": 225,
+      "tcp": 143,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.626716024186294,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T03:20:00Z",
+    "window_start_utc": "2018-05-31T03:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025425562344135372,
+      "ssdp": 0.05979555741526382,
+      "tcp": -0.03169623048986486,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.596711384443893,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T03:30:00Z",
+    "window_start_utc": "2018-05-31T03:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0145121776443429,
+      "ssdp": 0.05305669145309683,
+      "tcp": -0.035870749227490395,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 46,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.670478128619493,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T03:40:00Z",
+    "window_start_utc": "2018-05-31T03:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.0044786670850346655,
+      "ssdp": 0.03895480735836171,
+      "tcp": -0.04075970986213284,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 55,
+      "ssdp": 225,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.811096311716938,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T03:50:00Z",
+    "window_start_utc": "2018-05-31T03:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.023723638690992213,
+      "ssdp": 0.055732514327830496,
+      "tcp": -0.029335111055574736,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 42,
+      "ssdp": 226,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.61497411414473,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T04:00:00Z",
+    "window_start_utc": "2018-05-31T03:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.09767065474211171,
+      "ssdp": -0.3384334884857766,
+      "tcp": 0.435303272645844,
+      "udp": 0.0008008705820442895
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 1167,
+      "udp": 5
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": true,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -21.044130204376984,
+    "score_type": "raw",
+    "severity": 25.805644049132702,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T04:10:00Z",
+    "window_start_utc": "2018-05-31T04:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0041530937032456805,
+      "ssdp": 0.0475752030896463,
+      "tcp": -0.04074834480513706,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 51,
+      "ssdp": 227,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.753318096370094,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T04:20:00Z",
+    "window_start_utc": "2018-05-31T04:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.008090373924609609,
+      "ssdp": 0.04668167683150365,
+      "tcp": -0.03591753832563055,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 225,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.714006269424203,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T04:30:00Z",
+    "window_start_utc": "2018-05-31T04:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.01746701090732307,
+      "ssdp": 0.04799126300227369,
+      "tcp": -0.027850487513687128,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 45,
+      "ssdp": 225,
+      "tcp": 144,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.658306510604746,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T04:40:00Z",
+    "window_start_utc": "2018-05-31T04:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.009826029417869767,
+      "ssdp": 0.06144369520201548,
+      "tcp": -0.04894390120288211,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 47,
+      "ssdp": 225,
+      "tcp": 132,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.67213354542173,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T04:50:00Z",
+    "window_start_utc": "2018-05-31T04:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.026648099974439995,
+      "ssdp": 0.05791106038513566,
+      "tcp": -0.028589195829432146,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 228,
+      "tcp": 143,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.612832171853256,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T05:00:00Z",
+    "window_start_utc": "2018-05-31T04:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025425562344135372,
+      "ssdp": 0.05979555741526382,
+      "tcp": -0.03169623048986486,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.596711384443893,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T05:10:00Z",
+    "window_start_utc": "2018-05-31T05:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.03059156751014054,
+      "ssdp": 0.03131952893923534,
+      "tcp": 0.0019458031521687458,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 162,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.662678608954025,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T05:20:00Z",
+    "window_start_utc": "2018-05-31T05:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.008656667877399174,
+      "ssdp": 0.04887751052599382,
+      "tcp": -0.03754707806733115,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 227,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.723023810642303,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T05:30:00Z",
+    "window_start_utc": "2018-05-31T05:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.026162663081236104,
+      "ssdp": 0.055732514327830496,
+      "tcp": -0.02689608666533083,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 143,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.602985938798724,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T05:40:00Z",
+    "window_start_utc": "2018-05-31T05:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025918164303729993,
+      "ssdp": 0.05708023929652267,
+      "tcp": -0.02848831041152916,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.600786458014795,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T05:50:00Z",
+    "window_start_utc": "2018-05-31T05:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.028363152078791115,
+      "ssdp": 0.05952522707158375,
+      "tcp": -0.02848831041152916,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 40,
+      "ssdp": 227,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.591881114287048,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T06:00:00Z",
+    "window_start_utc": "2018-05-31T05:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.006006912978614276,
+      "ssdp": 0.0730915557486686,
+      "tcp": -0.07642470414601932,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 53,
+      "ssdp": 228,
+      "tcp": 120,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.795661778158149,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T06:10:00Z",
+    "window_start_utc": "2018-05-31T06:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.010500012478826468,
+      "ssdp": 0.04668167683150365,
+      "tcp": -0.03350789977141366,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 48,
+      "ssdp": 225,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.700028478023341,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T06:20:00Z",
+    "window_start_utc": "2018-05-31T06:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0020576511480618898,
+      "ssdp": 0.04389247707304261,
+      "tcp": -0.03916106134371722,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 52,
+      "ssdp": 226,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.766260956950305,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T06:30:00Z",
+    "window_start_utc": "2018-05-31T06:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.010629789748952567,
+      "ssdp": 0.0398903606232745,
+      "tcp": -0.047846385790963564,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 58,
+      "ssdp": 227,
+      "tcp": 139,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.867570108777613,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T06:40:00Z",
+    "window_start_utc": "2018-05-31T06:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.02077050621849101,
+      "ssdp": 0.055983590368002656,
+      "tcp": -0.03253931956824807,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 43,
+      "ssdp": 225,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.62063670645341,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T06:50:00Z",
+    "window_start_utc": "2018-05-31T06:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.004819704676950282,
+      "ssdp": 0.0662258484803156,
+      "tcp": -0.06837178857600229,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 52,
+      "ssdp": 223,
+      "tcp": 122,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.747413423715784,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T07:00:00Z",
+    "window_start_utc": "2018-05-31T06:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.010220634095728862,
+      "ssdp": 0.04557580406507561,
+      "tcp": -0.03268140538808323,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 48,
+      "ssdp": 224,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.695570304878856,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T07:10:00Z",
+    "window_start_utc": "2018-05-31T07:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.016573621985345705,
+      "ssdp": 0.0227778423153569,
+      "tcp": -0.003530455748747663,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 48,
+      "ssdp": 227,
+      "tcp": 163,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.764691982723889,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T07:20:00Z",
+    "window_start_utc": "2018-05-31T07:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0136306937717732,
+      "ssdp": 0.07996057246518934,
+      "tcp": -0.0636561141121526,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 44,
+      "ssdp": 225,
+      "tcp": 122,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.623655667615765,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T07:30:00Z",
+    "window_start_utc": "2018-05-31T07:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.01585091248171573,
+      "ssdp": 0.04408134745644948,
+      "tcp": -0.02555667039347026,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 46,
+      "ssdp": 225,
+      "tcp": 146,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.677687912476017,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T07:40:00Z",
+    "window_start_utc": "2018-05-31T07:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0014807292389969196,
+      "ssdp": 0.07194302757800114,
+      "tcp": -0.06778853375774069,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 223,
+      "tcp": 121,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.696224468216656,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T07:50:00Z",
+    "window_start_utc": "2018-05-31T07:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.007954983977587426,
+      "ssdp": 0.038630649191531974,
+      "tcp": -0.043911868587855896,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 57,
+      "ssdp": 227,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.852457912805278,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T08:00:00Z",
+    "window_start_utc": "2018-05-31T07:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.008374201542774573,
+      "ssdp": 0.047782232901939226,
+      "tcp": -0.03673426677790115,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 226,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.71849835665023,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T08:10:00Z",
+    "window_start_utc": "2018-05-31T08:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0034005147436401983,
+      "ssdp": 0.07484548295112287,
+      "tcp": -0.06877120362621908,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 48,
+      "ssdp": 223,
+      "tcp": 120,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.680087853429313,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T08:20:00Z",
+    "window_start_utc": "2018-05-31T08:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025672467002804733,
+      "ssdp": 0.05843457076015951,
+      "tcp": -0.030088339176091217,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.598694240070586,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T08:30:00Z",
+    "window_start_utc": "2018-05-31T08:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.0040698950582987725,
+      "ssdp": 0.030094397481545687,
+      "tcp": -0.050095179121371625,
+      "udp": 0.015930886581527134
+    },
+    "counts": {
+      "arp": 56,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 8
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -15.455768252495716,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T08:40:00Z",
+    "window_start_utc": "2018-05-31T08:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.011054749412171355,
+      "ssdp": 0.04887751052599382,
+      "tcp": -0.035148996532558985,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 48,
+      "ssdp": 227,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.709046019241441,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T08:50:00Z",
+    "window_start_utc": "2018-05-31T08:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0085156042577067,
+      "ssdp": 0.015825219327278595,
+      "tcp": -0.004635850488308391,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 52,
+      "ssdp": 226,
+      "tcp": 164,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.822975676114197,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T09:00:00Z",
+    "window_start_utc": "2018-05-31T08:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.007805175158530797,
+      "ssdp": 0.04799126300227369,
+      "tcp": -0.037512323262479386,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 225,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.712474632795761,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T09:10:00Z",
+    "window_start_utc": "2018-05-31T09:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025425562344135372,
+      "ssdp": 0.05733855495826129,
+      "tcp": -0.02923922803286244,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 225,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.593687697337486,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T09:20:00Z",
+    "window_start_utc": "2018-05-31T09:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.0044786670850346655,
+      "ssdp": 0.03895480735836171,
+      "tcp": -0.04075970986213284,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 55,
+      "ssdp": 225,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.811096311716938,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T09:30:00Z",
+    "window_start_utc": "2018-05-31T09:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.023069879576081476,
+      "ssdp": 0.08183258976157443,
+      "tcp": -0.0560889456042295,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 40,
+      "ssdp": 224,
+      "tcp": 124,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.554154110787863,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T09:40:00Z",
+    "window_start_utc": "2018-05-31T09:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.02322148661064788,
+      "ssdp": 0.0535326099758458,
+      "tcp": -0.027637358783934363,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 42,
+      "ssdp": 224,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.605254043108857,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T09:50:00Z",
+    "window_start_utc": "2018-05-31T09:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.026162663081236104,
+      "ssdp": 0.055732514327830496,
+      "tcp": -0.02689608666533083,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 143,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.602985938798724,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T10:00:00Z",
+    "window_start_utc": "2018-05-31T09:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.006545438200853335,
+      "ssdp": 0.04518285859203869,
+      "tcp": -0.03596365580992178,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 50,
+      "ssdp": 226,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.73579223939555,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T10:10:00Z",
+    "window_start_utc": "2018-05-31T10:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.010500012478826468,
+      "ssdp": 0.04909131538572059,
+      "tcp": -0.03591753832563055,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 48,
+      "ssdp": 226,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.702877409951043,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T10:20:00Z",
+    "window_start_utc": "2018-05-31T10:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.014024252806614346,
+      "ssdp": 0.032550385310278596,
+      "tcp": -0.04390087353562944,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 60,
+      "ssdp": 226,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.899896098367094,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T10:30:00Z",
+    "window_start_utc": "2018-05-31T10:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.022476027136535653,
+      "ssdp": 0.025250329321648557,
+      "tcp": -0.00010053760384942656,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 45,
+      "ssdp": 226,
+      "tcp": 163,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.71957642429976,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T10:40:00Z",
+    "window_start_utc": "2018-05-31T10:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.01290965103304334,
+      "ssdp": 0.05150095393993742,
+      "tcp": -0.03591753832563055,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 47,
+      "ssdp": 227,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.692072194504817,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T10:50:00Z",
+    "window_start_utc": "2018-05-31T10:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.009857488052265162,
+      "ssdp": 0.0662258484803156,
+      "tcp": -0.07340957195131714,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 54,
+      "ssdp": 223,
+      "tcp": 120,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.785503376272572,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T11:00:00Z",
+    "window_start_utc": "2018-05-31T10:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.022638434006346242,
+      "ssdp": 0.004513002132708499,
+      "tcp": 0.020799196454901248,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 47,
+      "ssdp": 227,
+      "tcp": 180,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.821510762335492,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T11:10:00Z",
+    "window_start_utc": "2018-05-31T11:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.02125748433891131,
+      "ssdp": 0.05733855495826129,
+      "tcp": -0.07592227471590912,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 60,
+      "ssdp": 225,
+      "tcp": 122,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.901358487816083,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T11:20:00Z",
+    "window_start_utc": "2018-05-31T11:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.019333872715530637,
+      "ssdp": 0.026452955943332024,
+      "tcp": -0.043113064077599184,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 63,
+      "ssdp": 226,
+      "tcp": 144,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.952860720957972,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T11:30:00Z",
+    "window_start_utc": "2018-05-31T11:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.0017971808477335732,
+      "ssdp": 0.07050284984844452,
+      "tcp": -0.06603190441944745,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 223,
+      "tcp": 122,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.695300312841368,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T11:40:00Z",
+    "window_start_utc": "2018-05-31T11:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.01290965103304334,
+      "ssdp": 0.04668167683150365,
+      "tcp": -0.031098261217196832,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 47,
+      "ssdp": 225,
+      "tcp": 143,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.68645036765406,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T11:50:00Z",
+    "window_start_utc": "2018-05-31T11:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.017203825308839016,
+      "ssdp": 0.0468858834886407,
+      "tcp": -0.02700829359853818,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 45,
+      "ssdp": 224,
+      "tcp": 144,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.653784799487596,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T12:00:00Z",
+    "window_start_utc": "2018-05-31T11:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.012361210296732483,
+      "ssdp": 0.05172849850074729,
+      "tcp": -0.036693523622751245,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 47,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.685825392216657,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T12:10:00Z",
+    "window_start_utc": "2018-05-31T12:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.025425562344135372,
+      "ssdp": 0.05979555741526382,
+      "tcp": -0.03169623048986486,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 41,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.596711384443893,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T12:20:00Z",
+    "window_start_utc": "2018-05-31T12:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.02128461430074831,
+      "ssdp": 0.055732514327830496,
+      "tcp": -0.03177413544581864,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 43,
+      "ssdp": 226,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.627430240973013,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T12:30:00Z",
+    "window_start_utc": "2018-05-31T12:20:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.008656667877399174,
+      "ssdp": 0.04887751052599382,
+      "tcp": -0.03754707806733115,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 49,
+      "ssdp": 227,
+      "tcp": 141,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.723023810642303,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T12:40:00Z",
+    "window_start_utc": "2018-05-31T12:30:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.010953176162262712,
+      "ssdp": 0.036427895749729766,
+      "tcp": -0.044707307330728974,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 58,
+      "ssdp": 225,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.860276102093508,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T12:50:00Z",
+    "window_start_utc": "2018-05-31T12:40:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.006830920837799362,
+      "ssdp": 0.0462791119179114,
+      "tcp": -0.03677442649884849,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 50,
+      "ssdp": 227,
+      "tcp": 142,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.74019270851909,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T13:00:00Z",
+    "window_start_utc": "2018-05-31T12:50:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.027640495593551376,
+      "ssdp": 0.061163248438127205,
+      "tcp": -0.030848988263312282,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 40,
+      "ssdp": 226,
+      "tcp": 140,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.582637484133897,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T13:10:00Z",
+    "window_start_utc": "2018-05-31T13:00:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": 0.0009767012219423776,
+      "ssdp": 0.05708023929652267,
+      "tcp": -0.055383175937201545,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 52,
+      "ssdp": 226,
+      "tcp": 131,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -9.758903616886187,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T13:20:00Z",
+    "window_start_utc": "2018-05-31T13:10:00Z"
+  },
+  {
+    "artifact_type": "anomaly_event",
+    "capture_id": "2018-05-31",
+    "category_residuals": {
+      "arp": -0.015051551970125004,
+      "ssdp": 0.09181458943429582,
+      "tcp": -0.07408927288290729,
+      "udp": -0.0026737645812635632
+    },
+    "counts": {
+      "arp": 14,
+      "ssdp": 74,
+      "tcp": 38,
+      "udp": 0
+    },
+    "device_id": "Samsung Camera",
+    "expected_profile": {
+      "arp": 0.1261626630812361,
+      "ssdp": 0.4954869978672915,
+      "tcp": 0.37567657447020886,
+      "udp": 0.0026737645812635632
+    },
+    "is_anomaly": false,
+    "model_fingerprint": "3ab5e2556dfc6d0b01a29fbfecda871932206443729583c6ff8fa3058fa6b414",
+    "score": -7.4053178533799695,
+    "score_type": "raw",
+    "severity": 0.0,
+    "threshold": -16.895848105940097,
+    "window_end_utc": "2018-05-31T13:30:00Z",
+    "window_start_utc": "2018-05-31T13:20:00Z"
+  }
+]

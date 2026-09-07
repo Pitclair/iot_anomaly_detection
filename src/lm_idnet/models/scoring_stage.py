@@ -19,7 +19,7 @@ from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.schemas import AnomalyEventArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.schemas import WindowRecord
-from lm_idnet.processing.storage import load_processed_dataset
+from lm_idnet.processing.timeline import load_canonical_partition
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,15 @@ def score_windows(config: AppConfig) -> dict[str, object]:
             f"threshold score type must match configured {score_type!r}; "
             f"found {threshold.score_type!r}"
         )
+    if threshold.quantile != config.calibration.quantile:
+        raise ArtifactCompatibilityError(
+            "threshold quantile does not match configuration: "
+            f"expected {config.calibration.quantile}, found {threshold.quantile}"
+        )
+    if threshold.calibration_capture_ids != config.ingest.partitions.calibration:
+        raise ArtifactCompatibilityError(
+            "threshold calibration captures do not match configuration"
+        )
 
     log_likelihood = initialize_log_likelihood(
         model.log_likelihood_backend,
@@ -97,18 +106,14 @@ def score_windows(config: AppConfig) -> dict[str, object]:
     model_categories = model.categories
     expected_profile = model.mean_probabilities
     selection = development_partition_for_evaluation(config)
-    processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     results: list[dict[str, object]] = []
+    datasets = load_canonical_partition(config, selection.capture_ids)
 
     for capture_id in selection.capture_ids:
-        dataset = load_processed_dataset(processed_dir / f"{capture_id}.json")
+        dataset = datasets[capture_id]
         if dataset.metadata.capture_id != capture_id:
             raise DataValidationError(
                 f"processed capture ID does not match filename: {capture_id}"
-            )
-        if dataset.metadata.partition != selection.name:
-            raise DataValidationError(
-                f"development-test capture has the wrong partition: {capture_id}"
             )
         if any(window.categories != model_categories for window in dataset.windows):
             raise DataValidationError(

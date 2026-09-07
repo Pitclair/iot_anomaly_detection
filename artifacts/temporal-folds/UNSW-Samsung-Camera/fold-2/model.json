@@ -1,0 +1,50 @@
+{
+  "artifact_type": "model",
+  "dataset": "UNSW-Samsung-Camera",
+  "device_id": "Samsung Camera",
+  "categories": [
+    "tcp",
+    "udp",
+    "ssdp",
+    "arp"
+  ],
+  "alpha": [
+    6.360268651586078,
+    0.029417417993090944,
+    8.87169227224765,
+    2.132713959701217
+  ],
+  "concentration": 17.394092301528037,
+  "mean_probabilities": [
+    0.3656568299932122,
+    0.0016912304179567152,
+    0.5100405424126839,
+    0.12261139717614712
+  ],
+  "psi": 0.057490783805496534,
+  "log_likelihood_backend": "lm",
+  "precision_digits": 6,
+  "training_capture_ids": [
+    "2018-05-28",
+    "2018-05-29",
+    "2018-05-30"
+  ],
+  "training_window_count": 432,
+  "training_start_utc": "2018-05-28T00:00:00Z",
+  "training_end_utc": "2018-05-31T00:00:00Z",
+  "fit_diagnostics": {
+    "initial_alpha": [
+      5.368185156588389,
+      0.03465094819306604,
+      3.838647106457506,
+      0.7585167887610402
+    ],
+    "iterations": 580,
+    "converged": true,
+    "tolerance": 2e-9,
+    "max_iterations": 100000,
+    "initial_log_likelihood": -191965.77441314925,
+    "final_log_likelihood": -191562.0385185929,
+    "duration_seconds": 0.04537781234830618
+  }
+}

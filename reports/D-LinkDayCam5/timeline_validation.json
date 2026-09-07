@@ -1,0 +1,31 @@
+{
+  "accepted": true,
+  "capture_count": 11,
+  "dataset_folder": "D-LinkDayCam5",
+  "device_id": "D-LinkDayCam5",
+  "errors": [],
+  "overlap_count": 0,
+  "overlaps": [],
+  "partition_order_violations": [],
+  "partition_ranges": {
+    "calibration": {
+      "end_utc": "2020-10-15T16:00:00+00:00",
+      "start_utc": "2020-10-13T16:00:00+00:00"
+    },
+    "development_test": {
+      "end_utc": "2020-10-19T13:00:00+00:00",
+      "start_utc": "2020-10-15T16:00:00+00:00"
+    },
+    "final_test": {
+      "end_utc": "2020-10-22T16:00:00+00:00",
+      "start_utc": "2020-10-20T16:00:00+00:00"
+    },
+    "fit": {
+      "end_utc": "2020-10-13T05:10:00+00:00",
+      "start_utc": "2020-10-08T16:00:00+00:00"
+    }
+  },
+  "resolved_window_count": 0,
+  "resolved_windows": [],
+  "window_count": 1501
+}

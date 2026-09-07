@@ -1,0 +1,104 @@
+{
+  "accuracy": 0.9930555555555556,
+  "attack_episode_recall": null,
+  "calibration_quantile": 0.01,
+  "capture_ids": [
+    "2018-10-18",
+    "2018-10-19"
+  ],
+  "capture_summary": {
+    "attack_episode_recall": null,
+    "false_alert_episodes_per_day": {
+      "maximum": 1.0,
+      "median": 1.0,
+      "minimum": 1.0
+    },
+    "false_positive": {
+      "maximum": 1,
+      "median": 1.0,
+      "minimum": 1
+    },
+    "ground_truth_attack_episode_count": {
+      "maximum": 0,
+      "median": 0.0,
+      "minimum": 0
+    },
+    "median_detection_delay_minutes": null,
+    "precision": {
+      "maximum": 0.0,
+      "median": 0.0,
+      "minimum": 0.0
+    },
+    "recall": null
+  },
+  "dataset_folder": "UNSW-Chromecast",
+  "detected_attack_episode_count": 0,
+  "evaluated_duration_days": 2.0,
+  "evaluation_by_capture": [
+    {
+      "accuracy": 0.9930555555555556,
+      "attack_episode_recall": null,
+      "capture_id": "2018-10-18",
+      "detected_attack_episode_count": 0,
+      "evaluated_duration_days": 1.0,
+      "f1_score": null,
+      "false_alert_episode_count": 1,
+      "false_alert_episodes_per_day": 1.0,
+      "false_negative": 0,
+      "false_positive": 1,
+      "ground_truth_attack_episode_count": 0,
+      "matched_window_count": 144,
+      "median_detection_delay_minutes": null,
+      "missed_attack_episode_count": 0,
+      "precision": 0.0,
+      "predicted_alert_episode_count": 1,
+      "recall": null,
+      "true_negative": 143,
+      "true_positive": 0,
+      "unmatched_label_count": 0,
+      "unmatched_score_count": 0
+    },
+    {
+      "accuracy": 0.9930555555555556,
+      "attack_episode_recall": null,
+      "capture_id": "2018-10-19",
+      "detected_attack_episode_count": 0,
+      "evaluated_duration_days": 1.0,
+      "f1_score": null,
+      "false_alert_episode_count": 1,
+      "false_alert_episodes_per_day": 1.0,
+      "false_negative": 0,
+      "false_positive": 1,
+      "ground_truth_attack_episode_count": 0,
+      "matched_window_count": 144,
+      "median_detection_delay_minutes": null,
+      "missed_attack_episode_count": 0,
+      "precision": 0.0,
+      "predicted_alert_episode_count": 1,
+      "recall": null,
+      "true_negative": 143,
+      "true_positive": 0,
+      "unmatched_label_count": 0,
+      "unmatched_score_count": 0
+    }
+  ],
+  "f1_score": null,
+  "false_alert_episode_count": 2,
+  "false_alert_episodes_per_day": 1.0,
+  "false_negative": 0,
+  "false_positive": 2,
+  "ground_truth_attack_episode_count": 0,
+  "matched_window_count": 288,
+  "median_detection_delay_minutes": null,
+  "missed_attack_episode_count": 0,
+  "partition": "development_test",
+  "precision": 0.0,
+  "predicted_alert_episode_count": 2,
+  "recall": null,
+  "score_type": "raw",
+  "true_negative": 286,
+  "true_positive": 0,
+  "unmatched_label_count": 0,
+  "unmatched_score_count": 0,
+  "window_minutes": 10
+}

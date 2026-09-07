@@ -37,7 +37,30 @@
         "2018-10-27"
       ]
     },
-    "allowed_duplicate_captures": []
+    "allowed_duplicate_captures": [],
+    "window_fragment_merges": [
+      {
+        "capture_ids": ["2018-10-10", "2018-10-11"],
+        "target_capture_id": "2018-10-10",
+        "window_start_utc": "2018-10-10T12:50:00Z",
+        "window_end_utc": "2018-10-10T13:00:00Z",
+        "reason": "Packet audit found complementary fragments and no duplicate device packets"
+      },
+      {
+        "capture_ids": ["2018-10-11", "2018-10-12"],
+        "target_capture_id": "2018-10-12",
+        "window_start_utc": "2018-10-11T13:00:00Z",
+        "window_end_utc": "2018-10-11T13:10:00Z",
+        "reason": "Packet audit found complementary fragments and no duplicate device packets"
+      },
+      {
+        "capture_ids": ["2018-10-14", "2018-10-15"],
+        "target_capture_id": "2018-10-14",
+        "window_start_utc": "2018-10-14T12:50:00Z",
+        "window_end_utc": "2018-10-14T13:00:00Z",
+        "reason": "Packet audit found complementary fragments and no duplicate device packets"
+      }
+    ]
   },
   "seeds": {
     "simulation": 1001,
