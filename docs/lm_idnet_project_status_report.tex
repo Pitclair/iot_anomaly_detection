@@ -34,14 +34,14 @@
 \renewcommand{\arraystretch}{1.2}
 
 \newcommand{\operational}{\textcolor{workinggreen}{\textbf{Operational}}}
-\newcommand{\partial}{\textcolor{partialorange}{\textbf{Partial}}}
+\newcommand{\partlyimplemented}{\textcolor{partialorange}{\textbf{Partly implemented}}}
 \newcommand{\pending}{\textcolor{pendingred}{\textbf{Pending}}}
 \newcommand{\projectname}{LM-IDNet}
 
 \title{\textbf{LM-IDNet Project Status and Architecture Report}\\
 \large From the Research Proposal to the Current Working Baseline}
 \author{Prepared for supervisor review}
-\date{4 September 2026}
+\date{6 September 2026}
 
 \begin{document}
 
@@ -49,14 +49,14 @@
 \thispagestyle{empty}
 
 \begin{abstract}
-This report explains the current state of \projectname{}, an unsupervised anomaly-detection system for Internet of Things (IoT) network traffic. The system learns the ordinary mixture of four traffic categories produced by one device and flags time windows whose mixture is unusually unlikely. It implements a complete, reproducible \emph{offline} path from packet captures to anomaly decisions and evaluates that path on two labelled smart-device datasets. It also integrates the specialised LM numerical method supplied with the project. The proposed online adaptation mechanism, a scientifically valid reproduction of the reference paper's forecast, and a locked final-test evaluation are not yet complete. The report distinguishes those facts throughout so that current results can be presented without implying that the whole research proposal has already been achieved.
+This report explains the current state of \projectname{}, an unsupervised anomaly-detection system for Internet of Things (IoT) network traffic. The system learns the ordinary mixture of four traffic categories produced by one device and flags time windows whose mixture is unusually unlikely. It implements a complete, reproducible \emph{offline} path from packet captures to anomaly decisions and evaluates that path on two labelled smart-device datasets. Because the D-Link Camera 5 dataset is not labelled, it was not used to train or evaluate the anomaly detector; it was retained only for controlled benchmarking of the LM and SciPy numerical backends. The project also integrates the specialised LM numerical method supplied with the project. Online adaptation and a locked final-test evaluation are not yet complete. The report distinguishes those facts throughout so that current results can be presented without implying that the whole research proposal has already been achieved.
 \end{abstract}
 
 \vfill
 \begin{center}
 \begin{minipage}{0.88\textwidth}
 \small
-\textbf{Scope of this report.} The statements below describe the repository's current \texttt{master} branch at commit \texttt{5f85c18}. Experimental branches are not counted as completed functionality. Numerical results are read from the committed artefacts and reports; they are not estimates invented for this document.
+\textbf{Scope of this report.} The \texttt{master} branch is the reference baseline, reviewed on 6 September 2026; other branches continue work on model improvements and time-series split experiments, but are not counted as completed functionality here. Numerical results are read from the committed artefacts and reports; they are not estimates invented for this document.
 \end{minipage}
 \end{center}
 
@@ -65,6 +65,12 @@ This report explains the current state of \projectname{}, an unsupervised anomal
 \newpage
 
 \section{Executive Summary}
+
+\subsection{Project Description and Requirements}
+
+The project is to design, implement, and evaluate a lightweight, unsupervised anomaly detector for IoT network traffic. It must learn the ordinary behaviour of a device without requiring labelled attacks, represent natural variation in its protocol mixture with a Dirichlet--multinomial model, and use the LM numerical method for accurate likelihood calculations.
+
+The required system must ingest packet captures or NetFlow-like summaries, aggregate device traffic into fixed count windows, estimate a normal model, calibrate an anomaly threshold, and score later windows with interpretable evidence about the protocol categories involved. It should ultimately support guarded online adaptation and edge deployment, and it must be evaluated through detection quality, numerical agreement, runtime, and comparison with simple baselines. Reproducibility, chronological data separation, and protection against learning anomalous traffic as normal are necessary experimental constraints.
 
 \subsection{What the project does}
 
@@ -89,13 +95,13 @@ The current system is therefore best described as a \textbf{working offline rese
 \midrule
 Packet-capture inspection and validation & \operational & Capture inventories, format checks, warnings, and deterministic dataset fingerprints are available. \\
 Device-specific preprocessing & \operational & Packets are filtered by device MAC address, classified, and placed in ten-minute count windows. \\
-Normal-model training & \operational & A Dirichlet--multinomial model is fitted with either the LM or SciPy likelihood backend. All current production configurations use LM. \\
+Normal-model training & \operational & A Dirichlet--multinomial model is fitted with either the LM or SciPy likelihood backend. Both detector configurations use LM; the D-Link benchmark compares LM with SciPy. \\
 Threshold calibration & \operational & A lower-tail threshold is learned from a distinct benign calibration partition. \\
 Development scoring and explanations & \operational & Each window receives a score, decision, severity, expected profile, and per-category residuals. \\
 Labelled evaluation & \operational & Chromecast and Samsung camera development results include confusion matrices and standard classification measures. \\
 Numerical backend comparison & \operational & LM and SciPy are compared through the same end-to-end pipeline, with stored timing and agreement evidence. \\
-Forecasting & \partial & The command runs, but currently uses synthetic observations; it is not a reproduction of the reference paper's held-out daily forecast. \\
-Locked final-test evaluation & \partial & Final partitions are declared in configuration, but the accepted scoring and evaluation path currently targets development data. \\
+Forecasting & \partlyimplemented & The command currently provides a synthetic metric scaffold rather than an empirical result. \\
+Locked final-test evaluation & \partlyimplemented & Final partitions are declared in configuration, but the accepted scoring and evaluation path currently targets development data. \\
 Online guarded adaptation & \pending & The command and configuration surface exist, but the adaptation algorithm is deliberately not implemented. \\
 Edge-device deployment claim & \pending & Containerised execution works on the development platform; low-power hardware has not been benchmarked. \\
 \bottomrule
@@ -106,14 +112,14 @@ Edge-device deployment claim & \pending & Containerised execution works on the d
 
 \subsection{Headline results}
 
-Three device-specific models have been trained and calibrated. The two labelled development evaluations currently give:
+Two device-specific anomaly models have been trained and calibrated. Their labelled development evaluations currently give:
 
 \begin{itemize}
   \item \textbf{Chromecast:} 95.99\% accuracy, 88.24\% precision, 46.88\% recall, and 61.22\% F1 score.
   \item \textbf{Samsung smart camera:} 95.32\% accuracy, 92.31\% precision, 68.57\% recall, and 78.69\% F1 score.
 \end{itemize}
 
-These are baseline development results, not final test claims. Accuracy is particularly easy to over-read because attacks are rare. Recall and the false-positive count are therefore reported alongside it. The D-Link camera has no attack labels in the current experiment, so its three flagged development windows cannot be classified as correct or incorrect detections.
+These are baseline development results, not final test claims. Accuracy is particularly easy to over-read because attacks are rare. Recall and the false-positive count are therefore reported alongside it.
 
 \section{Research Motivation and Core Idea}
 
@@ -121,7 +127,7 @@ These are baseline development results, not final test claims. Accuracy is parti
 
 IoT devices usually perform a narrow set of tasks. A camera, speaker, or streaming device therefore tends to produce a recognisable mixture of network protocols. That mixture is not perfectly constant: normal use, discovery traffic, retransmissions, and periods of silence create variation. A useful detector must recognise a stable pattern without treating every ordinary fluctuation as an attack.
 
-The project follows the selected LM-IDNet research proposal \cite{proposalbrief,proposal}. Each observation is a vector of non-negative counts
+Each observation is a vector of non-negative counts
 \[
 \mathbf{x}=(x_{\mathrm{TCP}},x_{\mathrm{UDP}},x_{\mathrm{SSDP}},x_{\mathrm{ARP}}),
 \qquad N=\sum_k x_k.
@@ -155,9 +161,13 @@ The current configurations use the raw log-probability. A packet-count-normalise
 
 \subsection{Where the LM method enters}
 
-Fitting and scoring repeatedly require differences between logarithms of Gamma functions. Direct evaluation can lose accuracy when the two arguments are close, especially near the multinomial limit. The LM algorithm was designed to compute these differences accurately and efficiently \cite{lmcore,tpami}. In this project, LM is a \emph{numerical engine}: it improves a calculation inside the statistical model; it is not a separate learning method or a language model.
+Fitting and scoring repeatedly require differences between logarithms of Gamma functions. Direct evaluation can lose accuracy when the two arguments are close, especially near the multinomial limit. The LM algorithm was designed to compute these differences accurately and efficiently \cite{lmcore,tpami}. In this project, LM is a \emph{numerical engine}: it improves a calculation inside the statistical model.
 
 The fixed-point updates for $\boldsymbol{\alpha}$ still use the standard digamma function, following Minka's estimation method \cite{minka}. LM is used for the likelihood calculation that checks convergence and for later scoring. A SciPy implementation remains available as an independent reference backend.
+
+The statistical starting point comes from the reference IoT study, which models D-Link Camera 5 traffic as ten-minute counts of the same four protocol categories using the Dirichlet--multinomial distribution and the LM likelihood calculation \cite{iotpaper}. That study fits separate daily models from random within-day samples and compares numerical likelihood methods. The current project retains the count representation, distribution, and LM method, but applies them to a different research question: identifying anomalous windows when labelled evaluation data are available.
+
+Accordingly, the detector uses one pooled normal model per labelled device, assigns complete captures chronologically to fitting, calibration, development, and final roles, and produces calibrated decisions with category-level residuals and classification metrics. D-Link data serve only as a matched workload for comparing LM with SciPy. The reference study therefore supplies the methodological foundation, while the present evaluation is organised around anomaly detection rather than its original experimental protocol.
 
 \section{How the Pipeline Works}
 
@@ -180,7 +190,7 @@ $\longrightarrow$ compare with labels
 
 Each experiment configuration declares the dataset, the device and its MAC address, the four-category taxonomy, the window size, the numerical backend, and the captures assigned to fit, calibration, development, and final-test partitions. Strict validation rejects unknown fields and inconsistent values rather than guessing what the author meant.
 
-The inspection commands inventory source files, check supported capture structure, and calculate a dataset fingerprint from capture bytes and experiment-defining metadata. This makes an accidental replacement, reordering, or reassignment detectable. The D-Link inventory currently accepts all 12 configured captures and reports warnings for one capture without rejecting it.
+The inspection commands inventory source files, check supported capture structure, and calculate a dataset fingerprint from capture bytes and experiment-defining metadata. This makes an accidental replacement, reordering, or reassignment detectable.
 
 \subsection{Stage 2: device-specific preprocessing}
 
@@ -208,7 +218,7 @@ The resulting model artefact records more than the fitted numbers. It identifies
   \item iteration, convergence, duration, and final-likelihood diagnostics.
 \end{itemize}
 
-Loading a model against a configuration re-validates dataset, device, categories, and training capture identifiers. The model is therefore self-identifying instead of being kept distinct only by its containing folder. For the D-Link Camera 5 configuration, the canonical artefact is now \path{artifacts/D-LinkDayCam5/model.json}, rather than the earlier \path{model_alpha.json} name.
+Loading a model against a configuration re-validates dataset, device, categories, and training capture identifiers. The model is therefore self-identifying instead of being kept distinct only by its containing folder.
 
 \subsection{Stage 5: calibration}
 
@@ -235,11 +245,11 @@ The residuals provide a modest but useful explanation: they show which traffic c
 
 For datasets with attack intervals, labels are matched to scored windows by capture identifier and exact start/end time. Duplicate matches are rejected. The evaluator produces true positives, true negatives, false positives, false negatives, accuracy, precision, recall, and F1 score. Labels enter only here; model fitting and calibration remain unsupervised.
 
-\subsection{Side paths: numerical benchmark and forecast}
+\subsection{Side paths}
 
 The benchmark command runs equivalent LM and SciPy training, calibration, and scoring paths in isolated temporary outputs. This tests both numerical agreement and actual pipeline cost.
 
-The forecast command currently demonstrates Brier score and Jensen--Shannon divergence calculations using samples generated from the fitted model. Because the observations are synthetic, this path is only a software scaffold. It must not be presented as an empirical forecasting result.
+The forecast command demonstrates Brier score and Jensen--Shannon divergence calculations using synthetic samples. It is a software scaffold, not an empirical result.
 
 \section{Project Structure}
 
@@ -276,9 +286,9 @@ This separation supports reproducibility in a practical way. A configuration sta
 
 \section{Datasets and Experimental Protocol}
 
-\subsection{Why three device datasets are now used}
+\subsection{Datasets and their roles}
 
-The proposal and reference manuscript began with smart-camera and NetFlow-style traffic. The project retains the D-Link Camera 5 data associated with the reference study and adds two labelled devices from the UNSW IoT Analytics traces: a Chromecast and a Samsung smart camera. The addition matters because unlabelled traffic can show that a model runs, but cannot measure whether flagged windows correspond to known malicious activity.
+The proposal and reference manuscript began with smart-camera and NetFlow-style traffic. The anomaly detector is trained and evaluated on two labelled devices from the UNSW IoT Analytics traces: a Chromecast and a Samsung smart camera. The unlabelled D-Link Camera 5 data associated with the reference study is used only to compare the LM and SciPy numerical backends under identical inputs. This separation matters because unlabelled traffic can support a numerical benchmark, but cannot measure whether flagged windows correspond to known malicious activity.
 
 \begin{table}[ht]
 \centering
@@ -287,12 +297,12 @@ The proposal and reference manuscript began with smart-camera and NetFlow-style 
 \toprule
 \textbf{Experiment} & \textbf{Source/use} & \textbf{Labels} & \textbf{Chronological role assignment} \\
 \midrule
-D-Link Camera 5 & Reference-study camera captures & None in current project & Fit: Oct. 8--13; calibration: Oct. 14--15; development: Oct. 16 and 19; final: Oct. 21--22, 2020. \\
+D-Link Camera 5 & Reference-study captures used only for LM/SciPy benchmarking & None & No anomaly-detector training or evaluation role. \\
 UNSW Chromecast & Added mixed-device attack traces, filtered by Chromecast MAC & 27 official attack intervals considered; 21 retained after scope and coverage rules & Fit: Oct. 10--15; calibration: Oct. 16--19; development: Oct. 20--23; final: Oct. 25--27, 2018. \\
 UNSW Samsung camera & Added mixed-device attack traces, filtered by camera MAC & 42 attack intervals retained & Fit: May 28--30; calibration: May 31; development: June 1--4; final: June 5--8. \\
 \bottomrule
 \end{tabularx}
-\caption{Current device-specific experiments. Dates are those declared in the repository dataset records.}
+\caption{Current dataset roles. Dates are those declared in the repository dataset records.}
 \label{tab:datasets}
 \end{table}
 
@@ -300,15 +310,9 @@ The retained labelled windows total 2,349 for Chromecast, including 38 positive 
 
 \subsection{Chronology is part of the experiment}
 
-Captures are assigned whole to fit, calibration, development, or final roles. Windows are not randomly shuffled between these roles. This is more conservative for time-series traffic because neighbouring windows can be highly related. It also gives calibration a clear purpose: estimate the tolerated lower tail of normal scores without reusing the fitting observations.
+For the two labelled detector datasets, captures are assigned whole to fit, calibration, development, or final roles. This is more conservative for time-series traffic because neighbouring windows can be highly related. It also gives calibration a clear purpose: estimate the tolerated lower tail of normal scores without reusing the fitting observations.
 
 The final partition is intended to remain locked until the modelling and threshold choices have been made. At present, however, the standard scoring/evaluation workflow is restricted to development data. The existence of final dates in the configuration is therefore a safeguard and plan, not evidence of a completed final test.
-
-\subsection{Known timestamp issue}
-
-A later temporal review found that capture filenames alone do not guarantee unique time coverage. In particular, two D-Link fit captures overlap substantially: 144 ten-minute window identities are repeated, of which 135 have equal counts and nine differ. Because both files belong to the fit partition, this is not leakage from future evaluation data into training, but it does reweight part of the training period. Three overlapping fit-window identities were also found at Chromecast capture boundaries. No cross-partition timestamp overlap was found in that review.
-
-The current loader validates configured captures and partitions, but does not yet construct one globally unique timestamp index across all captures. Therefore the reported baseline is reproducible for the present inputs, while the duplicate-time weighting remains a known issue to correct before final claims.
 
 \section{Current Artefacts and Results}
 
@@ -323,16 +327,15 @@ Table~\ref{tab:modelresults} reports what is actually stored in the current arte
 \toprule
 \textbf{Device} & \textbf{Fit windows} & $\boldsymbol{\psi}$ & \textbf{Threshold} & \textbf{Dev. windows} & \textbf{Flags} & \textbf{Fit time range (UTC)} \\
 \midrule
-D-Link camera & 846 & 0.00818 & $-22.5044$ & 270 & 3 & Oct. 8 08:10 to Oct. 13 05:10, 2020 \\
 Chromecast & 867 & 0.03559 & $-25.6108$ & 474 & 17 & Oct. 9 13:00 to Oct. 15 13:00, 2020 \\
 Samsung camera & 432 & 0.05749 & $-16.9221$ & 556 & 52 & May 28 00:00 to May 31 00:00, 2020 \\
 \bottomrule
 \end{tabularx}
-\caption{Current LM, six-digit-precision model artefacts and raw-score development outputs. Thresholds are the first percentile of the corresponding benign calibration scores.}
+\caption{Current LM, six-digit-precision anomaly-model artefacts and raw-score development outputs. Thresholds are the first percentile of the corresponding benign calibration scores.}
 \label{tab:modelresults}
 \end{table}
 
-The fitted $\psi$ values suggest that the Samsung camera's traffic mixture varies more than the D-Link camera's under this parameterisation. They should not be read as a direct measure of maliciousness: dispersion describes the learned normal distribution.
+The fitted $\psi$ values suggest that the Samsung camera's traffic mixture varies more than the Chromecast's under this parameterisation. They should not be read as a direct measure of maliciousness: dispersion describes the learned normal distribution.
 
 \subsection{Labelled development evaluation}
 
@@ -351,13 +354,13 @@ Samsung camera & 48 & 482 & 4 & 22 & 95.32\% & 92.31\% & 68.57\% & 78.69\% \\
 \label{tab:evaluation}
 \end{table}
 
-Both models make few false alarms in these development partitions, reflected in high precision. They also miss a material number of labelled attack windows, especially for Chromecast. This is expected evidence for the next research step rather than a reason to hide the result: a detector based only on protocol proportions will not catch an event that preserves roughly the normal mixture, and a threshold calibrated at the first percentile prioritises a low benign alert rate over maximum recall.
-
-No comparable row is given for D-Link. Without labels, calling its three flags true detections would be speculation.
+Both models make few false alarms in these development partitions, reflected in high precision. They also miss a material number of labelled attack windows, especially for Chromecast. This is expected evidence for the next research step: a detector based only on protocol proportions will not catch an event that preserves roughly the normal mixture, and a threshold calibrated at the first percentile prioritises a low benign alert rate over maximum recall.
 
 \subsection{LM versus SciPy numerical backend}
 
-The current end-to-end D-Link benchmark found the following median measurements on the recorded x86-64 development environment:
+The D-Link dataset is used here only as a common numerical workload. The results below use the modified production LM implementation; the changes are described in Section~\ref{sec:lm-modifications}. In particular, the original row-wise adapter repeated native setup for every window. Before that setup was reused, one 846-window likelihood calculation took 114.68~$\mu$s with LM versus 49.96~$\mu$s with SciPy, and a complete fit took 0.30410~s versus 0.18129~s. After the modification, the LM times fell to 55.46~$\mu$s and 0.19297~s respectively. The full-fit LM/SciPy ratio therefore improved from about 1.68 to 1.064: LM moved close to SciPy's fitting speed while preserving the correct row-wise statistical model.
+
+The current end-to-end benchmark found the following median measurements on the recorded x86-64 development environment:
 
 \begin{table}[ht]
 \centering
@@ -375,120 +378,50 @@ Single-window score & 13.39 $\mu$s & 12.04 $\mu$s & 0.899 \\
 \label{tab:benchmark}
 \end{table}
 
-The two fitted models agreed closely: maximum relative alpha difference was approximately $3.86\times10^{-7}$, the maximum absolute score difference was approximately $1.09\times10^{-5}$, and all 270 D-Link decisions agreed. Both backends flagged three windows.
+The two fitted benchmark models agreed closely: maximum relative alpha difference was approximately $3.86\times10^{-7}$, the maximum absolute score difference was approximately $1.09\times10^{-5}$, and all 270 benchmark decisions agreed. Both backends flagged the same three windows. These decisions measure backend agreement; without labels, they are not evidence of detection accuracy.
 
 This evidence supports a precise conclusion: the native LM integration is correct for the current pipeline and slightly faster for individual scoring, but the complete D-Link fit is about 6.4\% slower than SciPy on this machine. It does not support a universal speedup claim. A separate professor-style aggregate experiment gave LM lower likelihood and wall time across many sampled fits, showing that performance depends on how the likelihood is called. The current D-Link concentration is also far from the extreme numerical regime where LM's accuracy advantage becomes most visible; ordinary SciPy evaluation is already accurate there.
 
-\section{What Is Working}
+\section{State of the Project}
 
-The following capabilities are implemented on the current branch and covered by code, artefacts, or tests:
+The initial project requirements describe an adaptive, lightweight IoT anomaly detector based on online Dirichlet--multinomial estimation and the LM numerical method. Table~\ref{tab:projectstate} records the state of that work on the reference branch. A blank first column identifies functionality added during implementation rather than specified as an initial requirement.
 
-\begin{itemize}
-  \item strict experiment configuration with a canonical four-category taxonomy;
-  \item deterministic capture inventory and dataset fingerprints;
-  \item streaming packet reading, device MAC filtering, exclusive protocol classification, UTC timestamp normalisation, and fixed-window aggregation;
-  \item explicit distinction between a valid silent window and a declared missing-coverage window in the processed-data schema;
-  \item descriptive and dispersion diagnostics;
-  \item fixed-point Dirichlet--multinomial fitting with interchangeable LM and SciPy likelihood calculations;
-  \item safe native LM loading through absolute paths, error translation, memory cleanup, and serialised access around native global state;
-  \item self-identifying, validated model artefacts containing dataset, device, backend, precision, capture provenance, and actual training-window coverage;
-  \item independent benign threshold calibration with model fingerprint binding;
-  \item development scoring with residual and severity information;
-  \item exact label alignment and standard development metrics for the two labelled UNSW devices;
-  \item reproducible pseudo-random seeds where random generation is used;
-  \item stable command-line error codes and UTC logs;
-  \item containerised build and execution, including compilation of the native C library;
-  \item unit, integration, numerical, packet-capture, slow, and benchmark test categories.
-\end{itemize}
-
-The important distinction is that ``working'' means the software path performs its declared task. It does not mean every research hypothesis has already been demonstrated.
-
-\section{What Is Not Yet Complete}
-
-\begin{longtable}{>{\raggedright\arraybackslash}p{0.22\textwidth} >{\raggedright\arraybackslash}p{0.36\textwidth} >{\raggedright\arraybackslash}p{0.34\textwidth}}
-\caption{Open work and its scientific consequence.}\label{tab:openwork}\\
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.27\textwidth} >{\raggedright\arraybackslash}p{0.18\textwidth} >{\raggedright\arraybackslash}p{0.47\textwidth}}
+\caption{State of the project relative to the initial proposal.}\label{tab:projectstate}\\
 \toprule
-\textbf{Open capability} & \textbf{Current reality} & \textbf{Why it matters} \\
+\textbf{Proposed element} & \textbf{Status} & \textbf{Current implementation and rationale} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{Open capability} & \textbf{Current reality} & \textbf{Why it matters} \\
+\textbf{Proposed element} & \textbf{Status} & \textbf{Current implementation and rationale} \\
 \midrule
 \endhead
-Online adaptation & The \texttt{adapt} command returns a deliberate not-implemented error. Configuration describes safeguards, but no model update occurs. & Adaptation is central to the original proposal. It must avoid learning attacks as normal and must preserve rollback/audit information. \\
-Real forecast reproduction & The forecast command compares model expectations with synthetic draws. It does not use held-out daily capture data or reproduce the reference manuscript's repeated sampling experiment. & Synthetic self-comparison is a software check, not evidence about future traffic. \\
-Final-test execution & Final captures are configured, but standard accepted scoring/evaluation is development-only. & A final result must be produced once, after method choices are frozen, to reduce optimistic tuning. \\
-Unique temporal index & Validation is capture-oriented; known within-partition timestamp overlaps remain. & Duplicate time windows can overweight particular behaviour and make nominal sample counts misleading. \\
-Time-aware uncertainty & No grouped rolling-origin evaluation, block bootstrap, or confidence intervals are produced. & Adjacent windows are correlated, so treating them as independent overstates the effective evidence. \\
-Per-day and incident reporting & Evaluation is aggregated by window. Repeated alerts are not grouped into incidents. & An operator cares about alarm episodes and performance across days, not only a global window total. \\
-Broader detector baselines & The project compares LM and SciPy numerical engines, not competing anomaly models such as simple multinomial, rate-based, or temporal baselines. & A numerical backend comparison does not show that the chosen detector is the best anomaly detector. \\
-Edge measurement & Docker supports repeatable execution, but no low-power device latency, memory, energy, or sustained-throughput measurement exists. & ``Lightweight for edge'' remains a motivation, not a demonstrated result. \\
-Automatic gap inference & The schema can mark missing windows, but ordinary preprocessing does not infer all absence of capture coverage. & A missing recording period must not be mistaken for observed device silence. \\
-Artefact evolution policy & Schemas are strict and model dependencies are fingerprinted, but there is no general schema-version/migration policy for every artefact. & Long-lived experiments may need explicit compatibility handling as formats change. \\
-Experiment manifest use & A manifest schema exists, but the normal pipeline does not yet construct and enforce it. & Cross-stage provenance is currently distributed across configuration, artefacts, and fingerprints. \\
-Temporal behaviour model & Windows are modelled independently; serial dependence is diagnosed but not represented. & Persistent state changes and gradual drift may need a temporal or incident-level extension. \\
+Ingest smart-camera or NetFlow data & Implemented & Chromecast and Samsung captures are filtered by device MAC address for anomaly detection; unlabelled D-Link data are reserved for the LM/SciPy numerical benchmark. \\
+Build fixed count windows & Implemented & Packets are assigned exclusively to TCP, ordinary UDP, SSDP, or ARP and aggregated into epoch-aligned ten-minute windows. Silent and missing-coverage windows are represented separately so absence of traffic is not confused with absence of data. \\
+Estimate an initial normal $\boldsymbol{\alpha}$ & Implemented & A fixed-point estimator fits one pooled Dirichlet--multinomial model from each device's declared benign fitting captures. Pooling provides a stable device baseline while preserving the original window observations. \\
+Use LM for efficient likelihood computation & Implemented and benchmarked & The production LM integration handles matrix inputs safely and retains SciPy as an independent comparison backend. This makes numerical accuracy and runtime directly measurable in the real pipeline. \\
+Flag low-likelihood windows & Implemented & A distinct benign partition calibrates an empirical lower-tail threshold before development scoring. The separation prevents the fitted observations from also determining their own acceptance threshold. \\
+Adaptive retraining & Not implemented & The \texttt{adapt} command fails explicitly. Updating is deferred until quarantine, contamination safeguards, audit records, and rollback can prevent anomalous traffic from becoming the new normal. \\
+Accuracy, FPR, TPR, and likelihood analysis & Partly implemented & Labelled development metrics exist for Chromecast and Samsung, and likelihood timings are stored. Locked final evaluation and dependence-aware uncertainty remain open. \\
+Interpretable evidence by category & Implemented at a basic level & Each event reports expected proportions, residuals, and severity. These fields indicate which protocol categories differ from normal without claiming to identify an attack cause. \\
+Edge deployment & Partly implemented & Containerised native execution is repeatable, but latency, memory, energy, and sustained throughput have not been measured on edge hardware. \\
+Compare against baselines & Partly implemented & LM and SciPy are compared as numerical engines. Simple alternative anomaly detectors are still needed to establish what the Dirichlet--multinomial model adds. \\
+{} & Implemented & Strict configurations, capture inventories, and deterministic dataset fingerprints were added to reject inconsistent experiments and make changes to source data detectable. \\
+{} & Implemented & Self-identifying model, threshold, event, and evaluation artefacts were added with compatibility checks so outputs from different devices or model versions cannot be mixed silently. \\
+{} & Implemented & Exact label alignment, stable command errors, UTC logs, deterministic seeds, container builds, and automated tests were added to make the offline workflow reviewable and repeatable. \\
+{} & Experimental & A synthetic forecast-metric command is available as a software scaffold; it does not provide empirical evidence and is not part of the anomaly-detection evaluation. \\
+{} & Not implemented & Final captures are declared but the accepted scoring and evaluation path remains development-only. A final mode is needed once modelling choices are frozen to limit optimistic tuning. \\
+{} & Not implemented & On the reference branch, grouped rolling-origin evaluation, block-based uncertainty, and per-day reporting remain open. These are needed because adjacent traffic windows are correlated. \\
+{} & Not implemented & Repeated alerts are not grouped into incidents and serial dependence is not modelled. Add these only if per-day results show that window-level decisions are insufficient operationally. \\
+{} & Partly implemented & Processed data can distinguish declared gaps from silent windows, but capture gaps are not inferred automatically. Automatic inference is needed before incomplete recordings can be handled without manual coverage declarations. \\
+{} & Partly implemented & Schemas and dependency fingerprints are enforced, while general schema migration and end-to-end manifest enforcement remain open. Add them when incompatible long-lived artefacts must be supported. \\
 \bottomrule
 \end{longtable}
 
-These items are not equally urgent. Correcting the time index and performing time-aware validation come before adding a more elaborate detector. Otherwise a more complex model could merely produce a more convincing result on a flawed experimental split.
-
-\section{Relationship to the Initial Proposal}
-
-The original proposal selected the second suggested project: an adaptive, lightweight IoT anomaly detector based on online Dirichlet--multinomial estimation and the LM numerical method \cite{proposalbrief,proposal}. Table~\ref{tab:proposalcompare} shows how that intention maps to the current system.
-
-\begin{longtable}{>{\raggedright\arraybackslash}p{0.29\textwidth} >{\raggedright\arraybackslash}p{0.28\textwidth} >{\raggedright\arraybackslash}p{0.35\textwidth}}
-\caption{Initial proposal compared with the current implementation.}\label{tab:proposalcompare}\\
-\toprule
-\textbf{Proposed element} & \textbf{Current status} & \textbf{Modification or interpretation} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Proposed element} & \textbf{Current status} & \textbf{Modification or interpretation} \\
-\midrule
-\endhead
-Ingest smart-camera or NetFlow data & Implemented for packet captures from three IoT devices. & The project moved from one illustrative device to device-specific D-Link, Chromecast, and Samsung experiments. \\
-Build fixed count windows & Implemented with ten-minute, epoch-aligned windows. & A single exclusive four-category taxonomy and explicit missing/silent states were added. \\
-Estimate an initial normal $\boldsymbol{\alpha}$ & Implemented. & Training uses all declared fit windows for one pooled device model rather than a random sample from each day. \\
-Use LM for efficient likelihood computation & Implemented and benchmarked. & A backend interface retains SciPy as a reference, and production configurations use LM at precision six. \\
-Flag low-likelihood windows & Implemented. & A separate benign calibration stage and an empirical first-percentile threshold were added to make the rule reproducible. \\
-Adaptive retraining & Not implemented. & The project first established an auditable offline baseline. The command fails explicitly rather than pretending to adapt. \\
-Accuracy, FPR, TPR, and likelihood analysis & Partly implemented. & Full labelled development metrics exist for two UNSW devices. D-Link cannot supply attack metrics, and final-test/uncertainty reporting remains open. \\
-Interpretable evidence by category & Implemented at a basic level. & Events report expected proportions and category residuals, but do not infer an attack cause. \\
-Edge deployment & Partly addressed. & Containerised native execution is repeatable; real edge hardware measurement has not occurred. \\
-Compare against baselines & Partly addressed. & Numerical LM/SciPy comparison is strong; alternative detection-model baselines are still missing. \\
-\bottomrule
-\end{longtable}
-
-The largest change of emphasis is methodological: the project established a reproducible offline experiment before enabling online self-modification. This is a defensible intermediate step because adaptation can contaminate its own normal model if anomalous traffic is admitted. It remains an intermediate step, not a replacement for the adaptive objective.
-
-\section{Relationship to the Reference IoT Paper}
-
-The reference IoT manuscript by Al-Haj Baddar, Languasco, and Migliardi studies efficient modelling and forecasting of overdispersed IoT traffic with the Dirichlet--multinomial distribution \cite{iotpaper}. It uses D-Link Camera 5 ten-minute counts for the same four protocol categories. The current project inherits that statistical motivation and the LM calculation, but its experiment is deliberately not a copy.
-
-\begin{table}[ht]
-\centering
-\small
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.24\textwidth} X X}
-\toprule
-\textbf{Question} & \textbf{Reference manuscript} & \textbf{Current project} \\
-\midrule
-Primary aim & Model and forecast overdispersed IoT traffic efficiently. & Detect anomalous device windows and evaluate detection when labels exist. \\
-Data & D-Link Camera 5 daily traffic counts. & D-Link plus labelled UNSW Chromecast and Samsung camera captures. \\
-Model granularity & A separate model for each training day. & One pooled normal model per device and experiment. \\
-Training sample & Random 10, 15, 20, or 25\% samples within a day. & Chronological whole-capture fit partition; no random train/test window mixing. \\
-Main comparison & LM versus Yu--Shaw likelihood computation, with mathematical log-Gamma also used in forecasting comparisons. & LM versus SciPy through the production fitting, calibration, and scoring architecture. \\
-Output & Goodness-of-fit measures and a next-24-hour average forecast. & Model, calibrated threshold, per-window anomaly events, and labelled development metrics. \\
-Forecast & Repeated Dirichlet/multinomial sampling from daily models and comparison with held-out days. & Synthetic scaffold only; a real held-out forecast reproduction is pending. \\
-Temporal protocol & Daily fitting and later test days, with random subsets inside training days. & Explicit fit/calibration/development/final roles, assigned chronologically by complete capture. \\
-\bottomrule
-\end{tabularx}
-\caption{Reference-paper experiment and current anomaly-detection experiment are related but answer different questions.}
-\label{tab:papercompare}
-\end{table}
-
-This distinction prevents two common presentation errors. First, the paper's forecasting evidence cannot be quoted as if it were the project's anomaly-detection evidence. Second, the project's synthetic forecast command cannot be quoted as a reproduction of the paper. What has been reproduced and extended is the core count representation, Dirichlet--multinomial estimation, and LM likelihood path.
+The largest change of emphasis is methodological: the project established an auditable offline experiment before enabling online self-modification. Time-aware validation and a locked final evaluation take priority over a more elaborate detector because stronger modelling cannot compensate for weak temporal evidence.
 
 \section{Modifications to the Supplied Professor Code}
+\label{sec:lm-modifications}
 
 The supplied LM capsule remains unchanged under \path{lm-algorithm/code/}. The application uses a separate production copy under \path{src/lm_idnet/algorithms/native/}. This preserves a direct audit trail while allowing the algorithm to be called safely from a long-running Python process.
 
@@ -506,7 +439,7 @@ The mathematical LM method was not replaced. The changes are integration and exe
 
 There is also an intentional modelling difference. The supplied professor-style experiment updates parameters from individual rows but checks convergence using one pooled count vector. The production estimator instead sums the parameter-dependent likelihood across the original windows. Pooling changes the statistical objective because the Dirichlet--multinomial is nonlinear; it is not merely a faster way to compute the same answer. The project therefore keeps the row-wise objective even though repeated native calls initially cost more. The matrix-level optimisation recovers much of that overhead without changing the objective.
 
-The independent professor-style reproduction remains useful as an architectural comparison. Across 84 paired sampled fits, LM reduced likelihood time by about 12.2\% and total wall time by about 8.8\%, with the same 79 converged and five non-converged fits as the comparison backend. Those figures describe that aggregate experiment, not the production detector benchmark in Table~\ref{tab:benchmark}.
+The aggregate professor-style experiment remains useful as an architectural comparison. Across 84 paired sampled fits, LM reduced likelihood time by about 12.2\% and total wall time by about 8.8\%, with the same 79 converged and five non-converged fits as the comparison backend. Those figures describe that aggregate experiment, not the production detector benchmark in Table~\ref{tab:benchmark}.
 
 \section{Additional Architectural Choices}
 
@@ -565,16 +498,15 @@ Reproducibility is strongest when the same input bytes and configuration are use
 The shortest credible route from the present baseline to a thesis-ready evaluation is:
 
 \begin{enumerate}
-  \item \textbf{Canonicalise the time axis.} Detect every cross-capture timestamp collision, choose a documented rule for duplicates, and regenerate the affected processed data and model artefacts.
   \item \textbf{Use grouped rolling-origin validation.} Fit on earlier captures, calibrate on the next benign block, and evaluate on later blocks. Report results per day or capture as well as in aggregate.
   \item \textbf{Quantify uncertainty under dependence.} Use block-based resampling or fold-level variation rather than assuming hundreds of adjacent windows are independent observations.
   \item \textbf{Freeze choices and run final partitions once.} Add an explicit final-scoring mode with safeguards against accidental iterative use, then report both development and final results.
   \item \textbf{Add simple detector baselines.} A multinomial version, a total-volume/rate detector, and a simple temporal baseline would show what the Dirichlet--multinomial adds. Complex alternatives are unnecessary until these comparisons exist.
-  \item \textbf{Choose the thesis priority between forecasting and adaptation.} If forecasting is required, replace the synthetic scaffold with the paper's held-out daily protocol. If adaptive detection is the central objective, first implement conservative candidate updates, a quarantine period, drift tests, audit records, and rollback.
+  \item \textbf{Implement guarded adaptation only after validation.} Begin with conservative candidate updates, a quarantine period, drift tests, audit records, and rollback.
   \item \textbf{Measure the intended deployment target.} Only after the method is frozen, benchmark latency, memory, sustained throughput, and energy on a real edge-class device.
 \end{enumerate}
 
-Adaptation should not be the first next step merely because it was in the proposal. Updating an already biased model on duplicated or temporally correlated data would make later interpretation harder. Data chronology and evaluation must be made trustworthy first.
+Adaptation should not be the first next step merely because it was in the proposal. Updating an already biased model on temporally correlated data would make later interpretation harder. Data chronology and evaluation must be made trustworthy first.
 
 \section{Conclusions for Presentation}
 
@@ -585,10 +517,10 @@ The project has moved beyond a numerical demonstration into a structured, end-to
   \item safe integration and direct benchmarking of the LM likelihood method;
   \item self-identifying, validated artefacts that resist accidental cross-experiment mixing;
   \item chronological role separation and labelled development evaluation on two additional IoT devices;
-  \item an auditable record of changes from the supplied capsule and from the reference paper's experiment.
+  \item an auditable record of changes from the supplied numerical capsule and earlier experimental setup.
 \end{itemize}
 
-The strongest honest conclusion is not that \projectname{} is already a finished adaptive edge-security product. It is that the project now provides a reproducible offline foundation on which the remaining research questions can be tested. Current results show high precision but incomplete recall on two labelled development sets. The next decisive work is to correct duplicate time coverage, validate across time, and run a locked final evaluation. Online adaptation, real forecasting, alternative detector baselines, and edge measurements then become well-defined extensions rather than unsupported claims.
+The strongest honest conclusion is not that \projectname{} is already a finished adaptive edge-security product. It is that the project now provides a reproducible offline foundation on which the remaining research questions can be tested. Current results show high precision but incomplete recall on two labelled development sets. The next decisive work is to validate across time and run a locked final evaluation. Online adaptation, alternative detector baselines, and edge measurements then become well-defined extensions rather than unsupported claims.
 
 \appendix
 
@@ -619,18 +551,12 @@ The following repository documents contain the detailed evidence condensed into 
   \item \path{docs/lm_backend_change_record.tex}: line-by-line rationale for native integration changes;
   \item \path{docs/lm_paper_project_comparison_report.md}: reference-paper versus current-project comparison;
   \item \path{docs/lm_professor_architecture_experiment_report.md}: aggregate and production architecture benchmarks;
-  \item \path{docs/temporal_dataset_architecture_review_and_improvement.tex}: chronology, overlap, and rolling-validation review;
+  \item \path{docs/temporal_dataset_architecture_review_and_improvement.tex}: chronology and rolling-validation review;
   \item \path{docs/unsw-chromecast-dataset.md} and \path{docs/unsw-samsung-camera-dataset.md}: added dataset provenance and label policy;
   \item \path{docs/command-line-interface.md}: supported commands and failure behaviour.
 \end{itemize}
 
 \begin{thebibliography}{9}
-
-\bibitem{proposalbrief}
-\emph{Proposte di Ricerca basate su Dirichlet Multinomial}, project brief supplied with the repository, Project 2: LM-IDNet.
-
-\bibitem{proposal}
-\emph{LM-IDNet: Lightweight Adaptive Anomaly Detection for IoT and Network Traffic Using Dirichlet--Multinomial Models and the LM Log-Gamma Algorithm}, thesis proposal and system architecture, repository document.
 
 \bibitem{iotpaper}
 S. Al-Haj Baddar, A. Languasco, and M. Migliardi,
