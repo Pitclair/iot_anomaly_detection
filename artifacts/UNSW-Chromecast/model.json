@@ -22,6 +22,8 @@
     0.02020108962120733
   ],
   "psi": 0.035589062394952936,
+  "log_likelihood_backend": "lm",
+  "precision_digits": 6,
   "training_capture_ids": [
     "2018-10-10",
     "2018-10-11",
@@ -30,8 +32,6 @@
     "2018-10-14",
     "2018-10-15"
   ],
-  "log_likelihood_backend": "lm",
-  "precision_digits": 6,
   "training_window_count": 867,
   "training_start_utc": "2018-10-09T13:00:00Z",
   "training_end_utc": "2018-10-15T13:00:00Z",
@@ -48,6 +48,6 @@
     "max_iterations": 100000,
     "initial_log_likelihood": -1464261.1453049118,
     "final_log_likelihood": -1462542.1729553912,
-    "duration_seconds": 0.259994869120419
+    "duration_seconds": 0.2727840347215533
   }
 }

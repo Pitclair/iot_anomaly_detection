@@ -1,0 +1,60 @@
+{
+  "anomaly_count": 30,
+  "buffer_size": 288,
+  "capture_ids": [
+    "2018-06-01",
+    "2018-06-02",
+    "2018-06-03",
+    "2018-06-04"
+  ],
+  "events_path": "artifacts/experiments/UNSW-Samsung-Camera/adaptive_threshold/events.json",
+  "final_model_fingerprint": "d640793c22755e942f6175039f1a1e7ed9ce8284191a9a59d508d8823ae72d6c",
+  "final_score_iqr": 0.2459402290527919,
+  "final_threshold": -64.43420825832115,
+  "initial_model_fingerprint": "d640793c22755e942f6175039f1a1e7ed9ce8284191a9a59d508d8823ae72d6c",
+  "initial_score_iqr": 0.14515034994923326,
+  "initial_threshold": -16.92209375738571,
+  "mode": "adaptive_threshold",
+  "partition": "development_test",
+  "quantile": 0.01,
+  "report_type": "adaptation",
+  "score_type": "raw",
+  "threshold_update_attempts": [
+    {
+      "after_window": 144,
+      "buffer_window_count": 144,
+      "capture_id": "2018-06-02",
+      "new_score_iqr": 0.26723797812253736,
+      "new_threshold": -52.12792405313176,
+      "old_score_iqr": 0.14515034994923326,
+      "old_threshold": -16.92209375738571,
+      "promoted": true,
+      "window_end_utc": "2018-06-02T03:20:00Z"
+    },
+    {
+      "after_window": 288,
+      "buffer_window_count": 288,
+      "capture_id": "2018-06-03",
+      "new_score_iqr": 0.33335117382191015,
+      "new_threshold": -57.13578050130413,
+      "old_score_iqr": 0.26723797812253736,
+      "old_threshold": -52.12792405313176,
+      "promoted": true,
+      "window_end_utc": "2018-06-03T03:20:00Z"
+    },
+    {
+      "after_window": 432,
+      "buffer_window_count": 288,
+      "capture_id": "2018-06-04",
+      "new_score_iqr": 0.2459402290527919,
+      "new_threshold": -64.43420825832115,
+      "old_score_iqr": 0.33335117382191015,
+      "old_threshold": -57.13578050130413,
+      "promoted": true,
+      "window_end_utc": "2018-06-04T03:20:00Z"
+    }
+  ],
+  "threshold_update_count": 3,
+  "update_every": 144,
+  "window_count": 556
+}

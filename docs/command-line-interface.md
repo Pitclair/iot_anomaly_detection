@@ -69,8 +69,7 @@ standard exit code 2 and usage output.
 
 ## Implementation status
 
-At this milestone, `preprocess`, `diagnose`, `train`, `calibrate`, `score`,
-`evaluate`, `forecast`, and `benchmark` have callable handlers. `train` loads the
+At this milestone, every registered command has a callable handler. `train` loads the
 fit-partition matrix, estimates Dirichlet parameters with Minka's fixed-point
 iteration and the configured likelihood backend, and saves a validated model artifact.
 `calibrate` scores the configured calibration captures and saves a validated
@@ -80,13 +79,16 @@ window. `evaluate` compares development-test anomaly decisions with matching
 window labels and writes `evaluation_statistics.json` under the configured
 reports directory. `benchmark` compares LM and SciPy on the same training,
 calibration, and scoring workload and writes `lm_backend_benchmark.json` under
-the configured reports directory. Only `adapt` remains a registered but
-unavailable interface: executing it returns `command_unavailable_error` (exit
-code 9), while its `--help` and `--dry-run` paths work normally.
-
-This explicit failure prevents automation from mistaking an empty placeholder
-for successful adaptation. A later roadmap task will replace the unavailable
-handler only when that stage has a real implementation and acceptance tests.
+the configured reports directory. `adapt` runs the configured `static` or
+`adaptive_threshold` mode over the same chronological development-test stream.
+Adaptive-threshold mode keeps alpha fixed, scores each window before updating,
+and periodically replaces the threshold and score IQR with estimates from the
+bounded buffer of all recent non-missing scores. Labels and the current anomaly
+decision do not filter that intentionally naive baseline. An update with a
+non-positive score IQR is recorded and rejected, leaving the prior threshold
+active. The command writes ordinary anomaly events plus
+`adaptation.json` under the configured reports directory. Periodic alpha
+refitting is not implemented.
 
 ## Stage isolation
 

@@ -144,18 +144,32 @@ def test_json_error_format_is_machine_readable(tmp_path: Path) -> None:
     assert result.stdout == ""
 
 
-@pytest.mark.parametrize(
-    "command",
-    ("adapt",),
-)
-def test_unimplemented_stage_fails_instead_of_claiming_success(
-    command: str,
+def test_adapt_command_runs_configured_detector(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    result = run_cli(command, "--config", str(CONFIG))
+    from lm_idnet import cli
+    from lm_idnet.models import scoring_stage
 
-    assert result.returncode == 9
-    assert "command_unavailable_error" in result.stderr
-    assert '"status": "completed"' not in result.stdout
+    expected_result = {
+        "adaptation_mode": "static",
+        "window_count": 2,
+        "threshold_update_count": 0,
+    }
+    monkeypatch.setenv("LM_IDNET_LOG_PATH", os.devnull)
+    monkeypatch.setattr(
+        scoring_stage,
+        "adapt_windows",
+        lambda _config: expected_result,
+    )
+
+    cli.run_command(["adapt", "--config", str(CONFIG)])
+
+    assert json.loads(capsys.readouterr().out) == {
+        "command": "adapt",
+        "status": "completed",
+        **expected_result,
+    }
 
 
 def test_benchmark_command_runs_backend_benchmark(

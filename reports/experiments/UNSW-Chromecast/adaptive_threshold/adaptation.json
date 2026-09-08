@@ -1,0 +1,59 @@
+{
+  "anomaly_count": 15,
+  "buffer_size": 288,
+  "capture_ids": [
+    "2018-10-20",
+    "2018-10-21",
+    "2018-10-22",
+    "2018-10-23"
+  ],
+  "events_path": "artifacts/experiments/UNSW-Chromecast/adaptive_threshold/events.json",
+  "final_model_fingerprint": "db3b9652d3954655f3d5f96c5d6b24cbb2e66b538a75d64e31c8ba1d05634aa2",
+  "final_score_iqr": 2.14090329964003,
+  "final_threshold": -59.625941081091206,
+  "initial_model_fingerprint": "db3b9652d3954655f3d5f96c5d6b24cbb2e66b538a75d64e31c8ba1d05634aa2",
+  "initial_score_iqr": 2.1967053528515237,
+  "initial_threshold": -25.61083010635366,
+  "mode": "adaptive_threshold",
+  "partition": "development_test",
+  "quantile": 0.01,
+  "report_type": "adaptation",
+  "score_type": "raw",
+  "threshold_update_attempts": [
+    {
+      "after_window": 144,
+      "buffer_window_count": 144,
+      "capture_id": "2018-10-20",
+      "old_score_iqr": 2.1967053528515237,
+      "old_threshold": -25.61083010635366,
+      "promoted": false,
+      "reason": "score IQR is not positive",
+      "window_end_utc": "2018-10-20T13:00:00Z"
+    },
+    {
+      "after_window": 288,
+      "buffer_window_count": 288,
+      "capture_id": "2018-10-22",
+      "new_score_iqr": 11.414370319432692,
+      "new_threshold": -23.3914953056766,
+      "old_score_iqr": 2.1967053528515237,
+      "old_threshold": -25.61083010635366,
+      "promoted": true,
+      "window_end_utc": "2018-10-22T06:00:00Z"
+    },
+    {
+      "after_window": 432,
+      "buffer_window_count": 288,
+      "capture_id": "2018-10-23",
+      "new_score_iqr": 2.14090329964003,
+      "new_threshold": -59.625941081091206,
+      "old_score_iqr": 11.414370319432692,
+      "old_threshold": -23.3914953056766,
+      "promoted": true,
+      "window_end_utc": "2018-10-23T06:00:00Z"
+    }
+  ],
+  "threshold_update_count": 2,
+  "update_every": 144,
+  "window_count": 474
+}

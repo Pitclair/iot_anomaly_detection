@@ -13,7 +13,7 @@ from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models import scoring_stage
 from lm_idnet.models.modeling_stage import TrainingMatrix, save_model
-from lm_idnet.models.scoring_stage import score_window, score_windows
+from lm_idnet.models.scoring_stage import adapt_windows, score_window, score_windows
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import save_processed_dataset
 
@@ -302,3 +302,73 @@ def test_score_windows_rejects_threshold_for_another_model(
         score_windows(config)
 
     assert not config.outputs.events_path.exists()
+
+
+def test_static_adaptation_preserves_static_scoring(
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(
+        ingest={"processed_root": tmp_path},
+        estimator={"log_likelihood_backend": "scipy"},
+        outputs={
+            "model_path": tmp_path / "model.json",
+            "threshold_path": tmp_path / "threshold.json",
+            "events_path": tmp_path / "events.json",
+            "reports_dir": tmp_path / "reports",
+        },
+    )
+    write_model(config)
+    write_threshold(config, "raw")
+    write_development_captures(config)
+
+    score_windows(config)
+    static_events = config.outputs.events_path.read_text(encoding="utf-8")
+    result = adapt_windows(config)
+
+    assert config.outputs.events_path.read_text(encoding="utf-8") == static_events
+    assert result["adaptation_mode"] == "static"
+    assert result["threshold_update_count"] == 0
+
+
+def test_adaptive_threshold_updates_only_after_scoring_current_window(
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(
+        ingest={"processed_root": tmp_path},
+        estimator={"log_likelihood_backend": "scipy"},
+        calibration={"minimum_samples": 2, "quantile": 0.25},
+        adaptation={
+            "mode": "adaptive_threshold",
+            "buffer_size": 2,
+            "update_every": 2,
+        },
+        outputs={
+            "model_path": tmp_path / "model.json",
+            "threshold_path": tmp_path / "threshold.json",
+            "events_path": tmp_path / "events.json",
+            "reports_dir": tmp_path / "reports",
+        },
+    )
+    write_model(config)
+    write_threshold(config, "raw")
+    write_development_captures(config)
+
+    result = adapt_windows(config)
+    events = json.loads(config.outputs.events_path.read_text(encoding="utf-8"))
+    report = json.loads(
+        (config.outputs.reports_dir / "adaptation.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert [event["threshold"] for event in events[:2]] == [0.0, 0.0]
+    assert events[2]["threshold"] == pytest.approx(
+        report["threshold_update_attempts"][0]["new_threshold"]
+    )
+    assert result["threshold_update_count"] == 2
+    assert all(
+        update["promoted"] for update in report["threshold_update_attempts"]
+    )
+    assert report["initial_model_fingerprint"] == events[0]["model_fingerprint"]

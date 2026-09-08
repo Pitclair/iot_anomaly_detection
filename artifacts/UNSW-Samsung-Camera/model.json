@@ -22,13 +22,13 @@
     0.12261139717614712
   ],
   "psi": 0.057490783805496534,
+  "log_likelihood_backend": "lm",
+  "precision_digits": 6,
   "training_capture_ids": [
     "2018-05-28",
     "2018-05-29",
     "2018-05-30"
   ],
-  "log_likelihood_backend": "lm",
-  "precision_digits": 6,
   "training_window_count": 432,
   "training_start_utc": "2018-05-28T00:00:00Z",
   "training_end_utc": "2018-05-31T00:00:00Z",
@@ -45,6 +45,6 @@
     "max_iterations": 100000,
     "initial_log_likelihood": -191965.77441314925,
     "final_log_likelihood": -191562.0385185929,
-    "duration_seconds": 0.04359063506126404
+    "duration_seconds": 0.045414138585329056
   }
 }

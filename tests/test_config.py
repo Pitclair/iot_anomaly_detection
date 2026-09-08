@@ -174,6 +174,18 @@ def test_calibration_score_type_defaults_to_raw_and_rejects_unknown(
         AppConfig.model_validate(valid_data)
 
 
+def test_adaptation_mode_and_buffer_are_validated(valid_data: dict) -> None:
+    valid_data["adaptation"]["mode"] = "other"
+    with pytest.raises(ValidationError, match="adaptation.mode"):
+        AppConfig.model_validate(valid_data)
+
+    valid_data["adaptation"].update(
+        {"mode": "adaptive_threshold", "buffer_size": 29}
+    )
+    with pytest.raises(ValidationError, match="minimum_samples"):
+        AppConfig.model_validate(valid_data)
+
+
 def test_category_count_mismatch_is_rejected(valid_data: dict) -> None:
     changed = deepcopy(valid_data)
     changed["estimator"]["categories_k"] = 3

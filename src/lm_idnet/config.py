@@ -208,9 +208,9 @@ class CalibrationConfig(StrictModel):
 
 
 class AdaptationConfig(StrictModel):
-    enabled: bool = False
-    safe_margin: float = Field(default=0.0, ge=0)
-    buffer_size: int = Field(default=1000, gt=0)
+    mode: Literal["static", "adaptive_threshold"] = "static"
+    buffer_size: int = Field(default=288, gt=0)
+    update_every: int = Field(default=144, gt=0)
 
 
 class OutputConfig(StrictModel):
@@ -243,6 +243,18 @@ class AppConfig(StrictModel):
             raise ValueError(
                 f"estimator.categories_k ({self.estimator.categories_k}) "
                 f"must equal the number of ingest.categories ({actual})"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def adaptive_threshold_buffer_must_be_large_enough(self) -> "AppConfig":
+        if (
+            self.adaptation.mode == "adaptive_threshold"
+            and self.adaptation.buffer_size < self.calibration.minimum_samples
+        ):
+            raise ValueError(
+                "adaptation.buffer_size must be at least "
+                "calibration.minimum_samples for adaptive_threshold"
             )
         return self
 

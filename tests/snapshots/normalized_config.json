@@ -58,9 +58,9 @@
     "score_type": "raw"
   },
   "adaptation": {
-    "enabled": false,
-    "safe_margin": 0.0,
-    "buffer_size": 1000
+    "mode": "static",
+    "buffer_size": 288,
+    "update_every": 144
   },
   "outputs": {
     "model_path": "artifacts/D-LinkDayCam5/model.json",

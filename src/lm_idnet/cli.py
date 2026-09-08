@@ -13,7 +13,6 @@ from pathlib import Path
 
 from lm_idnet.config import AppConfig, load_config
 from lm_idnet.exceptions import (
-    CommandUnavailableError,
     ConfigurationError,
     IngestionError,
     LMIDNetError,
@@ -51,7 +50,7 @@ COMMAND_HELP = {
     "calibrate": "calibrate an anomaly threshold for a trained model",
     "score": "score processed windows and emit anomaly decisions",
     "evaluate": "evaluate detector outputs using the frozen protocol",
-    "adapt": "train and assess a guarded adaptive-model candidate",
+    "adapt": "run the configured static or adaptive-threshold detector",
     "forecast": "forecast held-out traffic from a verified model",
     "benchmark": "measure configured backend and pipeline performance",
 }
@@ -205,18 +204,8 @@ def _forecast(config: AppConfig) -> None:
     run_forecasting(config)
 
 
-def _not_implemented(command: str) -> Callable[[AppConfig], None]:
-    def reject(_config: AppConfig) -> None:
-        raise CommandUnavailableError(
-            f"{command} is registered but its implementation is not available yet"
-        )
-
-    return reject
-
-
 HANDLERS: dict[str, Callable[[AppConfig], None]] = {
     "preprocess": _preprocess,
-    "adapt": _not_implemented("adapt"),
     "forecast": _forecast,
 }
 
@@ -360,6 +349,22 @@ def run_command(argv: Sequence[str] | None = None) -> None:
             json.dumps(
                 {
                     "command": "score",
+                    "status": "completed",
+                    **result,
+                },
+                sort_keys=True,
+            )
+        )
+        return
+
+    if args.command == "adapt":
+        from lm_idnet.models.scoring_stage import adapt_windows
+
+        result = adapt_windows(config)
+        print(
+            json.dumps(
+                {
+                    "command": "adapt",
                     "status": "completed",
                     **result,
                 },

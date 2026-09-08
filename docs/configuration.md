@@ -33,8 +33,10 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   `raw` (default) or per-packet `normalized` anomaly score.
   Compare them by running `calibrate` and `score` once per value with distinct
   threshold and event output paths.
-- `adaptation`: whether adaptation is enabled, its non-negative safety margin,
-  and positive buffer capacity. Adaptation remains disabled by default.
+- `adaptation`: `static` or `adaptive_threshold` detector mode, the positive
+  rolling-score buffer capacity, and the positive number of scored windows
+  between threshold updates. The adaptive buffer must hold at least
+  `calibration.minimum_samples` scores.
 - `outputs`: paths for model, threshold, event, and report artifacts.
 - `forecast`: positive forecast horizon.
 
@@ -64,6 +66,8 @@ Configuration validation is intentionally strict:
   software whitelist.
 - Seeds must be non-negative.
 - Calibration quantiles must satisfy \(0 < q < 1\).
+- Adaptive-threshold buffers must be large enough for the configured minimum
+  calibration sample count.
 
 Validation errors identify the offending field and prevent the command from
 starting. No partially validated dictionary is passed to the application.

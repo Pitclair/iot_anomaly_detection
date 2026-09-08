@@ -80,15 +80,26 @@ lm-idnet --help
 lm-idnet preprocess --config configs/d_link_day_cam5.json
 lm-idnet diagnose --config configs/d_link_day_cam5.json
 lm-idnet train --config configs/d_link_day_cam5.json
+lm-idnet adapt --config configs/d_link_day_cam5.json
 lm-idnet forecast --config configs/d_link_day_cam5.json
 ```
 
 The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,
 `score`, `evaluate`, `adapt`, `forecast`, and `benchmark`. Use
-`lm-idnet <command> --help` for command-specific options. Commands whose
-pipeline stage has not been implemented yet fail explicitly with exit code 9;
-they never report a false success. Every command supports `--dry-run` to
-validate its configuration and CLI wiring without executing the stage.
+`lm-idnet <command> --help` for command-specific options. Every command supports
+`--dry-run` to validate its configuration and CLI wiring without executing the
+stage.
+
+Run the static and adaptive-threshold development experiments for both labelled
+devices with:
+
+```sh
+./scripts/run_adaptation_experiments.sh
+```
+
+The static runs use the versioned device configurations. Adaptive runs use the
+matching files under `configs/experiments/` and write isolated events and
+reports under `artifacts/experiments/` and `reports/experiments/`.
 
 The complete command contract and current implementation status are documented
 in [`docs/command-line-interface.md`](docs/command-line-interface.md).
