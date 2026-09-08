@@ -60,7 +60,9 @@
   "adaptation": {
     "mode": "static",
     "buffer_size": 288,
-    "update_every": 144
+    "update_every": 144,
+    "minimum_refit_windows": 144,
+    "safe_margin": 1.0
   },
   "outputs": {
     "model_path": "artifacts/D-LinkDayCam5/model.json",

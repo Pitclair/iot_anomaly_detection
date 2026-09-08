@@ -33,10 +33,13 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   `raw` (default) or per-packet `normalized` anomaly score.
   Compare them by running `calibrate` and `score` once per value with distinct
   threshold and event output paths.
-- `adaptation`: `static` or `adaptive_threshold` detector mode, the positive
-  rolling-score buffer capacity, and the positive number of scored windows
-  between threshold updates. The adaptive buffer must hold at least
-  `calibration.minimum_samples` scores.
+- `adaptation`: `static`, `adaptive_threshold`, or `periodic_refit` detector
+  mode. `buffer_size` bounds recent scores and count windows, and
+  `update_every` sets the number of scored windows between update attempts.
+  `minimum_refit_windows` is the required number of high-confidence windows
+  for a model refit. A window is high-confidence when its score under the
+  original static model is at least the original threshold plus `safe_margin`
+  times the original score IQR.
 - `outputs`: paths for model, threshold, event, and report artifacts.
 - `forecast`: positive forecast horizon.
 
@@ -66,8 +69,9 @@ Configuration validation is intentionally strict:
   software whitelist.
 - Seeds must be non-negative.
 - Calibration quantiles must satisfy \(0 < q < 1\).
-- Adaptive-threshold buffers must be large enough for the configured minimum
-  calibration sample count.
+- Non-static buffers must be large enough for the configured minimum
+  calibration sample count. In `periodic_refit` mode,
+  `minimum_refit_windows` cannot exceed `buffer_size`.
 
 Validation errors identify the offending field and prevent the command from
 starting. No partially validated dictionary is passed to the application.

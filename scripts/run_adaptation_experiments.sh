@@ -12,7 +12,8 @@ do
   ./scripts/run.sh evaluate --config "$config"
 done
 
-for config in configs/experiments/*_adaptive_threshold.json
+for config in configs/experiments/*_adaptive_threshold.json \
+  configs/experiments/*_periodic_refit.json
 do
   ./scripts/run.sh adapt --config "$config"
   ./scripts/run.sh evaluate --config "$config"

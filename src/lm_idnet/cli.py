@@ -50,7 +50,7 @@ COMMAND_HELP = {
     "calibrate": "calibrate an anomaly threshold for a trained model",
     "score": "score processed windows and emit anomaly decisions",
     "evaluate": "evaluate detector outputs using the frozen protocol",
-    "adapt": "run the configured static or adaptive-threshold detector",
+    "adapt": "run the configured static or adaptive detector",
     "forecast": "forecast held-out traffic from a verified model",
     "benchmark": "measure configured backend and pipeline performance",
 }

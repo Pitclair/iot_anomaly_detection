@@ -79,16 +79,25 @@ window. `evaluate` compares development-test anomaly decisions with matching
 window labels and writes `evaluation_statistics.json` under the configured
 reports directory. `benchmark` compares LM and SciPy on the same training,
 calibration, and scoring workload and writes `lm_backend_benchmark.json` under
-the configured reports directory. `adapt` runs the configured `static` or
-`adaptive_threshold` mode over the same chronological development-test stream.
-Adaptive-threshold mode keeps alpha fixed, scores each window before updating,
-and periodically replaces the threshold and score IQR with estimates from the
-bounded buffer of all recent non-missing scores. Labels and the current anomaly
-decision do not filter that intentionally naive baseline. An update with a
-non-positive score IQR is recorded and rejected, leaving the prior threshold
-active. The command writes ordinary anomaly events plus
-`adaptation.json` under the configured reports directory. Periodic alpha
-refitting is not implemented.
+the configured reports directory. `adapt` runs the configured `static`,
+`adaptive_threshold`, or `periodic_refit` mode over the same chronological
+development-test stream. Adaptive-threshold mode keeps alpha fixed, scores each
+window before updating, and periodically replaces the threshold and score IQR
+with estimates from the bounded buffer of all recent non-missing scores. Labels
+and the current anomaly decision do not filter that intentionally naive
+baseline.
+
+Periodic-refit mode also maintains a bounded buffer of windows that clear a
+high-confidence gate under the original static model and threshold. On each
+update interval, it fits a candidate alpha when enough safe windows are
+available. One one-hot smoothing row per category keeps an absent protocol from
+forcing its alpha to zero. The candidate is promoted only if fitting converges,
+its likelihood on that same guarded matrix is not worse than the active model,
+and rescoring the recent window buffer produces a positive score IQR. Alpha,
+expected profile, model fingerprint, threshold, and score IQR are then replaced
+together. A rejected refit leaves the active model untouched and falls back to
+the threshold-only update. Every attempt and rejection reason is written to
+`adaptation.json`.
 
 ## Stage isolation
 

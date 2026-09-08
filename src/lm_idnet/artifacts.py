@@ -37,12 +37,28 @@ SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
 
 def artifact_fingerprint(artifact: ModelArtifact) -> str:
     """Fingerprint the model inputs that can change scoring."""
+    return model_parameter_fingerprint(
+        alpha=artifact.alpha,
+        categories=artifact.categories,
+        log_likelihood_backend=artifact.log_likelihood_backend,
+        precision_digits=artifact.precision_digits,
+    )
+
+
+def model_parameter_fingerprint(
+    *,
+    alpha: tuple[float, ...],
+    categories: tuple[str, ...],
+    log_likelihood_backend: str,
+    precision_digits: int,
+) -> str:
+    """Fingerprint only the parameter values used while scoring."""
     canonical = json.dumps(
         {
-            "alpha": artifact.alpha,
-            "categories": artifact.categories,
-            "log_likelihood_backend": artifact.log_likelihood_backend,
-            "precision_digits": artifact.precision_digits,
+            "alpha": alpha,
+            "categories": categories,
+            "log_likelihood_backend": log_likelihood_backend,
+            "precision_digits": precision_digits,
         },
         ensure_ascii=False,
         allow_nan=False,

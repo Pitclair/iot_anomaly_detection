@@ -90,8 +90,8 @@ The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,
 `--dry-run` to validate its configuration and CLI wiring without executing the
 stage.
 
-Run the static and adaptive-threshold development experiments for both labelled
-devices with:
+Run the static, adaptive-threshold, and periodic-refit development experiments
+for both labelled devices with:
 
 ```sh
 ./scripts/run_adaptation_experiments.sh

@@ -93,6 +93,7 @@ def write_threshold(
     config,
     score_type: str,
     model_fingerprint: str | None = None,
+    threshold_value: float = 0.0,
 ) -> None:
     start = datetime(2020, 10, 14, tzinfo=timezone.utc)
     model = load_artifact(config.outputs.model_path, expected_type="model")
@@ -103,7 +104,7 @@ def write_threshold(
             "model_fingerprint": model_fingerprint or artifact_fingerprint(model),
             "score_type": score_type,
             "quantile": 0.01,
-            "threshold": 0.0,
+            "threshold": threshold_value,
             "calibration_capture_ids": config.ingest.partitions.calibration,
             "calibration_window_count": 1,
             "calibration_start_utc": start,
@@ -372,3 +373,137 @@ def test_adaptive_threshold_updates_only_after_scoring_current_window(
         update["promoted"] for update in report["threshold_update_attempts"]
     )
     assert report["initial_model_fingerprint"] == events[0]["model_fingerprint"]
+
+
+def test_periodic_refit_promotes_model_and_matching_threshold(
+    tmp_path,
+    config_factory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = config_factory(
+        ingest={"processed_root": tmp_path},
+        estimator={"log_likelihood_backend": "scipy"},
+        calibration={"minimum_samples": 2, "quantile": 0.25},
+        adaptation={
+            "mode": "periodic_refit",
+            "buffer_size": 2,
+            "update_every": 2,
+            "minimum_refit_windows": 2,
+            "safe_margin": 0.0,
+        },
+        outputs={
+            "model_path": tmp_path / "model.json",
+            "threshold_path": tmp_path / "threshold.json",
+            "events_path": tmp_path / "events.json",
+            "reports_dir": tmp_path / "reports",
+        },
+    )
+    write_model(config)
+    write_threshold(config, "raw", threshold_value=-1e9)
+    write_development_captures(config)
+    fit_matrices = []
+
+    class SuccessfulEstimator:
+        def fit(self, counts):
+            fit_matrices.append(counts.copy())
+            alpha = np.asarray([2.0, 3.0, 4.0, 5.0])
+            return DirichletFit(
+                alpha.copy(), alpha, 14.0, 1.0 / 14.0, 1, True, -10.0, 1e9
+            )
+
+    monkeypatch.setattr(
+        scoring_stage,
+        "create_estimator",
+        lambda *_args: SuccessfulEstimator(),
+    )
+
+    result = adapt_windows(config)
+    events = json.loads(config.outputs.events_path.read_text(encoding="utf-8"))
+    report = json.loads(
+        (config.outputs.reports_dir / "adaptation.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert [event["model_fingerprint"] for event in events[:2]] == [
+        report["initial_model_fingerprint"],
+        report["initial_model_fingerprint"],
+    ]
+    assert events[2]["model_fingerprint"] == report["final_model_fingerprint"]
+    assert events[2]["threshold"] == pytest.approx(
+        report["threshold_update_attempts"][0]["new_threshold"]
+    )
+    assert events[2]["expected_profile"] == pytest.approx(
+        {"tcp": 2 / 14, "udp": 3 / 14, "ssdp": 4 / 14, "arp": 5 / 14}
+    )
+    assert result["model_refit_count"] == 2
+    assert report["initial_model_fingerprint"] != report["final_model_fingerprint"]
+    assert all(attempt["promoted"] for attempt in report["model_refit_attempts"])
+    assert all(
+        np.array_equal(matrix[:4], np.eye(4, dtype=np.int64))
+        for matrix in fit_matrices
+    )
+
+
+def test_periodic_refit_rejects_nonconverged_candidate(
+    tmp_path,
+    config_factory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = config_factory(
+        ingest={"processed_root": tmp_path},
+        estimator={"log_likelihood_backend": "scipy"},
+        calibration={"minimum_samples": 2, "quantile": 0.25},
+        adaptation={
+            "mode": "periodic_refit",
+            "buffer_size": 2,
+            "update_every": 2,
+            "minimum_refit_windows": 2,
+            "safe_margin": 0.0,
+        },
+        outputs={
+            "model_path": tmp_path / "model.json",
+            "threshold_path": tmp_path / "threshold.json",
+            "events_path": tmp_path / "events.json",
+            "reports_dir": tmp_path / "reports",
+        },
+    )
+    write_model(config)
+    write_threshold(config, "raw", threshold_value=-1e9)
+    write_development_captures(config)
+
+    class NonconvergingEstimator:
+        def fit(self, counts):
+            alpha = np.asarray([2.0, 3.0, 4.0, 5.0])
+            return DirichletFit(
+                alpha.copy(), alpha, 14.0, 1.0 / 14.0, 1, False, -10.0, 1e9
+            )
+
+    monkeypatch.setattr(
+        scoring_stage,
+        "create_estimator",
+        lambda *_args: NonconvergingEstimator(),
+    )
+
+    result = adapt_windows(config)
+    events = json.loads(config.outputs.events_path.read_text(encoding="utf-8"))
+    report = json.loads(
+        (config.outputs.reports_dir / "adaptation.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert result["model_refit_count"] == 0
+    assert report["initial_model_fingerprint"] == report["final_model_fingerprint"]
+    assert all(
+        event["model_fingerprint"] == report["initial_model_fingerprint"]
+        for event in events
+    )
+    assert all(
+        attempt["reason"] == "candidate did not converge"
+        for attempt in report["model_refit_attempts"]
+    )
+    assert all(
+        update["source"] == "recent_scores"
+        for update in report["threshold_update_attempts"]
+    )

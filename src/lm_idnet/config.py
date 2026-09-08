@@ -208,9 +208,11 @@ class CalibrationConfig(StrictModel):
 
 
 class AdaptationConfig(StrictModel):
-    mode: Literal["static", "adaptive_threshold"] = "static"
+    mode: Literal["static", "adaptive_threshold", "periodic_refit"] = "static"
     buffer_size: int = Field(default=288, gt=0)
     update_every: int = Field(default=144, gt=0)
+    minimum_refit_windows: int = Field(default=144, gt=0)
+    safe_margin: float = Field(default=1.0, ge=0)
 
 
 class OutputConfig(StrictModel):
@@ -247,14 +249,22 @@ class AppConfig(StrictModel):
         return self
 
     @model_validator(mode="after")
-    def adaptive_threshold_buffer_must_be_large_enough(self) -> "AppConfig":
+    def adaptation_buffers_must_be_large_enough(self) -> "AppConfig":
         if (
-            self.adaptation.mode == "adaptive_threshold"
+            self.adaptation.mode != "static"
             and self.adaptation.buffer_size < self.calibration.minimum_samples
         ):
             raise ValueError(
                 "adaptation.buffer_size must be at least "
-                "calibration.minimum_samples for adaptive_threshold"
+                "calibration.minimum_samples for adaptation"
+            )
+        if (
+            self.adaptation.mode == "periodic_refit"
+            and self.adaptation.minimum_refit_windows
+            > self.adaptation.buffer_size
+        ):
+            raise ValueError(
+                "adaptation.minimum_refit_windows cannot exceed buffer_size"
             )
         return self
 

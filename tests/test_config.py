@@ -185,6 +185,16 @@ def test_adaptation_mode_and_buffer_are_validated(valid_data: dict) -> None:
     with pytest.raises(ValidationError, match="minimum_samples"):
         AppConfig.model_validate(valid_data)
 
+    valid_data["adaptation"].update(
+        {
+            "mode": "periodic_refit",
+            "buffer_size": 30,
+            "minimum_refit_windows": 31,
+        }
+    )
+    with pytest.raises(ValidationError, match="minimum_refit_windows"):
+        AppConfig.model_validate(valid_data)
+
 
 def test_category_count_mismatch_is_rejected(valid_data: dict) -> None:
     changed = deepcopy(valid_data)
