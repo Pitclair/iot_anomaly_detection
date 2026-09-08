@@ -13,7 +13,7 @@ do
 done
 
 for config in configs/experiments/*_adaptive_threshold.json \
-  configs/experiments/*_periodic_refit.json
+  configs/experiments/*_periodic_refit*.json
 do
   ./scripts/run.sh adapt --config "$config"
   ./scripts/run.sh evaluate --config "$config"

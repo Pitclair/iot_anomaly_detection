@@ -1,0 +1,76 @@
+{
+  "precision_digits": 6,
+  "ingest": {
+    "raw_root": "data/raw/",
+    "processed_root": "data/processed/",
+    "dataset_folder": "UNSW-Chromecast",
+    "device_id": "Chromecast",
+    "device_mac": "f4:f5:d8:8f:0a:3c",
+    "time_col": "timestamp",
+    "protocol_col": "protocol",
+    "window_minutes": 10,
+    "categories": ["tcp", "udp", "ssdp", "arp"],
+    "partitions": {
+      "fit": [
+        "2018-10-10",
+        "2018-10-11",
+        "2018-10-12",
+        "2018-10-13",
+        "2018-10-14",
+        "2018-10-15"
+      ],
+      "calibration": [
+        "2018-10-16",
+        "2018-10-17",
+        "2018-10-18",
+        "2018-10-19"
+      ],
+      "development_test": [
+        "2018-10-20",
+        "2018-10-21",
+        "2018-10-22",
+        "2018-10-23"
+      ],
+      "final_test": [
+        "2018-10-25",
+        "2018-10-26",
+        "2018-10-27"
+      ]
+    },
+    "allowed_duplicate_captures": []
+  },
+  "seeds": {
+    "simulation": 1001,
+    "model_fitting": 1002,
+    "bootstrap": 1003,
+    "randomized_algorithms": 1004
+  },
+  "estimator": {
+    "categories_k": 4,
+    "initial_alpha_concentration": 10.0,
+    "tolerance_delta": 2e-9,
+    "max_iterations": 100000,
+    "log_likelihood_backend": "lm"
+  },
+  "calibration": {
+    "quantile": 0.01,
+    "minimum_samples": 30,
+    "score_type": "raw"
+  },
+  "adaptation": {
+    "mode": "periodic_refit",
+    "buffer_size": 288,
+    "update_every": 288,
+    "minimum_refit_windows": 240,
+    "safe_margin": 1.0
+  },
+  "outputs": {
+    "model_path": "artifacts/UNSW-Chromecast/model.json",
+    "threshold_path": "artifacts/UNSW-Chromecast/threshold.json",
+    "events_path": "artifacts/experiments/UNSW-Chromecast/periodic_refit_288_240/events.json",
+    "reports_dir": "reports/experiments/UNSW-Chromecast/periodic_refit_288_240"
+  },
+  "forecast": {
+    "horizon_hours": 24
+  }
+}

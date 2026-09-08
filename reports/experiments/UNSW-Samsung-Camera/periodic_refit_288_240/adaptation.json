@@ -1,0 +1,86 @@
+{
+  "anomaly_count": 49,
+  "buffer_size": 288,
+  "capture_ids": [
+    "2018-06-01",
+    "2018-06-02",
+    "2018-06-03",
+    "2018-06-04"
+  ],
+  "events_path": "artifacts/experiments/UNSW-Samsung-Camera/periodic_refit_288_240/events.json",
+  "final_alpha": [
+    56.044355353240306,
+    0.02045892688566469,
+    91.18545873084955,
+    19.367718221322765
+  ],
+  "final_model_fingerprint": "591607924620c2c43db6f2cf4a84c78518c1afa9eb75e524ed1a0d53d40ea39e",
+  "final_score_iqr": 1.073468721347993,
+  "final_threshold": -382.91388051580645,
+  "initial_alpha": [
+    6.360268651586078,
+    0.029417417993090944,
+    8.87169227224765,
+    2.132713959701217
+  ],
+  "initial_model_fingerprint": "d640793c22755e942f6175039f1a1e7ed9ce8284191a9a59d508d8823ae72d6c",
+  "initial_score_iqr": 0.14515034994923326,
+  "initial_threshold": -16.92209375738571,
+  "minimum_refit_windows": 240,
+  "mode": "periodic_refit",
+  "model_refit_attempts": [
+    {
+      "active_log_likelihood": -97351.30550501845,
+      "after_window": 288,
+      "buffer_window_count": 288,
+      "candidate_converged": true,
+      "candidate_iterations": 3303,
+      "candidate_log_likelihood": -97044.22774828401,
+      "capture_id": "2018-06-03",
+      "new_alpha": [
+        56.044355353240306,
+        0.02045892688566469,
+        91.18545873084955,
+        19.367718221322765
+      ],
+      "new_model_fingerprint": "591607924620c2c43db6f2cf4a84c78518c1afa9eb75e524ed1a0d53d40ea39e",
+      "old_alpha": [
+        6.360268651586078,
+        0.029417417993090944,
+        8.87169227224765,
+        2.132713959701217
+      ],
+      "old_model_fingerprint": "d640793c22755e942f6175039f1a1e7ed9ce8284191a9a59d508d8823ae72d6c",
+      "promoted": true,
+      "safe_window_count": 241,
+      "smoothing_window_count": 4,
+      "window_end_utc": "2018-06-03T03:20:00Z"
+    }
+  ],
+  "model_refit_count": 1,
+  "partition": "development_test",
+  "quantile": 0.01,
+  "report_type": "adaptation",
+  "safe_margin": 1.0,
+  "safe_window_count": 288,
+  "score_type": "raw",
+  "threshold_update_attempts": [
+    {
+      "after_window": 288,
+      "buffer_window_count": 288,
+      "capture_id": "2018-06-03",
+      "new_model_fingerprint": "591607924620c2c43db6f2cf4a84c78518c1afa9eb75e524ed1a0d53d40ea39e",
+      "new_score_iqr": 1.073468721347993,
+      "new_threshold": -382.91388051580645,
+      "old_model_fingerprint": "d640793c22755e942f6175039f1a1e7ed9ce8284191a9a59d508d8823ae72d6c",
+      "old_score_iqr": 0.14515034994923326,
+      "old_threshold": -16.92209375738571,
+      "promoted": true,
+      "source": "periodic_refit",
+      "window_end_utc": "2018-06-03T03:20:00Z"
+    }
+  ],
+  "threshold_update_count": 1,
+  "update_every": 288,
+  "window_count": 556
+}

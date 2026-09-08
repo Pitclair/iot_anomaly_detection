@@ -1,0 +1,86 @@
+{
+  "anomaly_count": 25,
+  "buffer_size": 288,
+  "capture_ids": [
+    "2018-10-20",
+    "2018-10-21",
+    "2018-10-22",
+    "2018-10-23"
+  ],
+  "events_path": "artifacts/experiments/UNSW-Chromecast/periodic_refit_288_240/events.json",
+  "final_alpha": [
+    5.191816496698357,
+    27.806599057711452,
+    0.0027205911029915906,
+    1.4670662263136887
+  ],
+  "final_model_fingerprint": "df88660ec6eb0d6c76f4ce563104a9620e62da574b2638758052c5f9d1fab119",
+  "final_score_iqr": 10.26109218991084,
+  "final_threshold": -17.763876641837935,
+  "initial_alpha": [
+    1.5221399371002156,
+    26.007531725250374,
+    0.0012281266177994147,
+    0.5676207312523116
+  ],
+  "initial_model_fingerprint": "db3b9652d3954655f3d5f96c5d6b24cbb2e66b538a75d64e31c8ba1d05634aa2",
+  "initial_score_iqr": 2.1967053528515237,
+  "initial_threshold": -25.61083010635366,
+  "minimum_refit_windows": 240,
+  "mode": "periodic_refit",
+  "model_refit_attempts": [
+    {
+      "active_log_likelihood": -75444.39201489805,
+      "after_window": 288,
+      "buffer_window_count": 288,
+      "candidate_converged": true,
+      "candidate_iterations": 1410,
+      "candidate_log_likelihood": -75242.3206830767,
+      "capture_id": "2018-10-22",
+      "new_alpha": [
+        5.191816496698357,
+        27.806599057711452,
+        0.0027205911029915906,
+        1.4670662263136887
+      ],
+      "new_model_fingerprint": "df88660ec6eb0d6c76f4ce563104a9620e62da574b2638758052c5f9d1fab119",
+      "old_alpha": [
+        1.5221399371002156,
+        26.007531725250374,
+        0.0012281266177994147,
+        0.5676207312523116
+      ],
+      "old_model_fingerprint": "db3b9652d3954655f3d5f96c5d6b24cbb2e66b538a75d64e31c8ba1d05634aa2",
+      "promoted": true,
+      "safe_window_count": 285,
+      "smoothing_window_count": 4,
+      "window_end_utc": "2018-10-22T06:00:00Z"
+    }
+  ],
+  "model_refit_count": 1,
+  "partition": "development_test",
+  "quantile": 0.01,
+  "report_type": "adaptation",
+  "safe_margin": 1.0,
+  "safe_window_count": 288,
+  "score_type": "raw",
+  "threshold_update_attempts": [
+    {
+      "after_window": 288,
+      "buffer_window_count": 288,
+      "capture_id": "2018-10-22",
+      "new_model_fingerprint": "df88660ec6eb0d6c76f4ce563104a9620e62da574b2638758052c5f9d1fab119",
+      "new_score_iqr": 10.26109218991084,
+      "new_threshold": -17.763876641837935,
+      "old_model_fingerprint": "db3b9652d3954655f3d5f96c5d6b24cbb2e66b538a75d64e31c8ba1d05634aa2",
+      "old_score_iqr": 2.1967053528515237,
+      "old_threshold": -25.61083010635366,
+      "promoted": true,
+      "source": "periodic_refit",
+      "window_end_utc": "2018-10-22T06:00:00Z"
+    }
+  ],
+  "threshold_update_count": 1,
+  "update_every": 288,
+  "window_count": 474
+}
