@@ -1,0 +1,637 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  urlcolor=blue!55!black,
+  citecolor=blue!55!black
+}
+
+\title{Understanding Overdispersion in the IoT Traffic Datasets\\[0.4em]
+\large From the Multinomial Model to the Dirichlet--Multinomial and the LM Likelihood}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document explains the different meanings of overdispersion that arise in
+the project and in the supporting papers.  It begins with the Multinomial and
+Dirichlet--Multinomial models, explains the roles of the parameters
+$\boldsymbol{\alpha}$, $A$, $\psi$, and $\rho$, and then separates the
+statistical question of whether the data are overdispersed from the numerical
+question of how the likelihood is evaluated.  The fitted Chromecast and
+Samsung Camera models are used throughout as concrete examples.  Particular
+attention is paid to the criterion $\psi<0.05$ used in the ALM IoT paper,
+because its direction is not the direction implied by the standard
+Dirichlet--Multinomial variance formula.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Two Questions That Must Be Kept Separate}
+
+The discussion becomes much easier once two different questions are separated.
+The first is a statistical question: does the composition of the observed
+traffic vary more than a fixed-probability Multinomial model predicts?  The
+second is a numerical question: once a Dirichlet--Multinomial model has been
+chosen, can its log-likelihood be calculated accurately and efficiently on a
+computer?
+
+The Dirichlet--Multinomial distribution addresses the statistical question.
+The Yu--Shaw (YS) and Languasco--Migliardi (LM) procedures address the numerical
+question.  YS and LM are not competing probability models and they do not
+represent different kinds of overdispersion.  They are alternative ways of
+calculating the same Dirichlet--Multinomial log-likelihood.
+
+This distinction is important because the statistically least dispersed part
+of the parameter space is also a numerically difficult part of the parameter
+space.  In other words, ``close to the Multinomial model'' and ``easy to
+calculate'' are not synonymous.
+
+\section{What Is Being Modelled?}
+
+The project divides network traffic into fixed time windows.  Each window
+produces a four-category count vector
+
+\[
+\mathbf{x}_i=
+\bigl(
+x_{i,\mathrm{TCP}},
+x_{i,\mathrm{UDP}},
+x_{i,\mathrm{SSDP}},
+x_{i,\mathrm{ARP}}
+\bigr),
+\]
+
+whose total packet count is
+
+\[
+n_i=\sum_{k=1}^{4}x_{ik}.
+\]
+
+The Multinomial and Dirichlet--Multinomial models describe how this observed
+total is divided among the four protocol categories.  They condition on
+$n_i$.  They do not, by themselves, explain why one window contains 500
+packets and another contains 10,000.  Their principal concern is whether those
+packets are divided among TCP, UDP, SSDP, and ARP in a stable or variable way.
+
+This point also explains why a Multinomial dispersion diagnostic is not the
+same as simply calculating the variance of the total number of packets.  A
+device may change its total traffic volume while retaining almost the same
+protocol proportions, or it may retain a similar total while changing its
+protocol mixture dramatically.  These are different behaviours.
+
+\section{The Ordinary Multinomial Model}
+
+The ordinary Multinomial model assumes a single probability vector
+
+\[
+\mathbf{p}=
+\bigl(
+p_{\mathrm{TCP}},
+p_{\mathrm{UDP}},
+p_{\mathrm{SSDP}},
+p_{\mathrm{ARP}}
+\bigr),
+\qquad
+\sum_k p_k=1,
+\]
+
+and uses that same vector in every window:
+
+\[
+\mathbf{X}_i\mid n_i,\mathbf{p}
+\sim \operatorname{Multinomial}(n_i,\mathbf{p}).
+\]
+
+For protocol category $k$, the conditional mean and variance are
+
+\begin{align}
+\operatorname{E}[X_{ik}\mid n_i]
+  &=n_i p_k,\\
+\operatorname{Var}_{\mathrm{MN}}(X_{ik}\mid n_i)
+  &=n_i p_k(1-p_k).
+\end{align}
+
+Suppose, for example, that UDP has probability $0.90$.  The Multinomial model
+allows ordinary sampling fluctuation around 90 percent, but it assumes that
+the underlying 90 percent probability remains fixed from one window to the
+next.
+
+That assumption is often too restrictive for an IoT device.  Even during
+normal operation, a device may move between idle, discovery, cloud
+communication, streaming, maintenance, and user-driven modes.  Each mode can
+have a different protocol mixture.  If those mixtures change more than the
+fixed-$\mathbf{p}$ Multinomial permits, the observations exhibit
+\emph{extra-Multinomial variation}, usually called Multinomial
+overdispersion.
+
+Overdispersion is therefore always relative to a reference model.  It does not
+merely mean that a raw variance looks large; it means that the observed
+variation is larger than the variation predicted by the model being assessed.
+
+\section{The Dirichlet--Multinomial Model}
+
+The Dirichlet--Multinomial model relaxes the fixed-probability assumption.  It
+allows every window to have its own protocol probability vector
+$\mathbf{q}_i$.  The model can be understood as a two-stage process:
+
+\begin{align}
+\mathbf{q}_i
+  &\sim \operatorname{Dirichlet}(\boldsymbol{\alpha}),\\
+\mathbf{X}_i\mid n_i,\mathbf{q}_i
+  &\sim \operatorname{Multinomial}(n_i,\mathbf{q}_i).
+\end{align}
+
+The contrast with the ordinary Multinomial can be summarized as
+
+\[
+\begin{array}{lll}
+\text{Multinomial:}
+  & \mathbf{p} & \longrightarrow \mathbf{X}_i,\\[0.4em]
+\text{Dirichlet--Multinomial:}
+  & \boldsymbol{\alpha} \longrightarrow \mathbf{q}_i
+  & \longrightarrow \mathbf{X}_i.
+\end{array}
+\]
+
+The random vector $\mathbf{q}_i$ represents the protocol mixture active in a
+particular window.  One window may be more UDP-heavy, another more TCP-heavy,
+and another may contain an unusual amount of ARP traffic.  The Dirichlet
+distribution describes how these window-specific mixtures vary around their
+long-run average.  Once the random probabilities are integrated out, the
+resulting count distribution is the Dirichlet--Multinomial.
+
+\subsection{The meaning of $\boldsymbol{\alpha}$ and $A$}
+
+Let
+
+\[
+\boldsymbol{\alpha}=(\alpha_1,\ldots,\alpha_K),
+\qquad
+A=\sum_{k=1}^{K}\alpha_k.
+\]
+
+The mean probability of category $k$ is
+
+\[
+p_k=\frac{\alpha_k}{A}.
+\]
+
+The ratios among the $\alpha_k$ values therefore determine the average traffic
+composition.  Their sum $A$, called the total concentration, determines how
+tightly the window-specific vectors $\mathbf{q}_i$ remain around that average.
+A large concentration produces similar probability vectors from window to
+window.  A small concentration permits much greater changes.
+
+This distinction can be seen by multiplying every component of
+$\boldsymbol{\alpha}$ by the same positive constant.  The mean probabilities
+$\alpha_k/A$ do not change, because both numerator and denominator are scaled
+equally.  The concentration does change, however, so the amount of
+window-to-window variability changes even though the average protocol mixture
+does not.
+
+\section{How $\psi$ and $\rho$ Measure Dispersion}
+
+The project and the ALM papers define the reciprocal-concentration parameter
+
+\[
+\psi=\frac{1}{A}.
+\]
+
+A closely related standard Dirichlet--Multinomial parameter is
+
+\[
+\rho=\frac{1}{A+1}.
+\]
+
+Substituting $A=1/\psi$ gives a direct relationship between them:
+
+\[
+\rho=\frac{\psi}{1+\psi}.
+\]
+
+Both quantities move in the same direction.  As $\psi$ increases, $\rho$
+also increases.  The importance of this fact becomes clear from the
+Dirichlet--Multinomial variance:
+
+\[
+\operatorname{Var}_{\mathrm{DM}}(X_{ik}\mid n_i)
+=
+n_i p_k(1-p_k)
+\left[1+(n_i-1)\rho\right].
+\]
+
+The first part, $n_i p_k(1-p_k)$, is exactly the Multinomial variance.  The
+bracketed part is a variance-inflation factor:
+
+\[
+F_i=1+(n_i-1)\rho.
+\]
+
+The direction is consequently unambiguous.  When $\psi$ approaches zero,
+$A$ approaches infinity, $\rho$ approaches zero, and $F_i$ approaches one.
+The Dirichlet--Multinomial then approaches the ordinary Multinomial.  When
+$\psi$ increases, the concentration decreases and the extra-Multinomial
+variance increases.
+
+\subsection{A small numerical example}
+
+Consider a two-category example with $n=100$ and $p=0.5$.  The ordinary
+Multinomial variance for the first category is
+
+\[
+100(0.5)(0.5)=25.
+\]
+
+If $\psi=0.01$, then $\rho=0.01/1.01\approx0.0099$ and
+
+\[
+F\approx1+99(0.0099)=1.98.
+\]
+
+The corresponding Dirichlet--Multinomial variance is approximately
+$25\times1.98=49.5$.  If $\psi$ is increased to $0.05$, then
+$\rho\approx0.0476$ and $F\approx5.71$, producing a variance of approximately
+$142.9$.  The larger value of $\psi$ therefore produces the larger variance.
+
+This example also shows why a numerically small value of $\rho$ need not have
+a small practical effect.  The inflation contains the factor $n-1$.  When a
+window contains thousands of packets, even modest within-window dependence
+can produce substantial extra variation.
+
+\section{The Bioinformatics Paper: A Numerical Problem Near $\psi=0$}
+
+Yu and Shaw describe the Dirichlet--Multinomial as a model for
+extra-Multinomial count variation and state that their reciprocal-concentration
+parameter measures departure from the Multinomial model
+\cite{yu-shaw-2014}.  Greater reciprocal concentration means greater variance;
+at zero, the Dirichlet--Multinomial reduces to the Multinomial.
+
+Their main contribution, however, is computational.  The conventional
+Dirichlet--Multinomial log-likelihood contains paired differences such as
+
+\[
+\log\Gamma(A+n)-\log\Gamma(A).
+\]
+
+When $\psi$ is very small, $A=1/\psi$ is very large.  The two log-gamma terms
+can then be individually enormous while their difference is comparatively
+small.  In exact mathematics there is no problem, but floating-point
+arithmetic stores only a finite number of significant digits.  Subtracting
+two large, nearly equal approximations can discard many of those digits, a
+phenomenon known as catastrophic cancellation.
+
+Yu and Shaw introduced a series-based formulation and a mesh procedure to
+evaluate the likelihood more accurately in this regime.  Their result creates
+an important distinction:
+
+\begin{quote}
+Small $\psi$ means statistically close to the Multinomial boundary, but it can
+also mean numerically difficult for the ordinary paired log-gamma calculation.
+\end{quote}
+
+Thus, numerical difficulty near $\psi=0$ must not be interpreted as evidence
+that overdispersion becomes stronger near $\psi=0$.  These are different
+ideas: one concerns the stability of a computer calculation, while the other
+concerns the variance of a probability model.
+
+\section{The Professor's Papers and the ALM Criterion}
+
+The ALM IoT paper uses a fixed-point method to fit Dirichlet--Multinomial
+parameters to aggregated IoT traffic and compares two procedures for
+calculating the likelihood: Yu--Shaw and Languasco--Migliardi
+\cite{alm-iot}.  Its experiments report that LM is faster and more accurate in
+the tested settings.  The later TPAMI paper performs a broader comparison and
+again reports advantages for LM \cite{baddar-et-al-2025}.
+
+The crucial point for interpreting the project is that LM is a numerical
+backend.  It helps the estimator evaluate the likelihood reliably and decide
+whether successive parameter estimates have converged.  LM does not create
+overdispersion, and using LM does not prove that a dataset is overdispersed.
+In exact arithmetic, LM, YS, and a direct log-gamma calculation all target the
+same Dirichlet--Multinomial likelihood.
+
+The ALM IoT paper additionally adopts the empirical rule
+
+\[
+\psi<0.05
+\]
+
+for declaring a dataset overdispersed.  With the paper's definition
+$\psi=1/A$, this inequality is equivalent to
+
+\[
+A>20
+\qquad\text{and}\qquad
+\rho<\frac{0.05}{1.05}\approx0.047619.
+\]
+
+It therefore selects fits with relatively large concentration and relatively
+small Dirichlet--Multinomial dispersion.  This is the opposite direction from
+the standard variance interpretation.  The same convention appears in the
+later TPAMI paper, so it is safest to report it as an empirical classification
+rule used in those experiments, not as a general theorem or formal
+hypothesis test.  In particular, the number $0.05$ is not a $p$-value or a
+statistical significance level in this context.
+
+One possible source of the confusing language is that the papers focus on the
+numerically delicate low-$\psi$ regime.  Low $\psi$ can still produce
+substantial variance inflation when each observation has a very large total
+count.  Neither point changes the monotonic relationship in the variance
+formula: for the same $n$ and $\mathbf{p}$, increasing $\psi$ increases the
+Dirichlet--Multinomial variance.
+
+\section{The Chromecast and Samsung Training Models}
+
+The fitted parameters stored by the project are shown in
+Table~\ref{tab:training-models}.  The final column asks a simple hypothetical
+question: if both models were applied to a window with $n=100$, by what factor
+would the Dirichlet--Multinomial variance exceed the corresponding
+Multinomial variance?
+
+\begin{table}[htbp]
+\centering
+\caption{Fitted training dispersion parameters.}
+\label{tab:training-models}
+\begin{tabular}{lrrrr}
+\toprule
+Dataset & $A$ & $\psi=1/A$ & $\rho=\psi/(1+\psi)$ & $F$ at $n=100$ \\
+\midrule
+Chromecast & 28.0985 & 0.035589 & 0.034366 & 4.40 \\
+Samsung Camera & 17.3941 & 0.057491 & 0.054365 & 6.38 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At the same window total, the fitted Samsung model is the more dispersed of
+the two.  Its concentration is lower, its $\psi$ is higher, its $\rho$ is
+higher, and consequently its variance-inflation factor is higher.
+
+The fitted mean protocol probabilities provide different information.  For
+Chromecast, the fitted normal mixture is approximately 92.56 percent UDP,
+5.42 percent TCP, 2.02 percent ARP, and 0.004 percent SSDP.  For Samsung, it is
+approximately 51.00 percent SSDP, 36.57 percent TCP, 12.26 percent ARP, and
+0.17 percent UDP.  These percentages describe the centres of the two fitted
+distributions.  They should not be confused with concentration or
+overdispersion, which describe how much individual windows move around those
+centres.
+
+Under the ALM paper's empirical rule, Chromecast ``passes'' because
+$0.035589<0.05$, while Samsung ``fails'' because $0.057491>0.05$.  This wording
+does not mean that Samsung lacks overdispersion.  It means only that Samsung
+does not satisfy the particular inequality adopted by that paper.  Indeed,
+under the standard Dirichlet--Multinomial interpretation, Samsung has the
+larger fitted dispersion parameter.
+
+The model values are stored in
+\path{artifacts/UNSW-Chromecast/model.json} and
+\path{artifacts/UNSW-Samsung-Camera/model.json}.
+
+\section{Why the Pearson Result Has a Different Ordering}
+
+The direct Pearson Multinomial diagnostic produced the training values
+
+\[
+\phi_{\mathrm{Chromecast}}=218.96,
+\qquad
+\phi_{\mathrm{Samsung}}=86.84.
+\]
+
+A conventional Pearson dispersion ratio has the form
+
+\[
+\phi=\frac{X^2}{\text{residual degrees of freedom}},
+\qquad
+X^2=
+\sum_{i,k}
+\frac{(x_{ik}-n_i\widehat{p}_k)^2}
+     {n_i\widehat{p}_k}.
+\]
+
+A value near one is expected when the fixed-probability Multinomial adequately
+describes the residual variation.  Values much greater than one indicate
+extra-Multinomial variation.  Both training results are therefore strong
+evidence that a fixed-$\mathbf{p}$ Multinomial is too narrow for these data.
+
+It may initially seem contradictory that Samsung has the larger fitted
+$\psi$, while Chromecast has the larger Pearson $\phi$.  There is no
+contradiction because the two quantities are not the same statistic.  In
+particular, the Dirichlet--Multinomial inflation factor depends on both
+$\rho$ and the total number of packets in a window:
+
+\[
+F_i=1+(n_i-1)\rho.
+\]
+
+The mean training-window totals are approximately 11,481 packets for
+Chromecast and 615 packets for Samsung.  Substituting these mean totals merely
+as an illustration gives
+
+\begin{align}
+F_{\mathrm{Chromecast}}
+  &\approx1+(11{,}481-1)(0.034366)
+    \approx395.5,\\
+F_{\mathrm{Samsung}}
+  &\approx1+(615-1)(0.054365)
+    \approx34.4.
+\end{align}
+
+Samsung has greater fitted probability heterogeneity when $n$ is held fixed,
+but Chromecast windows contain far more packets.  Even a smaller
+within-window correlation can generate very large extra variation when it is
+shared by thousands of packet outcomes.
+
+These illustrative inflation factors are not expected to equal the observed
+Pearson ratios.  The real window totals vary, the probabilities are estimated,
+some categories are sparse, and one stationary Dirichlet--Multinomial is only
+an approximation to traffic that changes over time.  The calculation is
+useful for explaining the direction and scale, not for predicting the Pearson
+statistic exactly.
+
+\section{What the Individual Days Reveal}
+
+The daily fits make the direction of $\psi$ particularly easy to see.  For
+Chromecast, October 10 has $\psi=0.016012$, whereas October 14 has
+$\psi=0.072661$.  Under the standard model interpretation, October 14 is the
+more dispersed day.  Nevertheless, the ALM inequality labels October 10 a
+pass and October 14 a fail.  October 23, with $\psi=0.196667$, has the greatest
+fitted dispersion among the listed Chromecast days, not the smallest.
+
+The Samsung data show an even sharper contrast.  May 29 has
+$\psi=0.000942$ and lies very close to the Multinomial boundary.  May 28 has
+$\psi=0.147219$ and allows much greater compositional variation.  The ALM rule
+again calls the first a pass and the second a fail because its inequality runs
+in the direction of smaller $\psi$.
+
+The pooled Samsung training value, $\psi=0.057491$, is not the arithmetic
+average of its daily values.  A pooled fit estimates one model from all
+windows simultaneously.  It is nonlinear, gives different effective weight
+to different observations, and also sees changes between daily traffic
+regimes.  In particular, the highly variable May 28 traffic and the shift from
+May 28 to the much more stable May 29 and May 30 traffic contribute to the
+heterogeneity of the pooled fit.
+
+The two completely silent Chromecast days have no daily Dirichlet--Multinomial
+fit.  When every window has total count zero, there is no observed protocol
+composition from which to estimate the category probabilities or their
+dispersion.
+
+Daily results are recorded in
+\path{reports/UNSW-Chromecast/capture_statistics.json} and
+\path{reports/UNSW-Samsung-Camera/capture_statistics.json}.
+
+\section{Why Pooling Partitions Changes the Result}
+
+Table~\ref{tab:aggregate} shows that the fitted value of $\psi$ changes
+substantially across data partitions.  The labels in the final column apply
+only the ALM paper's empirical inequality and should not be read as a standard
+test of overdispersion.
+
+\begin{table}[htbp]
+\centering
+\caption{Aggregate fitted values and the ALM paper's empirical classification.}
+\label{tab:aggregate}
+\begin{tabular}{llrc}
+\toprule
+Dataset & Scope & $\psi$ & ALM rule $\psi<0.05$ \\
+\midrule
+Chromecast & Fit/training & 0.035589 & Pass \\
+Chromecast & Calibration & 0.058771 & Fail \\
+Chromecast & Development & 0.119722 & Fail \\
+Chromecast & Final & 0.032168 & Pass \\
+Chromecast & Entire dataset & 0.076318 & Fail \\
+\addlinespace
+Samsung Camera & Fit/training & 0.057491 & Fail \\
+Samsung Camera & Calibration & 0.008272 & Pass \\
+Samsung Camera & Development & 0.127651 & Fail \\
+Samsung Camera & Final & 0.038767 & Pass \\
+Samsung Camera & Entire dataset & 0.073784 & Fail \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Pooling different days asks one stationary model to explain all their windows.
+If normal behaviour changes with time, or if normal and attack periods are
+combined, the pooled model interprets some of those regime changes as
+additional compositional heterogeneity.  A pooled $\psi$ can therefore be
+larger than a training $\psi$ even when several individual days have small
+values.
+
+This is also why a large whole-dataset value does not prove that one stationary
+Dirichlet--Multinomial fits every day well.  It may partly reflect genuine
+within-regime variability, but it can also reflect unmodelled changes between
+regimes.  In an anomaly-detection setting, attacks and temporal changes should
+not automatically be absorbed into the definition of normal dispersion.
+
+\section{Three Diagnostics That Should Not Be Confused}
+
+The project reports several quantities that all contain the word
+``dispersion'', but they answer different questions.
+
+First, a per-category variance-to-mean index,
+
+\[
+\frac{\operatorname{Var}(X_k)}{\operatorname{E}[X_k]},
+\]
+
+is a Poisson-style diagnostic for one category.  It is affected by changes in
+total traffic volume and is not, by itself, a direct measure of Multinomial
+compositional overdispersion.
+
+Second, the Pearson ratio $\phi$ compares complete count vectors with the
+variation expected from a fixed-probability Multinomial, while conditioning on
+each window's total.  It is a direct empirical diagnostic of
+extra-Multinomial variation.  Values far above one motivate a richer model.
+
+Third, $\psi=1/A$ is a fitted Dirichlet--Multinomial parameter.  It describes
+the dispersion inside that fitted model: larger $\psi$ means smaller
+concentration and greater variance for fixed $n$ and $\mathbf{p}$.  It is not
+itself a goodness-of-fit test.  Since the fitting procedure constrains the
+Dirichlet parameters to be positive, obtaining a positive $\psi$ alone is not
+proof that the Dirichlet--Multinomial is necessary.  That case is instead
+supported by diagnostics such as Pearson $\phi$, goodness-of-fit comparisons,
+or explicit comparison with the simpler Multinomial model.
+
+Finally, the statement ``LM was used'' says only how the likelihood was
+calculated.  It is neither a dispersion statistic nor a test result.
+
+\section{A Careful Interpretation for the Thesis}
+
+The statistical evidence supports the following interpretation:
+
+\begin{quote}
+The normal training partitions exhibit strong extra-Multinomial variation, as
+shown by Pearson dispersion ratios substantially greater than one.  This
+supports using a Dirichlet--Multinomial rather than a fixed-probability
+Multinomial.  The fitted reciprocal-concentration parameter is
+$\psi=0.035589$ for Chromecast and $\psi=0.057491$ for Samsung Camera.  Under
+the standard Dirichlet--Multinomial variance interpretation, the larger
+Samsung value represents greater probability heterogeneity when the window
+total is held fixed.  Chromecast satisfies the empirical $\psi<0.05$
+convention adopted by the ALM paper, whereas Samsung does not.  This
+convention is reported for comparison only, because its inequality runs in the
+opposite direction from the usual interpretation of $\psi=1/A$.  The LM
+procedure is used as an accurate numerical implementation of the
+Dirichlet--Multinomial log-likelihood, not as a test for overdispersion.
+\end{quote}
+
+The shortest conceptual summary is therefore:
+
+\[
+\boxed{
+\begin{gathered}
+\text{larger }\psi
+\Longleftrightarrow
+\text{smaller }A
+\Longleftrightarrow
+\text{larger }\rho
+\Longleftrightarrow
+\text{greater DM variance},\\[0.4em]
+\psi\longrightarrow0
+\Longleftrightarrow
+\text{the DM approaches the Multinomial, while ordinary numerical evaluation
+becomes delicate.}
+\end{gathered}}
+\]
+
+\begin{thebibliography}{9}
+
+\bibitem{yu-shaw-2014}
+P. Yu and C. A. Shaw,
+``An efficient algorithm for accurate computation of the
+Dirichlet-multinomial log-likelihood function,''
+\emph{Bioinformatics}, vol. 30, no. 11, pp. 1547--1554, 2014.
+\url{https://doi.org/10.1093/bioinformatics/btu079}.
+
+\bibitem{alm-iot}
+S. Al-Haj Baddar, A. Languasco, and M. Migliardi,
+``Modeling and forecasting overdispersed IoT data using an efficient and
+accurate computation of the Dirichlet Multinomial distribution.''
+Local copy: \path{resouces/ALM_IoT-CR.pdf}.
+
+\bibitem{baddar-et-al-2025}
+S. Al-Haj Baddar, A. Languasco, and M. Migliardi,
+``Efficient analysis of overdispersed data using an accurate computation of
+the Dirichlet Multinomial distribution,''
+\emph{IEEE Transactions on Pattern Analysis and Machine Intelligence},
+vol. 47, no. 2, pp. 1181--1189, 2025.
+\url{https://doi.org/10.1109/TPAMI.2024.3489645}.
+
+\end{thebibliography}
+
+\end{document}
