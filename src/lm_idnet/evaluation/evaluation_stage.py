@@ -118,14 +118,10 @@ def evaluate_scores(config: AppConfig) -> dict[str, object]:
         ),
     }
     output_path = config.outputs.reports_dir / "evaluation_statistics.json"
-    try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(
-            json.dumps(report, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-    except OSError as error:
-        raise DataValidationError(
-            f"cannot save evaluation report: {output_path}"
-        ) from error
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     return {**report, "report_path": str(output_path)}
