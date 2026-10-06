@@ -60,9 +60,21 @@ docker build --tag lm-idnet:latest .
 ```
 
 The runner is preferred for execution because it supplies all persistent
-volume mounts consistently. Docker Compose is not required because this
-project currently runs as one command-line application rather than a group of
-long-running services.
+volume mounts consistently. The application itself does not require Docker
+Compose because it runs as one command-line application rather than a group
+of long-running services.
+
+## Compile LaTeX documents
+
+The LaTeX tool is a separate Docker Compose service and is not included in the
+application image. From the repository root, pass it one document:
+
+```sh
+./scripts/latex.sh docs/YOUR_DOCUMENT.tex
+```
+
+The first run downloads the full TeX Live image. `latexmk` writes the PDF and
+all temporary build files to the gitignored `out/` directory.
 
 ## Local development
 

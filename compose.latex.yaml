@@ -1,0 +1,12 @@
+services:
+  latex:
+    image: texlive/texlive:latest
+    network_mode: none
+    user: "${HOST_UID}:${HOST_GID}"
+    environment:
+      HOME: /tmp
+    working_dir: /work
+    volumes:
+      - .:/work:ro
+      - ./out:/out
+    entrypoint: [latexmk]

@@ -1,0 +1,801 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+
+\title{The Dirichlet--Multinomial Model and the Choice of Window Length}
+\author{LM-IDNet project note}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{The important correction}
+
+Each row of the training data is one ten-minute window.  Its four entries are
+the packet counts for TCP, UDP, SSDP, and ARP:
+
+\[
+\mathbf{x}_r =
+\left(
+x_{r,\mathrm{TCP}},
+x_{r,\mathrm{UDP}},
+x_{r,\mathrm{SSDP}},
+x_{r,\mathrm{ARP}}
+\right).
+\]
+
+The production training code does \emph{not} calculate four alpha values for
+each row and then average those results.  Instead, it uses all the training
+rows to estimate one set of four alpha parameters:
+
+\[
+\boldsymbol{\alpha}=
+\left(
+\alpha_{\mathrm{TCP}},
+\alpha_{\mathrm{UDP}},
+\alpha_{\mathrm{SSDP}},
+\alpha_{\mathrm{ARP}}
+\right).
+\]
+
+This one set describes normal traffic over the complete training period.  The
+estimation question is:
+
+\begin{quote}
+Which four alpha values best describe both the usual division of packets among
+the four categories and the amount by which that division changes from one
+ten-minute window to another?
+\end{quote}
+
+There is a separate reporting routine that can estimate a model for an
+individual capture or day.  Those daily estimates are descriptive statistics;
+they are not averaged to create the production model.
+
+\section{What the four alpha parameters mean}
+
+Define the total concentration
+
+\[
+A = \alpha_{\mathrm{TCP}}+
+    \alpha_{\mathrm{UDP}}+
+    \alpha_{\mathrm{SSDP}}+
+    \alpha_{\mathrm{ARP}}.
+\]
+
+The expected proportion of category $k$ is
+
+\[
+p_k=\frac{\alpha_k}{A}.
+\]
+
+The ratios among the four alpha values therefore describe the usual traffic
+composition.  For example, a large value of
+$\alpha_{\mathrm{UDP}}/A$ means that UDP normally accounts for a large fraction
+of the categorized packets.
+
+The sum $A$ has a different meaning.  It describes how tightly ten-minute
+windows are expected to remain near the usual composition:
+
+\begin{itemize}
+  \item a large $A$ means that normal windows should have fairly similar
+        category proportions;
+  \item a small $A$ means that normal windows may have substantially different
+        category proportions.
+\end{itemize}
+
+The project also reports
+
+\[
+\psi=\frac{1}{A}.
+\]
+
+Consequently, a larger $\psi$ means that the fitted model permits more
+window-to-window variation in category proportions.  Summing the four alpha
+values to obtain $A$ does not discard the four original values.  The saved
+model contains the complete set of alpha values, their sum, their normalized
+proportions, and $\psi$.
+
+\section{What is actually summed during estimation}
+
+For a proposed set of alpha values, the program calculates how probable each
+ten-minute row is under those values.  Let
+
+\[
+P(\mathbf{x}_r\mid\boldsymbol{\alpha})
+\]
+
+denote the Dirichlet--Multinomial probability of row $r$.  The current model
+assumes that, once the alpha values are fixed, it does not need the preceding
+window to calculate the probability of the current window.  Under that
+assumption, the probability of the complete collection is
+
+\[
+P(\mathbf{x}_1,\ldots,\mathbf{x}_R\mid\boldsymbol{\alpha})
+=
+\prod_{r=1}^{R}
+P(\mathbf{x}_r\mid\boldsymbol{\alpha}).
+\]
+
+Products of many small probabilities are inconvenient for a computer because
+they can become too close to zero to represent accurately.  Taking logarithms
+turns the product into a sum:
+
+\[
+\log P(\mathbf{x}_1,\ldots,\mathbf{x}_R\mid\boldsymbol{\alpha})
+=
+\sum_{r=1}^{R}
+\log P(\mathbf{x}_r\mid\boldsymbol{\alpha}).
+\]
+
+Thus, the program sums the log-probability contributed by each row.  It does
+not sum row-specific alpha estimates, because there are no row-specific alpha
+estimates in the production fit.
+
+The estimator repeatedly adjusts the same four alpha values.  After each
+adjustment, it recalculates the total log-probability.  It stops when another
+adjustment changes that value by less than the configured tolerance, or when it
+reaches the configured iteration limit.
+
+\subsection{An initialization detail that can cause confusion}
+
+Before the repeated adjustments begin, the code needs a starting value.  It
+adds the counts in each category over the training rows, converts those four
+totals into proportions, and multiplies them by a configured starting
+concentration.  This produces only the \emph{initial guess}.  It is not the
+final model.  The later adjustments use the individual rows and their
+window-to-window differences.
+
+\section{Why adding log-probabilities does not pool the windows}
+
+Consider two categories, A and B, and two windows:
+
+\[
+\mathbf{x}_1=(90,10),
+\qquad
+\mathbf{x}_2=(10,90).
+\]
+
+The two windows have very different compositions.  If their raw counts were
+added before fitting, the result would be
+
+\[
+\mathbf{x}_1+\mathbf{x}_2=(100,100).
+\]
+
+That single row would show an equal overall composition but would hide the
+large change between the two windows.
+
+The current production code does not perform that pooling operation.  It
+calculates one log-probability for $(90,10)$, another for $(10,90)$, and then
+adds the two log-probabilities.  Because each row is evaluated separately, the
+fitted model can learn both of the following facts:
+
+\begin{itemize}
+  \item the long-run average is approximately 50 percent A and 50 percent B;
+  \item individual windows vary greatly around that average.
+\end{itemize}
+
+Therefore, summing the row log-probabilities does not make the
+window-to-window variation disappear.  Adding the raw counts first would make
+it disappear, but that is not how the production fit works.
+
+\section{What information the current model retains}
+
+The fitted alpha parameters retain information about:
+
+\begin{itemize}
+  \item the usual proportion of TCP, UDP, SSDP, and ARP traffic;
+  \item how much those proportions differ between normal ten-minute windows;
+  \item which individual category compositions are common or unusual under
+        the fitted distribution.
+\end{itemize}
+
+This is useful when the detection question is:
+
+\begin{quote}
+Does the category composition of this ten-minute window resemble the range of
+compositions observed during normal training traffic?
+\end{quote}
+
+\section{What information the current model discards}
+
+The fitting function receives the count rows but not their timestamps.  It
+would produce the same alpha values if the rows were placed in a different
+order.  It therefore cannot learn:
+
+\begin{itemize}
+  \item that one composition normally occurs in the morning and another at
+        night;
+  \item that one type of window normally follows another type;
+  \item that an upload normally continues for three consecutive windows;
+  \item that weekdays and weekends have different patterns;
+  \item that separate days have different normal operating conditions.
+\end{itemize}
+
+The model also describes how an observed packet total is divided among the
+four categories.  It does not provide a separate probability model for why one
+window contains 100 packets and another contains 10,000.  An event that changes
+traffic volume while preserving the usual category proportions can therefore
+be difficult to detect with the composition model alone.
+
+The loss of time information is not caused by adding the log-probabilities.
+It is caused by using one time-independent set of alpha parameters and by not
+including the order or time of the windows in the model.
+
+\section{Can one time-independent model become too broad?}
+
+Yes.  Suppose normal nighttime traffic is mostly UDP and normal daytime traffic
+is mostly TCP.  One time-independent model must explain both regimes with the
+same four alpha values.  It may respond by allowing a very wide range of
+compositions.
+
+That can cause two problems:
+
+\begin{enumerate}
+  \item A genuinely unusual composition may not be flagged because the fitted
+        model has become broad enough to tolerate it.
+  \item If one normal regime dominates the training data, valid windows from a
+        less common regime may be flagged as anomalous.
+\end{enumerate}
+
+Thus, the current approach does preserve variation between rows, but it may
+combine several distinct daily operating regimes into one overly general
+description of normal traffic.
+
+\section{Alternatives for daily and sequential traffic patterns}
+
+No single extension solves every temporal problem.  The appropriate choice
+depends on which omitted pattern is present in the data.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{0.25\textwidth}p{0.38\textwidth}p{0.27\textwidth}}
+\toprule
+Method & What it represents & Main limitation \\
+\midrule
+Broad time-of-day models
+& Estimate separate alpha parameters for periods such as night, morning,
+  afternoon, and evening.
+& Requires enough normal training days in every period. \\
+\addlinespace
+Time-of-day thresholds
+& Keep one alpha model, but compare scores with a threshold appropriate for
+  the current period of the day.
+& Does not correct a genuinely different expected category composition. \\
+\addlinespace
+Several Dirichlet--Multinomial modes
+& Represent distinct normal activities such as idle, discovery, streaming,
+  and cloud upload.
+& Represents several activities but does not say which activity should follow
+  another. \\
+\addlinespace
+State-transition model
+& Give each operating state its own alpha parameters and estimate which states
+  normally follow each other.
+& More parameters, more implementation work, and more training data. \\
+\addlinespace
+Day-level hierarchical model
+& Estimate day-specific behavior while sharing information across days.
+& More difficult to fit, explain, and validate. \\
+\addlinespace
+Separate traffic-volume detector
+& Detect unusually high or low packet totals even when category proportions
+  remain normal.
+& Adds a second score that must be calibrated and combined with the existing
+  score. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+If the problem is only that attacks persist for several adjacent windows, a
+smaller change is to monitor consecutive anomaly scores or a running average of
+recent scores.  This can detect a sustained moderate change without replacing
+the Dirichlet--Multinomial model.
+
+\section{Recommended next step for modelling time-of-day behavior}
+
+The present model should remain the comparison baseline.  Before replacing it,
+normal training and calibration data should be examined by time of day:
+
+\begin{enumerate}
+  \item Plot each category's proportion against the ten-minute position within
+        the day, using several normal days.
+  \item Plot anomaly scores against time of day and check whether the same
+        periods repeatedly have different score distributions.
+  \item Check whether adjacent scores remain similar for long runs and whether
+        the pattern repeats one day later.
+  \item Compare the current model with a small number of broad time-of-day
+        models using chronological validation: train on earlier days and test
+        on later days.
+\end{enumerate}
+
+If a stable daily schedule is visible and the broad-period models improve
+later-day results, separate models for night, morning, afternoon, and evening
+are the clearest first extension.  Creating one model for every ten-minute
+position would require much more data and should only be considered if the
+broader periods are demonstrably insufficient.
+
+A separate traffic-volume detector should be evaluated independently because
+category composition and packet volume answer different questions.  A more
+complex state-transition or hierarchical model is justified only if the
+simpler alternatives fail in chronological tests.
+
+\section{Why the project uses ten-minute windows}
+
+Ten minutes is not a mathematically correct window length that can be derived
+from the Dirichlet--Multinomial distribution.  Window length is a design
+choice.  The best length depends on how quickly the device changes, how long
+the attacks last, how many packets the device produces, and how much normal
+data is available for fitting and calibration.
+
+The present choice has a clear historical reason: the reference IoT study used
+ten-minute windows for the D-Link camera.  Retaining that duration gave this
+project a reproducible baseline and allowed direct comparison with the
+reference method.  It should therefore be described as the justified
+\emph{baseline}, not as a window length that has already been shown to be
+optimal for every device or attack.
+
+The current boundary rule is also precise.  Windows are aligned to UTC epoch
+boundaries and are closed on the left and open on the right.  For example,
+
+\[
+[10{:}00,10{:}10)
+\]
+
+contains a packet at 10:00 but not a packet at 10:10.  The packet at 10:10
+belongs to the next window.  This prevents a boundary packet from being counted
+twice.
+
+\section{Advantages of ten-minute windows}
+
+\subsection{A reasonable number of packets per observation}
+
+Very short windows can contain few packets or only one active category.  Such
+rows give little information about the division of traffic among TCP, UDP,
+SSDP, and ARP.  Ten minutes gives many IoT devices enough time to produce a
+more informative count row while remaining short enough to issue several
+decisions per hour.
+
+This does not mean that every ten-minute row must contain every category.  It
+means that the complete fitting period is more likely to contain enough
+evidence about all four categories and about their normal variation.
+
+\subsection{Moderate resistance to packet-level randomness}
+
+The arrival time of an individual packet can move slightly because of network
+delay, retransmission, or scheduling.  In a very short window, a few such
+packets can change the observed proportions substantially.  A ten-minute sum
+is less sensitive to those small timing changes.
+
+\subsection{Useful operational resolution}
+
+A non-overlapping ten-minute design produces 144 possible decisions in a full
+day.  It is much more informative than one model input per hour or one per day,
+but its storage and computation costs remain small.
+
+\subsection{Compatibility with the reference study}
+
+Keeping the same duration as the reference study separates two questions:
+
+\begin{enumerate}
+  \item whether this project implemented and extended the reference method
+        correctly; and
+  \item whether another window duration improves anomaly detection.
+\end{enumerate}
+
+Changing the duration before establishing the baseline would make those two
+effects difficult to distinguish.
+
+\section{Disadvantages of ten-minute windows}
+
+\subsection{Detection is delayed}
+
+A decision cannot normally be made until the window closes.  An attack that
+begins just after a boundary may therefore continue for almost ten minutes
+before its first complete window is scored.  The average waiting time caused
+only by the boundary is approximately five minutes, although processing and
+reporting can add further delay.
+
+\subsection{Short attacks can be diluted}
+
+Suppose an attack lasts for 30 seconds and the remaining nine and a half
+minutes contain normal traffic.  The resulting row combines both behaviors.
+The normal counts may dominate, causing the attack-related change in category
+proportions to appear small.
+
+The same issue affects evaluation labels.  The current label is positive when
+an attack overlaps any part of the window.  A ten-minute row may therefore be
+called an attack row even when only a small fraction of it contains attack
+traffic.  A longer window makes this mismatch more severe.
+
+\subsection{Boundaries can split one event}
+
+An event from 10:09 to 10:11 is divided between two rows.  Neither row contains
+the complete event, and two weak changes may be harder to detect than one
+concentrated change.  Moving the window boundary would produce a different
+division even though the underlying packets had not changed.
+
+\subsection{Long activities create related rows}
+
+A cloud upload, scan, or attack may continue across several ten-minute rows.
+Those rows contain different packets, but they arise from the same activity and
+can be very similar.  The fitting calculation treats their probability
+contributions as separate.  This is acceptable for constructing a practical
+score, but the rows should not be described as completely independent pieces
+of experimental evidence.
+
+\subsection{One duration is unlikely to suit every device}
+
+A busy camera and a nearly silent sensor can produce very different packet
+counts in ten minutes.  Ten minutes may be too coarse for a busy device but too
+short and sparse for a quiet one.  Attack duration also matters: a rapid scan
+and a several-hour exfiltration event should not be expected to have the same
+best observation length.
+
+\subsection{The duration affects the statistical model}
+
+Changing the duration changes more than the number of rows.  It changes:
+
+\begin{itemize}
+  \item the counts and proportions in each row;
+  \item the amount of variation observed between rows;
+  \item the fitted alpha parameters and concentration;
+  \item the distribution of anomaly scores;
+  \item the calibrated threshold;
+  \item the number and meaning of positive label rows;
+  \item the elapsed time represented by adaptation settings expressed as a
+        number of windows.
+\end{itemize}
+
+For example, an adaptation interval of 288 windows represents 48 hours when
+windows last ten minutes, but 96 hours when they last twenty minutes.  Such
+settings must be converted according to elapsed time if different window
+durations are to be compared fairly.
+
+\section{The basic trade-off}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{0.28\textwidth}p{0.30\textwidth}p{0.30\textwidth}}
+\toprule
+Property & Shorter windows & Longer windows \\
+\midrule
+Detection delay
+& Faster first decision.
+& Slower first decision. \\
+\addlinespace
+Short attacks
+& Less likely to be mixed with many minutes of normal traffic.
+& More likely to be diluted by normal traffic. \\
+\addlinespace
+Count stability
+& Sparser and more affected by a few packets.
+& Larger, usually more stable counts. \\
+\addlinespace
+Number of observations
+& More rows for fitting and calibration.
+& Fewer rows, which is especially harmful for estimating a low score quantile.
+  \\
+\addlinespace
+Sustained changes
+& Spread across several related rows.
+& Concentrated into fewer rows, but start and end times are less precise. \\
+\addlinespace
+Operating regimes
+& Less mixing of different activities inside one row.
+& Greater chance of combining idle, active, and attack behavior in one row. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Neither column is uniformly better.  Window duration must be selected using a
+predefined development experiment and then left unchanged for the locked final
+test.
+
+\section{What can be changed without reading the PCAP files again}
+
+The saved processed JSON files contain, for every ten-minute interval:
+
+\begin{itemize}
+  \item the start and end timestamps;
+  \item the four category counts;
+  \item whether the interval was observed, observed but silent, or missing.
+\end{itemize}
+
+Packet counts are additive.  Therefore, a longer window whose length is an
+integer multiple of ten minutes can be constructed exactly from adjacent saved
+rows.  For example,
+
+\[
+\mathbf{x}^{(20)}_j
+=
+\mathbf{x}^{(10)}_{2j}
++
+\mathbf{x}^{(10)}_{2j+1},
+\]
+
+where the addition is performed separately for TCP, UDP, SSDP, and ARP.  A
+30-minute row is the sum of three adjacent ten-minute rows, and a 60-minute row
+is the sum of six.
+
+This gives the same category counts that would be obtained by reading the PCAP
+again, provided that all of the following remain unchanged:
+
+\begin{itemize}
+  \item the device filter;
+  \item the four category definitions;
+  \item the UTC epoch boundary rule;
+  \item the source ten-minute rows are complete and consecutive.
+\end{itemize}
+
+No packet download or packet classification is required.  Only the small
+processed JSON files are read.
+
+\subsection{Durations that can and cannot be recovered}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{0.19\textwidth}p{0.21\textwidth}p{0.48\textwidth}}
+\toprule
+Requested duration & Recoverable from saved rows? & Reason \\
+\midrule
+5 minutes
+& No
+& A ten-minute count does not reveal which packets occurred in its first or
+  second half. \\
+\addlinespace
+10 minutes
+& Already available
+& This is the stored resolution. \\
+\addlinespace
+15 minutes
+& Not exactly
+& A 15-minute boundary cuts some stored ten-minute rows in half. \\
+\addlinespace
+20 minutes
+& Yes
+& Sum two correctly aligned ten-minute rows. \\
+\addlinespace
+30 minutes
+& Yes
+& Sum three correctly aligned ten-minute rows. \\
+\addlinespace
+40 or 60 minutes
+& Yes
+& Sum four or six correctly aligned ten-minute rows. \\
+\addlinespace
+Any multiple of 10 minutes
+& Yes
+& The original count intervals can be combined without splitting one. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Smaller windows, non-multiple durations, packet directions, byte totals, TCP
+flags, and other information not stored in the four counts cannot be recovered
+from these JSON files.  The PCAP files would be required for those changes.
+
+\subsection{Correct boundary handling}
+
+Rows must be grouped according to their timestamps and the requested epoch
+boundary, not merely taken in pairs or triples starting with the first row in a
+file.  This matters when a capture starts partway through a larger interval.
+
+For a 20-minute experiment, for example, the valid groups are the epoch-aligned
+intervals ending at minutes 00, 20, and 40 within each hour.  An incomplete
+group at the beginning or end of a capture should be dropped or explicitly
+marked incomplete; it must not be presented as a complete 20-minute row.
+
+The conversion should also remain inside each capture and research partition.
+It must not join the final row of a fitting capture to the first row of a
+calibration capture.
+
+\subsection{Silent and missing source rows}
+
+The safest state rules for a longer interval are:
+
+\begin{itemize}
+  \item if any required ten-minute row is missing, mark the longer interval as
+        missing;
+  \item if every required row is observed-silent, mark the longer interval as
+        observed-silent;
+  \item otherwise, sum the four counts and mark the interval as observed.
+\end{itemize}
+
+Treating a missing row as four zeros would confuse unknown capture coverage
+with a genuinely silent device and could change both fitting and anomaly
+decisions.
+
+\subsection{Reconstructing the attack labels}
+
+The existing attack-label JSON files can also be combined without the PCAPs.
+For each longer interval:
+
+\begin{itemize}
+  \item set \texttt{is\_attack} to true if any constituent row is attack
+        positive;
+  \item take the union of the attack types and affected features;
+  \item add the non-overlapping attack-overlap seconds from the constituent
+        rows.
+\end{itemize}
+
+This preserves the current rule that any attack overlap makes the complete row
+positive.  It also exposes an evaluation problem: as windows become longer,
+more normal minutes are included in positive rows.  Window-level precision,
+recall, and F1 therefore cannot be interpreted without also reporting attack
+episodes, time to first alert, and false alerts per day.
+
+\section{What must be rerun after reconstructing longer windows}
+
+The expensive packet-reading stage does not need to be repeated, but the
+statistical stages do.  A 20-minute experiment requires:
+
+\begin{enumerate}
+  \item derive 20-minute count and label files from the saved ten-minute files;
+  \item fit new alpha parameters using the 20-minute fitting rows;
+  \item calculate a new threshold using the 20-minute calibration rows;
+  \item score the 20-minute development rows;
+  \item evaluate the new decisions using the reconstructed 20-minute labels.
+\end{enumerate}
+
+The ten-minute alpha parameters and threshold must not be reused.  Raw anomaly
+scores from different durations are also not directly comparable because the
+number of packets and the probability of each row change with duration.
+
+Changing only \texttt{window\_minutes} in the current configuration is not
+enough.  That setting controls aggregation while reading PCAPs; it does not
+automatically combine already processed JSON rows.  The repository currently
+has no processed-row conversion command, so this path would require a small,
+validated conversion step.
+
+Derived files and artifacts should be written to new duration-specific paths.
+The ten-minute baseline should not be overwritten.  The record for a derived
+dataset should include the checksums of its ten-minute source files, the new
+duration, the boundary rule, and the conversion code version.
+
+\section{Current data limits for longer-window experiments}
+
+The amount of calibration data places a practical upper limit on window
+length.  The current files contain:
+
+\begin{itemize}
+  \item 576 ten-minute Chromecast calibration rows;
+  \item 81 ten-minute Samsung-camera calibration rows.
+\end{itemize}
+
+With non-overlapping, complete windows, the Samsung calibration set would
+contain 40 complete 20-minute rows and 27 complete 30-minute rows.  The current
+configuration requires at least 30 calibration rows.  Therefore:
+
+\begin{itemize}
+  \item a 20-minute comparison is technically possible for both labelled
+        devices, although 40 Samsung rows provide a weak basis for estimating a
+        first-percentile threshold;
+  \item a non-overlapping 30-minute Samsung experiment would fail the current
+        minimum-sample requirement;
+  \item 60-minute windows would leave still fewer calibration observations and
+        should not be treated as a comparable experiment with the present
+        partition.
+\end{itemize}
+
+Lowering the minimum merely to make a longer-window experiment run would not
+create the missing calibration evidence.  A larger benign calibration period
+would be the scientifically sound remedy.
+
+\section{Other no-PCAP adjustments}
+
+\subsection{Overlapping longer windows}
+
+A 20-minute total can be calculated every ten minutes by adding the current row
+and the previous row.  This provides 20 minutes of context while retaining a
+new decision every ten minutes.  The same idea applies to 30-minute totals.
+
+The cost is that neighboring observations share most of their packets.  Their
+scores are therefore strongly related, and one attack may produce several
+nearly duplicate alerts.  Fitting, calibration, labeling, and episode-level
+evaluation must all use the same overlapping policy.  Overlapping rows increase
+the row count but do not create additional independent calibration evidence.
+
+\subsection{Rules over the existing ten-minute scores}
+
+The model can remain unchanged while its sequence of scores is interpreted over
+time.  Examples include:
+
+\begin{itemize}
+  \item open an incident only after two consecutive anomalous rows;
+  \item alert when at least two of the last three rows are anomalous;
+  \item calculate a running weighted average that gives the greatest weight to
+        the newest score.
+\end{itemize}
+
+These rules need no count conversion and no PCAPs.  They can reduce isolated
+false alerts or reveal a sustained moderate change.  They also delay some
+alerts and can miss a single short attack, so the rule must be calibrated on
+earlier data and evaluated by attack episode rather than selected after looking
+at the final test.
+
+\subsection{Several durations together}
+
+The detector could retain the ten-minute score for short changes and add a
+20-minute or 30-minute score for sustained changes.  This avoids choosing one
+duration for every attack type, but it creates a new decision rule: for example,
+whether either score or both scores must cross their thresholds.  That rule
+introduces another opportunity for false alerts and requires its own
+calibration.  It should be considered only after the single-duration comparison
+is complete.
+
+\section{Recommendation for this project}
+
+Keep the current ten-minute system as the reference result.  The smallest fair
+window-length experiment that does not require PCAP files is:
+
+\begin{enumerate}
+  \item construct non-overlapping 20-minute rows and labels from pairs of
+        epoch-aligned ten-minute rows;
+  \item preserve missing intervals and discard incomplete boundary groups;
+  \item fit, calibrate, and score a completely separate 20-minute model;
+  \item keep the chronological partitions unchanged;
+  \item express adaptation intervals in hours before converting them back to a
+        number of windows;
+  \item compare the 10-minute and 20-minute systems using window metrics,
+        attack-episode detection, time to first alert, and false alerts per day.
+\end{enumerate}
+
+Twenty minutes is the only larger non-overlapping candidate that both labelled
+devices can currently calibrate without violating the configured minimum of 30
+rows.  Even then, the Samsung first-percentile threshold will be based on only
+40 rows and must be reported as a limitation.
+
+If the aim is to reduce isolated false alarms rather than change the underlying
+count model, a two-consecutive-window incident rule is the smaller experiment.
+It uses the existing ten-minute scores and requires no count reconstruction.
+It should not replace the 20-minute comparison because the two approaches
+answer different questions.
+
+\section{Direct answer about alpha aggregation}
+
+The production code does not average alpha parameters from individual rows.
+It estimates one set of four alpha parameters from all normal training rows.
+It keeps the rows separate while calculating their probabilities and adds the
+resulting log-probabilities because that is the logarithm of the probability of
+the complete collection.
+
+This calculation retains the usual category composition and the observed
+amount of window-to-window variation.  It does not retain time of day, row
+order, duration of an activity, or day-specific regimes.  Those temporal
+patterns can disappear, but their disappearance is caused by the
+time-independent model, not by the mathematical addition of the row
+log-probabilities.
+
+\section{Relevant implementation locations}
+
+The behavior described above can be checked directly in the following files:
+
+\begin{itemize}
+  \item \path{src/lm_idnet/models/modeling_stage.py}: loads every non-missing
+        training window into one count matrix and calls the estimator once;
+  \item \path{src/lm_idnet/algorithms/dirichlet.py}: creates one initial set of
+        alpha parameters and repeatedly updates that same set using all rows;
+  \item \path{src/lm_idnet/algorithms/log_likelihood.py}: calculates a term for
+        each row and then sums those row terms;
+  \item \path{src/lm_idnet/processing/statistics.py}: optionally estimates
+        capture-level or daily values for reporting, separately from production
+        model training;
+  \item \path{src/lm_idnet/processing/packet_transformer.py}: creates the
+        epoch-aligned count rows from packet timestamps;
+  \item \path{src/lm_idnet/processing/window_policy.py}: defines the common
+        boundary convention;
+  \item \path{src/lm_idnet/processing/schemas.py}: preserves timestamps, counts,
+        silent intervals, and missing intervals in the processed JSON files.
+\end{itemize}
+
+\end{document}
