@@ -57,13 +57,17 @@
     "buffer_size": 288,
     "update_every": 144,
     "minimum_refit_windows": 144,
-    "safe_margin": 1.0
+    "safe_margin": 1.0,
+    "volume_quantile": 0.99,
+    "max_concentration_ratio": 1.25,
+    "max_category_shift": 0.05,
+    "max_threshold_shift_iqr": 2.0
   },
   "outputs": {
     "model_path": "artifacts/UNSW-Samsung-Camera/model.json",
     "threshold_path": "artifacts/UNSW-Samsung-Camera/threshold.json",
-    "events_path": "artifacts/experiments/UNSW-Samsung-Camera/periodic_refit/events.json",
-    "reports_dir": "reports/experiments/UNSW-Samsung-Camera/periodic_refit"
+    "events_path": "artifacts/experiments/conservative/UNSW-Samsung-Camera/periodic_refit/events.json",
+    "reports_dir": "reports/experiments/conservative/UNSW-Samsung-Camera/periodic_refit"
   },
   "forecast": {
     "horizon_hours": 24

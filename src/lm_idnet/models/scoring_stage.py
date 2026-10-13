@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Sequence
 import json
 import logging
 from pathlib import Path
@@ -21,12 +22,13 @@ from lm_idnet.artifacts import (
     load_model,
     model_parameter_fingerprint,
 )
-from lm_idnet.config import AppConfig
+from lm_idnet.config import AdaptationConfig, AppConfig
 from lm_idnet.exceptions import (
     ArtifactCompatibilityError,
     DataValidationError,
     LMIDNetError,
 )
+from lm_idnet.models.calibration_stage import load_calibration_windows
 from lm_idnet.models.schemas import AnomalyEventArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.schemas import WindowRecord
@@ -82,20 +84,58 @@ def score_window(
 
 
 def _candidate_threshold(
-    scores: deque[float],
+    scores: Sequence[float],
     quantile: float,
-) -> tuple[float, float] | None:
+) -> tuple[float, float]:
     values = np.asarray(scores, dtype=np.float64)
+    if values.size == 0 or not np.isfinite(values).all():
+        raise DataValidationError("candidate scores must be non-empty and finite")
     quartile_1, quartile_3 = np.quantile(
         values, (0.25, 0.75), method="linear"
     )
     score_iqr = float(quartile_3 - quartile_1)
-    if score_iqr <= 0:
-        return None
-    return (
-        float(np.quantile(values, quantile, method="linear")),
-        score_iqr,
+    if not np.isfinite(score_iqr) or score_iqr <= 0:
+        raise DataValidationError("candidate score IQR must be finite and positive")
+    threshold = float(np.quantile(values, quantile, method="linear"))
+    if not np.isfinite(threshold):
+        raise DataValidationError("candidate threshold must be finite")
+    return threshold, score_iqr
+
+
+def _validate_model_update(
+    candidate_alpha: np.ndarray,
+    active_alpha: np.ndarray,
+    settings: AdaptationConfig,
+) -> None:
+    """Reject invalid parameters or a large change to the learned distribution."""
+    if (
+        candidate_alpha.shape != active_alpha.shape
+        or not np.isfinite(candidate_alpha).all()
+        or (candidate_alpha <= 0).any()
+    ):
+        raise DataValidationError(
+            "candidate alpha must be finite, positive, and match categories"
+        )
+    concentration = float(candidate_alpha.sum())
+    if not np.isfinite(concentration):
+        raise DataValidationError("candidate concentration must be finite")
+    active_concentration = float(active_alpha.sum())
+    ratio = concentration / active_concentration
+    if not (
+        1 / settings.max_concentration_ratio
+        <= ratio
+        <= settings.max_concentration_ratio
+    ):
+        raise DataValidationError(
+            "candidate concentration change exceeds configured limit"
+        )
+    category_shift = np.max(
+        np.abs(candidate_alpha / concentration - active_alpha / active_concentration)
     )
+    if category_shift > settings.max_category_shift:
+        raise DataValidationError(
+            "candidate category proportion change exceeds configured limit"
+        )
 
 
 def _save_json(path: Path, value: object, description: str) -> None:
@@ -143,17 +183,37 @@ def _run_detector(
     current_threshold = initial_threshold
     initial_score_iqr = threshold.score_iqr
     current_score_iqr = initial_score_iqr
+    volume_limit = None
+    if mode != "static":
+        calibration_windows = load_calibration_windows(config, model_categories)
+        if len(calibration_windows) < config.calibration.minimum_samples:
+            raise DataValidationError(
+                "volume limit requires enough benign calibration windows"
+            )
+        volume_limit = float(
+            np.quantile(
+                [window.total_count for window in calibration_windows],
+                config.adaptation.volume_quantile,
+                method="linear",
+            )
+        )
+        if not np.isfinite(volume_limit):
+            raise DataValidationError("calibration packet-count limit must be finite")
     selection = development_partition_for_evaluation(config)
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     results: list[dict[str, object]] = []
-    recent_scores: deque[float] = deque(maxlen=config.adaptation.buffer_size)
-    recent_counts: deque[np.ndarray] = deque(maxlen=config.adaptation.buffer_size)
     safe_counts: deque[np.ndarray] = deque(maxlen=config.adaptation.buffer_size)
+    rejected_window_counts = {"excessive_volume": 0, "low_confidence": 0}
     threshold_updates: list[dict[str, object]] = []
     model_refit_attempts: list[dict[str, object]] = []
     current_model_fingerprint = model_fingerprint
     estimator = (
-        create_estimator(config.estimator, config.precision_digits)
+        create_estimator(
+            config.estimator.model_copy(
+                update={"log_likelihood_backend": model.log_likelihood_backend}
+            ),
+            model.precision_digits,
+        )
         if mode == "periodic_refit"
         else None
     )
@@ -197,11 +257,10 @@ def _run_detector(
 
             score = float(results[-1]["score"])
             counts = np.asarray(window.counts, dtype=np.int64)
-            recent_scores.append(score)
-            if mode == "periodic_refit":
-                recent_counts.append(counts)
-                # ponytail: the immutable baseline limits poisoning; relax this
-                # gate only if drift tests show that it rejects benign changes.
+            assert volume_limit is not None
+            if window.total_count > volume_limit:
+                rejected_window_counts["excessive_volume"] += 1
+            else:
                 baseline_score = (
                     score
                     if current_model_fingerprint == model_fingerprint
@@ -212,42 +271,65 @@ def _run_detector(
                         score_type,
                     )
                 )
-                if baseline_score >= (
-                    initial_threshold
-                    + config.adaptation.safe_margin * initial_score_iqr
+                if (
+                    score >= (
+                        current_threshold
+                        + config.adaptation.safe_margin * current_score_iqr
+                    )
+                    and baseline_score >= (
+                        initial_threshold
+                        + config.adaptation.safe_margin * initial_score_iqr
+                    )
                 ):
                     safe_counts.append(counts)
+                else:
+                    rejected_window_counts["low_confidence"] += 1
 
-            if (
-                len(results) % config.adaptation.update_every != 0
-                or len(recent_scores) < config.calibration.minimum_samples
-            ):
+            if len(results) % config.adaptation.update_every != 0:
                 continue
 
             update_context = {
                 "after_window": len(results),
-                "buffer_window_count": len(recent_scores),
+                "buffer_window_count": len(safe_counts),
                 "capture_id": capture_id,
                 "window_end_utc": window.end_utc.isoformat().replace(
                     "+00:00", "Z"
                 ),
             }
-            model_promoted = False
+            update: dict[str, object] = {
+                **update_context,
+                "source": (
+                    "periodic_refit" if mode == "periodic_refit"
+                    else "accepted_windows"
+                ),
+                "old_model_fingerprint": current_model_fingerprint,
+                "old_score_iqr": current_score_iqr,
+                "old_threshold": current_threshold,
+                "promoted": False,
+            }
+            refit = None
             if mode == "periodic_refit":
-                refit: dict[str, object] = {
+                refit = {
                     **update_context,
                     "safe_window_count": len(safe_counts),
                     "old_model_fingerprint": current_model_fingerprint,
                     "old_alpha": alpha.tolist(),
                     "promoted": False,
                 }
-                if len(safe_counts) < config.adaptation.minimum_refit_windows:
-                    refit["reason"] = "not enough safe windows"
-                else:
+            try:
+                minimum_windows = config.calibration.minimum_samples
+                if mode == "periodic_refit":
+                    minimum_windows = max(
+                        minimum_windows, config.adaptation.minimum_refit_windows
+                    )
+                if len(safe_counts) < minimum_windows:
+                    raise DataValidationError("not enough accepted windows")
+
+                candidate_alpha = alpha
+                if mode == "periodic_refit":
+                    assert refit is not None and estimator is not None
                     safe_matrix = np.asarray(safe_counts, dtype=np.int64)
-                    # ponytail: one symmetric count per category keeps sparse
-                    # buffers fit-able; make the prior configurable only if
-                    # sensitivity analysis shows that its weight matters.
+                    # One count per category keeps sparse accepted buffers fit-able.
                     refit_matrix = np.vstack(
                         (
                             np.eye(len(model_categories), dtype=np.int64),
@@ -255,131 +337,86 @@ def _run_detector(
                         )
                     )
                     refit["smoothing_window_count"] = len(model_categories)
-                    try:
-                        assert estimator is not None
-                        active_log_likelihood = log_likelihood.calculate(
-                            refit_matrix,
-                            alpha,
+                    active_log_likelihood = log_likelihood.calculate(
+                        refit_matrix, alpha
+                    )
+                    fit = estimator.fit(refit_matrix)
+                    refit.update(
+                        {
+                            "candidate_iterations": fit.iterations,
+                            "candidate_converged": fit.converged,
+                        }
+                    )
+                    if not fit.converged:
+                        raise DataValidationError("candidate did not converge")
+                    candidate_alpha = np.asarray(fit.alpha, dtype=np.float64)
+                    _validate_model_update(candidate_alpha, alpha, config.adaptation)
+                    if (
+                        not np.isfinite(active_log_likelihood)
+                        or not np.isfinite(fit.final_log_likelihood)
+                    ):
+                        raise DataValidationError("candidate likelihood must be finite")
+                    refit.update(
+                        {
+                            "active_log_likelihood": active_log_likelihood,
+                            "candidate_log_likelihood": fit.final_log_likelihood,
+                        }
+                    )
+                    # shortcut: compare on fitting data; add a holdout if required.
+                    if fit.final_log_likelihood < (
+                        active_log_likelihood - config.estimator.tolerance_delta
+                    ):
+                        raise DataValidationError(
+                            "candidate likelihood is worse than active model"
                         )
-                        fit = estimator.fit(refit_matrix)
-                        refit.update(
-                            {
-                                "active_log_likelihood": active_log_likelihood,
-                                "candidate_log_likelihood": (
-                                    fit.final_log_likelihood
-                                ),
-                                "candidate_iterations": fit.iterations,
-                                "candidate_converged": fit.converged,
-                            }
-                        )
-                        if not fit.converged:
-                            refit["reason"] = "candidate did not converge"
-                        # ponytail: this in-buffer guard is intentionally cheap;
-                        # add a quarantined holdout if poisoning tests require it.
-                        elif fit.final_log_likelihood < (
-                            active_log_likelihood - config.estimator.tolerance_delta
-                        ):
-                            refit["reason"] = (
-                                "candidate likelihood is worse than active model"
-                            )
-                        else:
-                            candidate_scores = deque(
-                                (
-                                    anomaly_score(
-                                        recent,
-                                        fit.alpha,
-                                        log_likelihood,
-                                        score_type,
-                                    )
-                                    for recent in recent_counts
-                                ),
-                                maxlen=config.adaptation.buffer_size,
-                            )
-                            candidate_threshold = _candidate_threshold(
-                                candidate_scores,
-                                config.calibration.quantile,
-                            )
-                            if candidate_threshold is None:
-                                refit["reason"] = (
-                                    "candidate score IQR is not positive"
-                                )
-                            else:
-                                new_threshold, new_score_iqr = candidate_threshold
-                                new_model_fingerprint = model_parameter_fingerprint(
-                                    alpha=tuple(float(value) for value in fit.alpha),
-                                    categories=model_categories,
-                                    log_likelihood_backend=(
-                                        model.log_likelihood_backend
-                                    ),
-                                    precision_digits=model.precision_digits,
-                                )
-                                threshold_updates.append(
-                                    {
-                                        **update_context,
-                                        "source": "periodic_refit",
-                                        "old_model_fingerprint": (
-                                            current_model_fingerprint
-                                        ),
-                                        "new_model_fingerprint": (
-                                            new_model_fingerprint
-                                        ),
-                                        "old_score_iqr": current_score_iqr,
-                                        "new_score_iqr": new_score_iqr,
-                                        "old_threshold": current_threshold,
-                                        "new_threshold": new_threshold,
-                                        "promoted": True,
-                                    }
-                                )
-                                refit.update(
-                                    {
-                                        "new_model_fingerprint": (
-                                            new_model_fingerprint
-                                        ),
-                                        "new_alpha": fit.alpha.tolist(),
-                                        "promoted": True,
-                                    }
-                                )
-                                alpha = fit.alpha.copy()
-                                expected_profile = tuple(
-                                    float(value / fit.concentration)
-                                    for value in fit.alpha
-                                )
-                                current_model_fingerprint = new_model_fingerprint
-                                current_threshold = new_threshold
-                                current_score_iqr = new_score_iqr
-                                recent_scores = candidate_scores
-                                model_promoted = True
-                    except (LMIDNetError, ValueError) as error:
-                        refit["reason"] = str(error)
-                model_refit_attempts.append(refit)
 
-            if model_promoted:
-                continue
-
-            candidate = _candidate_threshold(
-                recent_scores,
-                config.calibration.quantile,
-            )
-            update = {
-                **update_context,
-                "source": "recent_scores",
-                "old_model_fingerprint": current_model_fingerprint,
-                "new_model_fingerprint": current_model_fingerprint,
-                "old_score_iqr": current_score_iqr,
-                "old_threshold": current_threshold,
-                "promoted": candidate is not None,
-            }
-            if candidate is None:
-                update["reason"] = "score IQR is not positive"
+                candidate_scores = [
+                    anomaly_score(counts, candidate_alpha, log_likelihood, score_type)
+                    for counts in safe_counts
+                ]
+                new_threshold, new_score_iqr = _candidate_threshold(
+                    candidate_scores, config.calibration.quantile,
+                )
+                if abs(new_threshold - current_threshold) > (
+                    config.adaptation.max_threshold_shift_iqr * initial_score_iqr
+                ):
+                    raise DataValidationError(
+                        "candidate threshold change exceeds configured limit"
+                    )
+                new_model_fingerprint = model_parameter_fingerprint(
+                    alpha=tuple(float(value) for value in candidate_alpha),
+                    categories=model_categories,
+                    log_likelihood_backend=model.log_likelihood_backend,
+                    precision_digits=model.precision_digits,
+                )
+            except (LMIDNetError, ValueError, FloatingPointError) as error:
+                update["reason"] = str(error)
+                if refit is not None:
+                    refit["reason"] = str(error)
             else:
-                current_threshold, current_score_iqr = candidate
                 update.update(
                     {
-                        "new_score_iqr": current_score_iqr,
-                        "new_threshold": current_threshold,
+                        "new_model_fingerprint": new_model_fingerprint,
+                        "new_threshold": new_threshold,
+                        "new_score_iqr": new_score_iqr,
+                        "promoted": True,
                     }
                 )
+                if refit is not None:
+                    refit.update(
+                        {
+                            "new_model_fingerprint": new_model_fingerprint,
+                            "new_alpha": candidate_alpha.tolist(),
+                            "promoted": True,
+                        }
+                    )
+                alpha = candidate_alpha.copy()
+                expected_profile = tuple(float(value) for value in alpha / alpha.sum())
+                current_model_fingerprint = new_model_fingerprint
+                current_threshold, current_score_iqr = new_threshold, new_score_iqr
             threshold_updates.append(update)
+            if refit is not None:
+                model_refit_attempts.append(refit)
 
     output_path = Path(config.outputs.events_path)
     _save_json(output_path, results, "scoring results")
@@ -421,6 +458,12 @@ def _run_detector(
         "update_every": config.adaptation.update_every,
         "minimum_refit_windows": config.adaptation.minimum_refit_windows,
         "safe_margin": config.adaptation.safe_margin,
+        "volume_quantile": config.adaptation.volume_quantile,
+        "packet_count_limit": volume_limit,
+        "max_concentration_ratio": config.adaptation.max_concentration_ratio,
+        "max_category_shift": config.adaptation.max_category_shift,
+        "max_threshold_shift_iqr": config.adaptation.max_threshold_shift_iqr,
+        "rejected_learning_windows": rejected_window_counts,
         "safe_window_count": len(safe_counts),
         "threshold_update_count": sum(
             update["promoted"] is True for update in threshold_updates

@@ -102,16 +102,27 @@ The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,
 `--dry-run` to validate its configuration and CLI wiring without executing the
 stage.
 
-Run the static, adaptive-threshold, and periodic-refit development experiments
-for both labelled devices with:
+Run the adaptive-threshold and both periodic-refit development variants with
+the conservative update rules for both labelled devices:
 
 ```sh
 ./scripts/run_adaptation_experiments.sh
 ```
 
-The static runs use the versioned device configurations. Adaptive runs use the
-matching files under `configs/experiments/` and write isolated events and
-reports under `artifacts/experiments/` and `reports/experiments/`.
+The runner uses the existing saved model and threshold for each device. It
+does not retrain, recalibrate, or overwrite the saved static results. Adaptive
+runs use the matching files under `configs/experiments/` and write events and
+evaluation reports under `artifacts/experiments/conservative/` and
+`reports/experiments/conservative/`. Earlier adaptive results remain under
+`artifacts/experiments/<device>/<variant>/` and
+`reports/experiments/<device>/<variant>/` for comparison. The six configurations
+keep the previous capture partitions, seeds, scoring convention, buffer sizes,
+and update timing, and explicitly record the new safety limits. Original PCAPs
+are not needed; processed calibration and development counts are sufficient.
+
+If starting models or thresholds are absent, first run `train` and `calibrate`
+with each device's configuration. Replacing those artifacts also changes the
+starting point of the comparison.
 
 The complete command contract and current implementation status are documented
 in [`docs/command-line-interface.md`](docs/command-line-interface.md).

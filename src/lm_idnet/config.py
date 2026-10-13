@@ -212,7 +212,11 @@ class AdaptationConfig(StrictModel):
     buffer_size: int = Field(default=288, gt=0)
     update_every: int = Field(default=144, gt=0)
     minimum_refit_windows: int = Field(default=144, gt=0)
-    safe_margin: float = Field(default=1.0, ge=0)
+    safe_margin: float = Field(default=1.0, ge=0, allow_inf_nan=False)
+    volume_quantile: float = Field(default=0.99, gt=0, le=1, allow_inf_nan=False)
+    max_concentration_ratio: float = Field(default=1.25, ge=1, allow_inf_nan=False)
+    max_category_shift: float = Field(default=0.05, ge=0, le=1, allow_inf_nan=False)
+    max_threshold_shift_iqr: float = Field(default=2.0, ge=0, allow_inf_nan=False)
 
 
 class OutputConfig(StrictModel):

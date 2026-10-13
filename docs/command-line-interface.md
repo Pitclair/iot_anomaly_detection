@@ -83,21 +83,31 @@ the configured reports directory. `adapt` runs the configured `static`,
 `adaptive_threshold`, or `periodic_refit` mode over the same chronological
 development-test stream. Adaptive-threshold mode keeps alpha fixed, scores each
 window before updating, and periodically replaces the threshold and score IQR
-with estimates from the bounded buffer of all recent non-missing scores. Labels
-and the current anomaly decision do not filter that intentionally naive
-baseline.
+with estimates from a bounded buffer of high-confidence accepted windows.
+Flagged and near-threshold windows are excluded. Windows above the configured
+quantile of benign calibration packet totals are also excluded from learning,
+even when their protocol proportions look normal. Both adaptive modes use these
+checks; labels are never consulted for admission or updates.
 
-Periodic-refit mode also maintains a bounded buffer of windows that clear a
-high-confidence gate under the original static model and threshold. On each
+Periodic-refit mode uses the same accepted buffer. Windows must clear the
+high-confidence gate under both the active and original static detectors. On each
 update interval, it fits a candidate alpha when enough safe windows are
 available. One one-hot smoothing row per category keeps an absent protocol from
 forcing its alpha to zero. The candidate is promoted only if fitting converges,
 its likelihood on that same guarded matrix is not worse than the active model,
-and rescoring the recent window buffer produces a positive score IQR. Alpha,
+its concentration and category proportions stay within configured movement
+limits, and rescoring the accepted window buffer produces finite scores and a
+positive finite score IQR. The matching candidate threshold must also stay
+within its movement limit. Alpha,
 expected profile, model fingerprint, threshold, and score IQR are then replaced
-together. A rejected refit leaves the active model untouched and falls back to
-the threshold-only update. Every attempt and rejection reason is written to
-`adaptation.json`.
+together. A rejected refit preserves the model, threshold, and score IQR;
+there is no separate threshold fallback. Every scheduled attempt, including
+insufficient evidence, is recorded with its acceptance or rejection reason in
+`adaptation.json`. The report also records the packet-count limit, movement
+limits, and counts of windows excluded from learning. See
+[`configuration.md`](configuration.md#conservative-update-limits) for defaults
+and units. Existing processed calibration JSON supplies the volume limit;
+PCAPs are not needed for this stage.
 
 ## Stage isolation
 

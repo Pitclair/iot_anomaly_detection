@@ -202,3 +202,44 @@ def test_category_count_mismatch_is_rejected(valid_data: dict) -> None:
 
     with pytest.raises(ValidationError, match="must equal"):
         AppConfig.model_validate(changed)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("volume_quantile", 0), ("volume_quantile", 1.01),
+        ("max_concentration_ratio", 0.99),
+        ("max_category_shift", -0.01), ("max_category_shift", 1.01),
+        ("max_threshold_shift_iqr", -0.01),
+    ],
+)
+def test_invalid_adaptation_limits_are_rejected(valid_data, field, value):
+    valid_data["adaptation"][field] = value
+    with pytest.raises(ValidationError, match=field):
+        AppConfig.model_validate(valid_data)
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["safe_margin", "volume_quantile", "max_concentration_ratio",
+     "max_category_shift", "max_threshold_shift_iqr"],
+)
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_adaptation_limits_must_be_finite(valid_data, field, value):
+    valid_data["adaptation"][field] = value
+    with pytest.raises(ValidationError, match=field):
+        AppConfig.model_validate(valid_data)
+
+
+def test_adaptation_limits_can_be_configured(valid_data):
+    valid_data["adaptation"].update({
+        "volume_quantile": 1.0,
+        "max_concentration_ratio": 2.0,
+        "max_category_shift": 0.1,
+        "max_threshold_shift_iqr": 0.5,
+    })
+    settings = AppConfig.model_validate(valid_data).adaptation
+    assert settings.volume_quantile == 1.0
+    assert settings.max_concentration_ratio == 2.0
+    assert settings.max_category_shift == 0.1
+    assert settings.max_threshold_shift_iqr == 0.5

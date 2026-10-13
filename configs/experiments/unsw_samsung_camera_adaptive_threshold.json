@@ -55,13 +55,18 @@
   "adaptation": {
     "mode": "adaptive_threshold",
     "buffer_size": 288,
-    "update_every": 144
+    "update_every": 144,
+    "safe_margin": 1.0,
+    "volume_quantile": 0.99,
+    "max_concentration_ratio": 1.25,
+    "max_category_shift": 0.05,
+    "max_threshold_shift_iqr": 2.0
   },
   "outputs": {
     "model_path": "artifacts/UNSW-Samsung-Camera/model.json",
     "threshold_path": "artifacts/UNSW-Samsung-Camera/threshold.json",
-    "events_path": "artifacts/experiments/UNSW-Samsung-Camera/adaptive_threshold/events.json",
-    "reports_dir": "reports/experiments/UNSW-Samsung-Camera/adaptive_threshold"
+    "events_path": "artifacts/experiments/conservative/UNSW-Samsung-Camera/adaptive_threshold/events.json",
+    "reports_dir": "reports/experiments/conservative/UNSW-Samsung-Camera/adaptive_threshold"
   },
   "forecast": {
     "horizon_hours": 24

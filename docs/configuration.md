@@ -34,14 +34,36 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   Compare them by running `calibrate` and `score` once per value with distinct
   threshold and event output paths.
 - `adaptation`: `static`, `adaptive_threshold`, or `periodic_refit` detector
-  mode. `buffer_size` bounds recent scores and count windows, and
+  mode. `buffer_size` bounds one buffer of accepted count windows, and
   `update_every` sets the number of scored windows between update attempts.
   `minimum_refit_windows` is the required number of high-confidence windows
-  for a model refit. A window is high-confidence when its score under the
-  original static model is at least the original threshold plus `safe_margin`
-  times the original score IQR.
+  for a model refit. A window must clear the threshold plus `safe_margin`
+  times the score IQR under both the active detector and the original static
+  detector. `safe_margin` defaults to 1.0. Missing windows are skipped; genuine
+  silent windows are scored and can be accepted.
+  Both adaptive modes derive thresholds exclusively from accepted windows.
+  Rejected refits keep the entire active model/threshold/IQR pair unchanged.
 - `outputs`: paths for model, threshold, event, and report artifacts.
 - `forecast`: positive forecast horizon.
+
+### Conservative update limits
+
+These settings have defaults, so existing configurations and saved model,
+threshold, and processed JSON files remain usable. Adaptive runs additionally
+need the existing processed benign calibration files; original PCAPs are not
+required. Limits are fixed for a run and reported in `adaptation.json`.
+
+| Adaptation setting | Default | Rule |
+|---|---|---|
+| `volume_quantile` | 0.99 | Reject learning windows above this quantile of benign calibration packet totals. Linear interpolation is used. 1.0 selects the observed maximum. |
+| `max_concentration_ratio` | 1.25 | Candidate alpha concentration must stay between active concentration / 1.25 and active concentration * 1.25. |
+| `max_category_shift` | 0.05 | Each category's expected proportion may move by at most five percentage points per update. |
+| `max_threshold_shift_iqr` | 2.0 | Absolute threshold movement per update may not exceed two **original calibration** score IQRs. |
+
+The defaults are conservative software limits, not empirically tuned device
+settings. They can reject otherwise valid changes. Repeated allowed changes
+can accumulate, while admission remains tied to the original static detector.
+They reduce contamination risk without guaranteeing that all attacks are excluded.
 
 ## Validation behavior
 
@@ -72,6 +94,10 @@ Configuration validation is intentionally strict:
 - Non-static buffers must be large enough for the configured minimum
   calibration sample count. In `periodic_refit` mode,
   `minimum_refit_windows` cannot exceed `buffer_size`.
+- Adaptation margins and movement limits must be finite. `volume_quantile`
+  must be in `(0, 1]`, `max_concentration_ratio` must be at least 1,
+  `max_category_shift` must be in `[0, 1]`, and `max_threshold_shift_iqr`
+  must be non-negative.
 
 Validation errors identify the offending field and prevent the command from
 starting. No partially validated dictionary is passed to the application.

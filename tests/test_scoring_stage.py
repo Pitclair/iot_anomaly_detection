@@ -1,6 +1,9 @@
 """Tests for development-window anomaly scoring."""
 
 import json
+import os
+import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -9,6 +12,7 @@ import pytest
 from lm_idnet.algorithms.dirichlet import DirichletFit
 from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
 from lm_idnet.artifacts import artifact_fingerprint, load_artifact
+from lm_idnet.config import AdaptationConfig
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models import scoring_stage
@@ -94,6 +98,7 @@ def write_threshold(
     score_type: str,
     model_fingerprint: str | None = None,
     threshold_value: float = 0.0,
+    score_iqr: float = 1.0,
 ) -> None:
     start = datetime(2020, 10, 14, tzinfo=timezone.utc)
     model = load_artifact(config.outputs.model_path, expected_type="model")
@@ -113,44 +118,38 @@ def write_threshold(
             "score_minimum": -1.0,
             "score_median": -0.5,
             "score_maximum": 0.0,
-            "score_iqr": 1.0,
+            "score_iqr": score_iqr,
         },
     )
 
 
-def write_development_captures(config) -> None:
+def write_processed_captures(
+    config,
+    partition: str = "development_test",
+    counts: tuple = ((1, 2, 3, 4), (0, 0, 0, 0), None),
+) -> None:
     output_dir = config.ingest.processed_root / config.ingest.dataset_folder
-    for index, capture_id in enumerate(config.ingest.partitions.development_test):
+    for index, capture_id in enumerate(getattr(config.ingest.partitions, partition)):
         start = datetime(2020, 10, 16 + index, tzinfo=timezone.utc)
-        windows = (
+        windows = tuple(
             WindowRecord(
-                start_utc=start,
-                end_utc=start + timedelta(minutes=10),
+                start_utc=start + timedelta(minutes=offset * config.ingest.window_minutes),
+                end_utc=start + timedelta(minutes=(offset + 1) * config.ingest.window_minutes),
                 categories=config.ingest.categories,
-                counts=(1, 2, 3, 4),
-                state="observed",
-            ),
-            WindowRecord(
-                start_utc=start + timedelta(minutes=10),
-                end_utc=start + timedelta(minutes=20),
-                categories=config.ingest.categories,
-                counts=(0, 0, 0, 0),
-                state="observed-silent",
-            ),
-            WindowRecord(
-                start_utc=start + timedelta(minutes=20),
-                end_utc=start + timedelta(minutes=30),
-                categories=config.ingest.categories,
-                counts=None,
-                state="missing",
-            ),
+                counts=values,
+                state=(
+                    "missing" if values is None
+                    else "observed" if sum(values) else "observed-silent"
+                ),
+            )
+            for offset, values in enumerate(counts)
         )
         save_processed_dataset(
             ProcessedDataset(
                 metadata=Metadata(
                     device_id=config.ingest.device_id,
                     capture_id=capture_id,
-                    partition="development_test",
+                    partition=partition,
                     date=capture_id,
                     file_source=f"{capture_id}.pcap",
                 ),
@@ -180,7 +179,7 @@ def test_score_windows_writes_observed_and_silent_results(
     )
     write_model(config, log_likelihood_backend="lm", precision_digits=7)
     write_threshold(config, score_type)
-    write_development_captures(config)
+    write_processed_captures(config)
     backend_calls = []
 
     def initialize_backend(backend_name, precision_digits=6):
@@ -321,7 +320,7 @@ def test_static_adaptation_preserves_static_scoring(
     )
     write_model(config)
     write_threshold(config, "raw")
-    write_development_captures(config)
+    write_processed_captures(config)
 
     score_windows(config)
     static_events = config.outputs.events_path.read_text(encoding="utf-8")
@@ -344,6 +343,8 @@ def test_adaptive_threshold_updates_only_after_scoring_current_window(
             "mode": "adaptive_threshold",
             "buffer_size": 2,
             "update_every": 2,
+            "safe_margin": 0.0,
+            "max_threshold_shift_iqr": 10.0,
         },
         outputs={
             "model_path": tmp_path / "model.json",
@@ -353,8 +354,9 @@ def test_adaptive_threshold_updates_only_after_scoring_current_window(
         },
     )
     write_model(config)
-    write_threshold(config, "raw")
-    write_development_captures(config)
+    write_threshold(config, "raw", threshold_value=-10.0)
+    write_processed_captures(config, "calibration")
+    write_processed_captures(config)
 
     result = adapt_windows(config)
     events = json.loads(config.outputs.events_path.read_text(encoding="utf-8"))
@@ -364,14 +366,13 @@ def test_adaptive_threshold_updates_only_after_scoring_current_window(
         )
     )
 
-    assert [event["threshold"] for event in events[:2]] == [0.0, 0.0]
+    assert [event["threshold"] for event in events[:2]] == [-10.0, -10.0]
     assert events[2]["threshold"] == pytest.approx(
         report["threshold_update_attempts"][0]["new_threshold"]
     )
-    assert result["threshold_update_count"] == 2
-    assert all(
-        update["promoted"] for update in report["threshold_update_attempts"]
-    )
+    assert result["threshold_update_count"] == 1
+    assert report["threshold_update_attempts"][0]["promoted"] is True
+    assert report["threshold_update_attempts"][1]["promoted"] is False
     assert report["initial_model_fingerprint"] == events[0]["model_fingerprint"]
 
 
@@ -390,6 +391,7 @@ def test_periodic_refit_promotes_model_and_matching_threshold(
             "update_every": 2,
             "minimum_refit_windows": 2,
             "safe_margin": 0.0,
+            "max_threshold_shift_iqr": 10.0,
         },
         outputs={
             "model_path": tmp_path / "model.json",
@@ -399,16 +401,18 @@ def test_periodic_refit_promotes_model_and_matching_threshold(
         },
     )
     write_model(config)
-    write_threshold(config, "raw", threshold_value=-1e9)
-    write_development_captures(config)
+    write_threshold(config, "raw", threshold_value=-10.0)
+    write_processed_captures(config, "calibration")
+    write_processed_captures(config)
     fit_matrices = []
 
     class SuccessfulEstimator:
         def fit(self, counts):
             fit_matrices.append(counts.copy())
-            alpha = np.asarray([2.0, 3.0, 4.0, 5.0])
+            alpha = np.asarray([1.1, 2.05, 3.05, 4.0])
             return DirichletFit(
-                alpha.copy(), alpha, 14.0, 1.0 / 14.0, 1, True, -10.0, 1e9
+                alpha.copy(), alpha, 10.2, 1.0 / 10.2, 1, True, -10.0,
+                ScipyLogLikelihood().calculate(counts, alpha),
             )
 
     monkeypatch.setattr(
@@ -434,11 +438,13 @@ def test_periodic_refit_promotes_model_and_matching_threshold(
         report["threshold_update_attempts"][0]["new_threshold"]
     )
     assert events[2]["expected_profile"] == pytest.approx(
-        {"tcp": 2 / 14, "udp": 3 / 14, "ssdp": 4 / 14, "arp": 5 / 14}
+        {"tcp": 1.1 / 10.2, "udp": 2.05 / 10.2,
+         "ssdp": 3.05 / 10.2, "arp": 4 / 10.2}
     )
-    assert result["model_refit_count"] == 2
+    assert result["model_refit_count"] == 1
     assert report["initial_model_fingerprint"] != report["final_model_fingerprint"]
-    assert all(attempt["promoted"] for attempt in report["model_refit_attempts"])
+    assert report["model_refit_attempts"][0]["promoted"] is True
+    assert report["model_refit_attempts"][1]["promoted"] is False
     assert all(
         np.array_equal(matrix[:4], np.eye(4, dtype=np.int64))
         for matrix in fit_matrices
@@ -470,7 +476,8 @@ def test_periodic_refit_rejects_nonconverged_candidate(
     )
     write_model(config)
     write_threshold(config, "raw", threshold_value=-1e9)
-    write_development_captures(config)
+    write_processed_captures(config, "calibration")
+    write_processed_captures(config)
 
     class NonconvergingEstimator:
         def fit(self, counts):
@@ -503,7 +510,275 @@ def test_periodic_refit_rejects_nonconverged_candidate(
         attempt["reason"] == "candidate did not converge"
         for attempt in report["model_refit_attempts"]
     )
-    assert all(
-        update["source"] == "recent_scores"
-        for update in report["threshold_update_attempts"]
+    assert result["threshold_update_count"] == 0
+    assert report["initial_threshold"] == report["final_threshold"]
+    assert report["initial_score_iqr"] == report["final_score_iqr"]
+    assert all(event["threshold"] == -1e9 for event in events)
+    assert all(not update["promoted"] for update in report["threshold_update_attempts"])
+
+
+@pytest.fixture
+def adaptive_config(tmp_path, config_factory):
+    config = config_factory(
+        ingest={"raw_root": tmp_path / "no-pcaps", "processed_root": tmp_path},
+        estimator={"log_likelihood_backend": "scipy"},
+        calibration={"minimum_samples": 2, "quantile": 0.25},
+        adaptation={
+            "mode": "periodic_refit", "buffer_size": 2, "update_every": 2,
+            "minimum_refit_windows": 2, "safe_margin": 0.0,
+            "volume_quantile": 1.0, "max_threshold_shift_iqr": 10.0,
+        },
+        outputs={
+            "model_path": tmp_path / "model.json",
+            "threshold_path": tmp_path / "threshold.json",
+            "events_path": tmp_path / "events.json",
+            "reports_dir": tmp_path / "reports",
+        },
     )
+    write_model(config)
+    write_threshold(config, "raw", threshold_value=-10.0)
+    write_processed_captures(config, "calibration")
+    write_processed_captures(config)
+    return config
+
+
+def read_adaptation_outputs(config):
+    events = json.loads(config.outputs.events_path.read_text())
+    report = json.loads((config.outputs.reports_dir / "adaptation.json").read_text())
+    return events, report
+
+
+@pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
+def test_only_confident_windows_with_bounded_volume_influence_updates(
+    adaptive_config, monkeypatch, mode,
+):
+    config = adaptive_config
+    config.adaptation.mode = mode
+    config.adaptation.safe_margin = 1.0
+    config.adaptation.buffer_size = 4
+    config.adaptation.update_every = 5
+    write_threshold(config, "raw", threshold_value=-5.0)
+    write_processed_captures(
+        config, counts=((10, 0, 0, 0), (1, 2, 3, 4), (100, 200, 300, 400),
+                        (1, 0, 0, 0), (0, 0, 0, 0), None),
+    )
+    fit_matrices = []
+
+    class UnchangedEstimator:
+        def fit(self, counts):
+            fit_matrices.append(counts.copy())
+            alpha = np.asarray([1.0, 2.0, 3.0, 4.0])
+            likelihood = ScipyLogLikelihood().calculate(counts, alpha)
+            return DirichletFit(
+                alpha.copy(), alpha, 10.0, 0.1, 1, True, likelihood, likelihood,
+            )
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: UnchangedEstimator())
+    adapt_windows(config)
+    events, report = read_adaptation_outputs(config)
+
+    assert events[0]["is_anomaly"] is True
+    assert events[1]["is_anomaly"] is False  # Normal, but too close to the threshold.
+    assert report["packet_count_limit"] == 10.0
+    assert report["rejected_learning_windows"]["excessive_volume"] == 2
+    assert report["rejected_learning_windows"]["low_confidence"] >= 4
+    expected_scores = [-np.log(10.0), 0.0]
+    first_update = report["threshold_update_attempts"][0]
+    assert first_update["promoted"] is True
+    assert first_update["new_threshold"] == pytest.approx(np.quantile(expected_scores, 0.25))
+    assert first_update["buffer_window_count"] == 2
+    assert report["safe_window_count"] <= config.adaptation.buffer_size
+    if mode == "periodic_refit":
+        assert fit_matrices
+        assert all(
+            tuple(row) in {(1, 0, 0, 0), (0, 0, 0, 0)}
+            for matrix in fit_matrices for row in matrix[4:]
+        )
+
+
+def test_volume_guard_rejects_a_flood_that_has_a_normal_normalized_score(adaptive_config):
+    config = adaptive_config
+    config.adaptation.mode = "adaptive_threshold"
+    config.calibration.score_type = "normalized"
+    write_threshold(config, "normalized", threshold_value=-5.0)
+    write_processed_captures(
+        config, counts=((1, 2, 3, 4), (0, 0, 0, 0), (100, 200, 300, 400)),
+    )
+
+    adapt_windows(config)
+    events, report = read_adaptation_outputs(config)
+
+    assert events[2]["is_anomaly"] is False
+    assert report["rejected_learning_windows"]["excessive_volume"] == 2
+    expected = np.quantile([-0.4477098690890937, 0.0], 0.25)
+    assert report["threshold_update_attempts"][0]["new_threshold"] == pytest.approx(expected)
+
+
+def test_default_margin_and_threshold_limit_allow_a_conservative_update(adaptive_config):
+    config = adaptive_config
+    config.adaptation.mode = "adaptive_threshold"
+    config.adaptation.safe_margin = AdaptationConfig().safe_margin
+    config.adaptation.max_threshold_shift_iqr = AdaptationConfig().max_threshold_shift_iqr
+    write_threshold(config, "raw", threshold_value=-3.4)
+    write_processed_captures(config, counts=((1, 0, 0, 0), (0, 0, 0, 0)))
+
+    result = adapt_windows(config)
+    _, report = read_adaptation_outputs(config)
+
+    assert result["threshold_update_count"] == 1
+    update = report["threshold_update_attempts"][0]
+    assert update["promoted"] is True
+    assert 0 < update["new_threshold"] - update["old_threshold"] < 2.0
+
+
+def test_refitting_uses_the_loaded_models_backend_and_precision(adaptive_config, monkeypatch):
+    config = adaptive_config
+    write_model(config, log_likelihood_backend="lm", precision_digits=7)
+    write_threshold(config, "raw", threshold_value=-10.0)
+    original_factory = scoring_stage.create_estimator
+    calls = []
+
+    def create_estimator(settings, precision_digits):
+        calls.append((settings.log_likelihood_backend, precision_digits))
+        return original_factory(settings, precision_digits)
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", create_estimator)
+    adapt_windows(config)
+
+    assert calls == [("lm", 7)]
+    assert config.estimator.log_likelihood_backend == "scipy"
+
+
+@pytest.mark.parametrize(
+    ("candidate_alpha", "likelihood", "reason"),
+    [
+        ([2.0, 4.0, 6.0, 8.0], -9.0, "concentration change"),
+        ([0.5, 1.0, 1.5, 2.0], -9.0, "concentration change"),
+        ([2.0, 1.0, 3.0, 4.0], -9.0, "category proportion change"),
+        ([0.0, 2.0, 3.0, 4.0], -9.0, "candidate alpha"),
+        ([-1.0, 2.0, 3.0, 4.0], -9.0, "candidate alpha"),
+        ([float("nan"), 2.0, 3.0, 4.0], -9.0, "candidate alpha"),
+        ([float("inf"), 2.0, 3.0, 4.0], -9.0, "candidate alpha"),
+        ([1.0, 2.0, 3.0], -9.0, "candidate alpha"),
+        ([1.0, 2.0, 3.0, 4.0], float("nan"), "likelihood must be finite"),
+        ([1.0, 2.0, 3.0, 4.0], -1e9, "likelihood is worse"),
+    ],
+)
+def test_rejected_refit_keeps_all_active_state(
+    adaptive_config, monkeypatch, candidate_alpha, likelihood, reason,
+):
+    config = adaptive_config
+    original_model = config.outputs.model_path.read_bytes()
+    original_threshold = config.outputs.threshold_path.read_bytes()
+
+    class RejectedEstimator:
+        def fit(self, _counts):
+            alpha = np.asarray(candidate_alpha)
+            return DirichletFit(
+                alpha.copy(), alpha, 10.0, 0.1, 1, True, -10.0, likelihood,
+            )
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: RejectedEstimator())
+    result = adapt_windows(config)
+    events, report = read_adaptation_outputs(config)
+
+    assert result["model_refit_count"] == result["threshold_update_count"] == 0
+    assert all(reason in attempt["reason"] for attempt in report["model_refit_attempts"])
+    assert report["initial_alpha"] == report["final_alpha"]
+    assert report["initial_threshold"] == report["final_threshold"]
+    assert report["initial_score_iqr"] == report["final_score_iqr"]
+    assert all(event["model_fingerprint"] == report["initial_model_fingerprint"] for event in events)
+    assert all(event["threshold"] == -10.0 for event in events)
+    assert config.outputs.model_path.read_bytes() == original_model
+    assert config.outputs.threshold_path.read_bytes() == original_threshold
+
+
+@pytest.mark.parametrize(
+    ("mode", "failure"),
+    [("periodic_refit", "fit_error"),
+     ("periodic_refit", "threshold_jump"), ("adaptive_threshold", "threshold_jump"),
+     ("periodic_refit", "zero_iqr"), ("adaptive_threshold", "zero_iqr"),
+     ("periodic_refit", "nonfinite_score"), ("adaptive_threshold", "nonfinite_score")],
+)
+def test_failed_update_has_no_threshold_fallback(adaptive_config, monkeypatch, mode, failure):
+    config = adaptive_config
+    config.adaptation.mode = mode
+
+    class Estimator:
+        def fit(self, counts):
+            if failure == "fit_error":
+                raise DataValidationError("fitting failed")
+            alpha = np.asarray([1.1, 2.05, 3.05, 4.0])
+            return DirichletFit(
+                alpha.copy(), alpha, 10.2, 1 / 10.2, 1, True, -10.0, -9.0,
+            )
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: Estimator())
+    if failure == "threshold_jump":
+        config.adaptation.max_threshold_shift_iqr = 0.1
+    elif failure == "zero_iqr":
+        write_processed_captures(config, counts=((1, 2, 3, 4), (1, 2, 3, 4)))
+    elif failure == "nonfinite_score":
+        original_score = scoring_stage.anomaly_score
+        score_calls = 0
+
+        def score_with_invalid_candidate(*args):
+            nonlocal score_calls
+            candidate_score = score_calls % 4 >= 2
+            score_calls += 1
+            return float("nan") if candidate_score else original_score(*args)
+
+        monkeypatch.setattr(scoring_stage, "anomaly_score", score_with_invalid_candidate)
+
+    result = adapt_windows(config)
+    events, report = read_adaptation_outputs(config)
+
+    assert result["model_refit_count"] == result["threshold_update_count"] == 0
+    assert report["initial_alpha"] == report["final_alpha"]
+    assert report["initial_threshold"] == report["final_threshold"]
+    assert report["initial_score_iqr"] == report["final_score_iqr"]
+    assert all(event["threshold"] == -10.0 for event in events)
+    assert all(attempt.get("reason") for attempt in report["threshold_update_attempts"])
+
+
+@pytest.mark.parametrize("scores", [[float("nan"), 0], [float("inf"), 0], [1, 1], []])
+def test_invalid_threshold_evidence_is_rejected(scores):
+    with pytest.raises(DataValidationError):
+        scoring_stage._candidate_threshold(scores, 0.25)
+
+
+def test_missing_calibration_counts_fails_before_overwriting_events(adaptive_config):
+    config = adaptive_config
+    first_capture = config.ingest.partitions.calibration[0]
+    path = config.ingest.processed_root / config.ingest.dataset_folder / f"{first_capture}.json"
+    path.unlink()
+    config.outputs.events_path.write_text("previous results")
+
+    with pytest.raises(DataValidationError, match="processed dataset not found"):
+        adapt_windows(config)
+
+    assert config.outputs.events_path.read_text() == "previous results"
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
+def test_adapt_cli_runs_without_pcaps(adaptive_config, mode):
+    config = adaptive_config
+    config.adaptation.mode = mode
+    config_path = config.outputs.reports_dir.parent / "config.json"
+    config_path.write_text(config.model_dump_json())
+    environment = dict(os.environ, LM_IDNET_LOG_PATH=os.devnull)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "lm_idnet.cli", "adapt", "--config", str(config_path)],
+        capture_output=True, text=True, env=environment, check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    status = json.loads(result.stdout)
+    assert status["status"] == "completed"
+    assert status["adaptation_mode"] == mode
+    events, report = read_adaptation_outputs(config)
+    assert status["window_count"] == len(events) == 4
+    assert report["packet_count_limit"] == 10.0
+    assert not config.ingest.raw_root.exists()

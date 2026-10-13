@@ -62,13 +62,17 @@
     "buffer_size": 288,
     "update_every": 288,
     "minimum_refit_windows": 240,
-    "safe_margin": 1.0
+    "safe_margin": 1.0,
+    "volume_quantile": 0.99,
+    "max_concentration_ratio": 1.25,
+    "max_category_shift": 0.05,
+    "max_threshold_shift_iqr": 2.0
   },
   "outputs": {
     "model_path": "artifacts/UNSW-Chromecast/model.json",
     "threshold_path": "artifacts/UNSW-Chromecast/threshold.json",
-    "events_path": "artifacts/experiments/UNSW-Chromecast/periodic_refit_288_240/events.json",
-    "reports_dir": "reports/experiments/UNSW-Chromecast/periodic_refit_288_240"
+    "events_path": "artifacts/experiments/conservative/UNSW-Chromecast/periodic_refit_288_240/events.json",
+    "reports_dir": "reports/experiments/conservative/UNSW-Chromecast/periodic_refit_288_240"
   },
   "forecast": {
     "horizon_hours": 24
