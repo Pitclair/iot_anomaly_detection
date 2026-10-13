@@ -26,11 +26,18 @@ from lm_idnet.processing.window_policy import (
     WINDOW_ORIGIN,
 )
 from lm_idnet.processing.pcap_processor import PcapProcessor
-from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
+from lm_idnet.processing.processing_manager import ProcessingManager
+from lm_idnet.processing.schemas import (
+    InputPolicy,
+    Metadata,
+    ProcessedDataset,
+    WindowRecord,
+)
 from lm_idnet.processing.statistics import Statistics
 from lm_idnet.processing.storage import (
     load_processed_dataset,
     save_processed_dataset,
+    validate_dataset_inputs,
 )
 
 pytestmark = pytest.mark.unit
@@ -54,6 +61,32 @@ def test_packet_transformer_counts_simple_trace():
         (2, 1, 0, 0),
         (0, 0, 0, 1),
     ]
+
+
+def test_preprocessing_records_the_configured_input_policy(
+    tmp_path, config_factory, monkeypatch,
+):
+    config = config_factory(ingest={"window_minutes": 7})
+    ingest = config.ingest
+    manager = ProcessingManager(
+        raw_root=str(tmp_path),
+        processed_root=str(tmp_path),
+        device_id=ingest.device_id,
+        device_mac=ingest.device_mac,
+        categories=list(ingest.categories),
+        window_minutes=ingest.window_minutes,
+        capture_partitions={},
+    )
+    monkeypatch.setattr(
+        manager.processor, "process_pcap",
+        lambda _path: [("2020-01-01T00:00:00Z", "tcp")],
+    )
+    capture_id = ingest.partitions.fit[0]
+
+    dataset = manager.process_file(tmp_path / f"{capture_id}.pcap", "fit")
+
+    assert dataset.metadata.input_policy == ingest.input_policy
+    validate_dataset_inputs(dataset, ingest, capture_id, "fit")
 
 
 def test_canonical_packet_classification_and_counts(tmp_path):
@@ -193,6 +226,9 @@ def test_configured_category_order_flows_through_pipeline_and_report(
             {
                 "metadata": {
                     "device_id": "camera-01",
+                    "input_policy": InputPolicy.current(None, 10).model_dump(
+                        mode="json"
+                    ),
                     "capture_id": "capture-001",
                     "partition": "fit",
                     "date": "capture-001",
@@ -246,6 +282,9 @@ def test_statistics_reports_unavailable_psi_for_silent_capture(tmp_path, caplog)
             {
                 "metadata": {
                     "device_id": "camera-01",
+                    "input_policy": InputPolicy.current(None, 10).model_dump(
+                        mode="json"
+                    ),
                     "capture_id": "silent",
                     "partition": "development_test",
                     "date": "silent",
@@ -467,6 +506,7 @@ def test_processed_dataset_save_load_round_trip_preserves_model_inputs(tmp_path)
     original = ProcessedDataset(
         metadata=Metadata(
             device_id="camera-01",
+            input_policy=InputPolicy.current(None, 10),
             capture_id="capture-001",
             partition="calibration",
             date="2020-01-01",
@@ -533,5 +573,19 @@ def test_observed_window_rejects_zero_counts():
             end_utc="2020-01-01T00:10:00Z",
             categories=CATEGORY_ORDER,
             counts=(0, 0, 0, 0),
+            state="observed",
+        )
+
+
+@pytest.mark.parametrize(
+    "invalid_count", [-1, True, 1.0, 1.5, "1", float("nan"), float("inf")]
+)
+def test_window_record_rejects_invalid_counts(invalid_count):
+    with pytest.raises(ValidationError):
+        WindowRecord(
+            start_utc="2020-01-01T00:00:00Z",
+            end_utc="2020-01-01T00:10:00Z",
+            categories=CATEGORY_ORDER,
+            counts=(invalid_count, 1, 0, 0),
             state="observed",
         )

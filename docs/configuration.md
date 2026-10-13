@@ -69,6 +69,10 @@ Configuration validation is intentionally strict:
   software whitelist.
 - Seeds must be non-negative.
 - Calibration quantiles must satisfy \(0 < q < 1\).
+- Processed inputs and trained models must carry an `input_policy` matching the
+  configured device MAC, window duration, and current counting rules. Every
+  loaded window must have that duration and the configured category order.
+  Calibration and scoring also verify the processed dataset's device identity.
 - Non-static buffers must be large enough for the configured minimum
   calibration sample count. In `periodic_refit` mode,
   `minimum_refit_windows` cannot exceed `buffer_size`.

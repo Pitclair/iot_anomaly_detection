@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .packet_transformer import PacketTransformer
 from .pcap_processor import PcapProcessor
-from .schemas import Metadata, ProcessedDataset
+from .schemas import InputPolicy, Metadata, ProcessedDataset
 from .storage import save_processed_dataset
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,9 @@ class ProcessingManager:
         windows = self.transformer.to_windows(time_series)
         metadata = Metadata(
             device_id=self.device_id,
+            input_policy=InputPolicy.current(
+                self.processor.device_mac, self.transformer.window_minutes
+            ),
             capture_id=pcap_path.stem,
             partition=partition,
             date=pcap_path.stem,

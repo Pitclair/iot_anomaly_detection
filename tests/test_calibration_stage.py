@@ -1,6 +1,7 @@
 """Tests for calibration-window scoring and threshold persistence."""
 
 from datetime import datetime, timedelta, timezone
+import json
 
 import numpy as np
 import pytest
@@ -28,27 +29,28 @@ def write_calibration_datasets(config, *, wrong_partition: bool = False) -> None
     )
     categories = config.ingest.categories
     first_start = datetime(2020, 10, 14, tzinfo=timezone.utc)
+    duration = timedelta(minutes=config.ingest.window_minutes)
 
     for index, capture_id in enumerate(config.ingest.partitions.calibration):
         start = first_start + timedelta(days=index)
         windows = (
             WindowRecord(
                 start_utc=start,
-                end_utc=start + timedelta(minutes=10),
+                end_utc=start + duration,
                 categories=categories,
                 counts=(index + 1, 2, 3, 4),
                 state="observed",
             ),
             WindowRecord(
-                start_utc=start + timedelta(minutes=10),
-                end_utc=start + timedelta(minutes=20),
+                start_utc=start + duration,
+                end_utc=start + 2 * duration,
                 categories=categories,
                 counts=(0, 0, 0, 0),
                 state="observed-silent",
             ),
             WindowRecord(
-                start_utc=start + timedelta(minutes=20),
-                end_utc=start + timedelta(minutes=30),
+                start_utc=start + 2 * duration,
+                end_utc=start + 3 * duration,
                 categories=categories,
                 counts=None,
                 state="missing",
@@ -60,6 +62,7 @@ def write_calibration_datasets(config, *, wrong_partition: bool = False) -> None
         dataset = ProcessedDataset(
             metadata=Metadata(
                 device_id=config.ingest.device_id,
+                input_policy=config.ingest.input_policy,
                 capture_id=capture_id,
                 partition=partition,
                 date=capture_id,
@@ -113,11 +116,15 @@ def write_model(
     )
 
 
+@pytest.mark.parametrize("window_minutes", [7, 10])
 def test_load_calibration_windows_keeps_observed_and_silent_windows(
     tmp_path,
     config_factory,
+    window_minutes,
 ) -> None:
-    config = config_factory(ingest={"processed_root": tmp_path})
+    config = config_factory(
+        ingest={"processed_root": tmp_path, "window_minutes": window_minutes}
+    )
     write_calibration_datasets(config)
     windows = load_calibration_windows(config, config.ingest.categories)
 
@@ -134,7 +141,37 @@ def test_load_calibration_windows_rejects_wrong_partition(
 ) -> None:
     config = config_factory(ingest={"processed_root": tmp_path})
     write_calibration_datasets(config, wrong_partition=True)
-    with pytest.raises(DataValidationError, match="wrong partition"):
+    with pytest.raises(DataValidationError, match="not marked as calibration"):
+        load_calibration_windows(config, config.ingest.categories)
+
+
+@pytest.mark.parametrize(
+    "invalid_input", ["device", "policy", "duration", "categories"]
+)
+def test_calibration_rejects_incompatible_inputs(
+    invalid_input,
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(ingest={"processed_root": tmp_path})
+    write_calibration_datasets(config)
+    capture_id = config.ingest.partitions.calibration[0]
+    path = tmp_path / config.ingest.dataset_folder / f"{capture_id}.json"
+    dataset = json.loads(path.read_text())
+    if invalid_input == "device":
+        dataset["metadata"]["device_id"] = "another-device"
+    elif invalid_input == "policy":
+        dataset["metadata"]["input_policy"]["window_minutes"] += 1
+    elif invalid_input == "duration":
+        start = datetime.fromisoformat(dataset["windows"][0]["start_utc"])
+        dataset["windows"][0]["end_utc"] = (
+            start + timedelta(minutes=config.ingest.window_minutes + 1)
+        ).isoformat()
+    else:
+        dataset["windows"][0]["categories"].reverse()
+    path.write_text(json.dumps(dataset))
+
+    with pytest.raises(DataValidationError, match="does not match|do not match"):
         load_calibration_windows(config, config.ingest.categories)
 
 

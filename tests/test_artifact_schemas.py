@@ -12,6 +12,7 @@ from lm_idnet.artifacts import (
     validate_artifact,
 )
 from lm_idnet.exceptions import ArtifactCompatibilityError
+from lm_idnet.processing.schemas import InputPolicy
 
 pytestmark = pytest.mark.unit
 
@@ -24,6 +25,9 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
             "artifact_type": "model",
             "dataset": "dataset-001",
             "device_id": "camera-001",
+            "input_policy": InputPolicy.current("00:11:22:33:44:55", 10).model_dump(
+                mode="json"
+            ),
             "categories": ["tcp", "udp", "ssdp", "arp"],
             "alpha": [1.0, 2.0, 3.0, 4.0],
             "concentration": 10.0,
@@ -151,6 +155,56 @@ def test_model_fingerprint_uses_only_scoring_inputs() -> None:
 
 
 @pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("device_mac", "00:11:22:33:44:66"),
+        ("window_minutes", 7),
+        ("ssdp_port", 1901),
+        ("ssdp_is_exclusive_of_udp", False),
+        ("window_origin", "capture"),
+        ("window_closed", "right"),
+        ("window_label", "right"),
+    ],
+)
+def test_model_rejects_changed_input_policy_and_invalidates_threshold(
+    field,
+    value,
+    tmp_path,
+    config_factory,
+) -> None:
+    config = config_factory(outputs={"model_path": tmp_path / "model.json"})
+    raw_model = artifact_examples()["model"]
+    raw_model.update(
+        dataset=config.ingest.dataset_folder,
+        device_id=config.ingest.device_id,
+        categories=config.ingest.categories,
+        training_capture_ids=config.ingest.partitions.fit,
+        input_policy=config.ingest.input_policy.model_dump(mode="json"),
+    )
+    original = validate_artifact(raw_model, expected_type="model")
+    raw_model["input_policy"][field] = value
+    changed = validate_artifact(raw_model, expected_type="model")
+
+    assert artifact_fingerprint(changed) != artifact_fingerprint(original)
+    config.outputs.model_path.write_text(json.dumps(raw_model), encoding="utf-8")
+    with pytest.raises(ArtifactCompatibilityError, match="input policy"):
+        load_model(config)
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["threshold", "score_minimum", "score_median", "score_maximum", "score_iqr"],
+)
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_threshold_rejects_non_finite_values(field, value) -> None:
+    threshold = artifact_examples()["threshold"]
+    threshold[field] = value
+
+    with pytest.raises(ArtifactCompatibilityError, match="finite number"):
+        validate_artifact(threshold, expected_type="threshold")
+
+
+@pytest.mark.parametrize(
     ("field", "invalid_value", "message"),
     [
         ("concentration", 11.0, "concentration must equal"),
@@ -175,6 +229,7 @@ def test_model_rejects_inconsistent_derived_parameters(
     [
         "dataset",
         "device_id",
+        "input_policy",
         "log_likelihood_backend",
         "precision_digits",
         "training_capture_ids",
@@ -245,6 +300,7 @@ def test_model_rejects_another_configured_dataset(
     model.update(
         dataset=config.ingest.dataset_folder,
         device_id=config.ingest.device_id,
+        input_policy=config.ingest.input_policy.model_dump(mode="json"),
         categories=config.ingest.categories,
         training_capture_ids=config.ingest.partitions.fit,
     )

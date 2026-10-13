@@ -16,6 +16,7 @@ from lm_idnet.models.schemas import (
     ModelArtifact,
     ThresholdArtifact,
 )
+from lm_idnet.processing.schemas import InputPolicy
 
 if TYPE_CHECKING:
     from lm_idnet.config import AppConfig
@@ -42,6 +43,7 @@ def artifact_fingerprint(artifact: ModelArtifact) -> str:
         categories=artifact.categories,
         log_likelihood_backend=artifact.log_likelihood_backend,
         precision_digits=artifact.precision_digits,
+        input_policy=artifact.input_policy,
     )
 
 
@@ -51,14 +53,16 @@ def model_parameter_fingerprint(
     categories: tuple[str, ...],
     log_likelihood_backend: str,
     precision_digits: int,
+    input_policy: InputPolicy,
 ) -> str:
-    """Fingerprint only the parameter values used while scoring."""
+    """Fingerprint scoring parameters and the policy used to produce counts."""
     canonical = json.dumps(
         {
             "alpha": alpha,
             "categories": categories,
             "log_likelihood_backend": log_likelihood_backend,
             "precision_digits": precision_digits,
+            "input_policy": input_policy.model_dump(mode="json"),
         },
         ensure_ascii=False,
         allow_nan=False,
@@ -117,6 +121,7 @@ def load_model(config: "AppConfig") -> ModelArtifact:
         "device_id": config.ingest.device_id,
         "categories": config.ingest.categories,
         "training_capture_ids": config.ingest.partitions.fit,
+        "input_policy": config.ingest.input_policy,
     }
     for field, expected in expected_fields.items():
         actual = getattr(model, field)
