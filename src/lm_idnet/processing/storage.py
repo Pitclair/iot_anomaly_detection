@@ -1,64 +1,13 @@
 """Save and load processed datasets in their single canonical format."""
 
-from __future__ import annotations
-
 import json
-from datetime import timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-import numpy as np
 from pydantic import ValidationError
 
 from lm_idnet.exceptions import DataValidationError
 
-from .schemas import ProcessedDataset, WindowRecord
-
-if TYPE_CHECKING:
-    from lm_idnet.config import IngestConfig
-
-
-def validate_window_inputs(
-    window: WindowRecord,
-    categories: tuple[str, ...],
-    window_minutes: int,
-) -> None:
-    """Reject window semantics or counts incompatible with the detector."""
-    if window.categories != categories:
-        raise DataValidationError("window categories do not match model")
-    if window.end_utc - window.start_utc != timedelta(minutes=window_minutes):
-        raise DataValidationError("window duration does not match model")
-    if window.total_count is not None and window.total_count > np.iinfo(np.int64).max:
-        raise DataValidationError(
-            "window packet total exceeds the supported integer range"
-        )
-
-
-def validate_dataset_inputs(
-    dataset: ProcessedDataset,
-    ingest: "IngestConfig",
-    capture_id: str,
-    partition: str,
-) -> None:
-    """Apply the same input checks before fitting, calibration, and scoring."""
-    if dataset.metadata.capture_id != capture_id:
-        raise DataValidationError(
-            f"processed capture ID does not match filename: {capture_id}"
-        )
-    if dataset.metadata.partition != partition:
-        raise DataValidationError(
-            f"processed capture is not marked as {partition}: {capture_id}"
-        )
-    if dataset.metadata.device_id != ingest.device_id:
-        raise DataValidationError(
-            f"processed device does not match configuration: {capture_id}"
-        )
-    if dataset.metadata.input_policy != ingest.input_policy:
-        raise DataValidationError(
-            f"processed input policy does not match configuration: {capture_id}"
-        )
-    for window in dataset.windows:
-        validate_window_inputs(window, ingest.categories, ingest.window_minutes)
+from .schemas import ProcessedDataset
 
 
 def save_processed_dataset(dataset: ProcessedDataset, path: str | Path) -> None:

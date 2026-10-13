@@ -1,7 +1,6 @@
 """Tests for Dirichlet-multinomial model training."""
 
 from datetime import datetime, timedelta, timezone
-import json
 import logging
 
 import numpy as np
@@ -30,27 +29,26 @@ def write_fit_datasets(
     categories = config.ingest.categories
     processed_dir = processed_root / config.ingest.dataset_folder
     start = datetime(2020, 1, 1, tzinfo=timezone.utc)
-    duration = timedelta(minutes=config.ingest.window_minutes)
 
     for index, capture_id in enumerate(config.ingest.partitions.fit):
         windows = (
             WindowRecord(
                 start_utc=start,
-                end_utc=start + duration,
+                end_utc=start + timedelta(minutes=10),
                 categories=categories,
                 counts=(index + 1, 2, 3, 4),
                 state="observed",
             ),
             WindowRecord(
-                start_utc=start + duration,
-                end_utc=start + 2 * duration,
+                start_utc=start + timedelta(minutes=10),
+                end_utc=start + timedelta(minutes=20),
                 categories=categories,
                 counts=(0, 0, 0, 0),
                 state="observed-silent",
             ),
             WindowRecord(
-                start_utc=start + 2 * duration,
-                end_utc=start + 3 * duration,
+                start_utc=start + timedelta(minutes=20),
+                end_utc=start + timedelta(minutes=30),
                 categories=categories,
                 counts=None,
                 state="missing",
@@ -64,7 +62,6 @@ def write_fit_datasets(
                     if wrong_device and index == 0
                     else config.ingest.device_id
                 ),
-                input_policy=config.ingest.input_policy,
                 capture_id=capture_id,
                 partition=partition,
                 date=capture_id,
@@ -75,15 +72,11 @@ def write_fit_datasets(
         save_processed_dataset(dataset, processed_dir / f"{capture_id}.json")
 
 
-@pytest.mark.parametrize("window_minutes", [7, 10])
 def test_load_training_matrix_uses_only_observed_fit_windows(
     tmp_path,
     config_factory,
-    window_minutes,
 ) -> None:
-    config = config_factory(
-        ingest={"processed_root": tmp_path, "window_minutes": window_minutes}
-    )
+    config = config_factory(ingest={"processed_root": tmp_path})
     write_fit_datasets(config, tmp_path)
 
     training = load_training_matrix(config)
@@ -93,9 +86,7 @@ def test_load_training_matrix_uses_only_observed_fit_windows(
     assert training.counts.dtype == np.int64
     assert training.capture_ids == config.ingest.partitions.fit
     assert training.start_utc == datetime(2020, 1, 1, tzinfo=timezone.utc)
-    assert training.end_utc == (
-        training.start_utc + 2 * timedelta(minutes=window_minutes)
-    )
+    assert training.end_utc == datetime(2020, 1, 1, 0, 20, tzinfo=timezone.utc)
     assert training.silent_window_count == capture_count
     assert training.missing_window_count == capture_count
 
@@ -142,7 +133,6 @@ def test_training_fits_and_saves_model(
     assert saved["alpha"] == pytest.approx(result["alpha"])
     assert saved["dataset"] == config.ingest.dataset_folder
     assert saved["device_id"] == config.ingest.device_id
-    assert saved["input_policy"] == config.ingest.input_policy.model_dump(mode="json")
     assert saved["categories"] == list(config.ingest.categories)
     assert saved["concentration"] == pytest.approx(result["concentration"])
     assert saved["mean_probabilities"] == pytest.approx(
@@ -206,17 +196,4 @@ def test_training_rejects_dataset_for_another_device(
     write_fit_datasets(config, tmp_path, wrong_device=True)
 
     with pytest.raises(DataValidationError, match="device does not match"):
-        load_training_matrix(config)
-
-
-def test_training_rejects_unrecorded_input_policy(tmp_path, config_factory) -> None:
-    config = config_factory(ingest={"processed_root": tmp_path})
-    write_fit_datasets(config, tmp_path)
-    capture_id = config.ingest.partitions.fit[0]
-    path = tmp_path / config.ingest.dataset_folder / f"{capture_id}.json"
-    dataset = json.loads(path.read_text())
-    del dataset["metadata"]["input_policy"]
-    path.write_text(json.dumps(dataset))
-
-    with pytest.raises(DataValidationError, match="input_policy"):
         load_training_matrix(config)

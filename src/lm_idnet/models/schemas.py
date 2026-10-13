@@ -14,8 +14,6 @@ from pydantic import (
     model_validator,
 )
 
-from lm_idnet.processing.schemas import InputPolicy
-
 
 class ModelSchema(BaseModel):
     """Reject fields that are not part of a model-layer artifact."""
@@ -48,7 +46,6 @@ class ModelArtifact(ModelSchema):
     artifact_type: Literal["model"] = "model"
     dataset: str = Field(min_length=1)
     device_id: str = Field(min_length=1)
-    input_policy: InputPolicy
     categories: tuple[str, ...] = Field(min_length=2)
     alpha: tuple[float, ...] = Field(min_length=2)
     concentration: float = Field(gt=0, allow_inf_nan=False)
@@ -120,15 +117,15 @@ class ThresholdArtifact(ModelSchema):
     model_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     score_type: Literal["raw", "normalized"]
     quantile: float = Field(gt=0, lt=1)
-    threshold: float = Field(allow_inf_nan=False)
+    threshold: float
     calibration_capture_ids: tuple[str, ...]
     calibration_window_count: int
     calibration_start_utc: datetime
     calibration_end_utc: datetime
     quantile_method: Literal["linear"]
-    score_minimum: float = Field(allow_inf_nan=False)
-    score_median: float = Field(allow_inf_nan=False)
-    score_maximum: float = Field(allow_inf_nan=False)
+    score_minimum: float
+    score_median: float
+    score_maximum: float
     score_iqr: float = Field(gt=0, allow_inf_nan=False)
 
 

@@ -14,7 +14,8 @@ from lm_idnet.algorithms.estimator_factory import create_estimator
 from lm_idnet.exceptions import ConvergenceError, DataValidationError
 from lm_idnet.models.schemas import ModelArtifact
 from lm_idnet.partitioning import fit_partition_for_training
-from lm_idnet.processing.storage import load_processed_dataset, validate_dataset_inputs
+from lm_idnet.processing.schemas import ProcessedDataset
+from lm_idnet.processing.storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,30 @@ class TrainingMatrix:
     end_utc: datetime
     missing_window_count: int
     silent_window_count: int
+
+
+def _validate_training_dataset(
+    dataset: ProcessedDataset,
+    capture_id: str,
+    device_id: str,
+    categories: tuple[str, ...],
+) -> None:
+    if dataset.metadata.capture_id != capture_id:
+        raise DataValidationError(
+            f"processed capture ID does not match filename: {capture_id}"
+        )
+    if dataset.metadata.partition != "fit":
+        raise DataValidationError(
+            f"training capture is not marked as fit: {capture_id}"
+        )
+    if dataset.metadata.device_id != device_id:
+        raise DataValidationError(
+            f"training device does not match configuration: {capture_id}"
+        )
+    if any(window.categories != categories for window in dataset.windows):
+        raise DataValidationError(
+            f"training categories do not match configuration: {capture_id}"
+        )
 
 
 def load_training_matrix(config: AppConfig) -> TrainingMatrix:
@@ -51,7 +76,12 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
         dataset_path = processed_dir / f"{capture_id}.json"
         logger.info("Loading training capture: %s", capture_id)
         dataset = load_processed_dataset(dataset_path)
-        validate_dataset_inputs(dataset, config.ingest, capture_id, selection.name)
+        _validate_training_dataset(
+            dataset,
+            capture_id,
+            config.ingest.device_id,
+            categories,
+        )
 
         observed_windows = [
             window for window in dataset.windows if window.state != "missing"
@@ -106,7 +136,6 @@ def save_model(
     model = ModelArtifact(
         dataset=config.ingest.dataset_folder,
         device_id=config.ingest.device_id,
-        input_policy=config.ingest.input_policy,
         categories=config.ingest.categories,
         alpha=fit.alpha.tolist(),
         concentration=fit.concentration,

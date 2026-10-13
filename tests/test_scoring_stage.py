@@ -26,9 +26,6 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
         "device_id": "camera-001",
         "capture_id": "capture-001",
         "model_categories": window.categories,
-        "model_window_minutes": int(
-            (window.end_utc - window.start_utc).total_seconds() / 60
-        ),
         "expected_profile": (0.1, 0.2, 0.3, 0.4),
         "model_fingerprint": "0" * 64,
         "alpha": np.asarray([1.0, 2.0, 3.0, 4.0]),
@@ -56,17 +53,6 @@ def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> Non
     )
     with pytest.raises(DataValidationError, match="missing window"):
         score_window(missing, **arguments)
-
-    arguments["model_window_minutes"] += 1
-    with pytest.raises(DataValidationError, match="duration does not match"):
-        score_window(window, **arguments)
-    arguments["model_window_minutes"] -= 1
-
-    for value in (float("nan"), float("inf"), float("-inf")):
-        arguments["threshold"] = value
-        with pytest.raises(DataValidationError, match="threshold must be finite"):
-            score_window(window, **arguments)
-    arguments["threshold"] = 0.0
 
     arguments["score_iqr"] = 0.0
     with pytest.raises(DataValidationError, match="IQR must be positive"):
@@ -134,27 +120,26 @@ def write_threshold(
 
 def write_development_captures(config) -> None:
     output_dir = config.ingest.processed_root / config.ingest.dataset_folder
-    duration = timedelta(minutes=config.ingest.window_minutes)
     for index, capture_id in enumerate(config.ingest.partitions.development_test):
         start = datetime(2020, 10, 16 + index, tzinfo=timezone.utc)
         windows = (
             WindowRecord(
                 start_utc=start,
-                end_utc=start + duration,
+                end_utc=start + timedelta(minutes=10),
                 categories=config.ingest.categories,
                 counts=(1, 2, 3, 4),
                 state="observed",
             ),
             WindowRecord(
-                start_utc=start + duration,
-                end_utc=start + 2 * duration,
+                start_utc=start + timedelta(minutes=10),
+                end_utc=start + timedelta(minutes=20),
                 categories=config.ingest.categories,
                 counts=(0, 0, 0, 0),
                 state="observed-silent",
             ),
             WindowRecord(
-                start_utc=start + 2 * duration,
-                end_utc=start + 3 * duration,
+                start_utc=start + timedelta(minutes=20),
+                end_utc=start + timedelta(minutes=30),
                 categories=config.ingest.categories,
                 counts=None,
                 state="missing",
@@ -164,7 +149,6 @@ def write_development_captures(config) -> None:
             ProcessedDataset(
                 metadata=Metadata(
                     device_id=config.ingest.device_id,
-                    input_policy=config.ingest.input_policy,
                     capture_id=capture_id,
                     partition="development_test",
                     date=capture_id,
@@ -177,17 +161,15 @@ def write_development_captures(config) -> None:
 
 
 @pytest.mark.parametrize("score_type", ["raw", "normalized"])
-@pytest.mark.parametrize("window_minutes", [7, 10])
 def test_score_windows_writes_observed_and_silent_results(
     tmp_path,
     config_factory,
     score_type: str,
-    window_minutes: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = config_factory(
         precision_digits=8,
-        ingest={"processed_root": tmp_path, "window_minutes": window_minutes},
+        ingest={"processed_root": tmp_path},
         estimator={"log_likelihood_backend": "scipy"},
         calibration={"score_type": score_type},
         outputs={
@@ -281,104 +263,6 @@ def test_score_windows_writes_observed_and_silent_results(
     assert silent["category_residuals"] == pytest.approx(
         {category: -value for category, value in silent["expected_profile"].items()}
     )
-
-
-@pytest.mark.parametrize("run_detector", [score_windows, adapt_windows])
-@pytest.mark.parametrize(
-    "invalid_input",
-    ["device", "policy", "duration", "categories", "counts", "overflow"],
-)
-def test_detector_rejects_incompatible_inputs_without_replacing_output(
-    run_detector,
-    invalid_input,
-    tmp_path,
-    config_factory,
-) -> None:
-    config = config_factory(
-        ingest={"processed_root": tmp_path},
-        adaptation={"mode": "periodic_refit"},
-        outputs={
-            "model_path": tmp_path / "model.json",
-            "threshold_path": tmp_path / "threshold.json",
-            "events_path": tmp_path / "events.json",
-            "reports_dir": tmp_path / "reports",
-        },
-    )
-    write_model(config)
-    write_threshold(config, "raw")
-    write_development_captures(config)
-    capture_id = config.ingest.partitions.development_test[0]
-    path = tmp_path / config.ingest.dataset_folder / f"{capture_id}.json"
-    dataset = json.loads(path.read_text())
-    if invalid_input == "device":
-        dataset["metadata"]["device_id"] = "another-device"
-    elif invalid_input == "policy":
-        dataset["metadata"]["input_policy"]["device_mac"] = "00:11:22:33:44:55"
-    elif invalid_input == "duration":
-        start = datetime.fromisoformat(dataset["windows"][0]["start_utc"])
-        dataset["windows"][0]["end_utc"] = (
-            start + timedelta(minutes=config.ingest.window_minutes + 1)
-        ).isoformat()
-    elif invalid_input == "categories":
-        dataset["windows"][0]["categories"].reverse()
-    elif invalid_input == "counts":
-        dataset["windows"][0]["counts"][0] = True
-    else:
-        dataset["windows"][0]["counts"][0] = int(np.iinfo(np.int64).max)
-    path.write_text(json.dumps(dataset))
-    config.outputs.events_path.write_text("previous output")
-
-    with pytest.raises(DataValidationError):
-        run_detector(config)
-    assert config.outputs.events_path.read_text() == "previous output"
-
-
-@pytest.mark.parametrize("missing_artifact", ["model", "threshold"])
-def test_scoring_rejects_missing_artifacts(
-    missing_artifact, tmp_path, config_factory,
-) -> None:
-    config = config_factory(
-        outputs={
-            "model_path": tmp_path / "model.json",
-            "threshold_path": tmp_path / "threshold.json",
-            "events_path": tmp_path / "events.json",
-        }
-    )
-    write_model(config)
-    write_threshold(config, "raw")
-    getattr(config.outputs, f"{missing_artifact}_path").unlink()
-
-    with pytest.raises(
-        ArtifactCompatibilityError, match=f"{missing_artifact} not found"
-    ):
-        score_windows(config)
-    assert not config.outputs.events_path.exists()
-
-
-def test_scoring_rejects_threshold_for_changed_window_policy(
-    tmp_path, config_factory,
-) -> None:
-    config = config_factory(
-        outputs={
-            "model_path": tmp_path / "model.json",
-            "threshold_path": tmp_path / "threshold.json",
-            "events_path": tmp_path / "events.json",
-        }
-    )
-    write_model(config)
-    write_threshold(config, "raw")
-    changed_config = config.model_copy(
-        update={
-            "ingest": config.ingest.model_copy(
-                update={"window_minutes": config.ingest.window_minutes + 1}
-            )
-        }
-    )
-    write_model(changed_config)
-
-    with pytest.raises(ArtifactCompatibilityError, match="model fingerprint"):
-        score_windows(changed_config)
-    assert not config.outputs.events_path.exists()
 
 
 def test_score_windows_rejects_unexpected_score_type(

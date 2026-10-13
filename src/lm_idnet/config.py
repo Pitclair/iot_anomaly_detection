@@ -18,10 +18,10 @@ from pydantic import (
 
 from lm_idnet.exceptions import ConfigurationError
 from lm_idnet.processing.categories import validate_categories
-from lm_idnet.processing.schemas import InputPolicy, normalize_device_mac
 from lm_idnet.processing.window_policy import validate_window_minutes
 
 _CAPTURE_DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
+_MAC_ADDRESS_PATTERN = re.compile(r"^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$")
 
 
 class StrictModel(BaseModel):
@@ -135,10 +135,6 @@ class IngestConfig(StrictModel):
     partitions: TemporalPartitions
     allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
 
-    @property
-    def input_policy(self) -> InputPolicy:
-        return InputPolicy.current(self.device_mac, self.window_minutes)
-
     @field_validator("window_minutes", mode="before")
     @classmethod
     def window_minutes_must_be_positive(cls, value: object) -> int:
@@ -162,7 +158,10 @@ class IngestConfig(StrictModel):
     @field_validator("device_mac")
     @classmethod
     def normalize_device_mac(cls, value: str) -> str:
-        return normalize_device_mac(value)
+        normalized = value.strip().lower()
+        if not _MAC_ADDRESS_PATTERN.fullmatch(normalized):
+            raise ValueError("device_mac must be a colon-separated MAC address")
+        return normalized
 
     @model_validator(mode="after")
     def duplicate_explanations_must_reference_configured_captures(

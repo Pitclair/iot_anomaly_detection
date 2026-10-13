@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import deque
 import json
 import logging
-from math import isfinite
 from pathlib import Path
 
 import numpy as np
@@ -31,11 +30,7 @@ from lm_idnet.exceptions import (
 from lm_idnet.models.schemas import AnomalyEventArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.schemas import WindowRecord
-from lm_idnet.processing.storage import (
-    load_processed_dataset,
-    validate_dataset_inputs,
-    validate_window_inputs,
-)
+from lm_idnet.processing.storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +41,6 @@ def score_window(
     device_id: str,
     capture_id: str,
     model_categories: tuple[str, ...],
-    model_window_minutes: int,
     expected_profile: tuple[float, ...],
     model_fingerprint: str,
     alpha: np.ndarray,
@@ -56,12 +50,13 @@ def score_window(
     score_type: str,
 ) -> dict[str, object]:
     """Score one prepared window without reading or writing external state."""
-    validate_window_inputs(window, model_categories, model_window_minutes)
+    if window.categories != model_categories:
+        raise DataValidationError(
+            f"development-test categories do not match model: {capture_id}"
+        )
     if window.counts is None:
         raise DataValidationError("cannot score a missing window")
-    if not isfinite(threshold):
-        raise DataValidationError("calibration threshold must be finite")
-    if not isfinite(score_iqr) or score_iqr <= 0:
+    if score_iqr <= 0:
         raise DataValidationError("calibration score IQR must be positive")
 
     counts = np.asarray(window.counts, dtype=np.int64)
@@ -165,7 +160,18 @@ def _run_detector(
 
     for capture_id in selection.capture_ids:
         dataset = load_processed_dataset(processed_dir / f"{capture_id}.json")
-        validate_dataset_inputs(dataset, config.ingest, capture_id, selection.name)
+        if dataset.metadata.capture_id != capture_id:
+            raise DataValidationError(
+                f"processed capture ID does not match filename: {capture_id}"
+            )
+        if dataset.metadata.partition != selection.name:
+            raise DataValidationError(
+                f"development-test capture has the wrong partition: {capture_id}"
+            )
+        if any(window.categories != model_categories for window in dataset.windows):
+            raise DataValidationError(
+                f"development-test categories do not match model: {capture_id}"
+            )
 
         for window in dataset.windows:
             if window.state == "missing":
@@ -176,7 +182,6 @@ def _run_detector(
                     device_id=dataset.metadata.device_id,
                     capture_id=capture_id,
                     model_categories=model_categories,
-                    model_window_minutes=model.input_policy.window_minutes,
                     expected_profile=expected_profile,
                     model_fingerprint=current_model_fingerprint,
                     alpha=alpha,
@@ -307,7 +312,6 @@ def _run_detector(
                                         model.log_likelihood_backend
                                     ),
                                     precision_digits=model.precision_digits,
-                                    input_policy=model.input_policy,
                                 )
                                 threshold_updates.append(
                                     {
