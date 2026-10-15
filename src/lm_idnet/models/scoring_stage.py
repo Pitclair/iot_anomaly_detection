@@ -19,17 +19,20 @@ from lm_idnet.algorithms.log_likelihood import (
 from lm_idnet.artifacts import (
     artifact_fingerprint,
     load_artifact,
+    load_detector_state,
     load_model,
     model_parameter_fingerprint,
+    save_detector_state,
 )
 from lm_idnet.config import AdaptationConfig, AppConfig
 from lm_idnet.exceptions import (
     ArtifactCompatibilityError,
     DataValidationError,
+    DetectorStateCommitError,
     LMIDNetError,
 )
 from lm_idnet.models.calibration_stage import load_calibration_packet_count_limit
-from lm_idnet.models.schemas import AnomalyEventArtifact
+from lm_idnet.models.schemas import AnomalyEventArtifact, DetectorStateArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.schemas import WindowRecord
 from lm_idnet.processing.storage import load_processed_dataset
@@ -151,15 +154,44 @@ def _save_json(path: Path, value: object, description: str) -> None:
         raise DataValidationError(f"cannot save {description}: {path}") from error
 
 
+def _save_detector_update(
+    state_dir: str | Path | None,
+    state: DetectorStateArtifact | None,
+    *,
+    alpha: np.ndarray,
+    threshold: float,
+    score_iqr: float,
+    model_fingerprint: str,
+    source: str,
+) -> DetectorStateArtifact | None:
+    if state is None:
+        return None
+    assert state_dir is not None
+    raw = state.model_dump(exclude={"version_id", "created_utc"})
+    raw.update(
+        source=source, alpha=alpha.tolist(),
+        threshold={
+            "model_fingerprint": model_fingerprint,
+            "threshold": threshold, "score_iqr": score_iqr,
+        },
+    )
+    candidate = DetectorStateArtifact.model_validate(raw)
+    save_detector_state(state_dir, candidate)
+    return candidate
+
+
 def _run_detector(
     config: AppConfig,
     mode: str,
+    *,
+    state_dir: str | Path | None = None,
 ) -> tuple[dict[str, object], dict[str, object]]:
     """Run the configured detector over chronological development data."""
-    model = load_model(config)
-    threshold = load_artifact(
-        config.outputs.threshold_path,
-        expected_type="threshold",
+    state = load_detector_state(state_dir, config) if state_dir is not None else None
+    starting_state = state
+    model = state.baseline_model if state is not None else load_model(config)
+    threshold = state.baseline_threshold if state is not None else load_artifact(
+        config.outputs.threshold_path, expected_type="threshold",
     )
     model_fingerprint = artifact_fingerprint(model)
     if threshold.model_fingerprint != model_fingerprint:
@@ -178,16 +210,19 @@ def _run_detector(
         model.precision_digits,
     )
     initial_alpha = np.asarray(model.alpha, dtype=np.float64)
-    alpha = initial_alpha.copy()
+    alpha = np.asarray(state.alpha, dtype=np.float64) if state is not None else initial_alpha.copy()
     model_categories = model.categories
-    expected_profile = model.mean_probabilities
+    expected_profile = (
+        tuple(float(value) for value in alpha / alpha.sum())
+        if state is not None else model.mean_probabilities
+    )
     initial_threshold = threshold.threshold
-    current_threshold = initial_threshold
+    current_threshold = state.threshold.threshold if state is not None else initial_threshold
     initial_score_iqr = threshold.score_iqr
-    current_score_iqr = initial_score_iqr
+    current_score_iqr = state.threshold.score_iqr if state is not None else initial_score_iqr
     conservative = config.adaptation.policy == "conservative"
-    volume_limit = None
-    if mode != "static" and conservative:
+    volume_limit = state.packet_count_limit if state is not None else None
+    if state is None and mode != "static" and conservative:
         volume_limit = load_calibration_packet_count_limit(config, model_categories)
     selection = development_partition_for_evaluation(config)
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
@@ -202,7 +237,7 @@ def _run_detector(
     rejected_window_counts = {"excessive_volume": 0, "low_confidence": 0}
     threshold_updates: list[dict[str, object]] = []
     model_refit_attempts: list[dict[str, object]] = []
-    current_model_fingerprint = model_fingerprint
+    current_model_fingerprint = state.threshold.model_fingerprint if state is not None else model_fingerprint
     estimator = (
         create_estimator(
             config.estimator.model_copy(
@@ -414,6 +449,13 @@ def _run_detector(
                             new_threshold, new_score_iqr = _candidate_threshold(
                                 recent_scores, config.calibration.quantile,
                             )
+                            state = _save_detector_update(
+                                state_dir, state, alpha=alpha, threshold=new_threshold,
+                                score_iqr=new_score_iqr, model_fingerprint=current_model_fingerprint,
+                                source="adaptive_threshold",
+                            )
+                        except DetectorStateCommitError:
+                            raise
                         except (LMIDNetError, ValueError, FloatingPointError) as fallback_error:
                             update["reason"] = str(fallback_error)
                         else:
@@ -428,28 +470,41 @@ def _run_detector(
                             )
                             current_threshold, current_score_iqr = new_threshold, new_score_iqr
             else:
-                update.update(
-                    {
-                        "new_model_fingerprint": new_model_fingerprint,
-                        "new_threshold": new_threshold,
-                        "new_score_iqr": new_score_iqr,
-                        "promoted": True,
-                    }
-                )
-                if refit is not None:
-                    refit.update(
+                try:
+                    state = _save_detector_update(
+                        state_dir, state, alpha=candidate_alpha, threshold=new_threshold,
+                        score_iqr=new_score_iqr, model_fingerprint=new_model_fingerprint,
+                        source=mode,
+                    )
+                except DetectorStateCommitError:
+                    raise
+                except (LMIDNetError, ValueError, FloatingPointError) as error:
+                    update["reason"] = str(error)
+                    if refit is not None:
+                        refit["reason"] = str(error)
+                else:
+                    update.update(
                         {
                             "new_model_fingerprint": new_model_fingerprint,
-                            "new_alpha": candidate_alpha.tolist(),
+                            "new_threshold": new_threshold,
+                            "new_score_iqr": new_score_iqr,
                             "promoted": True,
                         }
                     )
-                alpha = candidate_alpha.copy()
-                expected_profile = tuple(float(value) for value in alpha / alpha.sum())
-                current_model_fingerprint = new_model_fingerprint
-                current_threshold, current_score_iqr = new_threshold, new_score_iqr
-                if not conservative:
-                    recent_scores = deque(candidate_scores, maxlen=config.adaptation.buffer_size)
+                    if refit is not None:
+                        refit.update(
+                            {
+                                "new_model_fingerprint": new_model_fingerprint,
+                                "new_alpha": candidate_alpha.tolist(),
+                                "promoted": True,
+                            }
+                        )
+                    alpha = candidate_alpha.copy()
+                    expected_profile = tuple(float(value) for value in alpha / alpha.sum())
+                    current_model_fingerprint = new_model_fingerprint
+                    current_threshold, current_score_iqr = new_threshold, new_score_iqr
+                    if not conservative:
+                        recent_scores = deque(candidate_scores, maxlen=config.adaptation.buffer_size)
             threshold_updates.append(update)
             if refit is not None:
                 model_refit_attempts.append(refit)
@@ -512,6 +567,20 @@ def _run_detector(
         "model_refit_attempts": model_refit_attempts,
         "events_path": str(output_path),
     }
+    if state is not None:
+        assert starting_state is not None
+        state_summary = {
+            "state_dir": str(state_dir),
+            "starting_state_version": starting_state.version_id,
+            "final_state_version": state.version_id,
+        }
+        summary.update(state_summary)
+        report.update(state_summary)
+        report.update(
+            starting_alpha=list(starting_state.alpha),
+            starting_threshold=starting_state.threshold.threshold,
+            starting_score_iqr=starting_state.threshold.score_iqr,
+        )
     return summary, report
 
 
@@ -521,9 +590,9 @@ def score_windows(config: AppConfig) -> dict[str, object]:
     return summary
 
 
-def adapt_windows(config: AppConfig) -> dict[str, object]:
+def adapt_windows(config: AppConfig, *, state_dir: str | Path | None = None) -> dict[str, object]:
     """Run the configured detector mode and save its state-change report."""
-    summary, report = _run_detector(config, config.adaptation.mode)
+    summary, report = _run_detector(config, config.adaptation.mode, state_dir=state_dir)
     report_path = config.outputs.reports_dir / "adaptation.json"
     _save_json(report_path, report, "adaptation report")
     return {

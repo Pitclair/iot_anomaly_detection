@@ -11,9 +11,9 @@ import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
 from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
-from lm_idnet.artifacts import artifact_fingerprint, load_artifact
+from lm_idnet.artifacts import artifact_fingerprint, load_artifact, load_detector_state
 from lm_idnet.config import AdaptationConfig
-from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
+from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError, DetectorStateCommitError
 from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models import scoring_stage
 from lm_idnet.models.modeling_stage import TrainingMatrix, save_model
@@ -108,10 +108,10 @@ def write_threshold(
             "artifact_type": "threshold",
             "model_fingerprint": model_fingerprint or artifact_fingerprint(model),
             "score_type": score_type,
-            "quantile": 0.01,
+            "quantile": config.calibration.quantile,
             "threshold": threshold_value,
             "calibration_capture_ids": config.ingest.partitions.calibration,
-            "calibration_window_count": 1,
+            "calibration_window_count": config.calibration.minimum_samples,
             "calibration_start_utc": start,
             "calibration_end_utc": start + timedelta(minutes=10),
             "quantile_method": "linear",
@@ -888,3 +888,117 @@ def test_adapt_cli_runs_without_pcaps(adaptive_config, mode, policy):
     assert status["window_count"] == len(events) == 4
     assert report["packet_count_limit"] == (10.0 if policy == "conservative" else None)
     assert not config.ingest.raw_root.exists()
+
+
+@pytest.fixture
+def persistent_detector(adaptive_config, monkeypatch):
+    class Estimator:
+        def fit(self, counts):
+            alpha = np.asarray([1.1, 2.05, 3.05, 4.0])
+            likelihood = ScipyLogLikelihood().calculate(counts, alpha)
+            return DirichletFit(
+                alpha.copy(), alpha, float(alpha.sum()), 1 / float(alpha.sum()),
+                1, True, likelihood, likelihood,
+            )
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: Estimator())
+    return adaptive_config
+
+
+@pytest.mark.parametrize("policy", ["conservative", "legacy"])
+@pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
+def test_persistent_updates_restore_accepted_pair(persistent_detector, policy, mode):
+    config = persistent_detector
+    config.adaptation.policy = policy
+    config.adaptation.mode = mode
+    state_dir = config.outputs.reports_dir.parent / "state"
+    original_model = config.outputs.model_path.read_bytes()
+    original_threshold = config.outputs.threshold_path.read_bytes()
+
+    result = adapt_windows(config, state_dir=state_dir)
+    _, report = read_adaptation_outputs(config)
+    saved = load_detector_state(state_dir, config)
+
+    assert result["threshold_update_count"] >= 1
+    assert result["final_state_version"] == saved.version_id
+    assert result["starting_state_version"] != saved.version_id
+    assert saved.alpha == tuple(report["final_alpha"])
+    assert saved.threshold.threshold == report["final_threshold"]
+    assert saved.threshold.score_iqr == report["final_score_iqr"]
+    assert saved.baseline_threshold.threshold == -10.
+    assert saved.baseline_model.alpha == (1., 2., 3., 4.)
+    assert config.outputs.model_path.read_bytes() == original_model
+    assert config.outputs.threshold_path.read_bytes() == original_threshold
+
+    config.outputs.model_path.unlink()
+    config.outputs.threshold_path.unlink()
+    for capture_id in config.ingest.partitions.calibration:
+        (config.ingest.processed_root / config.ingest.dataset_folder / f"{capture_id}.json").unlink()
+    restarted = adapt_windows(config, state_dir=state_dir)
+    events, _ = read_adaptation_outputs(config)
+    assert restarted["starting_state_version"] == saved.version_id
+    assert events[0]["threshold"] == saved.threshold.threshold
+    assert events[0]["model_fingerprint"] == saved.threshold.model_fingerprint
+
+
+@pytest.mark.parametrize("policy", ["conservative", "legacy"])
+@pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
+def test_failed_persistence_rejects_whole_update(persistent_detector, monkeypatch, policy, mode):
+    config = persistent_detector
+    config.adaptation.policy = policy
+    config.adaptation.mode = mode
+    state_dir = config.outputs.reports_dir.parent / "state"
+    initial = load_detector_state(state_dir, config)
+    pointer = (state_dir / "current.json").read_bytes()
+
+    def fail(*_args):
+        raise DataValidationError("storage unavailable")
+
+    monkeypatch.setattr(scoring_stage, "save_detector_state", fail)
+    result = adapt_windows(config, state_dir=state_dir)
+    events, report = read_adaptation_outputs(config)
+
+    assert result["threshold_update_count"] == result["model_refit_count"] == 0
+    assert (state_dir / "current.json").read_bytes() == pointer
+    assert load_detector_state(state_dir, config) == initial
+    assert all(event["threshold"] == initial.threshold.threshold for event in events)
+    assert all(event["model_fingerprint"] == initial.threshold.model_fingerprint for event in events)
+    assert all(update["reason"] == "storage unavailable" for update in report["threshold_update_attempts"])
+
+
+def test_legacy_fitting_failure_persists_threshold_fallback(persistent_detector, monkeypatch):
+    config = persistent_detector
+    config.adaptation.policy = "legacy"
+
+    class RejectedEstimator:
+        def fit(self, _counts):
+            alpha = np.asarray([1., 2., 3., 4.])
+            return DirichletFit(alpha.copy(), alpha, 10., .1, 1, False, -10., -9.)
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: RejectedEstimator())
+    state_dir = config.outputs.reports_dir.parent / "state"
+    result = adapt_windows(config, state_dir=state_dir)
+    saved = load_detector_state(state_dir, config)
+    assert result["threshold_update_count"] > 0
+    assert result["model_refit_count"] == 0
+    assert saved.source == "adaptive_threshold"
+    assert saved.alpha == saved.baseline_model.alpha
+    assert saved.threshold.threshold != saved.baseline_threshold.threshold
+
+
+def test_post_switch_failure_stops_before_writing_success(persistent_detector, monkeypatch):
+    config = persistent_detector
+    state_dir = config.outputs.reports_dir.parent / "state"
+    original_save = scoring_stage.save_detector_state
+
+    def committed_but_unsynced(directory, state):
+        original_save(directory, state)
+        raise DetectorStateCommitError("pointer changed; sync failed")
+
+    monkeypatch.setattr(scoring_stage, "save_detector_state", committed_but_unsynced)
+    config.outputs.events_path.write_text("previous events")
+    with pytest.raises(DetectorStateCommitError):
+        adapt_windows(config, state_dir=state_dir)
+    assert config.outputs.events_path.read_text() == "previous events"
+    assert not (config.outputs.reports_dir / "adaptation.json").exists()
+    assert load_detector_state(state_dir, config).source == "periodic_refit"

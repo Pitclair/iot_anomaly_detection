@@ -111,6 +111,16 @@ state = load_detector_state("artifacts/UNSW-Chromecast/detector-state", config)
 
 The returned state includes the active alpha/threshold/IQR and the original safety
 references. Traffic buffers and update scheduling counters start empty when a
-caller resumes; no traffic history or input position is restored. Automatic saves
-from adaptation and command-line state selection are not wired into the batch
-detector yet. Existing experiments retain their original starting-state behavior.
+caller resumes; no traffic history or input position is restored.
+
+`adapt_windows(config, state_dir=directory)` restores this state before scoring
+and commits each accepted update before activating it in memory. Storage failures
+before the pointer switch reject the update and preserve the whole active pair;
+they do not trigger the legacy threshold fallback. Legacy threshold fallbacks
+caused by fitting failures are themselves saved before activation. A post-switch
+`DetectorStateCommitError` stops the run so its next invocation can reload the
+committed pair. The report records starting and final version identifiers.
+
+Omitting `state_dir` keeps existing experiment behavior. Resuming a batch run
+replays its configured captures with the restored state; this is not input-offset
+recovery. A single writer must own the directory while running adaptive scoring.
