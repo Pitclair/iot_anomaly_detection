@@ -79,6 +79,10 @@ application image. From the repository root, pass it one document:
 The first run downloads the full TeX Live image. `latexmk` writes the PDF and
 all temporary build files to the gitignored `out/` directory.
 
+The modular thesis workspace is in [`thesis/`](thesis/README.md). Run
+`./thesis/build.sh` to produce `out/thesis/thesis.pdf` using the same Compose
+service with LuaLaTeX.
+
 ## Local development
 
 Install the package directly only when the local machine already has all
