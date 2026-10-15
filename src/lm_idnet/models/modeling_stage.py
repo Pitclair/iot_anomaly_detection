@@ -9,12 +9,12 @@ import numpy as np
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
 from lm_idnet.artifacts import save_artifact
-from lm_idnet.config import AppConfig
+from lm_idnet.config import AppConfig, DetectorInputConfig
 from lm_idnet.algorithms.estimator_factory import create_estimator
 from lm_idnet.exceptions import ConvergenceError, DataValidationError
 from lm_idnet.models.schemas import ModelArtifact
 from lm_idnet.partitioning import fit_partition_for_training
-from lm_idnet.processing.schemas import ProcessedDataset
+from lm_idnet.processing.schemas import ProcessedDataset, validate_window_contract
 from lm_idnet.processing.storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
@@ -82,6 +82,8 @@ def load_training_matrix(config: AppConfig) -> TrainingMatrix:
             config.ingest.device_id,
             categories,
         )
+        for window in dataset.windows:
+            validate_window_contract(window, categories, config.ingest.window_minutes)
 
         observed_windows = [
             window for window in dataset.windows if window.state != "missing"
@@ -137,6 +139,9 @@ def save_model(
         dataset=config.ingest.dataset_folder,
         device_id=config.ingest.device_id,
         categories=config.ingest.categories,
+        input_contract=DetectorInputConfig.model_validate(
+            config.ingest.model_dump(include=set(DetectorInputConfig.model_fields))
+        ),
         alpha=fit.alpha.tolist(),
         concentration=fit.concentration,
         mean_probabilities=(fit.alpha / fit.concentration).tolist(),

@@ -10,14 +10,22 @@ def model_parameter_fingerprint(
     categories: tuple[str, ...],
     log_likelihood_backend: str,
     precision_digits: int,
+    device_id: str,
+    device_mac: str,
+    window_minutes: int,
+    counting_policy: str,
 ) -> str:
-    """Fingerprint only the parameter values used while scoring."""
+    """Bind scoring parameters to the trained device and counting contract."""
     canonical = json.dumps(
         {
             "alpha": alpha,
             "categories": categories,
             "log_likelihood_backend": log_likelihood_backend,
             "precision_digits": precision_digits,
+            "device_id": device_id,
+            "device_mac": device_mac,
+            "window_minutes": window_minutes,
+            "counting_policy": counting_policy,
         },
         ensure_ascii=False,
         allow_nan=False,

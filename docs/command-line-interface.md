@@ -70,6 +70,11 @@ standard exit code 2 and usage output.
 
 ## Implementation status
 
+Prepared detector input contracts, partition-free edge loading, and the shared
+one-window Python API are described in [edge-detector.md](edge-detector.md).
+The batch commands use that same processing path. The continuous-input `run`
+command is still planned.
+
 At this milestone, every registered command has a callable handler. `train` loads the
 fit-partition matrix, estimates Dirichlet parameters with Minka's fixed-point
 iteration and the configured likelihood backend, and saves a validated model artifact.

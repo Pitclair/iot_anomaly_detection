@@ -17,7 +17,7 @@ from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.schemas import ThresholdArtifact
 from lm_idnet.partitioning import calibration_partition_for_threshold
-from lm_idnet.processing.schemas import WindowRecord
+from lm_idnet.processing.schemas import WindowRecord, validate_window_contract
 from lm_idnet.processing.storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
@@ -42,12 +42,17 @@ def load_calibration_windows(
             raise DataValidationError(
                 f"calibration capture has the wrong partition: {capture_id}"
             )
+        if dataset.metadata.device_id != config.ingest.device_id:
+            raise DataValidationError(
+                f"calibration device does not match configuration: {capture_id}"
+            )
 
         for window in dataset.windows:
             if window.categories != model_categories:
                 raise DataValidationError(
                     f"calibration categories do not match model: {capture_id}"
                 )
+            validate_window_contract(window, model_categories, config.ingest.window_minutes)
             if window.state != "missing":
                 windows.append(window)
 

@@ -1,5 +1,6 @@
 {
   "artifact_type": "model",
+  "schema_version": 2,
   "dataset": "UNSW-Samsung-Camera",
   "device_id": "Samsung Camera",
   "categories": [
@@ -8,6 +9,18 @@
     "ssdp",
     "arp"
   ],
+  "input_contract": {
+    "device_id": "Samsung Camera",
+    "device_mac": "00:16:6c:ab:6b:88",
+    "window_minutes": 10,
+    "categories": [
+      "tcp",
+      "udp",
+      "ssdp",
+      "arp"
+    ],
+    "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1"
+  },
   "alpha": [
     6.360268651586078,
     0.029417417993090944,
@@ -45,6 +58,6 @@
     "max_iterations": 100000,
     "initial_log_likelihood": -191965.77441314925,
     "final_log_likelihood": -191562.0385185929,
-    "duration_seconds": 0.0439842427149415
+    "duration_seconds": 0.04294191696681082
   }
 }

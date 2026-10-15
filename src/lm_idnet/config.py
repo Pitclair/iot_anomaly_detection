@@ -122,18 +122,16 @@ class TemporalPartitions(StrictModel):
         return self.fit + self.calibration + self.development_test + self.final_test
 
 
-class IngestConfig(StrictModel):
-    raw_root: Path
-    processed_root: Path
-    dataset_folder: str = Field(min_length=1)
+class DetectorInputConfig(StrictModel):
+    """The counting contract shared by research and edge inference."""
+
     device_id: str = Field(min_length=1)
     device_mac: str
-    time_col: str = Field(default="timestamp", min_length=1)
-    protocol_col: str = Field(default="protocol", min_length=1)
     window_minutes: int
     categories: tuple[str, ...] = Field(min_length=2)
-    partitions: TemporalPartitions
-    allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
+    counting_policy: Literal["device-mac-bidirectional-ssdp-exclusive-v1"] = (
+        "device-mac-bidirectional-ssdp-exclusive-v1"
+    )
 
     @field_validator("window_minutes", mode="before")
     @classmethod
@@ -162,6 +160,16 @@ class IngestConfig(StrictModel):
         if not _MAC_ADDRESS_PATTERN.fullmatch(normalized):
             raise ValueError("device_mac must be a colon-separated MAC address")
         return normalized
+
+
+class IngestConfig(DetectorInputConfig):
+    raw_root: Path
+    processed_root: Path
+    dataset_folder: str = Field(min_length=1)
+    time_col: str = Field(default="timestamp", min_length=1)
+    protocol_col: str = Field(default="protocol", min_length=1)
+    partitions: TemporalPartitions
+    allowed_duplicate_captures: tuple[DuplicateCaptureGroup, ...] = ()
 
     @model_validator(mode="after")
     def duplicate_explanations_must_reference_configured_captures(
@@ -220,9 +228,12 @@ class AdaptationConfig(StrictModel):
     max_threshold_shift_iqr: float = Field(default=2.0, ge=0, allow_inf_nan=False)
 
 
-class OutputConfig(StrictModel):
+class ArtifactPaths(StrictModel):
     model_path: Path
     threshold_path: Path
+
+
+class OutputConfig(ArtifactPaths):
     events_path: Path
     reports_dir: Path
 
@@ -231,20 +242,17 @@ class ForecastConfig(StrictModel):
     horizon_hours: int = Field(default=24, gt=0)
 
 
-class AppConfig(StrictModel):
-    """Complete application configuration with cross-section validation."""
+class DetectorConfig(StrictModel):
+    """Detector settings independent of research capture partitions."""
 
     precision_digits: int = Field(default=6, gt=0)
-    ingest: IngestConfig
-    seeds: SeedConfig
+    ingest: DetectorInputConfig
     estimator: EstimatorConfig
     calibration: CalibrationConfig
     adaptation: AdaptationConfig
-    outputs: OutputConfig
-    forecast: ForecastConfig = Field(default_factory=ForecastConfig)
 
     @model_validator(mode="after")
-    def category_count_must_match(self) -> "AppConfig":
+    def category_count_must_match(self) -> "DetectorConfig":
         actual = len(self.ingest.categories)
         if self.estimator.categories_k != actual:
             raise ValueError(
@@ -254,7 +262,7 @@ class AppConfig(StrictModel):
         return self
 
     @model_validator(mode="after")
-    def adaptation_buffers_must_be_large_enough(self) -> "AppConfig":
+    def adaptation_buffers_must_be_large_enough(self) -> "DetectorConfig":
         if (
             self.adaptation.mode != "static"
             and self.adaptation.buffer_size < self.calibration.minimum_samples
@@ -274,12 +282,37 @@ class AppConfig(StrictModel):
         return self
 
 
+class AppConfig(DetectorConfig):
+    """Complete research configuration, retaining chronological partitions."""
+
+    ingest: IngestConfig
+    seeds: SeedConfig
+    outputs: OutputConfig
+    forecast: ForecastConfig = Field(default_factory=ForecastConfig)
+
+
+class EdgeConfig(DetectorConfig):
+    """Load a prepared detector without raw data or capture-date lists."""
+
+    outputs: ArtifactPaths
+    state_dir: Path
+
+
 def load_config(path: str | Path) -> AppConfig:
     """Read and validate a JSON configuration file."""
+    return _load_config(path, AppConfig)
+
+
+def load_edge_config(path: str | Path) -> EdgeConfig:
+    """Read and validate the partition-free edge configuration."""
+    return _load_config(path, EdgeConfig)
+
+
+def _load_config(path, schema):
     config_path = Path(path)
     try:
         raw = json.loads(config_path.read_text(encoding="utf-8"))
-        return AppConfig.model_validate(raw)
+        return schema.model_validate(raw)
     except FileNotFoundError as error:
         raise ConfigurationError(f"config not found: {config_path}") from error
     except (OSError, UnicodeError, json.JSONDecodeError) as error:

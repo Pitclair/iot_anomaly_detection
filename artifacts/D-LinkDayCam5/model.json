@@ -1,5 +1,6 @@
 {
   "artifact_type": "model",
+  "schema_version": 2,
   "dataset": "D-LinkDayCam5",
   "device_id": "D-LinkDayCam5",
   "categories": [
@@ -8,6 +9,18 @@
     "ssdp",
     "arp"
   ],
+  "input_contract": {
+    "device_id": "D-LinkDayCam5",
+    "device_mac": "b0:c5:54:42:8f:88",
+    "window_minutes": 10,
+    "categories": [
+      "tcp",
+      "udp",
+      "ssdp",
+      "arp"
+    ],
+    "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1"
+  },
   "alpha": [
     20.132653142790375,
     30.15839773054103,
@@ -22,6 +35,8 @@
     0.3518519501270771
   ],
   "psi": 0.008181872370945854,
+  "log_likelihood_backend": "lm",
+  "precision_digits": 6,
   "training_capture_ids": [
     "D-LinkDayCam5_88-2020-10-08",
     "D-LinkDayCam5_88-2020-10-09",
@@ -30,8 +45,6 @@
     "D-LinkDayCam5_88-2020-10-12",
     "D-LinkDayCam5_88-2020-10-13"
   ],
-  "log_likelihood_backend": "lm",
-  "precision_digits": 6,
   "training_window_count": 846,
   "training_start_utc": "2020-10-08T08:10:00Z",
   "training_end_utc": "2020-10-13T05:10:00Z",
@@ -48,6 +61,6 @@
     "max_iterations": 100000,
     "initial_log_likelihood": -477950.7955895391,
     "final_log_likelihood": -476052.5888109615,
-    "duration_seconds": 0.19424313679337502
+    "duration_seconds": 0.20797972497530282
   }
 }

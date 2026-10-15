@@ -9,9 +9,11 @@ from lm_idnet.artifacts import (
     artifact_fingerprint,
     load_artifact,
     load_model,
+    load_model_threshold,
     validate_artifact,
 )
 from lm_idnet.exceptions import ArtifactCompatibilityError
+from lm_idnet.model_fingerprint import model_parameter_fingerprint
 
 pytestmark = pytest.mark.unit
 
@@ -25,6 +27,11 @@ def artifact_examples() -> dict[str, dict[str, Any]]:
             "dataset": "dataset-001",
             "device_id": "camera-001",
             "categories": ["tcp", "udp", "ssdp", "arp"],
+            "input_contract": {
+                "device_id": "camera-001", "device_mac": "b0:c5:54:42:8f:88",
+                "categories": ["tcp", "udp", "ssdp", "arp"], "window_minutes": 10,
+                "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1",
+            },
             "alpha": [1.0, 2.0, 3.0, 4.0],
             "concentration": 10.0,
             "mean_probabilities": [0.1, 0.2, 0.3, 0.4],
@@ -249,6 +256,7 @@ def test_model_rejects_another_configured_dataset(
         training_capture_ids=config.ingest.partitions.fit,
     )
     model[field] = value
+    model["input_contract"].update(device_id=model["device_id"], categories=model["categories"])
     config.outputs.model_path.write_text(json.dumps(model), encoding="utf-8")
 
     with pytest.raises(ArtifactCompatibilityError, match=field.replace("_", " ")):
@@ -263,10 +271,75 @@ def test_wrong_artifact_type_is_rejected() -> None:
         )
 
 
-@pytest.mark.parametrize("removed_field", ["schema_version", "checksum"])
-def test_removed_metadata_is_not_accepted(removed_field: str) -> None:
+@pytest.mark.parametrize(("removed_field", "message"), [
+    ("schema_version", "Input should be 2"), ("checksum", "Extra inputs"),
+])
+def test_unsupported_metadata_is_not_accepted(removed_field: str, message: str) -> None:
     model = artifact_examples()["model"]
     model[removed_field] = "unused"
 
-    with pytest.raises(ArtifactCompatibilityError, match="Extra inputs"):
+    with pytest.raises(ArtifactCompatibilityError, match=message):
         validate_artifact(model, expected_type="model")
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("window_minutes", 5), ("device_mac", "00:11:22:33:44:55"),
+    ("device_id", "other-device"), ("counting_policy", "another-policy"),
+    ("categories", ("arp", "ssdp", "udp", "tcp")),
+])
+def test_fingerprint_binds_the_trained_input_contract(field, value):
+    model = validate_artifact(artifact_examples()["model"], expected_type="model")
+    arguments = {
+        "alpha": model.alpha, "log_likelihood_backend": model.log_likelihood_backend,
+        "precision_digits": model.precision_digits, **model.input_contract.model_dump(),
+    }
+    original = model_parameter_fingerprint(**arguments)
+    assert original == artifact_fingerprint(model)
+    arguments[field] = value
+    assert model_parameter_fingerprint(**arguments) != original
+
+
+def test_old_model_requires_regeneration_instead_of_guessing_the_input_contract():
+    raw = artifact_examples()["model"]
+    del raw["input_contract"]
+    with pytest.raises(ArtifactCompatibilityError, match="retrain and recalibrate"):
+        validate_artifact(raw, expected_type="model")
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_threshold_rejects_nonfinite_values(value):
+    raw = artifact_examples()["threshold"]
+    raw["threshold"] = value
+    with pytest.raises(ArtifactCompatibilityError):
+        validate_artifact(raw, expected_type="threshold")
+
+
+def test_model_rejects_unsupported_counting_policy():
+    raw = artifact_examples()["model"]
+    raw["input_contract"]["counting_policy"] = "ssdp-counted-twice"
+    with pytest.raises(ArtifactCompatibilityError, match="counting_policy"):
+        validate_artifact(raw, expected_type="model")
+
+
+def test_edge_pair_loader_keeps_provenance_without_requiring_partition_lists(
+    tmp_path, config_factory, edge_config_factory,
+):
+    config = config_factory(
+        ingest={"device_id": "camera-001"},
+        estimator={"log_likelihood_backend": "scipy"},
+        outputs={"model_path": tmp_path / "model.json", "threshold_path": tmp_path / "threshold.json"},
+    )
+    raw = artifact_examples()
+    model = validate_artifact(raw["model"], expected_type="model")
+    raw["threshold"]["model_fingerprint"] = artifact_fingerprint(model)
+    config.outputs.model_path.write_text(json.dumps(raw["model"]))
+    config.outputs.threshold_path.write_text(json.dumps(raw["threshold"]))
+    edge = edge_config_factory(config, tmp_path / "unused-state")
+    loaded_model, threshold = load_model_threshold(edge)
+    assert loaded_model.training_capture_ids == ("capture-001", "capture-002")
+    assert threshold.model_fingerprint == artifact_fingerprint(loaded_model)
+    with pytest.raises(ArtifactCompatibilityError, match="dataset"):
+        load_model_threshold(config)
+    incompatible = edge.model_copy(update={"precision_digits": 8})
+    with pytest.raises(ArtifactCompatibilityError, match="precision"):
+        load_model_threshold(incompatible)

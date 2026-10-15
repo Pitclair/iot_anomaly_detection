@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 
 import numpy as np
@@ -29,6 +30,7 @@ from lm_idnet.exceptions import (
     PolicyRejectionError,
 )
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
+from lm_idnet.config import DetectorInputConfig, load_edge_config
 from lm_idnet.models.schemas import DetectorStateArtifact, DetectorStateIndex, ModelArtifact
 from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
 from lm_idnet.models.scoring_stage import score_window
@@ -57,6 +59,7 @@ def state_factory(detector_config):
     model = ModelArtifact(
         dataset=config.ingest.dataset_folder, device_id=config.ingest.device_id,
         categories=config.ingest.categories, alpha=(1., 2., 3., 4.),
+        input_contract=config.ingest.model_dump(include=set(DetectorInputConfig.model_fields)),
         concentration=10., mean_probabilities=(.1, .2, .3, .4), psi=.1,
         log_likelihood_backend="scipy", precision_digits=config.precision_digits,
         training_capture_ids=config.ingest.partitions.fit, training_window_count=288,
@@ -89,6 +92,7 @@ def state_factory(detector_config):
                     alpha=alpha, categories=model.categories,
                     log_likelihood_backend=model.log_likelihood_backend,
                     precision_digits=model.precision_digits,
+                    **model.input_contract.model_dump(exclude={"categories"}),
                 ),
                 "threshold": threshold, "score_iqr": 1.5,
             },
@@ -118,7 +122,7 @@ def test_detector_state_round_trip_preserves_active_pair_and_safety_references(s
 @pytest.mark.parametrize(("field", "value"), [
     ("alpha", [0., 2., 3., 4.]), ("alpha", [float("nan"), 2., 3., 4.]),
     ("alpha", [1., 2.]), ("alpha", [1e308] * 4),
-    ("schema_version", 2), ("window_minutes", True), ("window_minutes", 0),
+    ("schema_version", 1), ("window_minutes", True), ("window_minutes", 0),
     ("device_mac", "invalid"), ("packet_count_limit", None),
     ("packet_count_limit", float("inf")), ("version_id", "../escape"),
 ])
@@ -658,3 +662,71 @@ def test_audit_failure_does_not_reject_rollback(tmp_path, detector_config, state
     assert result.active_version == first.version_id
     assert load_detector_state(tmp_path, detector_config) == first
     assert "Cannot save detector update history" in caplog.text
+
+
+def test_edge_loads_saved_pair_without_research_paths_or_partitions(
+    tmp_path, detector_config, state_factory, edge_config_factory,
+):
+    state = state_factory()
+    save_detector_state(tmp_path / "state", state)
+    edge = edge_config_factory(detector_config, tmp_path / "state")
+    path = tmp_path / "edge.json"
+    path.write_text(edge.model_dump_json())
+    loaded = load_edge_config(path)
+    assert "partitions" not in loaded.ingest.model_dump()
+    assert not detector_config.ingest.processed_root.exists()
+    assert not loaded.outputs.model_path.exists()
+    assert not loaded.outputs.threshold_path.exists()
+    assert load_detector_state(loaded.state_dir, loaded) == state
+
+
+@pytest.mark.parametrize(("section", "field", "value"), [
+    ("ingest", "device_id", "other-device"),
+    ("ingest", "device_mac", "00:11:22:33:44:55"),
+    ("ingest", "categories", ("arp", "ssdp", "udp", "tcp")),
+    ("ingest", "window_minutes", 5),
+    ("ingest", "counting_policy", "other-policy"),
+    ("calibration", "score_type", "normalized"),
+    ("calibration", "quantile", .1),
+    ("adaptation", "policy", "legacy"),
+    ("estimator", "log_likelihood_backend", "lm"),
+])
+def test_edge_rejects_incompatible_saved_detector(
+    tmp_path, detector_config, state_factory, edge_config_factory, section, field, value,
+):
+    save_detector_state(tmp_path, state_factory())
+    edge = edge_config_factory(detector_config, tmp_path)
+    changed = edge.model_copy(update={section: getattr(edge, section).model_copy(update={field: value})})
+    pointer = (tmp_path / "current.json").read_bytes()
+    with pytest.raises(ArtifactCompatibilityError, match="does not match configuration"):
+        load_detector_state(tmp_path, changed)
+    assert (tmp_path / "current.json").read_bytes() == pointer
+
+
+def test_edge_refuses_to_initialise_from_missing_research_data(tmp_path, detector_config, edge_config_factory):
+    edge = edge_config_factory(detector_config, tmp_path / "unprepared")
+    with pytest.raises(ArtifactCompatibilityError, match="on the development machine"):
+        load_detector_state(edge.state_dir, edge)
+    assert not edge.state_dir.exists()
+
+
+def test_edge_rollback_uses_the_same_saved_versions(tmp_path, detector_config, state_factory, edge_config_factory):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    save_detector_state(tmp_path, second)
+    edge = edge_config_factory(detector_config, tmp_path)
+    rollback_detector_state(tmp_path, edge)
+    assert load_detector_state(tmp_path, edge) == first
+
+
+def test_bundled_adaptive_state_matches_edge_configuration(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    shutil.copytree(root / "artifacts" / "edge-initial-state", tmp_path / "state")
+    edge = load_edge_config(root / "configs" / "edge_example.json")
+    edge.state_dir = tmp_path / "state"
+    state = load_detector_state(edge.state_dir, edge)
+    assert state.source == "initial"
+    assert state.alpha == state.baseline_model.alpha
+    assert state.adaptation.mode == "periodic_refit"
+    assert state.adaptation.policy == "conservative"
+    assert state.packet_count_limit == pytest.approx(588.56)

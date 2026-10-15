@@ -1,0 +1,487 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,
+  pdftitle={LM-IDNet: Bare Minimum Detector Software}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlist{leftmargin=1.6em,itemsep=0.2em,topsep=0.2em}
+\setlength{\emergencystretch}{2em}
+\Urlmuskip=0mu plus 2mu
+
+\title{\textbf{LM-IDNet: Bare Minimum Detector Software}\\[0.4em]
+\large The remaining software work, in implementation order}
+\author{}
+\date{15 October 2026}
+
+\begin{document}
+\maketitle
+
+\section{What the delivered detector must do}
+
+\textbf{Deliver one working adaptive IoT anomaly detector.} It learns a device's
+normal traffic using a Dirichlet--multinomial model and the LM likelihood
+implementation, scores subsequent traffic, emits understandable anomaly events,
+updates its normal model conservatively, and runs on one Linux edge gateway.
+These are the software promises retained from the original LM-IDNet brief and
+the proposal's guarded-adaptation design.
+
+Use the existing TCP, ordinary UDP, SSDP, and ARP counts and the configured
+ten-minute windows. Train and calibrate on a development machine if convenient;
+copy the resulting model and threshold to the gateway. A local collector can
+supply completed count windows. The existing PCAP preprocessing path provides
+the file-input route. The smallest deployment supports supplied windows; a live
+packet collector is necessary only if the delivered interface explicitly
+promises to collect packets itself.
+
+\textbf{Reference:} user-confirmed \texttt{master}, commit
+\texttt{96fb241433d1d30bd63ddcc16cb38bd27282d1d6}. The original requirements below
+describe the remaining software changes against that snapshot and retain the
+detector-only scope. The detailed gateway breakdown added on 15 October 2026
+uses the current \texttt{feature/edge} implementation. Earlier requirements are
+retained as requirements, rather than declarations that every check has passed.
+
+\section{Reuse what already works}
+
+Keep the existing package, configuration files, native LM library, JSON
+artefacts, and Docker setup. The following functionality is already present:
+\begin{itemize}
+  \item Device-specific PCAP preprocessing and validated count windows.
+  \item Initial model fitting and calibration of an anomaly threshold.
+  \item \texttt{score\_window()}, which produces the score, anomaly decision,
+  severity, observed counts, expected proportions, and category residuals.
+  \item Periodic alpha refitting with bounded buffers, convergence checks,
+  model fingerprints, and update records.
+\end{itemize}
+Those components provide the detector's core. The four tasks below complete
+their validation, update safety, saved state, and deployable execution.
+
+\section{The implementation order}
+
+\subsection{1. Make the existing detector reject incompatible inputs}
+
+\textbf{In plain language:} make sure the detector uses the right device's counts
+with the model trained for those counts.
+
+Record the trained window duration and packet-counting policy with the model,
+and include them in compatibility checks. The reference model does not store
+its window duration. Reuse the existing device, category-order, score-type, and
+model--threshold checks; add the missing device check when calibration and
+scoring load processed inputs. Reject invalid counts, incompatible durations,
+missing required artefacts, and non-finite threshold values. Keep genuine silent
+windows distinct from missing observations. Recreate the model and matching
+threshold once if their stored format changes.
+
+\textbf{Where:} model/threshold schemas, \path{src/lm_idnet/artifacts.py},
+calibration, scoring, and their existing tests.
+
+\textbf{Done when:} valid inputs still produce the existing decisions, and a
+wrong device, wrong window duration, invalid threshold, or mismatched
+model--threshold pair fails with a clear error.
+
+\subsection{2. Make the existing adaptive updates conservative}
+
+\textbf{In plain language:} let the detector learn ordinary changes without
+letting an obvious attack change what it considers normal.
+
+Keep the existing periodic-refit mode. Score each window before considering it
+for learning. Keep one bounded buffer of high-confidence accepted windows;
+exclude flagged and near-threshold windows. Add one simple upper packet-count
+limit derived from benign calibration traffic to keep obvious traffic floods
+out of this buffer. This uses the existing total count.
+
+Calculate candidate thresholds from accepted windows, including any fallback
+path. The reference implementation uses all recent scores for threshold updates;
+a rejected refit must leave the active model and threshold together unchanged.
+Retain positive/finite parameter checks and convergence checks. Use fixed,
+documented limits on changes to alpha concentration, category proportions, and
+the threshold; reject excessive changes. Recalculate the matching threshold
+under each candidate model before activating it. Record acceptance or the reason
+for rejection.
+
+\textbf{Where:} \path{src/lm_idnet/models/scoring_stage.py}, adaptation
+configuration, and focused scoring tests. Reuse the current refit algorithm.
+
+\textbf{Done when:} a valid candidate can update alpha and its threshold;
+flagged or excessive-volume inputs cannot enter the learning buffer; and an
+invalid, non-converged, or excessive candidate leaves the detector running on
+its previous valid state. Conservative gating reduces contamination risk; it
+does not establish immunity to every attack.
+
+\subsection{3. Make a restart preserve the accepted model}
+
+\textbf{In plain language:} restarting the program should recover the accepted
+detector, and an unwanted update should be reversible.
+
+Save each accepted model and its matching threshold as one validated version.
+Keep the previous valid version and a small record identifying the active pair.
+Write and validate the new files before atomically switching that record. If a
+write or validation fails, retain the previous active pair. On restart, load the
+accepted pair; let an operator restore the previous pair. Empty learning buffers
+can be rebuilt after restart, so persisting the entire traffic history is
+unnecessary. Keep update records and stored versions bounded.
+
+\textbf{Where:} existing artefact helpers and schemas, adaptive scoring, and
+the CLI's loading/rollback path.
+
+\textbf{Done when:} restart restores the accepted pair, rollback restores the
+previous pair, and an interrupted save cannot mix a new model with an old
+threshold. Verify those state transitions with small file-based tests.
+
+\subsection{4. Provide one bounded runtime on the edge gateway}
+
+\textbf{In plain language:} provide one command that keeps reading traffic
+windows and immediately writes the detector's decisions.
+
+Add a thin runtime entry point inside the existing package. Load the accepted
+model, threshold, and LM backend once. Read one validated count window at a time,
+call the existing scoring function, apply the guarded update policy, and emit
+one JSON record per scored window. JSON lines on standard input and output are
+sufficient. The runtime must accept new observations without requiring a
+predeclared list of capture dates. Keep only the active state and bounded
+learning buffers in memory; the current batch scorer retains every result.
+
+Reuse the existing event fields as the human-readable evidence. Device and time
+identify the alert, while severity and category residuals explain the deviation.
+Preserve raw scores in the output. The existing basic metric command can remain
+a utility for supplied labels: accuracy and recall already exist; add
+\(\mathrm{FPR}=\mathrm{FP}/(\mathrm{FP}+\mathrm{TN})\), returning an unavailable
+value if there are no benign labels. Recall is TPR. Labels are never required
+for runtime decisions or updates.
+
+Package the application and native library for one target architecture using
+the existing Docker setup. Verify installation and startup on the actual
+gateway. Bound logs and event storage; if using a service, configure ordinary
+automatic restart. Verify that the representative input rate fits the target's
+memory and processing budget, including refits. This is a deployment check, not
+a new performance-testing framework. Keep processing time distinct from the
+time spent waiting for a ten-minute window to close.
+
+\textbf{Where:} CLI, scoring, artefact loading, Docker/native build, and a short
+installation/run guide. Share the existing scoring and adaptation logic.
+
+\textbf{Done when:} one documented command processes successive windows on the
+gateway, emits explainable decisions, performs guarded updates, restores state
+after restart, and runs without continually growing memory or disk use. A small
+integration check should confirm that the runtime matches the existing scorer
+on identical windows and rejects malformed input.
+
+\subsubsection*{Implementation breakdown for the gateway runtime}
+
+Follow the items below in order. Each has a concrete change and a check that
+shows when it is finished. They describe work to implement, not work already
+verified on a gateway.
+
+\textbf{Starting point on this branch.} Versioned detector state, atomic
+activation, restart loading, a process lock, rollback, and bounded state history
+already exist. Reuse them. Both conservative and legacy adaptation policies
+also exist; retain access to the earlier methods for reproducible thesis
+experiments. A legacy result must identify its policy. A run where every
+candidate is rejected demonstrates rejection behaviour, not successful learning.
+The edge work should preserve these behaviours while replacing the batch input
+and output path.
+
+\subsubsection*{4.1 Define exactly what the gateway receives and loads}
+
+\textbf{Local implementation status, 15 October 2026:} implemented and checked.
+Models now store a fingerprint-bound input contract; prepared state loads with a
+partition-free edge configuration. The three bundled model/threshold pairs were
+regenerated without changing alpha or numeric thresholds. Older saved-state
+directories require fresh preparation. See \path{docs/edge-detector.md}.
+
+\textbf{Change:} keep the current four counts. Document the target device/MAC,
+category order, trained window duration, device filtering, and the rule that
+SSDP packets are excluded from ordinary UDP counts. Store this input contract
+with the trained model and validate it when loading the matching threshold and
+saved detector state. Complete any missing compatible-input checks from the
+first requirement before trusting a stream. An operator-supplied duration alone
+cannot prove which duration trained an old model; regenerate artefacts if their
+format changes.
+
+Add a small edge configuration containing artefact/state paths and the expected
+input and detector settings. It must not require lists of fitting, calibration,
+or future capture dates. Keep those lists in saved artefacts as research
+provenance. Separate shared inference-compatibility checks from research
+partition checks in the existing loaders, including the saved-state loader;
+retain device, input, backend, score-type, policy, and model--threshold checks.
+Prepare the initial saved state on the development machine so that the gateway
+does not need calibration captures to reconstruct its conservative count limit.
+
+\textbf{Where:} \path{src/lm_idnet/config.py},
+\path{src/lm_idnet/artifacts.py}, model/threshold/state schemas and fingerprints,
+and a small example under \path{configs/}.
+
+\textbf{Check:} a valid prepared detector loads without research data folders or
+capture partitions. Wrong device, category order, duration, counting policy,
+non-finite threshold, or mismatched pair fails before scoring. Existing research
+commands retain their partition validation.
+
+\subsubsection*{4.2 Share the existing one-window detector logic}
+
+\textbf{Local implementation status, 15 October 2026:} implemented and checked.
+The batch runner and edge Python API share \texttt{WindowDetector.process()}.
+Twelve controlled mode/policy/score combinations match the recorded pre-refactor
+behaviour, and all six historical legacy experiments reproduce their scores and
+decisions. Gateway hardware validation remains outstanding.
+
+\textbf{Change:} extract the per-window work from the existing batch loop into
+one shared processing path. Let the batch runner continue to collect its reports,
+while the gateway keeps only the active detector, bounded learning buffers,
+and counters. Initialise the LM backend and refit estimator once. Replace uses
+of the accumulated result-list length with a scored-window counter. Do not keep
+an ever-growing event or update-attempt list in the gateway path.
+
+Keep the same order: score with the current pair, decide whether the window can
+be learned from, build and check an update when due, then save an accepted pair
+before activating it. Preserve the original safety references and count limit
+when restoring state. Support static, threshold-adaptive, and periodic-refit
+modes with the existing conservative/legacy policy choices; conservative remains
+the default. This refactor must not change their statistical rules.
+
+\textbf{Where:} \path{src/lm_idnet/models/scoring_stage.py}, its existing callers
+and focused scoring/adaptation tests. Use the current artefact helpers.
+
+\textbf{Check:} before switching the batch runner, record a small sequence's
+scores, decisions, update outcomes, alpha, and threshold. Both callers then
+match those results for both policies, including an accepted update and a
+rejected update. Learning buffers stay within their configured sizes.
+
+\subsubsection*{4.3 Add the command that reads and writes one window at a time}
+
+\textbf{Change:} add a \texttt{run} command to the existing CLI. The proposed
+interface, to implement and document, is:
+\begin{verbatim}
+lm-idnet run --config configs/edge_example.json \
+  --state-dir artifacts/edge-state
+\end{verbatim}
+Use one JSON object per input line: \texttt{device\_id}, \texttt{source\_id}, and
+a nested \texttt{window} using the existing \texttt{WindowRecord} fields
+(\texttt{start\_utc}, \texttt{end\_utc}, \texttt{categories}, \texttt{counts},
+\texttt{state}). The source identifier supplies the existing event's
+\texttt{capture\_id} context; it need not contain a date or belong to a research
+partition. Supply one valid example line in the run guide.
+
+Validate each line before processing it: counts must be actual non-negative
+integers within the numerical implementation's supported range, rather than
+booleans, strings, rounded fractions, or overflowing totals. Check the device,
+category order, exact duration, UTC times, and chronological non-overlap. Reject
+duplicates and backward windows within a running stream. Gaps represent absent
+coverage, not invented zero counts. Skip explicit missing windows without
+scoring or learning; score genuine silent windows normally.
+
+Choose and document a maximum line size, and enforce it while reading, before
+an unbounded line can enter memory. Invalid JSON, non-finite numbers, incomplete
+records, and over-limit lines stop with a line-numbered error on standard error
+and a nonzero exit status. Standard output contains only the existing JSON
+events, including scores and explanations. Flush each event as it is processed;
+send status messages and update reasons to bounded logs. Read and write
+synchronously so a slow consumer does not create a growing queue.
+
+\textbf{Where:} \path{src/lm_idnet/cli.py}, a small runtime module if needed,
+the shared input schemas, CLI tests, and
+\path{docs/command-line-interface.md}.
+
+\textbf{Check:} send one line while keeping input open and receive its complete
+event before sending the next line. Malformed, oversized, wrong-device, and
+wrong-duration lines fail clearly. Missing and silent records behave differently,
+and every standard-output line parses as an event.
+
+\subsubsection*{4.4 Connect restart, shutdown, and rollback to the live command}
+
+\textbf{Change:} hold the existing state-directory lock for the runtime's
+lifetime. Load the accepted pair at startup, and use the existing atomic save
+for every promotion. Keep pre-commit failures from changing the active pair;
+retain the existing stop-on-uncertain-commit behaviour. Exit cleanly on end of
+input and normal service shutdown, releasing the lock and avoiding a half-finished
+activation. Learning buffers and update counters can restart empty.
+
+Document rollback as an operator action: stop the runtime, invoke the existing
+rollback command with compatible configuration, then start again. Make that
+command accept the edge configuration through the same compatibility checks.
+Do not add a second state format or a hot-rollback mechanism.
+
+\textbf{Important limit:} saved model state does not save the input position or
+guarantee that every output was delivered exactly once. State clearly that a
+replayed window can be scored and learned from again after restart. The input
+producer must control replay; a durable queue or cursor is outside this minimum.
+
+\textbf{Where:} the runtime/CLI lifecycle and the existing
+\path{src/lm_idnet/artifacts.py} lock, save, load, and rollback helpers.
+
+\textbf{Check:} accept an update, stop, and restart without the original research
+captures; the accepted alpha and threshold return together. Verify rollback,
+lock refusal for a second writer, shutdown, and a failed save using small
+integration tests that reuse the existing persistence tests.
+
+\subsubsection*{4.5 Add the missing false-positive rate to the existing evaluator}
+
+\textbf{Change:} extend the existing labelled evaluation output with
+\(\mathrm{FPR}=\mathrm{FP}/(\mathrm{FP}+\mathrm{TN})\). Use JSON
+\texttt{null} when the denominator is zero. Explain in the output documentation
+that recall is the true-positive rate; keep the existing accuracy, recall, and
+confusion counts. Keep this as an offline utility. Neither labels nor metric
+calculation belongs in the live scoring or learning loop.
+
+\textbf{Where:} \path{src/lm_idnet/evaluation/evaluation_stage.py}, its result
+schema if applicable, evaluation tests, and CLI output documentation.
+
+\textbf{Check:} a tiny hand-counted example gives the expected FPR; no benign
+labels gives \texttt{null}, and no false positives gives zero. Existing metrics
+remain unchanged and the output contains no NaN or infinity.
+
+\subsubsection*{4.6 Build one image that starts without compiling anything}
+
+\textbf{Change:} name the intended Linux gateway, operating system, and CPU
+architecture. Build the existing application and native LM library for that
+architecture. Compile during image creation, install the normal package without
+the test extra, and launch the installed command directly at startup. Avoid
+introducing a new dependency or packaging framework.
+
+Provide a deployment invocation that runs the already-built image, keeps
+standard input open (\texttt{docker run -i}), and forwards events unchanged.
+The current development runner rebuilds on every invocation and its entrypoint
+prints compilation messages; the deployment path must start without a build,
+dependency download, or status text on event output. Keep configuration and
+initial artefacts read-only, mount state persistently with the runtime user's
+write permission, and forward stop signals to the application. The development
+runner can keep its build convenience.
+
+\textbf{Where:} \path{Dockerfile}, \path{scripts/docker-entrypoint.sh}, and the
+deployment invocation alongside \path{scripts/run.sh} or in the run guide.
+
+\textbf{Check:} start the prepared image with networking disabled and process a
+fixture through its standard input. The native library loads on the stated
+architecture, output is clean JSON lines, and state survives container removal
+and restart through the persistent mount.
+
+\subsubsection*{4.7 Put explicit limits on unattended operation}
+
+\textbf{Change:} supply one ordinary service setup with automatic restart on
+failure. Connect it to the chosen local window producer and a bounded event
+destination. State who restarts or reconnects that producer; the detector cannot
+recreate windows that were never supplied. End of a finite input file is a clean
+exit, so a replay fixture must not cause an endless service restart loop.
+
+Replace the runtime's unbounded file logging with rotation or the selected
+service's bounded journal. State concrete maximum sizes and retained file counts
+for application logs, container logs, and event output. An unrestricted shell
+append to an event file does not meet this requirement. Document the policy
+when storage is full and when an output consumer stops reading. Reuse the
+existing active/previous snapshots and last 100 update-history entries; no
+additional archive of all versions is needed.
+
+\textbf{Where:} CLI logging configuration, one service/deployment configuration,
+and the installation/run guide.
+
+\textbf{Check:} force log/event rotation with small test limits; storage remains
+within the stated retention bounds. A process failure restarts into accepted
+state, a requested stop stays stopped, and a slow output consumer does not cause
+memory growth. A full-disk save failure preserves the valid pair as specified
+by the existing commit handling.
+
+\subsubsection*{4.8 Verify the complete path with a small repeatable replay}
+
+\textbf{Change:} add a small prepared-window fixture and integration checks
+through the real command. Cover normal traffic, silence, missing coverage, an
+alert, an accepted update, and a rejected candidate. Compare the runtime with
+the shared batch path on identical ordered windows and settings, for raw and
+normalised scoring and the supported adaptation policies. Compare events,
+model fingerprints, alpha, thresholds, and update reasons. Do not loosen
+conservative limits merely to make a demonstration update happen; use a
+controlled valid candidate for the correctness check.
+
+Exercise bad JSON, a truncated record, oversized input, invalid counts,
+non-finite numbers, wrong input semantics, duplicate/overlapping timestamps,
+and valid gaps. Include the first-event-before-end-of-input check, graceful
+shutdown, restart after promotion, and rollback. Repeat a bounded valid sequence
+with increasing timestamps to confirm that result and attempt histories are not
+accumulated. Reuse existing fixtures and persistence checks rather than building
+a new testing framework.
+
+\textbf{Where:} existing scoring, CLI, artefact, and evaluation tests plus a
+small runtime integration test and input fixture.
+
+\textbf{Check:} relevant existing tests and the added integration checks pass.
+The deployed-image smoke check also passes with the same fixture. Controlled
+update tests prove correctness; they do not establish that a real traffic run
+will produce a useful conservative update.
+
+\subsubsection*{4.9 Run it on the gateway and write the handover instructions}
+
+\textbf{Change:} install the prepared image on the actual target. Replay a
+representative workload that includes update attempts and refits. Record the
+hardware, OS, CPU architecture, source revision, image/dependency versions,
+detector configuration, input rate, and window duration. Measure startup time,
+complete window-to-event processing latency, throughput, CPU use, peak process
+memory, and state/log/event disk use. Include refit latency and watch memory and
+storage over a long enough replay to reveal continuing growth. Reuse small
+existing timing helpers where suitable.
+
+Compare the measurements with the target's available memory/disk and required
+input rate, including headroom for an update. Report ordinary and worst observed
+processing times and any pauses from refitting. The wait for a ten-minute
+traffic window to close is separate from processing latency. Development-host
+measurements alone do not verify gateway deployment.
+
+Write a short guide with the exact build/install/start/stop/restart/rollback
+commands, initial state preparation, mounts and permissions, one working
+configuration, one example input line, expected event fields, storage limits,
+and the measured operating limits. Identify input as supplied windows unless a
+packet collector was actually delivered. Preserve raw scores and name the
+adaptation policy in any thesis demonstration.
+
+\textbf{Where:} a short gateway run guide under \path{docs/}, the small replay
+fixture, and a measurement report under \path{reports/}.
+
+\textbf{Check:} another person can follow the guide on the named gateway, score
+successive windows, inspect accepted/rejected updates, restart, and roll back.
+Claim gateway validation only after this run; until then, report the remaining
+hardware check explicitly. No web dashboard, HTTP endpoint, new traffic features,
+or live packet collector is required for this supplied-window deliverable.
+
+\clearpage
+\section{The stopping point}
+
+The minimum detector is complete when another person can:
+\begin{enumerate}
+  \item Train and calibrate a normal model through the existing commands.
+  \item Install the runtime on the stated gateway and supply count windows.
+  \item Receive scores, anomaly decisions, and the existing explanations.
+  \item Observe a permitted adaptive update and a safely rejected update.
+  \item Restart or roll back without losing a valid model--threshold pair.
+\end{enumerate}
+Hand over the source revision, one working configuration, initial model and
+threshold, installation/run instructions, and the relevant passing correctness
+checks. \textbf{Stop there.} These four tasks deliver the promised software.
+
+\section*{Source basis}
+
+\small
+Original LM-IDNet brief, page 2:
+\path{resouces/Proposte_di_Ricerca_basate_su_Dirichlet_Multinomial.pdf}.
+Guarded adaptation and existing explanations:
+\path{docs/thesis_proposal_and_system_architecture.tex}, stages 8--9.
+Current command behaviour: \path{docs/command-line-interface.md}.
+Implementation checked on the original reference commit:
+\path{src/lm_idnet/models/schemas.py}, \path{src/lm_idnet/artifacts.py},
+\path{src/lm_idnet/models/calibration_stage.py},
+\path{src/lm_idnet/models/scoring_stage.py}, and
+\path{src/lm_idnet/evaluation/evaluation_stage.py}.
+
+Gateway breakdown checked against \texttt{feature/edge} on 15 October 2026:
+the same artefact/scoring/schema files, \path{src/lm_idnet/config.py},
+\path{src/lm_idnet/cli.py}, \path{src/lm_idnet/processing/schemas.py},
+\path{src/lm_idnet/processing/categories.py}, \path{Dockerfile},
+\path{scripts/docker-entrypoint.sh}, \path{scripts/run.sh}, and
+\path{docs/edge-implementation-guideline.md}. The guideline's static pilot is
+a useful intermediate check; this plan retains adaptive operation as the
+completed detector's requirement. Its older adaptation-status and test-count
+statements are not used as current status evidence.
+
+\end{document}

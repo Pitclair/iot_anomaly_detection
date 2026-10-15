@@ -20,16 +20,14 @@ from lm_idnet.algorithms.log_likelihood import (
 from lm_idnet.artifacts import (
     artifact_fingerprint,
     detector_state_lock,
-    load_artifact,
     load_detector_state,
-    load_model,
+    load_model_threshold,
     model_parameter_fingerprint,
     record_detector_update,
     save_detector_state,
 )
-from lm_idnet.config import AdaptationConfig, AppConfig
+from lm_idnet.config import AdaptationConfig, AppConfig, EdgeConfig
 from lm_idnet.exceptions import (
-    ArtifactCompatibilityError,
     DataValidationError,
     DetectorStateCommitError,
     LMIDNetError,
@@ -37,7 +35,7 @@ from lm_idnet.exceptions import (
 from lm_idnet.models.calibration_stage import load_calibration_packet_count_limit
 from lm_idnet.models.schemas import AnomalyEventArtifact, DetectorStateArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
-from lm_idnet.processing.schemas import WindowRecord
+from lm_idnet.processing.schemas import WindowRecord, validate_window_contract
 from lm_idnet.processing.storage import load_processed_dataset
 
 logger = logging.getLogger(__name__)
@@ -183,352 +181,368 @@ def _save_detector_update(
     return candidate
 
 
-def _run_detector(
-    config: AppConfig,
-    mode: str,
-    *,
-    state_dir: str | Path | None = None,
-) -> tuple[dict[str, object], dict[str, object]]:
-    """Run the configured detector over chronological development data."""
-    state = load_detector_state(state_dir, config) if state_dir is not None else None
-    starting_state = state
-    model = state.baseline_model if state is not None else load_model(config)
-    threshold = state.baseline_threshold if state is not None else load_artifact(
-        config.outputs.threshold_path, expected_type="threshold",
-    )
-    model_fingerprint = artifact_fingerprint(model)
-    if threshold.model_fingerprint != model_fingerprint:
-        raise ArtifactCompatibilityError(
-            "threshold model fingerprint does not match loaded model"
+class WindowDetector:
+    """Shared one-window detector; callers own the state lock and output history."""
+
+    def __init__(
+        self, config: AppConfig | EdgeConfig, *, mode: str | None = None,
+        state_dir: str | Path | None = None,
+    ) -> None:
+        self.config = config
+        self.mode = mode or config.adaptation.mode
+        self.state_dir = state_dir
+        if isinstance(config, EdgeConfig) and state_dir is None:
+            self.state_dir = config.state_dir
+        self.state = (
+            load_detector_state(self.state_dir, config) if self.state_dir is not None else None
         )
-    score_type = config.calibration.score_type
-    if threshold.score_type != score_type:
-        raise ArtifactCompatibilityError(
-            f"threshold score type must match configured {score_type!r}; "
-            f"found {threshold.score_type!r}"
+        self.starting_state = self.state
+        if self.state is None:
+            self.model, threshold = load_model_threshold(config)
+        else:
+            self.model, threshold = self.state.baseline_model, self.state.baseline_threshold
+        self.model_fingerprint = artifact_fingerprint(self.model)
+        self.score_type = config.calibration.score_type
+        self.window_count = 0
+        self.log_likelihood = initialize_log_likelihood(
+            self.model.log_likelihood_backend,
+            self.model.precision_digits,
+        )
+        self.initial_alpha = np.asarray(self.model.alpha, dtype=np.float64)
+        self.alpha = (
+            np.asarray(self.state.alpha, dtype=np.float64)
+            if self.state is not None else self.initial_alpha.copy()
+        )
+        self.model_categories = self.model.categories
+        self.expected_profile = (
+            tuple(float(value) for value in self.alpha / self.alpha.sum())
+            if self.state is not None else self.model.mean_probabilities
+        )
+        self.initial_threshold = threshold.threshold
+        self.current_threshold = (
+            self.state.threshold.threshold if self.state is not None else self.initial_threshold
+        )
+        self.initial_score_iqr = threshold.score_iqr
+        self.current_score_iqr = (
+            self.state.threshold.score_iqr if self.state is not None else self.initial_score_iqr
+        )
+        self.conservative = self.config.adaptation.policy == "conservative"
+        self.volume_limit = self.state.packet_count_limit if self.state is not None else None
+        if self.state is None and self.mode != "static" and self.conservative:
+            self.volume_limit = load_calibration_packet_count_limit(self.config, self.model_categories)
+        self.safe_counts: deque[np.ndarray] = deque(maxlen=self.config.adaptation.buffer_size)
+        self.recent_scores: deque[float] | None = (
+            deque(maxlen=self.config.adaptation.buffer_size) if not self.conservative else None
+        )
+        self.recent_counts: deque[np.ndarray] | None = (
+            deque(maxlen=self.config.adaptation.buffer_size) if not self.conservative else None
+        )
+        self.rejected_window_counts = {"excessive_volume": 0, "low_confidence": 0}
+        self.current_model_fingerprint = (
+            self.state.threshold.model_fingerprint
+            if self.state is not None else self.model_fingerprint
+        )
+        self.estimator = (
+            create_estimator(
+                self.config.estimator.model_copy(
+                    update={"log_likelihood_backend": self.model.log_likelihood_backend}
+                ),
+                self.model.precision_digits,
+            )
+            if self.mode == "periodic_refit"
+            else None
         )
 
-    log_likelihood = initialize_log_likelihood(
-        model.log_likelihood_backend,
-        model.precision_digits,
-    )
-    initial_alpha = np.asarray(model.alpha, dtype=np.float64)
-    alpha = np.asarray(state.alpha, dtype=np.float64) if state is not None else initial_alpha.copy()
-    model_categories = model.categories
-    expected_profile = (
-        tuple(float(value) for value in alpha / alpha.sum())
-        if state is not None else model.mean_probabilities
-    )
-    initial_threshold = threshold.threshold
-    current_threshold = state.threshold.threshold if state is not None else initial_threshold
-    initial_score_iqr = threshold.score_iqr
-    current_score_iqr = state.threshold.score_iqr if state is not None else initial_score_iqr
-    conservative = config.adaptation.policy == "conservative"
-    volume_limit = state.packet_count_limit if state is not None else None
-    if state is None and mode != "static" and conservative:
-        volume_limit = load_calibration_packet_count_limit(config, model_categories)
-    selection = development_partition_for_evaluation(config)
-    processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
-    results: list[dict[str, object]] = []
-    safe_counts: deque[np.ndarray] = deque(maxlen=config.adaptation.buffer_size)
-    recent_scores: deque[float] | None = (
-        deque(maxlen=config.adaptation.buffer_size) if not conservative else None
-    )
-    recent_counts: deque[np.ndarray] | None = (
-        deque(maxlen=config.adaptation.buffer_size) if not conservative else None
-    )
-    rejected_window_counts = {"excessive_volume": 0, "low_confidence": 0}
-    threshold_updates: list[dict[str, object]] = []
-    model_refit_attempts: list[dict[str, object]] = []
-    current_model_fingerprint = state.threshold.model_fingerprint if state is not None else model_fingerprint
-    estimator = (
-        create_estimator(
-            config.estimator.model_copy(
-                update={"log_likelihood_backend": model.log_likelihood_backend}
+    def process(
+        self, window: WindowRecord, *, device_id: str, capture_id: str,
+    ) -> tuple[dict[str, object] | None, dict[str, object] | None, dict[str, object] | None]:
+        """Return this window's event, threshold attempt, and refit attempt only."""
+        if device_id != self.model.device_id:
+            raise DataValidationError("scoring device does not match model")
+        validate_window_contract(
+            window, self.model_categories, self.model.input_contract.window_minutes,
+        )
+        if window.state == "missing":
+            return None, None, None
+        event = score_window(
+            window, device_id=device_id, capture_id=capture_id,
+            model_categories=self.model_categories, expected_profile=self.expected_profile,
+            model_fingerprint=self.current_model_fingerprint, alpha=self.alpha,
+            log_likelihood=self.log_likelihood, threshold=self.current_threshold,
+            score_iqr=self.current_score_iqr, score_type=self.score_type,
+        )
+        self.window_count += 1
+        if self.mode == "static":
+            return event, None, None
+
+        score = float(event["score"])
+        counts = np.asarray(window.counts, dtype=np.int64)
+        if not self.conservative:
+            assert self.recent_scores is not None and self.recent_counts is not None
+            self.recent_scores.append(score)
+            self.recent_counts.append(counts)
+        if self.volume_limit is not None and window.total_count > self.volume_limit:
+            self.rejected_window_counts["excessive_volume"] += 1
+        elif self.conservative or self.mode == "periodic_refit":
+            baseline_score = (
+                score
+                if self.current_model_fingerprint == self.model_fingerprint
+                else anomaly_score(
+                    counts,
+                    self.initial_alpha,
+                    self.log_likelihood,
+                    self.score_type,
+                )
+            )
+            if (
+                (
+                    not self.conservative or score >= (
+                        self.current_threshold
+                        + self.config.adaptation.safe_margin * self.current_score_iqr
+                    )
+                )
+                and baseline_score >= (
+                    self.initial_threshold
+                    + self.config.adaptation.safe_margin * self.initial_score_iqr
+                )
+            ):
+                self.safe_counts.append(counts)
+            else:
+                self.rejected_window_counts["low_confidence"] += 1
+
+        if self.window_count % self.config.adaptation.update_every != 0:
+            return event, None, None
+        if self.recent_scores is not None and len(self.recent_scores) < self.config.calibration.minimum_samples:
+            return event, None, None
+
+        update_context = {
+            "after_window": self.window_count,
+            "buffer_window_count": len(self.safe_counts) if self.conservative else len(self.recent_scores),
+            "capture_id": capture_id,
+            "window_end_utc": window.end_utc.isoformat().replace(
+                "+00:00", "Z"
             ),
-            model.precision_digits,
-        )
-        if mode == "periodic_refit"
-        else None
-    )
-
-    for capture_id in selection.capture_ids:
-        dataset = load_processed_dataset(processed_dir / f"{capture_id}.json")
-        if dataset.metadata.capture_id != capture_id:
-            raise DataValidationError(
-                f"processed capture ID does not match filename: {capture_id}"
-            )
-        if dataset.metadata.partition != selection.name:
-            raise DataValidationError(
-                f"development-test capture has the wrong partition: {capture_id}"
-            )
-        if any(window.categories != model_categories for window in dataset.windows):
-            raise DataValidationError(
-                f"development-test categories do not match model: {capture_id}"
-            )
-
-        for window in dataset.windows:
-            if window.state == "missing":
-                continue
-            results.append(
-                score_window(
-                    window,
-                    device_id=dataset.metadata.device_id,
-                    capture_id=capture_id,
-                    model_categories=model_categories,
-                    expected_profile=expected_profile,
-                    model_fingerprint=current_model_fingerprint,
-                    alpha=alpha,
-                    log_likelihood=log_likelihood,
-                    threshold=current_threshold,
-                    score_iqr=current_score_iqr,
-                    score_type=score_type,
-                )
-            )
-
-            if mode == "static":
-                continue
-
-            score = float(results[-1]["score"])
-            counts = np.asarray(window.counts, dtype=np.int64)
-            if not conservative:
-                assert recent_scores is not None and recent_counts is not None
-                recent_scores.append(score)
-                recent_counts.append(counts)
-            if volume_limit is not None and window.total_count > volume_limit:
-                rejected_window_counts["excessive_volume"] += 1
-            elif conservative or mode == "periodic_refit":
-                baseline_score = (
-                    score
-                    if current_model_fingerprint == model_fingerprint
-                    else anomaly_score(
-                        counts,
-                        initial_alpha,
-                        log_likelihood,
-                        score_type,
-                    )
-                )
-                if (
-                    (
-                        not conservative or score >= (
-                            current_threshold
-                            + config.adaptation.safe_margin * current_score_iqr
-                        )
-                    )
-                    and baseline_score >= (
-                        initial_threshold
-                        + config.adaptation.safe_margin * initial_score_iqr
-                    )
-                ):
-                    safe_counts.append(counts)
-                else:
-                    rejected_window_counts["low_confidence"] += 1
-
-            if len(results) % config.adaptation.update_every != 0:
-                continue
-            if recent_scores is not None and len(recent_scores) < config.calibration.minimum_samples:
-                continue
-
-            update_context = {
-                "after_window": len(results),
-                "buffer_window_count": len(safe_counts) if conservative else len(recent_scores),
-                "capture_id": capture_id,
-                "window_end_utc": window.end_utc.isoformat().replace(
-                    "+00:00", "Z"
-                ),
-            }
-            update: dict[str, object] = {
+        }
+        update: dict[str, object] = {
+            **update_context,
+            "source": (
+                "periodic_refit" if self.mode == "periodic_refit"
+                else ("accepted_windows" if self.conservative else "recent_scores")
+            ),
+            "old_model_fingerprint": self.current_model_fingerprint,
+            "old_score_iqr": self.current_score_iqr,
+            "old_threshold": self.current_threshold,
+            "promoted": False,
+        }
+        refit = None
+        previous_state = self.state
+        if self.mode == "periodic_refit":
+            refit = {
                 **update_context,
-                "source": (
-                    "periodic_refit" if mode == "periodic_refit"
-                    else ("accepted_windows" if conservative else "recent_scores")
-                ),
-                "old_model_fingerprint": current_model_fingerprint,
-                "old_score_iqr": current_score_iqr,
-                "old_threshold": current_threshold,
+                "safe_window_count": len(self.safe_counts),
+                "old_model_fingerprint": self.current_model_fingerprint,
+                "old_alpha": self.alpha.tolist(),
                 "promoted": False,
             }
-            refit = None
-            previous_state = state
-            if mode == "periodic_refit":
-                refit = {
-                    **update_context,
-                    "safe_window_count": len(safe_counts),
-                    "old_model_fingerprint": current_model_fingerprint,
-                    "old_alpha": alpha.tolist(),
-                    "promoted": False,
-                }
-            try:
-                if mode == "periodic_refit":
-                    minimum_windows = (
-                        max(
-                            config.calibration.minimum_samples,
-                            config.adaptation.minimum_refit_windows,
-                        )
-                        if conservative else config.adaptation.minimum_refit_windows
+        try:
+            if self.mode == "periodic_refit":
+                minimum_windows = (
+                    max(
+                        self.config.calibration.minimum_samples,
+                        self.config.adaptation.minimum_refit_windows,
                     )
-                    if len(safe_counts) < minimum_windows:
-                        raise DataValidationError(
-                            "not enough accepted windows" if conservative
-                            else "not enough safe windows"
-                        )
-                elif conservative and len(safe_counts) < config.calibration.minimum_samples:
-                    raise DataValidationError("not enough accepted windows")
-
-                candidate_alpha = alpha
-                if mode == "periodic_refit":
-                    assert refit is not None and estimator is not None
-                    safe_matrix = np.asarray(safe_counts, dtype=np.int64)
-                    # One count per category keeps sparse accepted buffers fit-able.
-                    refit_matrix = np.vstack(
-                        (
-                            np.eye(len(model_categories), dtype=np.int64),
-                            safe_matrix,
-                        )
-                    )
-                    refit["smoothing_window_count"] = len(model_categories)
-                    active_log_likelihood = log_likelihood.calculate(
-                        refit_matrix, alpha
-                    )
-                    fit = estimator.fit(refit_matrix)
-                    refit.update(
-                        {
-                            "candidate_iterations": fit.iterations,
-                            "candidate_converged": fit.converged,
-                        }
-                    )
-                    if not fit.converged:
-                        raise DataValidationError("candidate did not converge")
-                    candidate_alpha = np.asarray(fit.alpha, dtype=np.float64)
-                    _validate_model_update(candidate_alpha, alpha, config.adaptation)
-                    if (
-                        not np.isfinite(active_log_likelihood)
-                        or not np.isfinite(fit.final_log_likelihood)
-                    ):
-                        raise DataValidationError("candidate likelihood must be finite")
-                    refit.update(
-                        {
-                            "active_log_likelihood": active_log_likelihood,
-                            "candidate_log_likelihood": fit.final_log_likelihood,
-                        }
-                    )
-                    # shortcut: compare on fitting data; add a holdout if required.
-                    if fit.final_log_likelihood < (
-                        active_log_likelihood - config.estimator.tolerance_delta
-                    ):
-                        raise DataValidationError(
-                            "candidate likelihood is worse than active model"
-                        )
-
-                if not conservative and mode == "adaptive_threshold":
-                    candidate_scores = list(recent_scores)
-                else:
-                    candidate_scores = [
-                        anomaly_score(counts, candidate_alpha, log_likelihood, score_type)
-                        for counts in (safe_counts if conservative else recent_counts)
-                    ]
-                new_threshold, new_score_iqr = _candidate_threshold(
-                    candidate_scores, config.calibration.quantile,
+                    if self.conservative else self.config.adaptation.minimum_refit_windows
                 )
-                if conservative and abs(new_threshold - current_threshold) > (
-                    config.adaptation.max_threshold_shift_iqr * initial_score_iqr
+                if len(self.safe_counts) < minimum_windows:
+                    raise DataValidationError(
+                        "not enough accepted windows" if self.conservative
+                        else "not enough safe windows"
+                    )
+            elif self.conservative and len(self.safe_counts) < self.config.calibration.minimum_samples:
+                raise DataValidationError("not enough accepted windows")
+
+            candidate_alpha = self.alpha
+            if self.mode == "periodic_refit":
+                assert refit is not None and self.estimator is not None
+                safe_matrix = np.asarray(self.safe_counts, dtype=np.int64)
+                # One count per category keeps sparse accepted buffers fit-able.
+                refit_matrix = np.vstack(
+                    (
+                        np.eye(len(self.model_categories), dtype=np.int64),
+                        safe_matrix,
+                    )
+                )
+                refit["smoothing_window_count"] = len(self.model_categories)
+                active_log_likelihood = self.log_likelihood.calculate(
+                    refit_matrix, self.alpha
+                )
+                fit = self.estimator.fit(refit_matrix)
+                refit.update(
+                    {
+                        "candidate_iterations": fit.iterations,
+                        "candidate_converged": fit.converged,
+                    }
+                )
+                if not fit.converged:
+                    raise DataValidationError("candidate did not converge")
+                candidate_alpha = np.asarray(fit.alpha, dtype=np.float64)
+                _validate_model_update(candidate_alpha, self.alpha, self.config.adaptation)
+                if (
+                    not np.isfinite(active_log_likelihood)
+                    or not np.isfinite(fit.final_log_likelihood)
+                ):
+                    raise DataValidationError("candidate likelihood must be finite")
+                refit.update(
+                    {
+                        "active_log_likelihood": active_log_likelihood,
+                        "candidate_log_likelihood": fit.final_log_likelihood,
+                    }
+                )
+                # shortcut: compare on fitting data; add a holdout if required.
+                if fit.final_log_likelihood < (
+                    active_log_likelihood - self.config.estimator.tolerance_delta
                 ):
                     raise DataValidationError(
-                        "candidate threshold change exceeds configured limit"
+                        "candidate likelihood is worse than active model"
                     )
-                new_model_fingerprint = model_parameter_fingerprint(
-                    alpha=tuple(float(value) for value in candidate_alpha),
-                    categories=model_categories,
-                    log_likelihood_backend=model.log_likelihood_backend,
-                    precision_digits=model.precision_digits,
+
+            if not self.conservative and self.mode == "adaptive_threshold":
+                candidate_scores = list(self.recent_scores)
+            else:
+                candidate_scores = [
+                    anomaly_score(counts, candidate_alpha, self.log_likelihood, self.score_type)
+                    for counts in (self.safe_counts if self.conservative else self.recent_counts)
+                ]
+            new_threshold, new_score_iqr = _candidate_threshold(
+                candidate_scores, self.config.calibration.quantile,
+            )
+            if self.conservative and abs(new_threshold - self.current_threshold) > (
+                self.config.adaptation.max_threshold_shift_iqr * self.initial_score_iqr
+            ):
+                raise DataValidationError(
+                    "candidate threshold change exceeds configured limit"
                 )
+            new_model_fingerprint = model_parameter_fingerprint(
+                alpha=tuple(float(value) for value in candidate_alpha),
+                categories=self.model_categories,
+                log_likelihood_backend=self.model.log_likelihood_backend,
+                precision_digits=self.model.precision_digits,
+                **self.model.input_contract.model_dump(exclude={"categories"}),
+            )
+        except (LMIDNetError, ValueError, FloatingPointError) as error:
+            update["reason"] = str(error)
+            if refit is not None:
+                refit["reason"] = str(error)
+                if not self.conservative:
+                    # Historical refit failures still update from all recent scores.
+                    update["source"] = "recent_scores"
+                    try:
+                        new_threshold, new_score_iqr = _candidate_threshold(
+                            self.recent_scores, self.config.calibration.quantile,
+                        )
+                        self.state = _save_detector_update(
+                            self.state_dir, self.state, alpha=self.alpha, threshold=new_threshold,
+                            score_iqr=new_score_iqr, model_fingerprint=self.current_model_fingerprint,
+                            source="adaptive_threshold",
+                        )
+                    except DetectorStateCommitError:
+                        raise
+                    except (LMIDNetError, ValueError, FloatingPointError) as fallback_error:
+                        update["reason"] = str(fallback_error)
+                    else:
+                        update.pop("reason", None)
+                        update.update(
+                            {
+                                "new_model_fingerprint": self.current_model_fingerprint,
+                                "new_threshold": new_threshold,
+                                "new_score_iqr": new_score_iqr,
+                                "promoted": True,
+                            }
+                        )
+                        self.current_threshold, self.current_score_iqr = new_threshold, new_score_iqr
+        else:
+            try:
+                self.state = _save_detector_update(
+                    self.state_dir, self.state, alpha=candidate_alpha, threshold=new_threshold,
+                    score_iqr=new_score_iqr, model_fingerprint=new_model_fingerprint,
+                    source=self.mode,
+                )
+            except DetectorStateCommitError:
+                raise
             except (LMIDNetError, ValueError, FloatingPointError) as error:
                 update["reason"] = str(error)
                 if refit is not None:
                     refit["reason"] = str(error)
-                    if not conservative:
-                        # Historical refit failures still update from all recent scores.
-                        update["source"] = "recent_scores"
-                        try:
-                            new_threshold, new_score_iqr = _candidate_threshold(
-                                recent_scores, config.calibration.quantile,
-                            )
-                            state = _save_detector_update(
-                                state_dir, state, alpha=alpha, threshold=new_threshold,
-                                score_iqr=new_score_iqr, model_fingerprint=current_model_fingerprint,
-                                source="adaptive_threshold",
-                            )
-                        except DetectorStateCommitError:
-                            raise
-                        except (LMIDNetError, ValueError, FloatingPointError) as fallback_error:
-                            update["reason"] = str(fallback_error)
-                        else:
-                            update.pop("reason", None)
-                            update.update(
-                                {
-                                    "new_model_fingerprint": current_model_fingerprint,
-                                    "new_threshold": new_threshold,
-                                    "new_score_iqr": new_score_iqr,
-                                    "promoted": True,
-                                }
-                            )
-                            current_threshold, current_score_iqr = new_threshold, new_score_iqr
             else:
-                try:
-                    state = _save_detector_update(
-                        state_dir, state, alpha=candidate_alpha, threshold=new_threshold,
-                        score_iqr=new_score_iqr, model_fingerprint=new_model_fingerprint,
-                        source=mode,
-                    )
-                except DetectorStateCommitError:
-                    raise
-                except (LMIDNetError, ValueError, FloatingPointError) as error:
-                    update["reason"] = str(error)
-                    if refit is not None:
-                        refit["reason"] = str(error)
-                else:
-                    update.update(
+                update.update(
+                    {
+                        "new_model_fingerprint": new_model_fingerprint,
+                        "new_threshold": new_threshold,
+                        "new_score_iqr": new_score_iqr,
+                        "promoted": True,
+                    }
+                )
+                if refit is not None:
+                    refit.update(
                         {
                             "new_model_fingerprint": new_model_fingerprint,
-                            "new_threshold": new_threshold,
-                            "new_score_iqr": new_score_iqr,
+                            "new_alpha": candidate_alpha.tolist(),
                             "promoted": True,
                         }
                     )
-                    if refit is not None:
-                        refit.update(
-                            {
-                                "new_model_fingerprint": new_model_fingerprint,
-                                "new_alpha": candidate_alpha.tolist(),
-                                "promoted": True,
-                            }
-                        )
-                    alpha = candidate_alpha.copy()
-                    expected_profile = tuple(float(value) for value in alpha / alpha.sum())
-                    current_model_fingerprint = new_model_fingerprint
-                    current_threshold, current_score_iqr = new_threshold, new_score_iqr
-                    if not conservative:
-                        recent_scores = deque(candidate_scores, maxlen=config.adaptation.buffer_size)
-            if state is not None:
-                assert previous_state is not None and state_dir is not None
-                if refit is not None and not refit["promoted"]:
-                    record_detector_update(
-                        state_dir, source="periodic_refit", old_version=previous_state.version_id,
-                        promoted=False, reason=str(refit["reason"]), after_window=len(results),
-                    )
-                if update["promoted"] or refit is None or update.get("reason") != refit.get("reason"):
-                    record_detector_update(
-                        state_dir,
-                        source="adaptive_threshold" if update["source"] == "recent_scores" else mode,
-                        old_version=previous_state.version_id,
-                        new_version=state.version_id if update["promoted"] else None,
-                        promoted=bool(update["promoted"]), reason=update.get("reason"),
-                        after_window=len(results),
-                    )
-            threshold_updates.append(update)
+                self.alpha = candidate_alpha.copy()
+                self.expected_profile = tuple(float(value) for value in self.alpha / self.alpha.sum())
+                self.current_model_fingerprint = new_model_fingerprint
+                self.current_threshold, self.current_score_iqr = new_threshold, new_score_iqr
+                if not self.conservative:
+                    self.recent_scores = deque(candidate_scores, maxlen=self.config.adaptation.buffer_size)
+        if self.state is not None:
+            assert previous_state is not None and self.state_dir is not None
+            if refit is not None and not refit["promoted"]:
+                record_detector_update(
+                    self.state_dir, source="periodic_refit", old_version=previous_state.version_id,
+                    promoted=False, reason=str(refit["reason"]), after_window=self.window_count,
+                )
+            if update["promoted"] or refit is None or update.get("reason") != refit.get("reason"):
+                record_detector_update(
+                    self.state_dir,
+                    source="adaptive_threshold" if update["source"] == "recent_scores" else self.mode,
+                    old_version=previous_state.version_id,
+                    new_version=self.state.version_id if update["promoted"] else None,
+                    promoted=bool(update["promoted"]), reason=update.get("reason"),
+                    after_window=self.window_count,
+                )
+        return event, update, refit
+
+
+def _run_detector(
+    config: AppConfig, mode: str, *, state_dir: str | Path | None = None,
+) -> tuple[dict[str, object], dict[str, object]]:
+    """Collect batch reports around the same detector used by edge inference."""
+    detector = WindowDetector(config, mode=mode, state_dir=state_dir)
+    selection = development_partition_for_evaluation(config)
+    processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
+    results: list[dict[str, object]] = []
+    threshold_updates: list[dict[str, object]] = []
+    model_refit_attempts: list[dict[str, object]] = []
+    for capture_id in selection.capture_ids:
+        dataset = load_processed_dataset(processed_dir / f"{capture_id}.json")
+        if dataset.metadata.capture_id != capture_id:
+            raise DataValidationError(f"processed capture ID does not match filename: {capture_id}")
+        if dataset.metadata.partition != selection.name:
+            raise DataValidationError(f"development-test capture has the wrong partition: {capture_id}")
+        if dataset.metadata.device_id != config.ingest.device_id:
+            raise DataValidationError(f"scoring device does not match configuration: {capture_id}")
+        for window in dataset.windows:
+            event, update, refit = detector.process(
+                window, device_id=dataset.metadata.device_id, capture_id=capture_id,
+            )
+            if event is not None:
+                results.append(event)
+            if update is not None:
+                threshold_updates.append(update)
             if refit is not None:
                 model_refit_attempts.append(refit)
-
     output_path = Path(config.outputs.events_path)
     _save_json(output_path, results, "scoring results")
 
@@ -545,7 +559,7 @@ def _run_detector(
         "capture_ids": list(selection.capture_ids),
         "window_count": len(results),
         "anomaly_count": anomaly_count,
-        "score_type": score_type,
+        "score_type": detector.score_type,
         "events_path": str(output_path),
     }
     report = {
@@ -556,27 +570,27 @@ def _run_detector(
         "capture_ids": list(selection.capture_ids),
         "window_count": len(results),
         "anomaly_count": anomaly_count,
-        "initial_model_fingerprint": model_fingerprint,
-        "final_model_fingerprint": current_model_fingerprint,
-        "initial_alpha": initial_alpha.tolist(),
-        "final_alpha": alpha.tolist(),
-        "initial_threshold": initial_threshold,
-        "final_threshold": current_threshold,
-        "initial_score_iqr": initial_score_iqr,
-        "final_score_iqr": current_score_iqr,
+        "initial_model_fingerprint": detector.model_fingerprint,
+        "final_model_fingerprint": detector.current_model_fingerprint,
+        "initial_alpha": detector.initial_alpha.tolist(),
+        "final_alpha": detector.alpha.tolist(),
+        "initial_threshold": detector.initial_threshold,
+        "final_threshold": detector.current_threshold,
+        "initial_score_iqr": detector.initial_score_iqr,
+        "final_score_iqr": detector.current_score_iqr,
         "quantile": config.calibration.quantile,
-        "score_type": score_type,
+        "score_type": detector.score_type,
         "buffer_size": config.adaptation.buffer_size,
         "update_every": config.adaptation.update_every,
         "minimum_refit_windows": config.adaptation.minimum_refit_windows,
         "safe_margin": config.adaptation.safe_margin,
-        "volume_quantile": config.adaptation.volume_quantile if conservative else None,
-        "packet_count_limit": volume_limit,
-        "max_concentration_ratio": config.adaptation.max_concentration_ratio if conservative else None,
-        "max_category_shift": config.adaptation.max_category_shift if conservative else None,
-        "max_threshold_shift_iqr": config.adaptation.max_threshold_shift_iqr if conservative else None,
-        "rejected_learning_windows": rejected_window_counts,
-        "safe_window_count": len(safe_counts),
+        "volume_quantile": config.adaptation.volume_quantile if detector.conservative else None,
+        "packet_count_limit": detector.volume_limit,
+        "max_concentration_ratio": config.adaptation.max_concentration_ratio if detector.conservative else None,
+        "max_category_shift": config.adaptation.max_category_shift if detector.conservative else None,
+        "max_threshold_shift_iqr": config.adaptation.max_threshold_shift_iqr if detector.conservative else None,
+        "rejected_learning_windows": detector.rejected_window_counts,
+        "safe_window_count": len(detector.safe_counts),
         "threshold_update_count": sum(
             update["promoted"] is True for update in threshold_updates
         ),
@@ -587,19 +601,19 @@ def _run_detector(
         "model_refit_attempts": model_refit_attempts,
         "events_path": str(output_path),
     }
-    if state is not None:
-        assert starting_state is not None
+    if detector.state is not None:
+        assert detector.starting_state is not None
         state_summary = {
-            "state_dir": str(state_dir),
-            "starting_state_version": starting_state.version_id,
-            "final_state_version": state.version_id,
+            "state_dir": str(detector.state_dir),
+            "starting_state_version": detector.starting_state.version_id,
+            "final_state_version": detector.state.version_id,
         }
         summary.update(state_summary)
         report.update(state_summary)
         report.update(
-            starting_alpha=list(starting_state.alpha),
-            starting_threshold=starting_state.threshold.threshold,
-            starting_score_iqr=starting_state.threshold.score_iqr,
+            starting_alpha=list(detector.starting_state.alpha),
+            starting_threshold=detector.starting_state.threshold.threshold,
+            starting_score_iqr=detector.starting_state.threshold.score_iqr,
         )
     return summary, report
 

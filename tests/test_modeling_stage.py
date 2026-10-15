@@ -1,6 +1,7 @@
 """Tests for Dirichlet-multinomial model training."""
 
 from datetime import datetime, timedelta, timezone
+import json
 import logging
 
 import numpy as np
@@ -17,6 +18,17 @@ from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import save_processed_dataset
 
 pytestmark = pytest.mark.unit
+
+
+def test_training_rejects_duration_before_recording_the_input_contract(tmp_path, config_factory):
+    config = config_factory(ingest={"processed_root": tmp_path})
+    write_fit_datasets(config, tmp_path)
+    path = tmp_path / config.ingest.dataset_folder / f"{config.ingest.partitions.fit[0]}.json"
+    raw = json.loads(path.read_text())
+    raw["windows"][0]["end_utc"] = "2020-01-01T00:05:00Z"
+    path.write_text(json.dumps(raw))
+    with pytest.raises(DataValidationError, match="duration"):
+        load_training_matrix(config)
 
 
 def write_fit_datasets(

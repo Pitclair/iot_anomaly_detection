@@ -1,0 +1,44 @@
+{
+  "precision_digits": 6,
+  "ingest": {
+    "device_id": "D-LinkDayCam5",
+    "device_mac": "b0:c5:54:42:8f:88",
+    "window_minutes": 10,
+    "categories": [
+      "tcp",
+      "udp",
+      "ssdp",
+      "arp"
+    ],
+    "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1"
+  },
+  "estimator": {
+    "categories_k": 4,
+    "initial_alpha_concentration": 10.0,
+    "tolerance_delta": 2e-9,
+    "max_iterations": 100000,
+    "log_likelihood_backend": "lm"
+  },
+  "calibration": {
+    "quantile": 0.01,
+    "minimum_samples": 30,
+    "score_type": "raw"
+  },
+  "adaptation": {
+    "mode": "periodic_refit",
+    "policy": "conservative",
+    "buffer_size": 288,
+    "update_every": 144,
+    "minimum_refit_windows": 144,
+    "safe_margin": 1.0,
+    "volume_quantile": 0.99,
+    "max_concentration_ratio": 1.25,
+    "max_category_shift": 0.05,
+    "max_threshold_shift_iqr": 2.0
+  },
+  "outputs": {
+    "model_path": "artifacts/D-LinkDayCam5/model.json",
+    "threshold_path": "artifacts/D-LinkDayCam5/threshold.json"
+  },
+  "state_dir": "artifacts/edge-state"
+}

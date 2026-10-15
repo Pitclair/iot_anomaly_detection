@@ -10,7 +10,7 @@ from typing import Any, Callable
 import numpy as np
 import pytest
 
-from lm_idnet.config import AppConfig
+from lm_idnet.config import AppConfig, DetectorInputConfig, EdgeConfig
 from lm_idnet.processing.schemas import WindowRecord
 
 
@@ -88,6 +88,19 @@ def config_factory() -> Callable[..., AppConfig]:
             else:
                 data[section].update(values)
         return AppConfig.model_validate(data)
+
+    return create
+
+
+@pytest.fixture
+def edge_config_factory():
+    def create(config, state_dir):
+        return EdgeConfig.model_validate({
+            "ingest": config.ingest.model_dump(include=set(DetectorInputConfig.model_fields)),
+            "outputs": config.outputs.model_dump(include={"model_path", "threshold_path"}),
+            "state_dir": state_dir,
+            **config.model_dump(include={"precision_digits", "estimator", "calibration", "adaptation"}),
+        })
 
     return create
 

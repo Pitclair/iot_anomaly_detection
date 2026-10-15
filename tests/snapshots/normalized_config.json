@@ -1,13 +1,8 @@
 {
   "precision_digits": 6,
   "ingest": {
-    "raw_root": "data/raw",
-    "processed_root": "data/processed",
-    "dataset_folder": "D-LinkDayCam5",
     "device_id": "D-LinkDayCam5",
     "device_mac": "b0:c5:54:42:8f:88",
-    "time_col": "timestamp",
-    "protocol_col": "protocol",
     "window_minutes": 10,
     "categories": [
       "tcp",
@@ -15,6 +10,12 @@
       "ssdp",
       "arp"
     ],
+    "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1",
+    "raw_root": "data/raw",
+    "processed_root": "data/processed",
+    "dataset_folder": "D-LinkDayCam5",
+    "time_col": "timestamp",
+    "protocol_col": "protocol",
     "partitions": {
       "fit": [
         "D-LinkDayCam5_88-2020-10-08",
@@ -39,12 +40,6 @@
     },
     "allowed_duplicate_captures": []
   },
-  "seeds": {
-    "simulation": 1001,
-    "model_fitting": 1002,
-    "bootstrap": 1003,
-    "randomized_algorithms": 1004
-  },
   "estimator": {
     "categories_k": 4,
     "initial_alpha_concentration": 10.0,
@@ -68,6 +63,12 @@
     "max_concentration_ratio": 1.25,
     "max_category_shift": 0.05,
     "max_threshold_shift_iqr": 2.0
+  },
+  "seeds": {
+    "simulation": 1001,
+    "model_fitting": 1002,
+    "bootstrap": 1003,
+    "randomized_algorithms": 1004
   },
   "outputs": {
     "model_path": "artifacts/D-LinkDayCam5/model.json",

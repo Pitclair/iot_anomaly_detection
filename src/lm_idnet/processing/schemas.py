@@ -1,18 +1,22 @@
 """Pydantic schemas for processed packet windows and dataset metadata."""
 
-from datetime import datetime, timezone
-from typing import Literal
+from datetime import datetime, timedelta, timezone
+from typing import Annotated, Literal
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    NonNegativeInt,
     field_validator,
     model_validator,
 )
 
+from lm_idnet.exceptions import DataValidationError
+
 from .categories import validate_categories
+
+MAX_WINDOW_COUNT = 2**63 - 2
+PacketCount = Annotated[int, Field(strict=True, ge=0, le=MAX_WINDOW_COUNT)]
 
 
 class WindowRecord(BaseModel):
@@ -23,7 +27,7 @@ class WindowRecord(BaseModel):
     start_utc: datetime
     end_utc: datetime
     categories: tuple[str, ...]
-    counts: tuple[NonNegativeInt, ...] | None
+    counts: tuple[PacketCount, ...] | None
     state: Literal["observed", "observed-silent", "missing"]
 
     @field_validator("categories", mode="before")
@@ -53,6 +57,8 @@ class WindowRecord(BaseModel):
             raise ValueError("non-missing windows require counts")
         if len(self.counts) != len(self.categories):
             raise ValueError("counts length must match categories length")
+        if self.total_count > MAX_WINDOW_COUNT:
+            raise ValueError("window packet total exceeds the supported integer range")
 
         if self.state == "observed" and self.total_count == 0:
             raise ValueError("observed windows require packet counts")
@@ -64,6 +70,16 @@ class WindowRecord(BaseModel):
     def total_count(self) -> int | None:
         """Return the packet total, or no value when coverage is missing."""
         return None if self.counts is None else sum(self.counts)
+
+
+def validate_window_contract(
+    window: WindowRecord, categories: tuple[str, ...], window_minutes: int,
+) -> None:
+    """Reject incompatible windows before scoring, calibration, or training."""
+    if window.categories != categories:
+        raise DataValidationError("window categories do not match model/configuration")
+    if window.end_utc - window.start_utc != timedelta(minutes=window_minutes):
+        raise DataValidationError("window duration does not match model/configuration")
 
 
 class Metadata(BaseModel):

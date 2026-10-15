@@ -22,7 +22,7 @@ from lm_idnet.models import scoring_stage
 from lm_idnet.models.modeling_stage import TrainingMatrix, save_model
 from lm_idnet.models.scoring_stage import adapt_windows, score_window, score_windows
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
-from lm_idnet.processing.storage import save_processed_dataset
+from lm_idnet.processing.storage import load_processed_dataset, save_processed_dataset
 
 pytestmark = pytest.mark.unit
 
@@ -1085,3 +1085,99 @@ def test_persistent_cli_dry_run_does_not_create_state(adaptive_config, command):
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)["status"] == "ready"
     assert not state_dir.exists()
+
+
+@pytest.mark.parametrize("score_type", ["raw", "normalized"])
+@pytest.mark.parametrize("policy", ["conservative", "legacy"])
+@pytest.mark.parametrize("mode", ["static", "adaptive_threshold", "periodic_refit"])
+def test_one_window_edge_processing_matches_batch(
+    adaptive_config, edge_config_factory, monkeypatch, tmp_path, score_type, policy, mode,
+):
+    config = adaptive_config
+    config.adaptation.mode = mode
+    config.adaptation.policy = policy
+    config.adaptation.buffer_size = 3
+    config.adaptation.max_threshold_shift_iqr = 100.
+    config.calibration.score_type = score_type
+    write_threshold(config, score_type, threshold_value=-10.)
+    write_processed_captures(config, counts=(
+        (1, 2, 3, 4), (2, 2, 3, 4), (10000, 0, 0, 0),
+        (0, 0, 0, 0), None, (3, 2, 3, 4), (4, 2, 3, 4),
+    ))
+    created_estimators = []
+
+    class Estimator:
+        def __init__(self):
+            self.calls = 0
+
+        def fit(self, _matrix):
+            self.calls += 1
+            alpha = np.array([1., 2., 3., 4.]) * 1.01
+            return DirichletFit(
+                alpha, alpha, float(alpha.sum()), 1 / float(alpha.sum()),
+                1, self.calls % 2 == 1, -1e9, 1e9,
+            )
+
+    def create_estimator(*_):
+        estimator = Estimator()
+        created_estimators.append(estimator)
+        return estimator
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", create_estimator)
+    adapt_windows(config)
+    expected_events, report = read_adaptation_outputs(config)
+    directory = tmp_path / "edge-state"
+    with detector_state_lock(directory):
+        load_detector_state(directory, config)
+        detector = scoring_stage.WindowDetector(edge_config_factory(config, directory))
+        events, updates, refits = [], [], []
+        for capture_id in config.ingest.partitions.development_test:
+            dataset = load_processed_dataset(
+                config.ingest.processed_root / config.ingest.dataset_folder / f"{capture_id}.json",
+            )
+            for window in dataset.windows:
+                old_count = detector.window_count
+                event, update, refit = detector.process(
+                    window, device_id=config.ingest.device_id, capture_id=capture_id,
+                )
+                if window.state == "missing":
+                    assert event is update is refit is None
+                    assert detector.window_count == old_count
+                if event is not None:
+                    events.append(event)
+                if update is not None:
+                    updates.append(update)
+                if refit is not None:
+                    refits.append(refit)
+                assert len(detector.safe_counts) <= config.adaptation.buffer_size
+                assert not any(isinstance(value, list) for value in vars(detector).values())
+        assert events == expected_events
+        assert updates == report["threshold_update_attempts"]
+        assert refits == report["model_refit_attempts"]
+        assert detector.alpha.tolist() == report["final_alpha"]
+        assert detector.current_threshold == report["final_threshold"]
+        assert detector.current_score_iqr == report["final_score_iqr"]
+        assert detector.rejected_window_counts == report["rejected_learning_windows"]
+        assert detector.current_model_fingerprint == report["final_model_fingerprint"]
+        assert detector.window_count == report["window_count"]
+        if mode != "static":
+            assert any(update["promoted"] for update in updates)
+        if mode == "periodic_refit":
+            assert any(not refit["promoted"] for refit in refits)
+    assert len(created_estimators) == (2 if mode == "periodic_refit" else 0)
+
+
+@pytest.mark.parametrize("field", ["device_id", "window_duration"])
+def test_batch_scoring_rejects_incompatible_processed_inputs(adaptive_config, field):
+    config = adaptive_config
+    path = (config.ingest.processed_root / config.ingest.dataset_folder
+            / f"{config.ingest.partitions.development_test[0]}.json")
+    raw = json.loads(path.read_text())
+    if field == "device_id":
+        raw["metadata"]["device_id"] = "other-device"
+    else:
+        raw["windows"][0]["end_utc"] = raw["windows"][0]["end_utc"].replace("00:10", "00:05")
+    path.write_text(json.dumps(raw))
+    with pytest.raises(DataValidationError, match="device|duration"):
+        score_windows(config)
+    assert not config.outputs.events_path.exists()

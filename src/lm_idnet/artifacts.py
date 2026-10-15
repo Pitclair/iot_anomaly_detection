@@ -10,10 +10,11 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from pydantic import BaseModel, ValidationError
 
+from lm_idnet.config import AppConfig, DetectorInputConfig, EdgeConfig
 from lm_idnet.evaluation.schemas import ExperimentManifestArtifact
 from lm_idnet.exceptions import (
     ArtifactCompatibilityError,
@@ -32,9 +33,6 @@ from lm_idnet.models.schemas import (
     ModelArtifact,
     ThresholdArtifact,
 )
-
-if TYPE_CHECKING:
-    from lm_idnet.config import AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +64,7 @@ def artifact_fingerprint(artifact: ModelArtifact) -> str:
         categories=artifact.categories,
         log_likelihood_backend=artifact.log_likelihood_backend,
         precision_digits=artifact.precision_digits,
+        **artifact.input_contract.model_dump(exclude={"categories"}),
     )
 
 
@@ -77,6 +76,10 @@ def validate_artifact(raw: dict, *, expected_type: str) -> Artifact:
     if raw.get("artifact_type") != expected_type:
         raise ArtifactCompatibilityError(
             f"expected {expected_type}, found {raw.get('artifact_type')!r}"
+        )
+    if expected_type == "model" and "input_contract" not in raw:
+        raise ArtifactCompatibilityError(
+            "model input contract is missing; retrain and recalibrate before deployment"
         )
     try:
         return schema.model_validate(raw)
@@ -107,7 +110,7 @@ def load_artifact(path: str | Path, *, expected_type: str) -> Artifact:
     return validate_artifact(raw, expected_type=expected_type)
 
 
-def load_model(config: "AppConfig") -> ModelArtifact:
+def load_model(config: AppConfig | EdgeConfig) -> ModelArtifact:
     """Load a model and reject provenance from another configured dataset."""
     model = cast(
         ModelArtifact,
@@ -117,13 +120,22 @@ def load_model(config: "AppConfig") -> ModelArtifact:
     return model
 
 
-def _validate_model_configuration(model: ModelArtifact, config: "AppConfig") -> None:
-    expected_fields = {
-        "dataset": config.ingest.dataset_folder,
-        "device_id": config.ingest.device_id,
-        "categories": config.ingest.categories,
-        "training_capture_ids": config.ingest.partitions.fit,
-    }
+def _validate_model_configuration(model: ModelArtifact, config: AppConfig | EdgeConfig) -> None:
+    for field in DetectorInputConfig.model_fields:
+        if getattr(model.input_contract, field) != getattr(config.ingest, field):
+            raise ArtifactCompatibilityError(
+                f"model {field.replace('_', ' ')} does not match configuration"
+            )
+    if isinstance(config, EdgeConfig):
+        expected_fields = {
+            "precision_digits": config.precision_digits,
+            "log_likelihood_backend": config.estimator.log_likelihood_backend,
+        }
+    else:
+        expected_fields = {
+            "dataset": config.ingest.dataset_folder,
+            "training_capture_ids": config.ingest.partitions.fit,
+        }
     for field, expected in expected_fields.items():
         actual = getattr(model, field)
         if actual != expected:
@@ -131,6 +143,22 @@ def _validate_model_configuration(model: ModelArtifact, config: "AppConfig") -> 
                 f"model {field.replace('_', ' ')} does not match configuration: "
                 f"expected {expected!r}, found {actual!r}"
             )
+
+
+def load_model_threshold(config: AppConfig | EdgeConfig) -> tuple[ModelArtifact, ThresholdArtifact]:
+    """Load the same compatible pair for batch and one-window inference."""
+    model = load_model(config)
+    threshold = cast(ThresholdArtifact, load_artifact(
+        config.outputs.threshold_path, expected_type="threshold",
+    ))
+    if threshold.model_fingerprint != artifact_fingerprint(model):
+        raise ArtifactCompatibilityError("threshold model fingerprint does not match loaded model")
+    if threshold.score_type != config.calibration.score_type:
+        raise ArtifactCompatibilityError(
+            f"threshold score type must match configured {config.calibration.score_type!r}; "
+            f"found {threshold.score_type!r}"
+        )
+    return model, threshold
 
 
 def save_artifact(path: str | Path, artifact: Artifact) -> None:
@@ -331,7 +359,7 @@ def record_detector_update(
         logger.warning("Cannot save detector update history %s: %s", path, error)
 
 
-def _validate_detector_configuration(state: DetectorStateArtifact, config: "AppConfig") -> None:
+def _validate_detector_configuration(state: DetectorStateArtifact, config: AppConfig | EdgeConfig) -> None:
     _validate_model_configuration(state.baseline_model, config)
     expected_fields = {
         "window duration": (state.window_minutes, config.ingest.window_minutes),
@@ -344,11 +372,11 @@ def _validate_detector_configuration(state: DetectorStateArtifact, config: "AppC
             state.baseline_model.log_likelihood_backend,
             config.estimator.log_likelihood_backend,
         ),
-        "calibration captures": (
-            state.baseline_threshold.calibration_capture_ids,
-            config.ingest.partitions.calibration,
-        ),
     }
+    if isinstance(config, AppConfig):
+        expected_fields["calibration captures"] = (
+            state.baseline_threshold.calibration_capture_ids, config.ingest.partitions.calibration,
+        )
     for field, (actual, expected) in expected_fields.items():
         if actual != expected:
             raise ArtifactCompatibilityError(f"detector {field} does not match configuration")
@@ -356,7 +384,7 @@ def _validate_detector_configuration(state: DetectorStateArtifact, config: "AppC
         raise ArtifactCompatibilityError("baseline threshold has insufficient calibration windows")
 
 
-def load_detector_state(directory: str | Path, config: "AppConfig") -> DetectorStateArtifact:
+def load_detector_state(directory: str | Path, config: AppConfig | EdgeConfig) -> DetectorStateArtifact:
     """Restore accepted state, or initialize and commit an empty state directory."""
     directory = Path(directory)
     index = _read_detector_index(directory)
@@ -372,14 +400,16 @@ def load_detector_state(directory: str | Path, config: "AppConfig") -> DetectorS
         pass
     except OSError as error:
         raise ArtifactCompatibilityError(f"cannot inspect detector state directory: {directory}") from error
+    if isinstance(config, EdgeConfig):
+        raise ArtifactCompatibilityError(
+            "edge detector state is not prepared; initialise it with the research configuration "
+            "on the development machine before copying it to the gateway"
+        )
 
     # Calibration imports artifact helpers; defer this import to initial setup.
     from lm_idnet.models.calibration_stage import load_calibration_packet_count_limit
 
-    model = load_model(config)
-    threshold = cast(ThresholdArtifact, load_artifact(
-        config.outputs.threshold_path, expected_type="threshold",
-    ))
+    model, threshold = load_model_threshold(config)
     packet_count_limit = None
     if config.adaptation.mode != "static" and config.adaptation.policy == "conservative":
         packet_count_limit = load_calibration_packet_count_limit(config, model.categories)
@@ -401,7 +431,7 @@ def load_detector_state(directory: str | Path, config: "AppConfig") -> DetectorS
     return state
 
 
-def rollback_detector_state(directory: str | Path, config: "AppConfig") -> DetectorStateIndex:
+def rollback_detector_state(directory: str | Path, config: AppConfig | EdgeConfig) -> DetectorStateIndex:
     """Validate the previous snapshot and atomically make it active again."""
     with detector_state_lock(directory) as directory:
         index = _read_detector_index(directory)

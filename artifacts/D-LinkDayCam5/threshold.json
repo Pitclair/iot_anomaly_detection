@@ -1,6 +1,6 @@
 {
   "artifact_type": "threshold",
-  "model_fingerprint": "db99e11713b9f1aef3ec2d153a5a6f9867394a64af378458be30f5cc510fd072",
+  "model_fingerprint": "146040421d875e52600667c88554c2f92731484be1b0b3869551d24caebfe5ff",
   "score_type": "raw",
   "quantile": 0.01,
   "threshold": -22.504377031673194,

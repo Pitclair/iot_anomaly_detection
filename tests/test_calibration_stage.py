@@ -1,6 +1,7 @@
 """Tests for calibration-window scoring and threshold persistence."""
 
 from datetime import datetime, timedelta, timezone
+import json
 
 import numpy as np
 import pytest
@@ -19,6 +20,22 @@ from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import save_processed_dataset
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("field", ["device_id", "window_duration"])
+def test_calibration_rejects_incompatible_input(tmp_path, config_factory, field):
+    config = config_factory(ingest={"processed_root": tmp_path})
+    write_calibration_datasets(config)
+    path = (tmp_path / config.ingest.dataset_folder
+            / f"{config.ingest.partitions.calibration[0]}.json")
+    raw = json.loads(path.read_text())
+    if field == "device_id":
+        raw["metadata"]["device_id"] = "other-device"
+    else:
+        raw["windows"][0]["end_utc"] = "2020-10-14T00:05:00Z"
+    path.write_text(json.dumps(raw))
+    with pytest.raises(DataValidationError, match="device|duration"):
+        load_calibration_windows(config, config.ingest.categories)
 
 
 def write_calibration_datasets(config, *, wrong_partition: bool = False) -> None:

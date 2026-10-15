@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from lm_idnet.config import AppConfig, load_config
+from lm_idnet.config import AppConfig, EdgeConfig, load_config, load_edge_config
 
 pytestmark = pytest.mark.unit
 
@@ -31,6 +31,17 @@ def test_load_known_valid_configuration() -> None:
     assert config.calibration.score_type == "raw"
     assert config.adaptation.policy == "conservative"
     assert len(config.ingest.partitions.fit) == 6
+
+
+def test_edge_example_needs_no_capture_dates_or_research_paths():
+    edge = load_edge_config(ROOT / "configs" / "edge_example.json")
+    assert isinstance(edge, EdgeConfig)
+    assert not hasattr(edge.ingest, "partitions")
+    assert not hasattr(edge.ingest, "processed_root")
+    assert edge.ingest.counting_policy == "device-mac-bidirectional-ssdp-exclusive-v1"
+    assert edge.adaptation.policy == "conservative"
+    with pytest.raises(ValidationError, match="partitions"):
+        AppConfig.model_validate(edge.model_dump())
 
 
 @pytest.mark.parametrize(

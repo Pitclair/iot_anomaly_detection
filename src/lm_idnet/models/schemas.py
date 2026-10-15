@@ -15,7 +15,9 @@ from pydantic import (
     model_validator,
 )
 
-from lm_idnet.config import AdaptationConfig, CalibrationConfig, EstimatorConfig
+from lm_idnet.config import (
+    AdaptationConfig, CalibrationConfig, DetectorInputConfig, EstimatorConfig,
+)
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
 
 
@@ -48,9 +50,11 @@ class FitDiagnostics(ModelSchema):
 
 class ModelArtifact(ModelSchema):
     artifact_type: Literal["model"] = "model"
+    schema_version: Literal[2] = 2
     dataset: str = Field(min_length=1)
     device_id: str = Field(min_length=1)
     categories: tuple[str, ...] = Field(min_length=2)
+    input_contract: DetectorInputConfig
     alpha: tuple[float, ...] = Field(min_length=2)
     concentration: float = Field(gt=0, allow_inf_nan=False)
     mean_probabilities: tuple[float, ...] = Field(min_length=2)
@@ -65,6 +69,11 @@ class ModelArtifact(ModelSchema):
 
     @model_validator(mode="after")
     def parameters_must_be_consistent(self) -> "ModelArtifact":
+        if (
+            self.device_id != self.input_contract.device_id
+            or self.categories != self.input_contract.categories
+        ):
+            raise ValueError("model device/categories must match its input contract")
         category_count = len(self.categories)
         if len(self.alpha) != category_count:
             raise ValueError("alpha length must match categories length")
@@ -121,15 +130,15 @@ class ThresholdArtifact(ModelSchema):
     model_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     score_type: Literal["raw", "normalized"]
     quantile: float = Field(gt=0, lt=1)
-    threshold: float
+    threshold: float = Field(allow_inf_nan=False)
     calibration_capture_ids: tuple[str, ...]
     calibration_window_count: int
     calibration_start_utc: datetime
     calibration_end_utc: datetime
     quantile_method: Literal["linear"]
-    score_minimum: float
-    score_median: float
-    score_maximum: float
+    score_minimum: float = Field(allow_inf_nan=False)
+    score_median: float = Field(allow_inf_nan=False)
+    score_maximum: float = Field(allow_inf_nan=False)
     score_iqr: float = Field(gt=0, allow_inf_nan=False)
 
 
@@ -145,7 +154,7 @@ class DetectorStateArtifact(ModelSchema):
     """Current scoring state and the immutable references used for learning."""
 
     artifact_type: Literal["detector_state"] = "detector_state"
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
     version_id: str = Field(default_factory=lambda: uuid4().hex, pattern=r"^[0-9a-f]{32}$")
     created_utc: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: Literal["initial", "adaptive_threshold", "periodic_refit"]
@@ -163,6 +172,11 @@ class DetectorStateArtifact(ModelSchema):
     @model_validator(mode="after")
     def state_must_be_consistent(self) -> "DetectorStateArtifact":
         model = self.baseline_model
+        if (
+            self.window_minutes != model.input_contract.window_minutes
+            or self.device_mac != model.input_contract.device_mac
+        ):
+            raise ValueError("detector state must match the model input contract")
         if len(self.alpha) != len(model.categories) or any(
             not isfinite(value) or value <= 0 for value in self.alpha
         ) or not isfinite(sum(self.alpha)):
@@ -176,6 +190,7 @@ class DetectorStateArtifact(ModelSchema):
                 categories=model.categories,
                 log_likelihood_backend=model.log_likelihood_backend,
                 precision_digits=model.precision_digits,
+                **model.input_contract.model_dump(exclude={"categories"}),
             )
             if threshold.model_fingerprint != fingerprint:
                 raise ValueError("threshold model fingerprint does not match parameters")

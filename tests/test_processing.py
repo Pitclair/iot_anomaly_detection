@@ -26,7 +26,7 @@ from lm_idnet.processing.window_policy import (
     WINDOW_ORIGIN,
 )
 from lm_idnet.processing.pcap_processor import PcapProcessor
-from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
+from lm_idnet.processing.schemas import MAX_WINDOW_COUNT, Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.statistics import Statistics
 from lm_idnet.processing.storage import (
     load_processed_dataset,
@@ -37,6 +37,21 @@ pytestmark = pytest.mark.unit
 CATEGORY_ORDER = load_config(
     Path(__file__).resolve().parents[1] / "configs" / "d_link_day_cam5.json"
 ).ingest.categories
+
+
+@pytest.mark.parametrize("count", [True, "1", 1.0, 1.5, -1, float("nan"), float("inf"), MAX_WINDOW_COUNT + 1])
+def test_window_counts_reject_coercions_and_unsupported_values(window_factory, count):
+    raw = window_factory().model_dump()
+    raw["counts"] = (count, 1, 0, 0)
+    with pytest.raises(ValidationError):
+        WindowRecord.model_validate(raw)
+
+
+def test_window_total_cannot_overflow_the_numerical_count_range(window_factory):
+    raw = window_factory().model_dump()
+    raw["counts"] = (MAX_WINDOW_COUNT, 1, 0, 0)
+    with pytest.raises(ValidationError, match="packet total"):
+        WindowRecord.model_validate(raw)
 
 
 def test_packet_transformer_counts_simple_trace():
