@@ -25,6 +25,12 @@ class DataValidationError(LMIDNetError):
     error_code = "data_validation_error"
 
 
+class DetectorStateCommitError(DataValidationError):
+    """The active pointer changed, but its disk durability could not be confirmed."""
+
+    committed = True
+
+
 class NumericalPrecisionError(LMIDNetError):
     exit_code = 5
     error_code = "numerical_precision_error"

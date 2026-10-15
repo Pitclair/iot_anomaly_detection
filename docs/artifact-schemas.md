@@ -68,3 +68,19 @@ files are never overwritten. `load_detector_version(directory, version_id)`
 rejects unsafe identifiers and a snapshot whose embedded identifier differs
 from its filename. The index format reserves `current.json` for the active and
 previous identifiers; saving an individual version does not activate it.
+
+## Committing an active version
+
+`save_detector_state(directory, state)` saves a new immutable snapshot and then
+atomically replaces `current.json`, retaining the previous active identifier.
+Temporary files are created alongside their destinations, flushed to disk, and
+reread through validation before publication. File and directory synchronization
+targets a local Linux filesystem. Updating a state directory requires one writer.
+
+The pointer replacement is the commit point. A failure before replacement leaves
+the previous pair active. A failure to synchronize the directory after replacement
+raises `DetectorStateCommitError` with `committed=True`; callers must reload or stop
+instead of reporting a rejected update. Both referenced pairs remain complete.
+Temporary-file cleanup failures are logged without undoing a committed switch.
+Unreferenced snapshots can remain after interrupted saves; retention and automatic
+promotion are separate from these storage helpers.

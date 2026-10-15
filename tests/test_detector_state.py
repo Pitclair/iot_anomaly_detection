@@ -1,16 +1,23 @@
 """Correctness checks for saved detector state using small temporary files."""
 
 import json
+from pathlib import Path
 
 import pytest
 
+from lm_idnet import artifacts
 from lm_idnet.artifacts import (
     artifact_fingerprint,
     load_detector_version,
     save_detector_version,
+    save_detector_state,
     validate_artifact,
 )
-from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
+from lm_idnet.exceptions import (
+    ArtifactCompatibilityError,
+    DataValidationError,
+    DetectorStateCommitError,
+)
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
 from lm_idnet.models.schemas import DetectorStateArtifact, DetectorStateIndex, ModelArtifact
 
@@ -145,7 +152,7 @@ def test_detector_versions_are_immutable(tmp_path, state_factory):
     path = save_detector_version(tmp_path, state)
     original = path.read_bytes()
     replacement = state_factory(version_id=state.version_id, threshold=-7.)
-    with pytest.raises(DataValidationError, match="cannot save detector version"):
+    with pytest.raises(DataValidationError, match="cannot save detector"):
         save_detector_version(tmp_path, replacement)
     assert path.read_bytes() == original
     assert load_detector_version(tmp_path, state.version_id) == state
@@ -183,3 +190,110 @@ def test_detector_index_round_trip_and_validation(state_factory):
         raw["previous_version"] = invalid_previous
         with pytest.raises(ArtifactCompatibilityError):
             validate_artifact(raw, expected_type="detector_state_index")
+
+
+def test_committing_detector_state_preserves_previous_complete_pair(tmp_path, state_factory):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    initial = save_detector_state(tmp_path, first)
+    assert initial.previous_version is None
+    current = save_detector_state(tmp_path, second)
+    assert current.active_version == second.version_id
+    assert current.previous_version == first.version_id
+    assert load_detector_version(tmp_path, current.active_version) == second
+    assert load_detector_version(tmp_path, current.previous_version) == first
+    assert not list(tmp_path.rglob("*.tmp"))
+
+
+@pytest.mark.parametrize("failure", ["snapshot_validation", "index_validation", "snapshot_publish", "pointer_replace", "file_sync"])
+def test_failed_save_keeps_previous_pair_active(tmp_path, state_factory, monkeypatch, failure):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    pointer = tmp_path / "current.json"
+    original = pointer.read_bytes()
+
+    def fail(*_args, **_kwargs):
+        raise OSError("simulated storage failure")
+
+    if failure.endswith("validation"):
+        original_load = artifacts.load_artifact
+
+        def invalid_temporary(path, *, expected_type):
+            target_type = "detector_state" if failure == "snapshot_validation" else "detector_state_index"
+            if str(path).endswith(".tmp") and expected_type == target_type:
+                raise ArtifactCompatibilityError("simulated validation failure")
+            return original_load(path, expected_type=expected_type)
+
+        monkeypatch.setattr(artifacts, "load_artifact", invalid_temporary)
+    elif failure == "snapshot_publish":
+        monkeypatch.setattr(artifacts.os, "link", fail)
+    elif failure == "pointer_replace":
+        monkeypatch.setattr(artifacts.os, "replace", fail)
+    else:
+        monkeypatch.setattr(artifacts.os, "fsync", fail)
+
+    with pytest.raises((DataValidationError, ArtifactCompatibilityError)):
+        save_detector_state(tmp_path, second)
+    assert pointer.read_bytes() == original
+    assert load_detector_version(tmp_path, first.version_id) == first
+    assert not list(tmp_path.rglob("*.tmp"))
+
+
+@pytest.mark.parametrize("after_switch", [False, True])
+def test_interrupted_switch_exposes_one_complete_pair(tmp_path, state_factory, monkeypatch, after_switch):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    original_replace = artifacts.os.replace
+
+    def interrupt(source, destination):
+        if after_switch:
+            original_replace(source, destination)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(artifacts.os, "replace", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        save_detector_state(tmp_path, second)
+    index = json.loads((tmp_path / "current.json").read_text())
+    expected = second if after_switch else first
+    assert load_detector_version(tmp_path, index["active_version"]) == expected
+
+
+def test_directory_sync_failure_after_switch_reports_committed_state(tmp_path, state_factory, monkeypatch):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    original_sync = artifacts._sync_directory
+
+    def fail_after_switch(directory):
+        if directory == tmp_path:
+            raise OSError("simulated directory sync failure")
+        original_sync(directory)
+
+    monkeypatch.setattr(artifacts, "_sync_directory", fail_after_switch)
+    with pytest.raises(DetectorStateCommitError) as error:
+        save_detector_state(tmp_path, second)
+    assert error.value.committed
+    index = json.loads((tmp_path / "current.json").read_text())
+    assert load_detector_version(tmp_path, index["active_version"]) == second
+    assert load_detector_version(tmp_path, index["previous_version"]) == first
+
+
+def test_failed_temporary_cleanup_does_not_undo_commit(tmp_path, state_factory, monkeypatch):
+    state = state_factory()
+    original_unlink = Path.unlink
+
+    def fail_cleanup(path, *args, **kwargs):
+        if path.suffix == ".tmp":
+            raise OSError("simulated cleanup failure")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", fail_cleanup)
+    index = save_detector_state(tmp_path, state)
+    assert load_detector_version(tmp_path, index.active_version) == state
+
+
+def test_saving_rejects_changed_safety_reference(tmp_path, state_factory):
+    first = state_factory()
+    save_detector_state(tmp_path, first)
+    pointer = (tmp_path / "current.json").read_bytes()
+    with pytest.raises(ArtifactCompatibilityError, match="packet_count_limit changed"):
+        save_detector_state(tmp_path, state_factory(packet_count_limit=200.))
+    assert (tmp_path / "current.json").read_bytes() == pointer
