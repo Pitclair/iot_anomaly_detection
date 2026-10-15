@@ -28,7 +28,7 @@ from lm_idnet.exceptions import (
     DataValidationError,
     LMIDNetError,
 )
-from lm_idnet.models.calibration_stage import load_calibration_windows
+from lm_idnet.models.calibration_stage import load_calibration_packet_count_limit
 from lm_idnet.models.schemas import AnomalyEventArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.schemas import WindowRecord
@@ -188,20 +188,7 @@ def _run_detector(
     conservative = config.adaptation.policy == "conservative"
     volume_limit = None
     if mode != "static" and conservative:
-        calibration_windows = load_calibration_windows(config, model_categories)
-        if len(calibration_windows) < config.calibration.minimum_samples:
-            raise DataValidationError(
-                "volume limit requires enough benign calibration windows"
-            )
-        volume_limit = float(
-            np.quantile(
-                [window.total_count for window in calibration_windows],
-                config.adaptation.volume_quantile,
-                method="linear",
-            )
-        )
-        if not np.isfinite(volume_limit):
-            raise DataValidationError("calibration packet-count limit must be finite")
+        volume_limit = load_calibration_packet_count_limit(config, model_categories)
     selection = development_partition_for_evaluation(config)
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     results: list[dict[str, object]] = []

@@ -104,6 +104,11 @@ def load_model(config: "AppConfig") -> ModelArtifact:
         ModelArtifact,
         load_artifact(config.outputs.model_path, expected_type="model"),
     )
+    _validate_model_configuration(model, config)
+    return model
+
+
+def _validate_model_configuration(model: ModelArtifact, config: "AppConfig") -> None:
     expected_fields = {
         "dataset": config.ingest.dataset_folder,
         "device_id": config.ingest.device_id,
@@ -117,7 +122,6 @@ def load_model(config: "AppConfig") -> ModelArtifact:
                 f"model {field.replace('_', ' ')} does not match configuration: "
                 f"expected {expected!r}, found {actual!r}"
             )
-    return model
 
 
 def save_artifact(path: str | Path, artifact: Artifact) -> None:
@@ -239,3 +243,72 @@ def save_detector_state(directory: str | Path, state: DetectorStateArtifact) -> 
     )
     _write_detector_artifact(directory / "current.json", index, replace=True)
     return index
+
+
+def _validate_detector_configuration(state: DetectorStateArtifact, config: "AppConfig") -> None:
+    _validate_model_configuration(state.baseline_model, config)
+    expected_fields = {
+        "window duration": (state.window_minutes, config.ingest.window_minutes),
+        "device MAC": (state.device_mac, config.ingest.device_mac),
+        "calibration settings": (state.calibration, config.calibration),
+        "adaptation settings": (state.adaptation, config.adaptation),
+        "estimator settings": (state.estimator, config.estimator),
+        "precision": (state.baseline_model.precision_digits, config.precision_digits),
+        "likelihood backend": (
+            state.baseline_model.log_likelihood_backend,
+            config.estimator.log_likelihood_backend,
+        ),
+        "calibration captures": (
+            state.baseline_threshold.calibration_capture_ids,
+            config.ingest.partitions.calibration,
+        ),
+    }
+    for field, (actual, expected) in expected_fields.items():
+        if actual != expected:
+            raise ArtifactCompatibilityError(f"detector {field} does not match configuration")
+    if state.baseline_threshold.calibration_window_count < config.calibration.minimum_samples:
+        raise ArtifactCompatibilityError("baseline threshold has insufficient calibration windows")
+
+
+def load_detector_state(directory: str | Path, config: "AppConfig") -> DetectorStateArtifact:
+    """Restore accepted state, or initialize and commit an empty state directory."""
+    directory = Path(directory)
+    index = _read_detector_index(directory)
+    if index is not None:
+        state = load_detector_version(directory, index.active_version)
+        _validate_detector_configuration(state, config)
+        return state
+    try:
+        if any(directory.iterdir()):
+            raise ArtifactCompatibilityError("detector state directory has no active index")
+    except FileNotFoundError:
+        pass
+    except OSError as error:
+        raise ArtifactCompatibilityError(f"cannot inspect detector state directory: {directory}") from error
+
+    # Calibration imports artifact helpers; defer this import to initial setup.
+    from lm_idnet.models.calibration_stage import load_calibration_packet_count_limit
+
+    model = load_model(config)
+    threshold = cast(ThresholdArtifact, load_artifact(
+        config.outputs.threshold_path, expected_type="threshold",
+    ))
+    packet_count_limit = None
+    if config.adaptation.mode != "static" and config.adaptation.policy == "conservative":
+        packet_count_limit = load_calibration_packet_count_limit(config, model.categories)
+    state = cast(DetectorStateArtifact, validate_artifact({
+        "artifact_type": "detector_state", "source": "initial",
+        "baseline_model": model.model_dump(), "baseline_threshold": threshold.model_dump(),
+        "alpha": model.alpha,
+        "threshold": {
+            "model_fingerprint": threshold.model_fingerprint,
+            "threshold": threshold.threshold, "score_iqr": threshold.score_iqr,
+        },
+        "window_minutes": config.ingest.window_minutes, "device_mac": config.ingest.device_mac,
+        "calibration": config.calibration.model_dump(),
+        "adaptation": config.adaptation.model_dump(), "estimator": config.estimator.model_dump(),
+        "packet_count_limit": packet_count_limit,
+    }, expected_type="detector_state"))
+    _validate_detector_configuration(state, config)
+    save_detector_state(directory, state)
+    return state

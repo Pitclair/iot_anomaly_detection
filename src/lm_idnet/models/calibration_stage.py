@@ -54,6 +54,23 @@ def load_calibration_windows(
     return tuple(windows)
 
 
+def load_calibration_packet_count_limit(
+    config: AppConfig,
+    model_categories: tuple[str, ...],
+) -> float:
+    """Derive the fixed learning-volume guard from benign calibration counts."""
+    windows = load_calibration_windows(config, model_categories)
+    if len(windows) < config.calibration.minimum_samples:
+        raise DataValidationError("volume limit requires enough benign calibration windows")
+    limit = float(np.quantile(
+        [window.total_count for window in windows],
+        config.adaptation.volume_quantile, method="linear",
+    ))
+    if not np.isfinite(limit):
+        raise DataValidationError("calibration packet-count limit must be finite")
+    return limit
+
+
 def save_threshold(
     path: str | Path,
     threshold_data: dict[str, Any],

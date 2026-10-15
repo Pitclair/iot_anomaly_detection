@@ -1,14 +1,20 @@
 """Correctness checks for saved detector state using small temporary files."""
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import subprocess
+import sys
 
+import numpy as np
 import pytest
 
 from lm_idnet import artifacts
 from lm_idnet.artifacts import (
     artifact_fingerprint,
     load_detector_version,
+    load_detector_state,
+    save_artifact,
     save_detector_version,
     save_detector_state,
     validate_artifact,
@@ -20,6 +26,10 @@ from lm_idnet.exceptions import (
 )
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
 from lm_idnet.models.schemas import DetectorStateArtifact, DetectorStateIndex, ModelArtifact
+from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
+from lm_idnet.models.scoring_stage import score_window
+from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
+from lm_idnet.processing.storage import save_processed_dataset
 
 pytestmark = pytest.mark.unit
 
@@ -297,3 +307,181 @@ def test_saving_rejects_changed_safety_reference(tmp_path, state_factory):
     with pytest.raises(ArtifactCompatibilityError, match="packet_count_limit changed"):
         save_detector_state(tmp_path, state_factory(packet_count_limit=200.))
     assert (tmp_path / "current.json").read_bytes() == pointer
+
+
+def write_initial_artifacts(config, state):
+    save_artifact(config.outputs.model_path, state.baseline_model)
+    save_artifact(config.outputs.threshold_path, state.baseline_threshold)
+
+
+def write_calibration_counts(config):
+    for capture_id in config.ingest.partitions.calibration:
+        start = datetime(2020, 10, 14, tzinfo=timezone.utc)
+        windows = tuple(WindowRecord(
+            start_utc=start + timedelta(minutes=config.ingest.window_minutes * offset),
+            end_utc=start + timedelta(minutes=config.ingest.window_minutes * (offset + 1)),
+            categories=config.ingest.categories, counts=(10 + offset, 2, 3, 4), state="observed",
+        ) for offset in range(20))
+        save_processed_dataset(ProcessedDataset(
+            metadata=Metadata(
+                device_id=config.ingest.device_id, capture_id=capture_id,
+                partition="calibration", date=capture_id, file_source="fixture.pcap",
+            ),
+            windows=windows,
+        ), config.ingest.processed_root / config.ingest.dataset_folder / f"{capture_id}.json")
+
+
+@pytest.mark.parametrize(("mode", "policy"), [
+    ("periodic_refit", "conservative"), ("adaptive_threshold", "conservative"),
+    ("periodic_refit", "legacy"), ("adaptive_threshold", "legacy"),
+    ("static", "conservative"),
+])
+def test_empty_state_directory_initializes_matching_pair(tmp_path, detector_config, state_factory, mode, policy):
+    config = detector_config
+    config.adaptation.mode = mode
+    config.adaptation.policy = policy
+    state = state_factory(packet_count_limit=100. if mode != "static" and policy == "conservative" else None)
+    write_initial_artifacts(config, state)
+    if mode != "static" and policy == "conservative":
+        write_calibration_counts(config)
+    directory = tmp_path / "detector"
+    if mode == "static":
+        directory.mkdir()
+
+    initial = load_detector_state(directory, config)
+
+    assert initial.source == "initial"
+    assert initial.alpha == state.baseline_model.alpha
+    assert initial.threshold.threshold == state.baseline_threshold.threshold
+    assert initial.threshold.score_iqr == state.baseline_threshold.score_iqr
+    assert initial.packet_count_limit == (38. if mode != "static" and policy == "conservative" else None)
+    assert load_detector_state(directory, config) == initial
+
+
+def test_restart_restores_decisions_and_original_guards_without_source_files(
+    tmp_path, detector_config, state_factory, window_factory, monkeypatch,
+):
+    directory = tmp_path / "detector"
+    state = state_factory()
+    save_detector_state(directory, state)
+
+    def unexpected_initialization(*_args, **_kwargs):
+        pytest.fail("a restart must not reload initial artifacts or calibration counts")
+
+    monkeypatch.setattr(artifacts, "load_model", unexpected_initialization)
+    restored = load_detector_state(directory, detector_config)
+    assert restored == state
+    assert restored.baseline_model.alpha != restored.alpha
+    assert restored.baseline_threshold.threshold == -10.
+    assert restored.packet_count_limit == 100.
+
+    def decision(snapshot):
+        alpha = np.asarray(snapshot.alpha)
+        return score_window(
+            window_factory(), device_id=snapshot.baseline_model.device_id,
+            capture_id="fixture", model_categories=snapshot.baseline_model.categories,
+            expected_profile=tuple(alpha / alpha.sum()),
+            model_fingerprint=snapshot.threshold.model_fingerprint, alpha=alpha,
+            log_likelihood=ScipyLogLikelihood(), threshold=snapshot.threshold.threshold,
+            score_iqr=snapshot.threshold.score_iqr, score_type=snapshot.calibration.score_type,
+        )
+
+    assert decision(restored) == decision(state)
+    assert not detector_config.outputs.model_path.exists()
+    assert not detector_config.ingest.processed_root.exists()
+
+
+@pytest.mark.parametrize(("section", "field", "value"), [
+    ("ingest", "device_id", "other-device"),
+    ("ingest", "dataset_folder", "other-dataset"),
+    ("ingest", "device_mac", "00:11:22:33:44:55"),
+    ("ingest", "categories", ("arp", "ssdp", "udp", "tcp")),
+    ("ingest", "window_minutes", 5),
+    ("calibration", "score_type", "normalized"),
+    ("calibration", "quantile", .1),
+    ("calibration", "minimum_samples", 31),
+    ("adaptation", "policy", "legacy"),
+    ("adaptation", "max_threshold_shift_iqr", 3.),
+    ("estimator", "tolerance_delta", .1),
+    ("estimator", "log_likelihood_backend", "lm"),
+])
+def test_restart_rejects_incompatible_configuration(tmp_path, detector_config, state_factory, section, field, value):
+    state = state_factory()
+    save_detector_state(tmp_path, state)
+    changed_section = getattr(detector_config, section).model_copy(update={field: value})
+    changed = detector_config.model_copy(update={section: changed_section})
+    pointer = (tmp_path / "current.json").read_bytes()
+    with pytest.raises(ArtifactCompatibilityError, match="does not match configuration"):
+        load_detector_state(tmp_path, changed)
+    assert (tmp_path / "current.json").read_bytes() == pointer
+
+
+def test_restart_rejects_changed_precision(tmp_path, detector_config, state_factory):
+    save_detector_state(tmp_path, state_factory())
+    changed = detector_config.model_copy(update={"precision_digits": 8})
+    with pytest.raises(ArtifactCompatibilityError, match="precision"):
+        load_detector_state(tmp_path, changed)
+
+
+def test_restart_allows_relocated_input_and_output_paths(tmp_path, detector_config, state_factory):
+    state = state_factory()
+    save_detector_state(tmp_path, state)
+    relocated = detector_config.model_copy(update={
+        "outputs": detector_config.outputs.model_copy(update={"model_path": tmp_path / "absent.json"}),
+        "ingest": detector_config.ingest.model_copy(update={"processed_root": tmp_path / "absent"}),
+    })
+    assert load_detector_state(tmp_path, relocated) == state
+
+
+@pytest.mark.parametrize("corruption", ["index", "snapshot", "missing_snapshot", "missing_index"])
+def test_corrupt_existing_state_never_reinitializes(tmp_path, detector_config, state_factory, corruption):
+    state = state_factory()
+    write_initial_artifacts(detector_config, state)
+    write_calibration_counts(detector_config)
+    directory = tmp_path / "detector"
+    save_detector_state(directory, state)
+    pointer = directory / "current.json"
+    snapshot = directory / "versions" / f"{state.version_id}.json"
+    if corruption == "index":
+        pointer.write_text("{")
+    elif corruption == "snapshot":
+        snapshot.write_text("{")
+    elif corruption == "missing_snapshot":
+        snapshot.unlink()
+    else:
+        pointer.unlink()
+    before = {p: p.read_bytes() for p in directory.rglob("*") if p.is_file()}
+    with pytest.raises(ArtifactCompatibilityError):
+        load_detector_state(directory, detector_config)
+    assert {p: p.read_bytes() for p in directory.rglob("*") if p.is_file()} == before
+
+
+@pytest.mark.integration
+def test_new_process_restores_accepted_snapshot(tmp_path, detector_config, state_factory):
+    directory = tmp_path / "detector"
+    state = state_factory()
+    save_detector_state(directory, state)
+    config_path = tmp_path / "config.json"
+    config_path.write_text(detector_config.model_dump_json())
+    result = subprocess.run([
+        sys.executable, "-c",
+        "import sys; from lm_idnet.artifacts import load_detector_state; "
+        "from lm_idnet.config import load_config; "
+        "print(load_detector_state(sys.argv[1], load_config(sys.argv[2])).model_dump_json())",
+        str(directory), str(config_path),
+    ], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    assert DetectorStateArtifact.model_validate_json(result.stdout) == state
+
+
+def test_initialization_rejects_mismatched_pair_before_creating_state(tmp_path, detector_config, state_factory):
+    state = state_factory()
+    write_initial_artifacts(detector_config, state)
+    write_calibration_counts(detector_config)
+    threshold = json.loads(detector_config.outputs.threshold_path.read_text())
+    threshold["model_fingerprint"] = "0" * 64
+    detector_config.outputs.threshold_path.write_text(json.dumps(threshold))
+    directory = tmp_path / "detector"
+    with pytest.raises(ArtifactCompatibilityError, match="fingerprint"):
+        load_detector_state(directory, detector_config)
+    assert not directory.exists()

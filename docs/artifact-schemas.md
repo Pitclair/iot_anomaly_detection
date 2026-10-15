@@ -84,3 +84,33 @@ instead of reporting a rejected update. Both referenced pairs remain complete.
 Temporary-file cleanup failures are logged without undoing a committed switch.
 Unreferenced snapshots can remain after interrupted saves; retention and automatic
 promotion are separate from these storage helpers.
+
+## Restoring a detector
+
+`load_detector_state(directory, config)` follows `current.json`, validates its
+snapshot against the configured device, dataset, category order, window duration,
+capture provenance, numerical backend/precision, and learning settings, and returns
+the accepted state. An existing corrupt or incompatible state raises a clear error;
+it never silently resets to the initial model.
+
+If the directory is absent or completely empty, the loader initializes and commits
+a snapshot using the configured initial model and threshold. Conservative adaptive
+initialization derives its packet-count limit from calibration windows using the
+same helper as batch scoring. Legacy and static initialization do not need those
+windows. Subsequent loads use only the snapshot and configuration, so the initial
+files and calibration data can be absent. Changing filesystem paths does not change
+compatibility.
+
+```python
+from lm_idnet.artifacts import load_detector_state
+from lm_idnet.config import load_config
+
+config = load_config("configs/experiments/unsw_chromecast_periodic_refit.json")
+state = load_detector_state("artifacts/UNSW-Chromecast/detector-state", config)
+```
+
+The returned state includes the active alpha/threshold/IQR and the original safety
+references. Traffic buffers and update scheduling counters start empty when a
+caller resumes; no traffic history or input position is restored. Automatic saves
+from adaptation and command-line state selection are not wired into the batch
+detector yet. Existing experiments retain their original starting-state behavior.
