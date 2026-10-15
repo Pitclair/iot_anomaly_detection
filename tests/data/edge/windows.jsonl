@@ -1,0 +1,5 @@
+{"device_id":"D-LinkDayCam5","source_id":"synthetic-edge-replay","window":{"start_utc":"2026-10-15T12:00:00Z","end_utc":"2026-10-15T12:10:00Z","categories":["tcp","udp","ssdp","arp"],"counts":[20,30,29,43],"state":"observed"}}
+{"device_id":"D-LinkDayCam5","source_id":"synthetic-edge-replay","window":{"start_utc":"2026-10-15T12:10:00Z","end_utc":"2026-10-15T12:20:00Z","categories":["tcp","udp","ssdp","arp"],"counts":[21,29,30,42],"state":"observed"}}
+{"device_id":"D-LinkDayCam5","source_id":"synthetic-edge-replay","window":{"start_utc":"2026-10-15T12:20:00Z","end_utc":"2026-10-15T12:30:00Z","categories":["tcp","udp","ssdp","arp"],"counts":[0,0,0,0],"state":"observed-silent"}}
+{"device_id":"D-LinkDayCam5","source_id":"synthetic-edge-replay","window":{"start_utc":"2026-10-15T12:30:00Z","end_utc":"2026-10-15T12:40:00Z","categories":["tcp","udp","ssdp","arp"],"counts":null,"state":"missing"}}
+{"device_id":"D-LinkDayCam5","source_id":"synthetic-edge-replay","window":{"start_utc":"2026-10-15T12:40:00Z","end_utc":"2026-10-15T12:50:00Z","categories":["tcp","udp","ssdp","arp"],"counts":[1000000,0,0,0],"state":"observed"}}

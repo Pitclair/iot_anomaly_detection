@@ -4,39 +4,24 @@ from datetime import datetime, timedelta, timezone
 import io
 import json
 import logging
+import signal
 import os
 from pathlib import Path
 import select
-import shutil
 import subprocess
 import sys
+from time import sleep
 
 import pytest
 
 from lm_idnet import cli, runtime
 from lm_idnet.artifacts import detector_state_lock, load_detector_state, save_detector_state
-from lm_idnet.config import load_edge_config
 from lm_idnet.exceptions import DataValidationError, DetectorStateCommitError, PolicyRejectionError
 from lm_idnet.models.schemas import DetectorStateArtifact
 from lm_idnet.models.scoring_stage import WindowDetector
 from lm_idnet.processing.schemas import MAX_WINDOW_COUNT, WindowRecord
 
 pytestmark = pytest.mark.unit
-ROOT = Path(__file__).resolve().parents[1]
-
-
-@pytest.fixture
-def edge_runtime(tmp_path):
-    config = load_edge_config(ROOT / "configs" / "edge_example.json")
-    config.state_dir = tmp_path / "state"
-    shutil.copytree(ROOT / "artifacts" / "edge-initial-state", config.state_dir)
-    config.outputs.model_path = tmp_path / "absent-model.json"
-    config.outputs.threshold_path = tmp_path / "absent-threshold.json"
-    path = tmp_path / "edge.json"
-    path.write_text(config.model_dump_json())
-    return config, path
-
-
 def record(config, offset=0, counts=(100, 20, 3, 2)):
     start = datetime(2026, 10, 15, 12, tzinfo=timezone.utc) + timedelta(minutes=offset)
     window = WindowRecord(
@@ -334,3 +319,184 @@ def test_runtime_log_retention_is_bounded(tmp_path):
     logs = list(tmp_path.glob("runtime.log*"))
     assert len(logs) == cli.RUNTIME_LOG_BACKUPS + 1
     assert all(path.stat().st_size <= 512 for path in logs)
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGINT])
+def test_signal_stops_an_idle_reader_cleanly_and_releases_lock(edge_runtime, signum):
+    config, path = edge_runtime
+    process = subprocess.Popen(arguments(path), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, env=environment())
+    try:
+        process.stdin.write(line(record(config)))
+        process.stdin.flush()
+        assert select.select([process.stdout], [], [], 10)[0]
+        assert json.loads(os.read(process.stdout.fileno(), 65536))["artifact_type"] == "anomaly_event"
+        process.send_signal(signum)
+        stdout, stderr = process.communicate(timeout=10)
+        assert process.returncode == 0, stderr
+        assert stdout == stderr == b""
+        with detector_state_lock(config.state_dir):
+            pass
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.communicate(timeout=10)
+
+
+def test_signal_during_atomic_activation_is_deferred(edge_runtime, tmp_path, monkeypatch):
+    from lm_idnet import artifacts
+
+    config, _ = edge_runtime
+    raw = load_detector_state(config.state_dir, config).model_dump(exclude={"version_id", "created_utc"})
+    raw["adaptation"].update(mode="adaptive_threshold", update_every=2, buffer_size=3, safe_margin=0.)
+    raw["calibration"].update(minimum_samples=2, quantile=.25)
+    raw["baseline_threshold"].update(quantile=.25, threshold=-100., score_iqr=100.)
+    raw["threshold"].update(threshold=-100., score_iqr=100.)
+    state = DetectorStateArtifact.model_validate(raw)
+    config.adaptation, config.calibration = state.adaptation, state.calibration
+    config.state_dir = tmp_path / "signal-state"
+    save_detector_state(config.state_dir, state)
+    original_replace = artifacts.os.replace
+    handler = signal.getsignal(signal.SIGTERM)
+
+    def stop_after_pointer_switch(source, destination):
+        original_replace(source, destination)
+        if Path(destination).name == "current.json":
+            os.kill(os.getpid(), signal.SIGTERM)
+
+    monkeypatch.setattr(artifacts.os, "replace", stop_after_pointer_switch)
+    output = io.StringIO()
+    records = [record(config), record(config, 10, (101, 19, 3, 2)), record(config, 20)]
+    runtime.run_windows(config, io.BytesIO(b"".join(map(line, records))), output)
+    assert load_detector_state(config.state_dir, config).threshold.threshold != -100.
+    assert len(output.getvalue().splitlines()) == 1
+    assert signal.getsignal(signal.SIGTERM) == handler
+
+
+@pytest.mark.integration
+def test_edge_rollback_cli_restores_previous_pair(edge_runtime):
+    config, path = edge_runtime
+    first = load_detector_state(config.state_dir, config)
+    raw = first.model_dump(exclude={"version_id", "created_utc"})
+    raw["source"] = "adaptive_threshold"
+    raw["threshold"]["threshold"] -= .25
+    save_detector_state(config.state_dir, DetectorStateArtifact.model_validate(raw))
+    result = subprocess.run(
+        [sys.executable, "-m", "lm_idnet.cli", "rollback", "--config", str(path),
+         "--state-dir", str(config.state_dir)], capture_output=True, env=environment(), check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["active_version"] == first.version_id
+    assert load_detector_state(config.state_dir, config) == first
+
+
+@pytest.mark.parametrize("score_type", ["raw", "normalized"])
+@pytest.mark.parametrize("policy", ["conservative", "legacy"])
+@pytest.mark.parametrize("mode", ["static", "adaptive_threshold", "periodic_refit"])
+def test_streaming_cli_replay_matches_batch_updates(
+    tmp_path, config_factory, edge_config_factory, monkeypatch, capsys, score_type, policy, mode,
+):
+    import numpy as np
+    from lm_idnet.algorithms.dirichlet import DirichletFit
+    from lm_idnet.models import scoring_stage
+    from lm_idnet.processing.storage import load_processed_dataset
+    from test_scoring_stage import write_model, write_threshold, write_processed_captures, read_adaptation_outputs
+
+    config = config_factory(
+        ingest={"processed_root": tmp_path / "processed"},
+        estimator={"log_likelihood_backend": "scipy"},
+        calibration={"score_type": score_type, "minimum_samples": 2, "quantile": .25},
+        adaptation={"mode": mode, "policy": policy, "buffer_size": 3,
+                    "update_every": 2, "minimum_refit_windows": 2},
+        outputs={"model_path": tmp_path / "model.json", "threshold_path": tmp_path / "threshold.json",
+                 "events_path": tmp_path / "events.json", "reports_dir": tmp_path / "reports"},
+    )
+    write_model(config)
+    write_threshold(config, score_type, threshold_value=-8. if score_type == "raw" else -.8,
+                    score_iqr=2. if score_type == "raw" else .2)
+    write_processed_captures(config, "calibration", counts=((1, 2, 3, 4), (4, 2, 3, 4)))
+    write_processed_captures(config, counts=(
+        (1, 2, 3, 4), (2, 2, 3, 4), (10000, 0, 0, 0),
+        (0, 0, 0, 0), None, (3, 2, 3, 4), (4, 2, 3, 4),
+    ))
+
+    class Estimator:
+        calls = 0
+
+        def fit(self, _matrix):
+            self.calls += 1
+            alpha = np.array([1., 2., 3., 4.]) * 1.01
+            return DirichletFit(alpha, alpha, float(alpha.sum()), 1 / float(alpha.sum()),
+                                1, self.calls % 2 == 1, -1e9, 1e9)
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: Estimator())
+    scoring_stage.adapt_windows(config)
+    expected, report = read_adaptation_outputs(config)
+    directory = tmp_path / "stream-state"
+    load_detector_state(directory, config)
+    edge = edge_config_factory(config, directory)
+    path = tmp_path / "edge.json"
+    path.write_text(edge.model_dump_json())
+    records = []
+    for capture_id in config.ingest.partitions.development_test:
+        dataset = load_processed_dataset(
+            config.ingest.processed_root / config.ingest.dataset_folder / f"{capture_id}.json",
+        )
+        records.extend({"device_id": config.ingest.device_id, "source_id": capture_id,
+                        "window": window.model_dump(mode="json")} for window in dataset.windows)
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(b"".join(map(line, records)))))
+    monkeypatch.setenv("LM_IDNET_LOG_PATH", str(tmp_path / "stream.log"))
+    assert cli.main(["run", "--config", str(path)]) == 0
+    output = capsys.readouterr()
+    assert [json.loads(value) for value in output.out.splitlines()] == expected
+    assert output.err == ""
+    state = load_detector_state(directory, edge)
+    assert list(state.alpha) == report["final_alpha"]
+    assert state.threshold.threshold == report["final_threshold"]
+    assert state.threshold.model_fingerprint == report["final_model_fingerprint"]
+    if mode != "static":
+        assert report["threshold_update_count"] > 0
+        history = json.loads((directory / "history.json").read_text())["records"]
+        assert any(item["promoted"] for item in history)
+        if mode == "periodic_refit":
+            assert any(not item["promoted"] for item in history)
+
+
+@pytest.mark.integration
+def test_slow_output_stalls_reads_without_memory_growth_and_can_stop(edge_runtime, tmp_path):
+    config, path = edge_runtime
+    raw = load_detector_state(config.state_dir, config).model_dump(exclude={"version_id", "created_utc"})
+    raw["adaptation"]["mode"] = "static"
+    raw["packet_count_limit"] = None
+    state = DetectorStateArtifact.model_validate(raw)
+    config.adaptation = state.adaptation
+    config.state_dir = tmp_path / "static-state"
+    save_detector_state(config.state_dir, state)
+    path.write_text(config.model_dump_json())
+    source_path = tmp_path / "many-windows.jsonl"
+    with source_path.open("wb") as source:
+        for index in range(10000):
+            source.write(line(record(config, index * 10)))
+    with source_path.open("rb") as source:
+        process = subprocess.Popen(arguments(path), stdin=source, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=dict(environment(), PYTHONUNBUFFERED="1"))
+        try:
+            assert select.select([process.stdout], [], [], 10)[0]
+            sleep(.2)
+
+            def rss():
+                return int(next(value.split()[1] for value in
+                    Path(f"/proc/{process.pid}/status").read_text().splitlines() if value.startswith("VmRSS:"))) * 1024
+
+            first = rss()
+            sleep(.5)
+            assert process.poll() is None
+            assert rss() <= first + 2 * 1024 * 1024
+            process.send_signal(signal.SIGTERM)
+            assert process.wait(timeout=5) == 0
+            process.communicate(timeout=5)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate(timeout=5)

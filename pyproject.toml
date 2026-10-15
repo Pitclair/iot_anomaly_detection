@@ -28,6 +28,14 @@ lm-idnet = "lm_idnet.cli:main"
 where = ["src"]
 include = ["lm_idnet*"]
 
+[tool.setuptools.package-data]
+"lm_idnet.algorithms" = [
+  "native/LM_time_lib.so",
+  "native/bernreal-norm-100.txt",
+  "native/err_coeff-100.txt",
+  "native/LICENSE.",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = [

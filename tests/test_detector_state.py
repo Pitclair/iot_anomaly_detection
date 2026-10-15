@@ -1,6 +1,7 @@
 """Correctness checks for saved detector state using small temporary files."""
 
 import json
+import errno
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import subprocess
@@ -222,7 +223,7 @@ def test_committing_detector_state_preserves_previous_complete_pair(tmp_path, st
     assert not list(tmp_path.rglob("*.tmp"))
 
 
-@pytest.mark.parametrize("failure", ["snapshot_validation", "index_validation", "snapshot_publish", "pointer_replace", "file_sync"])
+@pytest.mark.parametrize("failure", ["snapshot_validation", "index_validation", "snapshot_publish", "pointer_replace", "file_sync", "disk_full"])
 def test_failed_save_keeps_previous_pair_active(tmp_path, state_factory, monkeypatch, failure):
     first, second = state_factory(), state_factory(threshold=-7.)
     save_detector_state(tmp_path, first)
@@ -230,6 +231,8 @@ def test_failed_save_keeps_previous_pair_active(tmp_path, state_factory, monkeyp
     original = pointer.read_bytes()
 
     def fail(*_args, **_kwargs):
+        if failure == "disk_full":
+            raise OSError(errno.ENOSPC, "simulated full disk")
         raise OSError("simulated storage failure")
 
     if failure.endswith("validation"):

@@ -45,6 +45,17 @@ Run absolutely every test:
 python -m pytest -m ""
 ```
 
+Check the prepared production image without a build or download:
+
+```sh
+LM_IDNET_EDGE_IMAGE=lm-idnet:edge python -m pytest -q tests/test_edge_deployment.py
+```
+
+These opt-in checks verify offline native loading, persisted state, service
+restart/stop, resource limits, and bounded event retention. Ordinary tests skip
+them when the image variable is absent. The [gateway simulation guide](edge-deployment.md)
+also documents the finite resource replay and its measured report.
+
 ## Shared fixture factories
 
 - `count_matrix_factory`: deterministic non-negative integer matrices with

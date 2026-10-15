@@ -40,6 +40,12 @@ the file-input route. The smallest deployment supports supplied windows; a live
 packet collector is necessary only if the delivered interface explicitly
 promises to collect packets itself.
 
+\textbf{Current target, agreed on 15 October 2026:} use the existing local Docker
+environment as a Linux/amd64 gateway simulation, limited to one CPU and 512 MiB
+of RAM. This is the simplest target for the current software work and requires
+no additional hardware or collector. Physical gateway and ARM measurements are
+future work; all deployment results below are explicitly simulation results.
+
 \textbf{Reference:} user-confirmed \texttt{master}, commit
 \texttt{96fb241433d1d30bd63ddcc16cb38bd27282d1d6}. The original requirements below
 describe the remaining software changes against that snapshot and retain the
@@ -259,7 +265,7 @@ The \texttt{run} command reads bounded UTF-8 JSON lines, validates chronology an
 input semantics, and flushes each event immediately. Its logs rotate at 5 MiB
 with two backups. Tests verify delivery before input closes, malformed-input
 errors, adaptive updates, and state locking. Service-signal shutdown and gateway
-hardware validation remain outstanding. See \path{docs/edge-detector.md}.
+hardware validation are covered by the later status notes. See \path{docs/edge-detector.md}.
 
 \textbf{Change:} add a \texttt{run} command to the existing CLI. The implemented
 interface is:
@@ -301,6 +307,12 @@ and every standard-output line parses as an event.
 
 \subsubsection*{4.4 Connect restart, shutdown, and rollback to the live command}
 
+\textbf{Implementation status:} implemented and checked. SIGINT/SIGTERM stop an
+idle reader cleanly and defer shutdown during a detector operation, including
+atomic activation. Rollback accepts the edge configuration. Restart, rollback,
+lock refusal, failed saves, and signal-during-save checks pass. Event delivery
+and input positions retain the limits described below.
+
 \textbf{Change:} hold the existing state-directory lock for the runtime's
 lifetime. Load the accepted pair at startup, and use the existing atomic save
 for every promotion. Keep pre-commit failures from changing the active pair;
@@ -328,6 +340,10 @@ integration tests that reuse the existing persistence tests.
 
 \subsubsection*{4.5 Add the missing false-positive rate to the existing evaluator}
 
+\textbf{Implementation status:} implemented and checked. Evaluation now emits
+\texttt{false\_positive\_rate}; hand-counted, zero-false-positive, and no-benign-label
+cases pass. Recall remains TPR, and metrics remain outside the runtime loop.
+
 \textbf{Change:} extend the existing labelled evaluation output with
 \(\mathrm{FPR}=\mathrm{FP}/(\mathrm{FP}+\mathrm{TN})\). Use JSON
 \texttt{null} when the denominator is zero. Explain in the output documentation
@@ -343,6 +359,12 @@ labels gives \texttt{null}, and no false positives gives zero. Existing metrics
 remain unchanged and the output contains no NaN or infinity.
 
 \subsubsection*{4.6 Build one image that starts without compiling anything}
+
+\textbf{Implementation status:} implemented and checked for Linux/amd64. The
+production image builds the native library once, installs the normal package,
+and starts offline without gcc or pytest. \path{scripts/run-edge.sh} launches the
+prepared image with persistent writable state, read-only configuration, and the
+agreed one-CPU/512-MiB simulation limits.
 
 \textbf{Change:} name the intended Linux gateway, operating system, and CPU
 architecture. Build the existing application and native LM library for that
@@ -369,6 +391,13 @@ and restart through the persistent mount.
 
 \subsubsection*{4.7 Put explicit limits on unattended operation}
 
+\textbf{Implementation status:} implemented and checked. \path{compose.edge.yaml}
+provides three retries on failure, clean EOF/stop behaviour, and bounded Docker
+event/stderr storage. Application logs rotate separately. Forced rotation,
+failure restart, an explicit stop, and ENOSPC state preservation are verified.
+The current producer is a finite prepared-window replay; a future collector owns
+its reconnection and input cursor.
+
 \textbf{Change:} supply one ordinary service setup with automatic restart on
 failure. Connect it to the chosen local window producer and a bounded event
 destination. State who restarts or reconnects that producer; the detector cannot
@@ -393,6 +422,13 @@ memory growth. A full-disk save failure preserves the valid pair as specified
 by the existing commit handling.
 
 \subsubsection*{4.8 Verify the complete path with a small repeatable replay}
+
+\textbf{Implementation status:} implemented and checked. A small synthetic
+fixture covers ordinary counts, silence, missing coverage, and an alert. Twelve
+CLI/batch comparisons cover both score types, both policies, and all three modes,
+including controlled accepted/rejected updates under the default movement and
+admission limits. Production-image checks cover offline startup, restart,
+retention, and stop behaviour.
 
 \textbf{Change:} add a small prepared-window fixture and integration checks
 through the real command. Cover normal traffic, silence, missing coverage, an
@@ -420,6 +456,15 @@ update tests prove correctness; they do not establish that a real traffic run
 will produce a useful conservative update.
 
 \subsubsection*{4.9 Run it on the gateway and write the handover instructions}
+
+\textbf{Implementation status:} completed for the agreed Docker simulation.
+The 20,000-input-window replay scored 16,000 windows, performed 110 estimator
+calls, and kept update history at 100 records. Worst observed window processing
+was 5.079 seconds; highest sampled RSS was 68.92 MiB. The synthetic candidates
+were rejected, so this demonstrates rejection cost rather than useful learning.
+\path{docs/edge-deployment.md} provides the handover, and
+\path{reports/edge/simulation.md} links the measurements and provenance. Physical
+gateway validation remains future work before making a hardware deployment claim.
 
 \textbf{Change:} install the prepared image on the actual target. Replay a
 representative workload that includes update attempts and refits. Record the
@@ -490,5 +535,10 @@ the same artefact/scoring/schema files, \path{src/lm_idnet/config.py},
 a useful intermediate check; this plan retains adaptive operation as the
 completed detector's requirement. Its older adaptation-status and test-count
 statements are not used as current status evidence.
+
+Completed simulation evidence: \path{compose.edge.yaml},
+\path{scripts/run-edge.sh}, \path{scripts/benchmark_edge.py},
+\path{docs/edge-deployment.md}, \path{reports/edge/simulation.md}, and the focused
+runtime, persistence, evaluation, and opt-in deployment tests.
 
 \end{document}

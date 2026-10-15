@@ -308,10 +308,17 @@ def load_edge_config(path: str | Path) -> EdgeConfig:
     return _load_config(path, EdgeConfig)
 
 
+def load_detector_config(path: str | Path) -> AppConfig | EdgeConfig:
+    """Load either strict configuration for the shared rollback command."""
+    return _load_config(path, None)
+
+
 def _load_config(path, schema):
     config_path = Path(path)
     try:
         raw = json.loads(config_path.read_text(encoding="utf-8"))
+        if schema is None:
+            schema = EdgeConfig if isinstance(raw, dict) and "state_dir" in raw else AppConfig
         return schema.model_validate(raw)
     except FileNotFoundError as error:
         raise ConfigurationError(f"config not found: {config_path}") from error

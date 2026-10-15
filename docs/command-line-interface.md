@@ -58,7 +58,7 @@ global `--verbose` option before the command to also show them in the terminal:
 lm-idnet --verbose preprocess --config configs/d_link_day_cam5.json
 ```
 
-The streaming `run` command uses `logs/lm_idnet_runtime.log`, rotating at 5 MiB
+The streaming `run` and rollback commands use `logs/lm_idnet_runtime.log`, rotating at 5 MiB
 with two backups. `LM_IDNET_LOG_PATH` overrides the log path for either kind of
 command. The `--verbose` option echoes informational logs to standard error.
 
@@ -105,7 +105,10 @@ lower-quantile threshold artifact. `score` applies that threshold to
 non-missing development-test windows and writes a JSON array with one result per
 window. `evaluate` compares development-test anomaly decisions with matching
 window labels and writes `evaluation_statistics.json` under the configured
-reports directory. `benchmark` compares LM and SciPy on the same training,
+reports directory. Its `false_positive_rate` is `FP / (FP + TN)`, or JSON `null`
+when no matched benign labels exist. Recall is the true-positive rate (TPR).
+Metrics remain offline utilities; labels are never needed by `run`.
+`benchmark` compares LM and SciPy on the same training,
 calibration, and scoring workload and writes `lm_backend_benchmark.json` under
 the configured reports directory. `adapt` runs the configured `static`,
 `adaptive_threshold`, or `periodic_refit` mode over the same chronological
@@ -181,6 +184,12 @@ configuration, and atomically swaps the active and previous identifiers. It does
 not retrain or require the initial artifacts or calibration counts. Missing
 previous versions and busy state directories fail with exit code 8; incompatible
 snapshots fail with exit code 7. No success JSON is emitted on failure.
+
+It accepts either a research configuration or the partition-free edge configuration.
+Stop the streaming writer before rollback. SIGINT/SIGTERM end `run` cleanly;
+a signal during scoring or persistence is deferred until the operation finishes.
+An update can be committed before its event is delivered, so stopping and
+replaying are not an exactly-once delivery protocol.
 
 Persistent adaptation and rollback use a nonblocking Linux file lock. Only one
 can modify a directory at a time, including when paths refer to the same directory

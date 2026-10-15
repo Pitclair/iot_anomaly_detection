@@ -1,0 +1,30 @@
+services:
+  detector:
+    image: ${LM_IDNET_IMAGE_NAME:-lm-idnet:edge}
+    pull_policy: never
+    platform: linux/amd64
+    network_mode: none
+    user: "${HOST_UID:?Set HOST_UID}:${HOST_GID:?Set HOST_GID}"
+    read_only: true
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    environment:
+      LM_IDNET_LOG_PATH: /logs/runtime.log
+    volumes:
+      - ./configs:/app/configs:ro
+      - ${LM_IDNET_STATE_DIR:-./artifacts/edge-state}:/state
+      - ${LM_IDNET_LOG_DIR:-./logs/edge}:/logs
+      - ${LM_IDNET_INPUT:-./tests/data/edge/windows.jsonl}:/input/windows.jsonl:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - exec lm-idnet run --config /app/configs/edge_example.json --state-dir /state < /input/windows.jsonl
+    restart: "on-failure:3"
+    stop_grace_period: 30s
+    logging:
+      driver: local
+      options:
+        max-size: "5m"
+        max-file: "3"

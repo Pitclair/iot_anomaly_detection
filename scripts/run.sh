@@ -15,7 +15,7 @@ docker build \
 
 mkdir -p data artifacts reports logs
 
-exec docker run --rm \
+exec docker run --rm -i \
   --env PYTHONUNBUFFERED=1 \
   --user "$(id -u):$(id -g)" \
   --volume "$ROOT_DIR/configs:/app/configs:ro" \

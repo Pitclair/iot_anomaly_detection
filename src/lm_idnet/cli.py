@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
-from lm_idnet.config import AppConfig, load_config, load_edge_config
+from lm_idnet.config import AppConfig, load_config, load_detector_config, load_edge_config
 from lm_idnet.exceptions import (
     ConfigurationError,
     IngestionError,
@@ -232,10 +232,15 @@ HANDLERS: dict[str, Callable[[AppConfig], None]] = {
 def run_command(argv: Sequence[str] | None = None) -> None:
     """Validate and dispatch exactly one CLI command."""
     args = build_parser().parse_args(argv)
-    log_path = _configure_logging(args.verbose, bounded=args.command == "run")
+    log_path = _configure_logging(args.verbose, bounded=args.command in ("run", "rollback"))
     logger.info("Writing application logs to %s", log_path)
     logger.info("Starting command: %s", args.command)
-    config = load_edge_config(args.config) if args.command == "run" else load_config(args.config)
+    if args.command == "run":
+        config = load_edge_config(args.config)
+    elif args.command == "rollback":
+        config = load_detector_config(args.config)
+    else:
+        config = load_config(args.config)
 
     if args.dry_run:
         print(

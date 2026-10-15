@@ -12,8 +12,12 @@ Structure:
 ## Run with Docker
 
 Docker is the recommended way to run the project. The image installs
-`lm-idnet`, and every container invocation compiles the required native LM
-library before dispatching the requested CLI command.
+`lm-idnet` and compiles the native LM library during the image build. Startup
+uses that compiled library without a compiler or dependency downloads.
+
+For the one-CPU, 512-MiB gateway simulation, use the
+[edge deployment guide](docs/edge-deployment.md). It supplies prepared state,
+a JSON-lines replay, an offline runner, a bounded service, rollback, and measurements.
 
 Use the runner from the repository root:
 
@@ -59,10 +63,9 @@ The equivalent manual build is:
 docker build --tag lm-idnet:latest .
 ```
 
-The runner is preferred for execution because it supplies all persistent
-volume mounts consistently. The application itself does not require Docker
-Compose because it runs as one command-line application rather than a group
-of long-running services.
+Use this runner for research commands and their persistent volume mounts.
+The edge runner launches a prebuilt image; the optional Compose service runs
+the supplied-window simulation with bounded output and restart behaviour.
 
 ## Compile LaTeX documents
 
@@ -82,6 +85,8 @@ Install the package directly only when the local machine already has all
 required build tools:
 
 ```sh
+gcc -O3 -fPIC -shared src/lm_idnet/algorithms/native/LM_time_lib.c \
+  -lm -o src/lm_idnet/algorithms/native/LM_time_lib.so
 python -m pip install -e '.[test]'
 ```
 
@@ -97,7 +102,7 @@ lm-idnet forecast --config configs/d_link_day_cam5.json
 ```
 
 The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,
-`score`, `evaluate`, `adapt`, `rollback`, `forecast`, and `benchmark`. Use
+`score`, `evaluate`, `adapt`, `run`, `rollback`, `forecast`, and `benchmark`. Use
 `lm-idnet <command> --help` for command-specific options. Every command supports
 `--dry-run` to validate its configuration and CLI wiring without executing the
 stage.

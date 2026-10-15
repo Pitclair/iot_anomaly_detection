@@ -9,9 +9,15 @@ from lm_idnet.evaluation.evaluation_stage import evaluate_scores
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize(("truths", "predictions", "expected_fpr"), [
+    ((True, True, False, False), (True, False, True, False), .5),
+    ((True, True, True, True), (True, False, True, False), None),
+    ((False, False, False, False), (False, False, False, False), 0.),
+])
 def test_evaluate_scores_writes_classification_statistics(
     tmp_path,
     config_factory,
+    truths, predictions, expected_fpr,
 ) -> None:
     processed_root = tmp_path / "data" / "processed"
     config = config_factory(
@@ -26,8 +32,6 @@ def test_evaluate_scores_writes_classification_statistics(
     labels_dir.mkdir(parents=True)
 
     events = []
-    truths = (True, True, False, False)
-    predictions = (True, False, True, False)
     for index, (truth, prediction) in enumerate(zip(truths, predictions)):
         start = f"2020-10-16T00:{index * 10:02d}:00Z"
         end = f"2020-10-16T00:{(index + 1) * 10:02d}:00Z"
@@ -92,6 +96,10 @@ def test_evaluate_scores_writes_classification_statistics(
 
     assert report == {key: value for key, value in result.items() if key != "report_path"}
     assert report["matched_window_count"] == 4
+    assert report["false_positive_rate"] == expected_fpr
+    json.dumps(report, allow_nan=False)
+    if expected_fpr != .5:
+        return
     assert report["true_positive"] == 1
     assert report["true_negative"] == 1
     assert report["false_positive"] == 1

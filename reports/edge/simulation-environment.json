@@ -1,0 +1,17 @@
+{
+  "container_launch_to_first_event_seconds": [
+    0.5953211190644652,
+    0.4393307869322598,
+    0.4355732719413936
+  ],
+  "docker_version": "29.7.2",
+  "host_kernel": "6.12.0-211.49.1.el10_2.x86_64",
+  "host_os": "NAME=\"AlmaLinux\"\nVERSION=\"10.2 (Lavender Lion)\"\nRELEASE_TYPE=stable\nID=\"almalinux\"\nID_LIKE=\"rhel centos fedora\"\nVERSION_ID=\"10.2\"\nPLATFORM_ID=\"platform:el10\"\nPRETTY_NAME=\"AlmaLinux 10.2 (Lavender Lion)\"\nANSI_COLOR=\"0;34\"\nLOGO=\"fedora-logo-icon\"\nCPE_NAME=\"cpe:/o:almalinux:almalinux:10.2\"\nHOME_URL=\"https://almalinux.org/\"\nDOCUMENTATION_URL=\"https://wiki.almalinux.org/\"\nVENDOR_NAME=\"AlmaLinux\"\nVENDOR_URL=\"https://almalinux.org/\"\nBUG_REPORT_URL=\"https://bugs.almalinux.org/\"\n\nALMALINUX_MANTISBT_PROJECT=\"AlmaLinux-10\"\nALMALINUX_MANTISBT_PROJECT_VERSION=\"10.2\"\nREDHAT_SUPPORT_PRODUCT=\"AlmaLinux\"\nREDHAT_SUPPORT_PRODUCT_VERSION=\"10.2\"\nSUPPORT_END=2035-06-01\n",
+  "image_id": "sha256:76c00897e51f521264a4b2a87d0e963e3d330a7c4bb515c5e3ae4e42d41863b5",
+  "image_size_bytes": 145782693,
+  "measured_utc": "2026-10-15T14:16:39.645262+00:00",
+  "package_python_sha256": "00600aefe295a392ed7b3b3106713ca71b20618e2415e8d7e2b017d9d2515528",
+  "scope": "user-requested local Docker simulation; no physical gateway claim",
+  "source_base_revision": "8365870a057b87a455911e12e53bf82e0ba0b190",
+  "source_worktree_was_dirty": true
+}

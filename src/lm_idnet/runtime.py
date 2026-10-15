@@ -1,9 +1,12 @@
 """Read bounded JSON lines and immediately emit the shared detector's events."""
 
 from datetime import datetime, timedelta, timezone
+from collections.abc import Callable
 from itertools import count
 import json
 import logging
+import signal
+from threading import current_thread, main_thread
 from typing import BinaryIO, TextIO
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -30,15 +33,54 @@ def _reject_nonfinite(value: str) -> None:
     raise ValueError(f"non-finite JSON number: {value}")
 
 
+class _ShutdownRequested(BaseException):
+    pass
+
+
 def run_windows(config: EdgeConfig, source: BinaryIO, destination: TextIO) -> None:
     """Process synchronously, retaining only the last boundary and bounded state."""
+    stopping = False
+    processing = True
+
+    def stop(signum, frame):
+        nonlocal stopping
+        if stopping:
+            return
+        stopping = True
+        if not processing:
+            raise _ShutdownRequested()
+
+    def set_processing(value):
+        nonlocal processing
+        processing = value
+
+    handlers = {}
+    if current_thread() is main_thread():
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            handlers[signum] = signal.signal(signum, stop)
+    try:
+        _run_windows(config, source, destination, stop_requested=lambda: stopping,
+                     set_processing=set_processing)
+    except _ShutdownRequested:
+        logger.info("Runtime shutdown requested")
+    finally:
+        for signum, handler in handlers.items():
+            signal.signal(signum, handler)
+
+def _run_windows(
+    config: EdgeConfig, source: BinaryIO, destination: TextIO, *,
+    stop_requested: Callable[[], bool], set_processing: Callable[[bool], None],
+) -> None:
     previous_end = None
     interval = timedelta(minutes=config.ingest.window_minutes)
     origin = datetime(1970, 1, 1, tzinfo=timezone.utc)
     with detector_state_lock(config.state_dir):
         detector = WindowDetector(config)
+        set_processing(False)
         for line_number in count(1):
             try:
+                if stop_requested():
+                    break
                 line = source.readline(MAX_INPUT_LINE_BYTES + 1)
                 if not line:
                     break
@@ -54,14 +96,20 @@ def run_windows(config: EdgeConfig, source: BinaryIO, destination: TextIO) -> No
                     raise DataValidationError("window overlaps or precedes the previous window")
                 if (window.start_utc - origin) % interval != timedelta(0):
                     raise DataValidationError("window start must align with the trained UTC boundaries")
-                event, update, refit = detector.process(
-                    window, device_id=record.device_id, capture_id=record.source_id,
-                )
+                set_processing(True)
+                try:
+                    event, update, refit = detector.process(
+                        window, device_id=record.device_id, capture_id=record.source_id,
+                    )
+                finally:
+                    set_processing(False)
                 previous_end = window.end_utc
                 for attempt in (refit, update):
                     if attempt is not None:
                         logger.info("Detector update: %s", json.dumps(attempt, allow_nan=False))
                 if event is not None:
+                    if stop_requested():
+                        break
                     destination.write(json.dumps(event, allow_nan=False, sort_keys=True) + "\n")
                     destination.flush()
             except DataValidationError as error:

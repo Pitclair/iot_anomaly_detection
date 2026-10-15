@@ -108,6 +108,7 @@ def evaluate_scores(config: AppConfig) -> dict[str, object]:
         "true_negative": true_negative,
         "false_positive": false_positive,
         "false_negative": false_negative,
+        "false_positive_rate": ratio(false_positive, false_positive + true_negative),
         "accuracy": (true_positive + true_negative) / len(matched),
         "precision": precision,
         "recall": recall,
@@ -121,7 +122,7 @@ def evaluate_scores(config: AppConfig) -> dict[str, object]:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        json.dumps(report, indent=2, allow_nan=False, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     return {**report, "report_path": str(output_path)}

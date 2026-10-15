@@ -1,0 +1,187 @@
+{
+  "config": {
+    "adaptation": {
+      "buffer_size": 288,
+      "max_category_shift": 0.05,
+      "max_concentration_ratio": 1.25,
+      "max_threshold_shift_iqr": 2.0,
+      "minimum_refit_windows": 144,
+      "mode": "periodic_refit",
+      "policy": "conservative",
+      "safe_margin": 1.0,
+      "update_every": 144,
+      "volume_quantile": 0.99
+    },
+    "calibration": {
+      "minimum_samples": 30,
+      "quantile": 0.01,
+      "score_type": "raw"
+    },
+    "estimator": {
+      "categories_k": 4,
+      "initial_alpha_concentration": 10.0,
+      "log_likelihood_backend": "lm",
+      "max_iterations": 100000,
+      "tolerance_delta": 2e-09
+    },
+    "ingest": {
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1",
+      "device_id": "D-LinkDayCam5",
+      "device_mac": "b0:c5:54:42:8f:88",
+      "window_minutes": 10
+    },
+    "outputs": {
+      "model_path": "artifacts/D-LinkDayCam5/model.json",
+      "threshold_path": "artifacts/D-LinkDayCam5/threshold.json"
+    },
+    "precision_digits": 6,
+    "state_dir": "/state"
+  },
+  "cpu_percent": 99.19703279445974,
+  "cpu_seconds": 42.476084391,
+  "docker": {
+    "event_log_max_file_size": "5m",
+    "event_log_max_files": 3,
+    "image_id": "sha256:76c00897e51f521264a4b2a87d0e963e3d330a7c4bb515c5e3ae4e42d41863b5",
+    "image_size_bytes": 145782693,
+    "retained_event_count": 1600,
+    "retained_event_payload_bytes": 1172000
+  },
+  "elapsed_seconds": 42.819914259947836,
+  "environment": {
+    "architecture": "x86_64",
+    "container_os": {
+      "BUG_REPORT_URL": "https://bugs.debian.org/",
+      "DEBIAN_VERSION_FULL": "13.7",
+      "HOME_URL": "https://www.debian.org/",
+      "ID": "debian",
+      "NAME": "Debian GNU/Linux",
+      "PRETTY_NAME": "Debian GNU/Linux 13 (trixie)",
+      "SUPPORT_URL": "https://www.debian.org/support",
+      "VERSION": "13 (trixie)",
+      "VERSION_CODENAME": "trixie",
+      "VERSION_ID": "13"
+    },
+    "cpu_model": "AMD Ryzen 7 9700X 8-Core Processor",
+    "cpu_quota": "100000 100000",
+    "dependencies": {
+      "annotated-types": "0.8.0",
+      "lm-idnet": "0.1.0",
+      "mpmath": "1.4.1",
+      "numpy": "2.4.6",
+      "packaging": "26.3",
+      "pandas": "3.0.3",
+      "pip": "24.0",
+      "pydantic": "2.13.4",
+      "pydantic_core": "2.46.4",
+      "python-dateutil": "2.9.0.post0",
+      "scapy": "2.7.0",
+      "scipy": "1.17.1",
+      "setuptools": "79.0.1",
+      "six": "1.17.0",
+      "tabulate": "0.10.0",
+      "typing-inspection": "0.4.4",
+      "typing_extensions": "4.16.0",
+      "wheel": "0.46.3"
+    },
+    "measurement_script_sha256": "485cce9e0165024767c6d40586882e813d4466aeae0bafc84fb4a5e0860140ac",
+    "memory_limit_bytes": 536870912,
+    "native_library_sha256": "02f236eaba98f990e337f0da9bdc74a7f50b9a7e1bda91b47569d494eed5f02e",
+    "package_python_sha256": "00600aefe295a392ed7b3b3106713ca71b20618e2415e8d7e2b017d9d2515528",
+    "platform": "Linux-6.12.0-211.49.1.el10_2.x86_64-x86_64-with-glibc2.41",
+    "python": "3.11.17",
+    "source_revision": "8365870-working"
+  },
+  "fixture_sha256": "b922ac5e272cc1fab1a79120e7617abd64da99b3fa77e29516346e8ad874d791",
+  "input_windows": 2000,
+  "log_files_bytes": {
+    "runtime.log": 11096
+  },
+  "mean_processing_seconds": 0.02675107281334931,
+  "measurements": {
+    "estimator_calls": 10,
+    "fit_max_seconds": 4.42963050189428,
+    "fit_total_seconds": 42.463418676983565,
+    "latency_max_seconds": 4.449228134006262,
+    "latency_total_seconds": 42.8017165013589,
+    "promoted_updates": 0,
+    "refit_attempts": 11,
+    "refit_window_max_seconds": 4.449228134006262,
+    "refit_window_total_seconds": 42.727382716489956,
+    "scored_windows": 1600,
+    "update_attempts": 11
+  },
+  "method": "Line available to event flush, including validation, scoring, updates, serialization and Docker stdout; excludes traffic collection delay. Counters and at most ten resource samples; no event history retained.",
+  "peak_process_rss_bytes": 71176192,
+  "samples": [
+    {
+      "after_input_windows": 0,
+      "log_bytes": 0,
+      "rss_bytes": 70053888,
+      "state_bytes": 3766
+    },
+    {
+      "after_input_windows": 250,
+      "log_bytes": 919,
+      "rss_bytes": 70840320,
+      "state_bytes": 4137
+    },
+    {
+      "after_input_windows": 500,
+      "log_bytes": 1927,
+      "rss_bytes": 70909952,
+      "state_bytes": 4417
+    },
+    {
+      "after_input_windows": 750,
+      "log_bytes": 3943,
+      "rss_bytes": 70914048,
+      "state_bytes": 4977
+    },
+    {
+      "after_input_windows": 1000,
+      "log_bytes": 4951,
+      "rss_bytes": 70914048,
+      "state_bytes": 5257
+    },
+    {
+      "after_input_windows": 1250,
+      "log_bytes": 5959,
+      "rss_bytes": 70914048,
+      "state_bytes": 5537
+    },
+    {
+      "after_input_windows": 1500,
+      "log_bytes": 7979,
+      "rss_bytes": 70914048,
+      "state_bytes": 6099
+    },
+    {
+      "after_input_windows": 1750,
+      "log_bytes": 8989,
+      "rss_bytes": 70914048,
+      "state_bytes": 6380
+    },
+    {
+      "after_input_windows": 2000,
+      "log_bytes": 11096,
+      "rss_bytes": 70914048,
+      "state_bytes": 6942
+    }
+  ],
+  "scope": "local Docker simulation; supplied windows; no physical gateway claim",
+  "startup_seconds": 0.13205332891084254,
+  "state_files_bytes": {
+    ".lock": 0,
+    "current.json": 153,
+    "history.json": 3176,
+    "versions/a24069966c774f6481d63a47b519e882.json": 3613
+  },
+  "throughput_scored_windows_per_second": 37.36579177358561
+}

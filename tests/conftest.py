@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable
@@ -10,7 +11,7 @@ from typing import Any, Callable
 import numpy as np
 import pytest
 
-from lm_idnet.config import AppConfig, DetectorInputConfig, EdgeConfig
+from lm_idnet.config import AppConfig, DetectorInputConfig, EdgeConfig, load_edge_config
 from lm_idnet.processing.schemas import WindowRecord
 
 
@@ -90,6 +91,18 @@ def config_factory() -> Callable[..., AppConfig]:
         return AppConfig.model_validate(data)
 
     return create
+
+
+@pytest.fixture
+def edge_runtime(tmp_path):
+    config = load_edge_config(ROOT / "configs" / "edge_example.json")
+    config.state_dir = tmp_path / "state"
+    shutil.copytree(ROOT / "artifacts" / "edge-initial-state", config.state_dir)
+    config.outputs.model_path = tmp_path / "absent-model.json"
+    config.outputs.threshold_path = tmp_path / "absent-threshold.json"
+    path = tmp_path / "edge.json"
+    path.write_text(config.model_dump_json())
+    return config, path
 
 
 @pytest.fixture

@@ -3,8 +3,10 @@
 `WindowDetector` provides the shared detector used by batch scoring and the
 streaming `run` command. It loads the backend and detector state at construction, then
 returns one window's event and update attempts from `process()`. Both adaptation
-policies and all three detector modes retain their existing rules. Gateway
-packaging and hardware validation remain planned work.
+policies and all three detector modes retain their existing rules. The
+[deployment guide](edge-deployment.md) covers the packaged Docker simulation,
+service, rollback, resource limits, and measurements. Physical hardware validation
+remains future work.
 
 The input contract identifies the device, its MAC, the ordered categories, the
 trained window duration, and `device-mac-bidirectional-ssdp-exclusive-v1`:
@@ -133,8 +135,10 @@ and a complete final record does not require a newline.
 The command holds the existing state lock for its lifetime, reuses accepted-state
 loading and atomic updates, and releases the lock when input ends or validation
 fails. Input and output run synchronously: a slow consumer stops further input
-processing instead of growing a queue. Normal service-signal shutdown and edge
-configuration support in the rollback CLI remain separate lifecycle work.
+processing instead of growing a queue. SIGINT/SIGTERM stop safely, deferring an
+in-progress detector operation until it finishes. The rollback CLI also accepts
+the edge configuration; stop the writer before rolling back. See the
+[service and recovery instructions](edge-deployment.md#restart-and-roll-back).
 
 ## Process a window through the Python API
 
