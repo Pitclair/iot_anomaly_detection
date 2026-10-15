@@ -69,6 +69,10 @@ the supplied-window simulation with bounded output and restart behaviour.
 
 ## Compile LaTeX documents
 
+The comprehensive project reference is
+[lm_idnet_full_project_report.tex](docs/lm_idnet_full_project_report.tex),
+with modular sources in [docs/full_project_report/](docs/full_project_report/).
+
 The LaTeX tool is a separate Docker Compose service and is not included in the
 application image. From the repository root, pass it one document:
 

@@ -376,7 +376,7 @@ Use the prepared [`thesis/`](../thesis/README.md) workspace for the actual thesi
 
 The older reports use a different layout. The thesis workspace uses 12 pt text, 1.5 spacing, and the indicative DEI margins. It falls back to TeX Gyre Termes when Times New Roman is unavailable in the container. Its PDF/A settings still require validation of the final document before submission.
 
-Most importantly, the full project report says that the untouched final evaluation, temporal consolidation, adaptation safety, and edge evaluation are incomplete. Freeze a smaller final claim and complete its evidence before writing the definitive Results and Abstract.
+Use the refreshed full project report for current status. Input safeguards, conservative updates, persistence, rollback, and the agreed Docker edge simulation are implemented. The remaining reference work is an explicit final-test evaluation path and a frozen evidence bundle, including the conservative comparisons. Temporal and multi-signal branches remain separate research options. Complete the evidence for the agreed scope before finalising Results and Abstract.
 
 ## Definition of done
 
