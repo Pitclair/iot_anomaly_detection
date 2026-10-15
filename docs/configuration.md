@@ -34,7 +34,9 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   Compare them by running `calibrate` and `score` once per value with distinct
   threshold and event output paths.
 - `adaptation`: `static`, `adaptive_threshold`, or `periodic_refit` detector
-  mode. `buffer_size` bounds one buffer of accepted count windows, and
+  mode, with a `policy` of `conservative` (default) or `legacy`.
+  The following accepted-buffer rules describe the conservative policy.
+  `buffer_size` bounds one buffer of accepted count windows, and
   `update_every` sets the number of scored windows between update attempts.
   `minimum_refit_windows` is the required number of high-confidence windows
   for a model refit. A window must clear the threshold plus `safe_margin`
@@ -49,7 +51,7 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
 ### Conservative update limits
 
 These settings have defaults, so existing configurations and saved model,
-threshold, and processed JSON files remain usable. Adaptive runs additionally
+threshold, and processed JSON files remain usable. Conservative runs additionally
 need the existing processed benign calibration files; original PCAPs are not
 required. Limits are fixed for a run and reported in `adaptation.json`.
 
@@ -64,6 +66,46 @@ The defaults are conservative software limits, not empirically tuned device
 settings. They can reject otherwise valid changes. Repeated allowed changes
 can accumulate, while admission remains tied to the original static detector.
 They reduce contamination risk without guaranteeing that all attacks are excluded.
+
+### Earlier adaptation policy
+
+Set `adaptation.policy` to `legacy` to reproduce the pre-Step-2 methods:
+
+```json
+"adaptation": {
+  "mode": "periodic_refit",
+  "policy": "legacy",
+  "buffer_size": 288,
+  "update_every": 288,
+  "minimum_refit_windows": 240,
+  "safe_margin": 1.0
+}
+```
+
+`adaptive_threshold` estimates its threshold and IQR from all recent scores,
+including flagged windows. `periodic_refit` admits fitting windows using only
+the original static detector's confidence gate. It retains smoothing,
+convergence, finite positive parameter, and likelihood checks. A successful
+refit recalculates its threshold on all recent count windows; a failed refit
+can still update the threshold using all recent scores. Every window is scored
+before an update can affect subsequent windows. No labels are used.
+
+The volume and movement limits above do not apply to legacy runs and appear
+as `null` in their audit reports. Legacy runs do not load calibration counts.
+This policy preserves the earlier contamination risk for research comparisons.
+The six ready-to-run configurations under `configs/experiments/legacy/` retain
+the earlier experiment settings and write to separate `legacy` directories.
+They reuse the saved initial model and threshold. Select a policy through the
+same configuration in both the CLI and Python:
+
+```python
+from lm_idnet.config import load_config
+from lm_idnet.models.scoring_stage import adapt_windows
+
+config = load_config("configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json")
+result = adapt_windows(config)
+assert result["adaptation_policy"] == "legacy"
+```
 
 ## Validation behavior
 
@@ -98,6 +140,8 @@ Configuration validation is intentionally strict:
   must be in `(0, 1]`, `max_concentration_ratio` must be at least 1,
   `max_category_shift` must be in `[0, 1]`, and `max_threshold_shift_iqr`
   must be non-negative.
+- `adaptation.policy` accepts only `conservative` or `legacy`. Omission keeps
+  the conservative policy.
 
 Validation errors identify the offending field and prevent the command from
 starting. No partially validated dictionary is passed to the application.

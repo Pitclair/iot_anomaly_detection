@@ -1,0 +1,20 @@
+{
+  "accuracy": 0.9556962025316456,
+  "capture_ids": [
+    "2018-10-20",
+    "2018-10-21",
+    "2018-10-22",
+    "2018-10-23"
+  ],
+  "f1_score": 0.5531914893617021,
+  "false_negative": 19,
+  "false_positive": 2,
+  "matched_window_count": 474,
+  "partition": "development_test",
+  "precision": 0.8666666666666667,
+  "recall": 0.40625,
+  "true_negative": 440,
+  "true_positive": 13,
+  "unmatched_label_count": 0,
+  "unmatched_score_count": 0
+}

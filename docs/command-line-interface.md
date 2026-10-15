@@ -81,7 +81,9 @@ reports directory. `benchmark` compares LM and SciPy on the same training,
 calibration, and scoring workload and writes `lm_backend_benchmark.json` under
 the configured reports directory. `adapt` runs the configured `static`,
 `adaptive_threshold`, or `periodic_refit` mode over the same chronological
-development-test stream. Adaptive-threshold mode keeps alpha fixed, scores each
+development-test stream. `adaptation.policy` selects `conservative` (default)
+or the earlier `legacy` policy. The following rules describe conservative runs.
+Adaptive-threshold mode keeps alpha fixed, scores each
 window before updating, and periodically replaces the threshold and score IQR
 with estimates from a bounded buffer of high-confidence accepted windows.
 Flagged and near-threshold windows are excluded. Windows above the configured
@@ -108,6 +110,31 @@ limits, and counts of windows excluded from learning. See
 [`configuration.md`](configuration.md#conservative-update-limits) for defaults
 and units. Existing processed calibration JSON supplies the volume limit;
 PCAPs are not needed for this stage.
+
+## Earlier adaptation methods
+
+The same `adapt` handler exposes the original adaptive-threshold and
+periodic-refit methods when the configuration sets `adaptation.policy` to
+`legacy`. These methods retain all-recent-window threshold calibration and
+the threshold fallback after a rejected refit, without the Step 2 volume or
+movement limits. Periodic fitting still uses the original static confidence
+gate, smoothing, convergence, parameter validation, and likelihood comparison.
+Legacy runs need processed development counts and the saved starting model
+and threshold; they do not load calibration counts or attack labels.
+
+```sh
+lm-idnet adapt --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json
+lm-idnet evaluate --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json
+```
+
+Use `./scripts/run_adaptation_experiments.sh legacy` to run and evaluate all six
+earlier device/variant configurations with Docker. Outputs go under
+`artifacts/experiments/legacy/` and `reports/experiments/legacy/`; historical,
+static, and conservative outputs remain separate. The runner defaults to
+`conservative` if its policy argument is omitted. CLI results include
+`adaptation_policy`, and `adaptation.json` includes `policy` so results can be
+attributed to their method. Legacy results retain the earlier contamination
+risk and should be identified as that research policy in the thesis.
 
 ## Stage isolation
 

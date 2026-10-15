@@ -209,6 +209,7 @@ class CalibrationConfig(StrictModel):
 
 class AdaptationConfig(StrictModel):
     mode: Literal["static", "adaptive_threshold", "periodic_refit"] = "static"
+    policy: Literal["conservative", "legacy"] = "conservative"
     buffer_size: int = Field(default=288, gt=0)
     update_every: int = Field(default=144, gt=0)
     minimum_refit_windows: int = Field(default=144, gt=0)

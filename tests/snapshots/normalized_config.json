@@ -59,6 +59,7 @@
   },
   "adaptation": {
     "mode": "static",
+    "policy": "conservative",
     "buffer_size": 288,
     "update_every": 144,
     "minimum_refit_windows": 144,

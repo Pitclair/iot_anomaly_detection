@@ -29,6 +29,7 @@ def test_load_known_valid_configuration() -> None:
     assert config.estimator.initial_alpha_concentration == 10.0
     assert config.estimator.log_likelihood_backend == "lm"
     assert config.calibration.score_type == "raw"
+    assert config.adaptation.policy == "conservative"
     assert len(config.ingest.partitions.fit) == 6
 
 
@@ -194,6 +195,33 @@ def test_adaptation_mode_and_buffer_are_validated(valid_data: dict) -> None:
     )
     with pytest.raises(ValidationError, match="minimum_refit_windows"):
         AppConfig.model_validate(valid_data)
+
+
+def test_adaptation_policy_is_explicit_and_validated(valid_data: dict) -> None:
+    valid_data["adaptation"]["policy"] = "legacy"
+    assert AppConfig.model_validate(valid_data).adaptation.policy == "legacy"
+    valid_data["adaptation"]["policy"] = "other"
+    with pytest.raises(ValidationError, match="adaptation.policy"):
+        AppConfig.model_validate(valid_data)
+
+
+@pytest.mark.parametrize("device", ["unsw_chromecast", "unsw_samsung_camera"])
+@pytest.mark.parametrize("variant", ["adaptive_threshold", "periodic_refit", "periodic_refit_288_240"])
+def test_legacy_experiment_configs_keep_distinct_outputs(device, variant):
+    path = ROOT / "configs" / "experiments" / f"{device}_{variant}.json"
+    conservative = load_config(path)
+    legacy = load_config(path.parent / "legacy" / path.name)
+
+    assert legacy.adaptation.policy == "legacy"
+    for field in ("ingest", "seeds", "estimator", "calibration", "forecast"):
+        assert getattr(legacy, field) == getattr(conservative, field)
+    for field in ("mode", "buffer_size", "update_every", "minimum_refit_windows", "safe_margin"):
+        assert getattr(legacy.adaptation, field) == getattr(conservative.adaptation, field)
+    assert legacy.outputs.model_path == conservative.outputs.model_path
+    assert legacy.outputs.threshold_path == conservative.outputs.threshold_path
+    suffix = Path(legacy.ingest.dataset_folder) / variant
+    assert legacy.outputs.events_path == Path("artifacts/experiments/legacy") / suffix / "events.json"
+    assert legacy.outputs.reports_dir == Path("reports/experiments/legacy") / suffix
 
 
 def test_category_count_mismatch_is_rejected(valid_data: dict) -> None:

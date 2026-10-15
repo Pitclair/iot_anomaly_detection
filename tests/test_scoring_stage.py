@@ -548,6 +548,109 @@ def read_adaptation_outputs(config):
     return events, report
 
 
+def test_legacy_threshold_uses_all_recent_scores_without_calibration(adaptive_config):
+    config = adaptive_config
+    config.adaptation.policy = "legacy"
+    config.adaptation.mode = "adaptive_threshold"
+    config.adaptation.max_threshold_shift_iqr = 0.0
+    write_threshold(config, "raw", threshold_value=-1.0)
+    for capture_id in config.ingest.partitions.calibration:
+        (config.ingest.processed_root / config.ingest.dataset_folder / f"{capture_id}.json").unlink()
+    initial_model = config.outputs.model_path.read_bytes()
+    initial_threshold = config.outputs.threshold_path.read_bytes()
+
+    result = adapt_windows(config)
+    events, report = read_adaptation_outputs(config)
+
+    assert events[0]["is_anomaly"] is True
+    expected_threshold = np.quantile([events[0]["score"], events[1]["score"]], 0.25)
+    assert [event["threshold"] for event in events[:2]] == [-1.0, -1.0]
+    assert events[2]["threshold"] == pytest.approx(expected_threshold)
+    assert result["adaptation_policy"] == report["policy"] == "legacy"
+    assert result["threshold_update_count"] == 2
+    assert result["model_refit_count"] == 0
+    assert report["packet_count_limit"] is None
+    assert report["max_threshold_shift_iqr"] is None
+    assert all(update["source"] == "recent_scores" for update in report["threshold_update_attempts"])
+    assert config.outputs.model_path.read_bytes() == initial_model
+    assert config.outputs.threshold_path.read_bytes() == initial_threshold
+
+
+def test_legacy_refit_uses_baseline_gate_and_recalibrates_on_all_recent_counts(
+    adaptive_config, monkeypatch,
+):
+    config = adaptive_config
+    config.adaptation.policy = "legacy"
+    config.adaptation.update_every = 3
+    config.adaptation.buffer_size = 3
+    config.adaptation.max_concentration_ratio = 1.0
+    config.adaptation.max_category_shift = 0.0
+    config.adaptation.max_threshold_shift_iqr = 0.0
+    write_processed_captures(config, counts=((10, 0, 0, 0), (1, 2, 3, 4), (0, 0, 0, 0)))
+    matrices = []
+    candidate_alpha = np.asarray([2.0, 4.0, 6.0, 8.0])
+
+    class SuccessfulEstimator:
+        def fit(self, counts):
+            matrices.append(counts.copy())
+            likelihood = ScipyLogLikelihood().calculate(counts, candidate_alpha)
+            return DirichletFit(
+                candidate_alpha.copy(), candidate_alpha, 20.0, 0.05,
+                1, True, likelihood, likelihood,
+            )
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: SuccessfulEstimator())
+    result = adapt_windows(config)
+    events, report = read_adaptation_outputs(config)
+
+    assert events[0]["is_anomaly"] is True
+    assert result["model_refit_count"] == 2
+    assert all(tuple(row) != (10, 0, 0, 0) for matrix in matrices for row in matrix[4:])
+    scores = [
+        scoring_stage.anomaly_score(np.asarray(counts), candidate_alpha, ScipyLogLikelihood(), "raw")
+        for counts in ((10, 0, 0, 0), (1, 2, 3, 4), (0, 0, 0, 0))
+    ]
+    assert report["threshold_update_attempts"][0]["new_threshold"] == pytest.approx(np.quantile(scores, 0.25))
+    assert events[2]["model_fingerprint"] == report["initial_model_fingerprint"]
+    assert events[3]["model_fingerprint"] == report["final_model_fingerprint"]
+    assert events[3]["threshold"] == pytest.approx(np.quantile(scores, 0.25))
+
+
+@pytest.mark.parametrize("failure", ["nonconverged", "fit_error", "invalid_alpha", "nonfinite_likelihood"])
+def test_legacy_failed_refit_retains_model_and_uses_threshold_fallback(
+    adaptive_config, monkeypatch, failure,
+):
+    config = adaptive_config
+    config.adaptation.policy = "legacy"
+
+    class RejectedEstimator:
+        def fit(self, counts):
+            if failure == "fit_error":
+                raise DataValidationError("fitting failed")
+            alpha = np.asarray([1.0, 2.0, 3.0, 4.0])
+            likelihood = ScipyLogLikelihood().calculate(counts, alpha)
+            if failure == "invalid_alpha":
+                alpha[0] = 0.0
+            if failure == "nonfinite_likelihood":
+                likelihood = float("nan")
+            return DirichletFit(
+                alpha.copy(), alpha, 10.0, 0.1, 1,
+                failure != "nonconverged", likelihood, likelihood,
+            )
+
+    monkeypatch.setattr(scoring_stage, "create_estimator", lambda *_: RejectedEstimator())
+    result = adapt_windows(config)
+    events, report = read_adaptation_outputs(config)
+
+    assert result["model_refit_count"] == 0
+    assert result["threshold_update_count"] == 2
+    assert report["initial_alpha"] == report["final_alpha"]
+    assert report["initial_model_fingerprint"] == report["final_model_fingerprint"]
+    assert events[2]["threshold"] != events[1]["threshold"]
+    assert all(attempt["reason"] for attempt in report["model_refit_attempts"])
+    assert all(update["source"] == "recent_scores" for update in report["threshold_update_attempts"])
+
+
 @pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
 def test_only_confident_windows_with_bounded_volume_influence_updates(
     adaptive_config, monkeypatch, mode,
@@ -762,9 +865,11 @@ def test_missing_calibration_counts_fails_before_overwriting_events(adaptive_con
 
 @pytest.mark.integration
 @pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
-def test_adapt_cli_runs_without_pcaps(adaptive_config, mode):
+@pytest.mark.parametrize("policy", ["conservative", "legacy"])
+def test_adapt_cli_runs_without_pcaps(adaptive_config, mode, policy):
     config = adaptive_config
     config.adaptation.mode = mode
+    config.adaptation.policy = policy
     config_path = config.outputs.reports_dir.parent / "config.json"
     config_path.write_text(config.model_dump_json())
     environment = dict(os.environ, LM_IDNET_LOG_PATH=os.devnull)
@@ -778,7 +883,8 @@ def test_adapt_cli_runs_without_pcaps(adaptive_config, mode):
     status = json.loads(result.stdout)
     assert status["status"] == "completed"
     assert status["adaptation_mode"] == mode
+    assert status["adaptation_policy"] == policy
     events, report = read_adaptation_outputs(config)
     assert status["window_count"] == len(events) == 4
-    assert report["packet_count_limit"] == 10.0
+    assert report["packet_count_limit"] == (10.0 if policy == "conservative" else None)
     assert not config.ingest.raw_root.exists()

@@ -107,7 +107,7 @@ def _validate_model_update(
     active_alpha: np.ndarray,
     settings: AdaptationConfig,
 ) -> None:
-    """Reject invalid parameters or a large change to the learned distribution."""
+    """Validate parameters and enforce movement limits for conservative updates."""
     if (
         candidate_alpha.shape != active_alpha.shape
         or not np.isfinite(candidate_alpha).all()
@@ -119,6 +119,8 @@ def _validate_model_update(
     concentration = float(candidate_alpha.sum())
     if not np.isfinite(concentration):
         raise DataValidationError("candidate concentration must be finite")
+    if settings.policy == "legacy":
+        return
     active_concentration = float(active_alpha.sum())
     ratio = concentration / active_concentration
     if not (
@@ -183,8 +185,9 @@ def _run_detector(
     current_threshold = initial_threshold
     initial_score_iqr = threshold.score_iqr
     current_score_iqr = initial_score_iqr
+    conservative = config.adaptation.policy == "conservative"
     volume_limit = None
-    if mode != "static":
+    if mode != "static" and conservative:
         calibration_windows = load_calibration_windows(config, model_categories)
         if len(calibration_windows) < config.calibration.minimum_samples:
             raise DataValidationError(
@@ -203,6 +206,12 @@ def _run_detector(
     processed_dir = config.ingest.processed_root / config.ingest.dataset_folder
     results: list[dict[str, object]] = []
     safe_counts: deque[np.ndarray] = deque(maxlen=config.adaptation.buffer_size)
+    recent_scores: deque[float] | None = (
+        deque(maxlen=config.adaptation.buffer_size) if not conservative else None
+    )
+    recent_counts: deque[np.ndarray] | None = (
+        deque(maxlen=config.adaptation.buffer_size) if not conservative else None
+    )
     rejected_window_counts = {"excessive_volume": 0, "low_confidence": 0}
     threshold_updates: list[dict[str, object]] = []
     model_refit_attempts: list[dict[str, object]] = []
@@ -257,10 +266,13 @@ def _run_detector(
 
             score = float(results[-1]["score"])
             counts = np.asarray(window.counts, dtype=np.int64)
-            assert volume_limit is not None
-            if window.total_count > volume_limit:
+            if not conservative:
+                assert recent_scores is not None and recent_counts is not None
+                recent_scores.append(score)
+                recent_counts.append(counts)
+            if volume_limit is not None and window.total_count > volume_limit:
                 rejected_window_counts["excessive_volume"] += 1
-            else:
+            elif conservative or mode == "periodic_refit":
                 baseline_score = (
                     score
                     if current_model_fingerprint == model_fingerprint
@@ -272,9 +284,11 @@ def _run_detector(
                     )
                 )
                 if (
-                    score >= (
-                        current_threshold
-                        + config.adaptation.safe_margin * current_score_iqr
+                    (
+                        not conservative or score >= (
+                            current_threshold
+                            + config.adaptation.safe_margin * current_score_iqr
+                        )
                     )
                     and baseline_score >= (
                         initial_threshold
@@ -287,10 +301,12 @@ def _run_detector(
 
             if len(results) % config.adaptation.update_every != 0:
                 continue
+            if recent_scores is not None and len(recent_scores) < config.calibration.minimum_samples:
+                continue
 
             update_context = {
                 "after_window": len(results),
-                "buffer_window_count": len(safe_counts),
+                "buffer_window_count": len(safe_counts) if conservative else len(recent_scores),
                 "capture_id": capture_id,
                 "window_end_utc": window.end_utc.isoformat().replace(
                     "+00:00", "Z"
@@ -300,7 +316,7 @@ def _run_detector(
                 **update_context,
                 "source": (
                     "periodic_refit" if mode == "periodic_refit"
-                    else "accepted_windows"
+                    else ("accepted_windows" if conservative else "recent_scores")
                 ),
                 "old_model_fingerprint": current_model_fingerprint,
                 "old_score_iqr": current_score_iqr,
@@ -317,12 +333,20 @@ def _run_detector(
                     "promoted": False,
                 }
             try:
-                minimum_windows = config.calibration.minimum_samples
                 if mode == "periodic_refit":
-                    minimum_windows = max(
-                        minimum_windows, config.adaptation.minimum_refit_windows
+                    minimum_windows = (
+                        max(
+                            config.calibration.minimum_samples,
+                            config.adaptation.minimum_refit_windows,
+                        )
+                        if conservative else config.adaptation.minimum_refit_windows
                     )
-                if len(safe_counts) < minimum_windows:
+                    if len(safe_counts) < minimum_windows:
+                        raise DataValidationError(
+                            "not enough accepted windows" if conservative
+                            else "not enough safe windows"
+                        )
+                elif conservative and len(safe_counts) < config.calibration.minimum_samples:
                     raise DataValidationError("not enough accepted windows")
 
                 candidate_alpha = alpha
@@ -370,14 +394,17 @@ def _run_detector(
                             "candidate likelihood is worse than active model"
                         )
 
-                candidate_scores = [
-                    anomaly_score(counts, candidate_alpha, log_likelihood, score_type)
-                    for counts in safe_counts
-                ]
+                if not conservative and mode == "adaptive_threshold":
+                    candidate_scores = list(recent_scores)
+                else:
+                    candidate_scores = [
+                        anomaly_score(counts, candidate_alpha, log_likelihood, score_type)
+                        for counts in (safe_counts if conservative else recent_counts)
+                    ]
                 new_threshold, new_score_iqr = _candidate_threshold(
                     candidate_scores, config.calibration.quantile,
                 )
-                if abs(new_threshold - current_threshold) > (
+                if conservative and abs(new_threshold - current_threshold) > (
                     config.adaptation.max_threshold_shift_iqr * initial_score_iqr
                 ):
                     raise DataValidationError(
@@ -393,6 +420,26 @@ def _run_detector(
                 update["reason"] = str(error)
                 if refit is not None:
                     refit["reason"] = str(error)
+                    if not conservative:
+                        # Historical refit failures still update from all recent scores.
+                        update["source"] = "recent_scores"
+                        try:
+                            new_threshold, new_score_iqr = _candidate_threshold(
+                                recent_scores, config.calibration.quantile,
+                            )
+                        except (LMIDNetError, ValueError, FloatingPointError) as fallback_error:
+                            update["reason"] = str(fallback_error)
+                        else:
+                            update.pop("reason", None)
+                            update.update(
+                                {
+                                    "new_model_fingerprint": current_model_fingerprint,
+                                    "new_threshold": new_threshold,
+                                    "new_score_iqr": new_score_iqr,
+                                    "promoted": True,
+                                }
+                            )
+                            current_threshold, current_score_iqr = new_threshold, new_score_iqr
             else:
                 update.update(
                     {
@@ -414,6 +461,8 @@ def _run_detector(
                 expected_profile = tuple(float(value) for value in alpha / alpha.sum())
                 current_model_fingerprint = new_model_fingerprint
                 current_threshold, current_score_iqr = new_threshold, new_score_iqr
+                if not conservative:
+                    recent_scores = deque(candidate_scores, maxlen=config.adaptation.buffer_size)
             threshold_updates.append(update)
             if refit is not None:
                 model_refit_attempts.append(refit)
@@ -440,6 +489,7 @@ def _run_detector(
     report = {
         "report_type": "adaptation",
         "mode": mode,
+        "policy": config.adaptation.policy,
         "partition": selection.name,
         "capture_ids": list(selection.capture_ids),
         "window_count": len(results),
@@ -458,11 +508,11 @@ def _run_detector(
         "update_every": config.adaptation.update_every,
         "minimum_refit_windows": config.adaptation.minimum_refit_windows,
         "safe_margin": config.adaptation.safe_margin,
-        "volume_quantile": config.adaptation.volume_quantile,
+        "volume_quantile": config.adaptation.volume_quantile if conservative else None,
         "packet_count_limit": volume_limit,
-        "max_concentration_ratio": config.adaptation.max_concentration_ratio,
-        "max_category_shift": config.adaptation.max_category_shift,
-        "max_threshold_shift_iqr": config.adaptation.max_threshold_shift_iqr,
+        "max_concentration_ratio": config.adaptation.max_concentration_ratio if conservative else None,
+        "max_category_shift": config.adaptation.max_category_shift if conservative else None,
+        "max_threshold_shift_iqr": config.adaptation.max_threshold_shift_iqr if conservative else None,
         "rejected_learning_windows": rejected_window_counts,
         "safe_window_count": len(safe_counts),
         "threshold_update_count": sum(
@@ -492,6 +542,7 @@ def adapt_windows(config: AppConfig) -> dict[str, object]:
     return {
         **summary,
         "adaptation_mode": config.adaptation.mode,
+        "adaptation_policy": config.adaptation.policy,
         "threshold_update_count": report["threshold_update_count"],
         "model_refit_count": report["model_refit_count"],
         "adaptation_report_path": str(report_path),

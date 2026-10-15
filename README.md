@@ -109,8 +109,34 @@ the conservative update rules for both labelled devices:
 ./scripts/run_adaptation_experiments.sh
 ```
 
+Run the earlier adaptation methods used in the thesis development results:
+
+```sh
+./scripts/run_adaptation_experiments.sh legacy
+```
+
+This selects the six configurations in `configs/experiments/legacy/`, including
+adaptive thresholding and both periodic-refit schedules. They restore the
+pre-Step-2 policy and write to `artifacts/experiments/legacy/` and
+`reports/experiments/legacy/`. Historical results and conservative runs have
+separate output paths. Both policies use the existing `adapt` CLI and Python
+`adapt_windows(config)` entry point; `adaptation.policy` selects `legacy` or the
+default `conservative` policy. For one run:
+
+```sh
+./scripts/run.sh adapt --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json
+./scripts/run.sh evaluate --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json
+```
+
+Legacy threshold updates use all recent scored windows, including anomalies.
+Legacy refits retain the original baseline confidence gate, convergence and
+likelihood checks, but omit the Step 2 volume and movement limits; a rejected
+refit can still update the threshold. These are reproducible research variants
+with the original contamination risk. The selected policy is recorded in the
+CLI result and adaptation report.
+
 The runner uses the existing saved model and threshold for each device. It
-does not retrain, recalibrate, or overwrite the saved static results. Adaptive
+does not retrain, recalibrate, or overwrite the saved static results. Conservative
 runs use the matching files under `configs/experiments/` and write events and
 evaluation reports under `artifacts/experiments/conservative/` and
 `reports/experiments/conservative/`. Earlier adaptive results remain under
@@ -118,7 +144,8 @@ evaluation reports under `artifacts/experiments/conservative/` and
 `reports/experiments/<device>/<variant>/` for comparison. The six configurations
 keep the previous capture partitions, seeds, scoring convention, buffer sizes,
 and update timing, and explicitly record the new safety limits. Original PCAPs
-are not needed; processed calibration and development counts are sufficient.
+are not needed; conservative runs need processed calibration and development
+counts, while legacy runs need only processed development counts.
 
 If starting models or thresholds are absent, first run `train` and `calibrate`
 with each device's configuration. Replacing those artifacts also changes the
