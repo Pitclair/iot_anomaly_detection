@@ -14,6 +14,7 @@ pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs" / "d_link_day_cam5.json"
+EDGE_CONFIG = ROOT / "configs" / "edge_example.json"
 
 
 def test_log_formatter_uses_explicit_iso_utc_timestamp() -> None:
@@ -117,10 +118,11 @@ def test_subcommand_rejects_invalid_config(
 
 @pytest.mark.parametrize("command", COMMANDS)
 def test_subcommand_minimal_dry_run_succeeds(command: str) -> None:
+    config = EDGE_CONFIG if command == "run" else CONFIG
     result = run_cli(
         command,
         "--config",
-        str(CONFIG),
+        str(config),
         "--dry-run",
         *(["--state-dir", "unused-state"] if command == "rollback" else []),
     )
@@ -128,7 +130,7 @@ def test_subcommand_minimal_dry_run_succeeds(command: str) -> None:
     assert result.returncode == 0
     assert json.loads(result.stdout) == {
         "command": command,
-        "config": str(CONFIG),
+        "config": str(config),
         "status": "ready",
     }
     assert result.stderr == ""

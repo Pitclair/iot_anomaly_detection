@@ -254,8 +254,15 @@ rejected update. Learning buffers stay within their configured sizes.
 
 \subsubsection*{4.3 Add the command that reads and writes one window at a time}
 
-\textbf{Change:} add a \texttt{run} command to the existing CLI. The proposed
-interface, to implement and document, is:
+\textbf{Local implementation status, 15 October 2026:} implemented and checked.
+The \texttt{run} command reads bounded UTF-8 JSON lines, validates chronology and
+input semantics, and flushes each event immediately. Its logs rotate at 5 MiB
+with two backups. Tests verify delivery before input closes, malformed-input
+errors, adaptive updates, and state locking. Service-signal shutdown and gateway
+hardware validation remain outstanding. See \path{docs/edge-detector.md}.
+
+\textbf{Change:} add a \texttt{run} command to the existing CLI. The implemented
+interface is:
 \begin{verbatim}
 lm-idnet run --config configs/edge_example.json \
   --state-dir artifacts/edge-state

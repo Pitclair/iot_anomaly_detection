@@ -5,13 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import sys
 import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
-from lm_idnet.config import AppConfig, load_config
+from lm_idnet.config import AppConfig, load_config, load_edge_config
 from lm_idnet.exceptions import (
     ConfigurationError,
     IngestionError,
@@ -21,6 +22,9 @@ from lm_idnet.partitioning import all_capture_ids, partition_name_for_capture
 
 logger = logging.getLogger(__name__)
 DEFAULT_LOG_PATH = Path("logs/lm_idnet.log")
+DEFAULT_RUNTIME_LOG_PATH = Path("logs/lm_idnet_runtime.log")
+RUNTIME_LOG_MAX_BYTES = 5 * 1024 * 1024
+RUNTIME_LOG_BACKUPS = 2
 LOG_FORMAT = "%(asctime)s.%(msecs)03dZ %(levelname)s %(name)s: %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
@@ -39,6 +43,7 @@ COMMANDS = (
     "score",
     "evaluate",
     "adapt",
+    "run",
     "rollback",
     "forecast",
     "benchmark",
@@ -52,6 +57,7 @@ COMMAND_HELP = {
     "score": "score processed windows and emit anomaly decisions",
     "evaluate": "evaluate detector outputs using the frozen protocol",
     "adapt": "run the configured static or adaptive detector",
+    "run": "score count windows from JSON lines on standard input",
     "rollback": "restore the previous accepted detector version",
     "forecast": "forecast held-out traffic from a verified model",
     "benchmark": "measure configured backend and pipeline performance",
@@ -135,20 +141,26 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="statistics JSON path (default: <reports_dir>/capture_statistics.json)",
     )
-    for command in ("adapt", "rollback"):
+    for command in ("adapt", "rollback", "run"):
         command_parsers[command].add_argument(
             "--state-dir", type=Path, required=command == "rollback",
-            help="directory for accepted detector state (adapt resumes when supplied)",
+            help="accepted detector state directory (run defaults to its edge configuration)",
         )
     return parser
 
 
-def _configure_logging(verbose: bool) -> Path:
+def _configure_logging(verbose: bool, *, bounded: bool = False) -> Path:
     """Write informational logs to disk and optionally echo them to stderr."""
-    log_path = Path(os.environ.get("LM_IDNET_LOG_PATH", DEFAULT_LOG_PATH))
+    default_path = DEFAULT_RUNTIME_LOG_PATH if bounded else DEFAULT_LOG_PATH
+    log_path = Path(os.environ.get("LM_IDNET_LOG_PATH", default_path))
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_path, encoding="utf-8")
+        file_handler = (
+            RotatingFileHandler(
+                log_path, maxBytes=RUNTIME_LOG_MAX_BYTES,
+                backupCount=RUNTIME_LOG_BACKUPS, encoding="utf-8",
+            ) if bounded else logging.FileHandler(log_path, encoding="utf-8")
+        )
     except OSError as error:
         raise ConfigurationError(f"cannot open log file: {log_path}") from error
 
@@ -220,10 +232,10 @@ HANDLERS: dict[str, Callable[[AppConfig], None]] = {
 def run_command(argv: Sequence[str] | None = None) -> None:
     """Validate and dispatch exactly one CLI command."""
     args = build_parser().parse_args(argv)
-    log_path = _configure_logging(args.verbose)
+    log_path = _configure_logging(args.verbose, bounded=args.command == "run")
     logger.info("Writing application logs to %s", log_path)
     logger.info("Starting command: %s", args.command)
-    config = load_config(args.config)
+    config = load_edge_config(args.config) if args.command == "run" else load_config(args.config)
 
     if args.dry_run:
         print(
@@ -236,6 +248,14 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                 sort_keys=True,
             )
         )
+        return
+
+    if args.command == "run":
+        from lm_idnet.runtime import run_windows
+
+        if args.state_dir is not None:
+            config.state_dir = args.state_dir
+        run_windows(config, sys.stdin.buffer, sys.stdout)
         return
 
     if args.command == "preprocess" and args.inventory_only:

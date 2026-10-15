@@ -1,10 +1,10 @@
 # Prepared detector input and one-window processing
 
-`WindowDetector` provides the shared detector used by batch scoring and future
-streaming input. It loads the backend and detector state at construction, then
+`WindowDetector` provides the shared detector used by batch scoring and the
+streaming `run` command. It loads the backend and detector state at construction, then
 returns one window's event and update attempts from `process()`. Both adaptation
-policies and all three detector modes retain their existing rules. The
-continuous-input CLI and gateway packaging remain planned work.
+policies and all three detector modes retain their existing rules. Gateway
+packaging and hardware validation remain planned work.
 
 The input contract identifies the device, its MAC, the ordered categories, the
 trained window duration, and `device-mac-bidirectional-ssdp-exclusive-v1`:
@@ -94,6 +94,48 @@ processed data roots and no capture partitions. Its model/threshold paths allow
 `load_model_threshold(edge)` to validate a standalone pair; loading prepared state
 uses the embedded pair and does not require those files.
 
+## Stream windows through the CLI
+
+After copying the bundled initial state to `artifacts/edge-state`, the installed
+command accepts completed count windows without research data or capture lists:
+
+```sh
+lm-idnet run --config configs/edge_example.json \
+  --state-dir artifacts/edge-state <<'JSONL'
+{"device_id":"D-LinkDayCam5","source_id":"local-collector","window":{"start_utc":"2026-10-15T12:00:00Z","end_utc":"2026-10-15T12:10:00Z","categories":["tcp","udp","ssdp","arp"],"counts":[100,20,3,2],"state":"observed"}}
+JSONL
+```
+
+Keep each record on one physical line. To use a local collector, pipe its JSON
+lines to the same command. `--state-dir` is optional when the edge configuration
+already names the correct directory. Use `configs/edge_local.json` for your own
+prepared detector. `--dry-run` checks that configuration without consuming input
+or creating detector state, and prints the normal readiness status.
+
+During normal execution, standard output contains one existing anomaly event per
+scored window, with its score, threshold, decision, severity, expected profile,
+and category residuals. Each event is flushed immediately, even while input stays
+open. Status messages and accepted/rejected update attempts go to a rotating log:
+`logs/lm_idnet_runtime.log`, 5 MiB per file with two backups. Override its path with
+`LM_IDNET_LOG_PATH`; use global `--verbose` to also see informational logs on
+standard error. The output consumer owns event retention.
+
+The reader allows at most 65,536 bytes per line, including its ending. It checks
+UTF-8 JSON, required fields, integer counts, the device, category order, duration,
+and UTC window grid before scoring. Timezone-aware offsets are normalised to UTC.
+Duplicate, backward, or overlapping windows stop the command. Missing records
+advance the coverage boundary while producing no score or update. Gaps do not
+create artificial zero-count windows. Blank, malformed, incomplete, non-finite,
+or oversized records stop with `input line N` on standard error and a nonzero
+exit status. Previously emitted events remain usable. End of input exits cleanly,
+and a complete final record does not require a newline.
+
+The command holds the existing state lock for its lifetime, reuses accepted-state
+loading and atomic updates, and releases the lock when input ends or validation
+fails. Input and output run synchronously: a slow consumer stops further input
+processing instead of growing a queue. Normal service-signal shutdown and edge
+configuration support in the rollback CLI remain separate lifecycle work.
+
 ## Process a window through the Python API
 
 Use `configs/edge_local.json` below when you prepared your own settings.
@@ -134,10 +176,10 @@ lists. The batch adapter collects its usual full JSON reports separately.
 The existing saved-state helpers retain the active/previous versions and the
 last 100 audit entries.
 
-This API checks device, category order, and duration; its `WindowRecord` input
-validates counts and timestamps. Stream ordering, duplicate rejection, bounded
-JSON-line reading, shutdown handling, and the streaming CLI belong to the
-remaining runtime work. State restores the accepted pair, while learning buffers
+The Python API checks device, category order, and duration; its `WindowRecord`
+input validates counts and timestamps. The streaming command additionally checks
+window ordering and the UTC grid while bounding its JSON-line reader. State
+restores the accepted pair, while learning buffers
 and counters restart empty. It does not restore an input cursor or prevent
 learning from a replayed window after restart. Stop any running writer before
 using the existing rollback API.

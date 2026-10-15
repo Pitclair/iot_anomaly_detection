@@ -11,6 +11,7 @@ calibrate   Create a model-bound anomaly threshold
 score       Score windows and emit anomaly decisions
 evaluate    Evaluate detector outputs
 adapt       Assess an adaptive-model candidate
+run         Read count windows from stdin and flush JSON events to stdout
 rollback    Restore the previous accepted detector version
 forecast    Forecast traffic using a verified model
 benchmark   Measure backend and pipeline performance
@@ -44,7 +45,9 @@ A successful dry run means the command name, package wiring, and configuration
 are valid. It does not claim that the underlying research stage is implemented
 or execute that stage.
 
-Successful command and dry-run status records are JSON on standard output.
+Batch command and dry-run status records are JSON on standard output. During
+normal execution, `run` writes only anomaly-event JSON lines, flushing each event
+before reading the next record. It emits no startup or completion status record.
 Expected failures produce no success record, write to standard error, and
 return a non-zero exit code.
 
@@ -54,6 +57,10 @@ global `--verbose` option before the command to also show them in the terminal:
 ```sh
 lm-idnet --verbose preprocess --config configs/d_link_day_cam5.json
 ```
+
+The streaming `run` command uses `logs/lm_idnet_runtime.log`, rotating at 5 MiB
+with two backups. `LM_IDNET_LOG_PATH` overrides the log path for either kind of
+command. The `--verbose` option echoes informational logs to standard error.
 
 Log timestamps use ISO 8601 UTC with millisecond precision and an explicit `Z`
 suffix, for example `2026-08-06T10:38:04.975Z`. They do not depend on the host
@@ -72,8 +79,23 @@ standard exit code 2 and usage output.
 
 Prepared detector input contracts, partition-free edge loading, and the shared
 one-window Python API are described in [edge-detector.md](edge-detector.md).
-The batch commands use that same processing path. The continuous-input `run`
-command is still planned.
+The batch commands and the streaming `run` command use that same processing path.
+
+`run` loads an edge configuration and a prepared state directory, then accepts
+one UTF-8 JSON object per input line. `--state-dir PATH` overrides the directory
+in the edge configuration. Each object contains `device_id`, `source_id`, and
+a `window` in the existing `WindowRecord` format. The source identifier becomes
+the event's `capture_id`; it needs no date or research-partition entry. See the
+[streaming example](edge-detector.md#stream-windows-through-the-cli).
+
+Input lines are limited to 65,536 bytes including the line ending. Windows must
+match the trained device, category order, duration, and UTC boundary grid. They
+must not overlap or move backward, including explicit missing windows. Gaps are
+allowed without creating silent observations. Missing windows produce no event
+or learning; observed silence is scored. Invalid JSON, invalid counts, incompatible
+windows, and oversized lines stop with a line-numbered error on standard error
+and exit code 4. Earlier events and committed updates remain valid. End of input
+is a successful exit; a final complete JSON record needs no trailing newline.
 
 At this milestone, every registered command has a callable handler. `train` loads the
 fit-partition matrix, estimates Dirichlet parameters with Minka's fixed-point
