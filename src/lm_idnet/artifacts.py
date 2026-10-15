@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -11,8 +10,10 @@ from pydantic import BaseModel, ValidationError
 
 from lm_idnet.evaluation.schemas import ExperimentManifestArtifact
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
+from lm_idnet.model_fingerprint import model_parameter_fingerprint
 from lm_idnet.models.schemas import (
     AnomalyEventArtifact,
+    DetectorStateArtifact,
     ModelArtifact,
     ThresholdArtifact,
 )
@@ -25,6 +26,7 @@ Artifact = (
     | ThresholdArtifact
     | AnomalyEventArtifact
     | ExperimentManifestArtifact
+    | DetectorStateArtifact
 )
 
 SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
@@ -32,6 +34,7 @@ SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
     "threshold": ThresholdArtifact,
     "anomaly_event": AnomalyEventArtifact,
     "experiment_manifest": ExperimentManifestArtifact,
+    "detector_state": DetectorStateArtifact,
 }
 
 
@@ -43,29 +46,6 @@ def artifact_fingerprint(artifact: ModelArtifact) -> str:
         log_likelihood_backend=artifact.log_likelihood_backend,
         precision_digits=artifact.precision_digits,
     )
-
-
-def model_parameter_fingerprint(
-    *,
-    alpha: tuple[float, ...],
-    categories: tuple[str, ...],
-    log_likelihood_backend: str,
-    precision_digits: int,
-) -> str:
-    """Fingerprint only the parameter values used while scoring."""
-    canonical = json.dumps(
-        {
-            "alpha": alpha,
-            "categories": categories,
-            "log_likelihood_backend": log_likelihood_backend,
-            "precision_digits": precision_digits,
-        },
-        ensure_ascii=False,
-        allow_nan=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    return hashlib.sha256(canonical).hexdigest()
 
 
 def validate_artifact(raw: dict, *, expected_type: str) -> Artifact:

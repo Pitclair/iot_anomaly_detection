@@ -1,8 +1,9 @@
 """Schemas for training, calibration, and scoring artifacts."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from math import isclose, isfinite
 from typing import Literal
+from uuid import uuid4
 
 from pydantic import (
     AwareDatetime,
@@ -13,6 +14,9 @@ from pydantic import (
     StrictInt,
     model_validator,
 )
+
+from lm_idnet.config import AdaptationConfig, CalibrationConfig, EstimatorConfig
+from lm_idnet.model_fingerprint import model_parameter_fingerprint
 
 
 class ModelSchema(BaseModel):
@@ -127,6 +131,78 @@ class ThresholdArtifact(ModelSchema):
     score_median: float
     score_maximum: float
     score_iqr: float = Field(gt=0, allow_inf_nan=False)
+
+
+class DetectorThresholdState(ModelSchema):
+    """An adaptive threshold bound to the parameters that produced its scores."""
+
+    model_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    threshold: float = Field(allow_inf_nan=False)
+    score_iqr: float = Field(gt=0, allow_inf_nan=False)
+
+
+class DetectorStateArtifact(ModelSchema):
+    """Current scoring state and the immutable references used for learning."""
+
+    artifact_type: Literal["detector_state"] = "detector_state"
+    schema_version: Literal[1] = 1
+    version_id: str = Field(default_factory=lambda: uuid4().hex, pattern=r"^[0-9a-f]{32}$")
+    created_utc: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    source: Literal["initial", "adaptive_threshold", "periodic_refit"]
+    baseline_model: ModelArtifact
+    baseline_threshold: ThresholdArtifact
+    alpha: tuple[float, ...] = Field(min_length=2)
+    threshold: DetectorThresholdState
+    window_minutes: StrictInt = Field(gt=0)
+    device_mac: str = Field(pattern=r"^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$")
+    calibration: CalibrationConfig
+    adaptation: AdaptationConfig
+    estimator: EstimatorConfig
+    packet_count_limit: float | None = Field(ge=0, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def state_must_be_consistent(self) -> "DetectorStateArtifact":
+        model = self.baseline_model
+        if len(self.alpha) != len(model.categories) or any(
+            not isfinite(value) or value <= 0 for value in self.alpha
+        ) or not isfinite(sum(self.alpha)):
+            raise ValueError("active alpha must be finite, positive, and match categories")
+        for alpha, threshold in (
+            (model.alpha, self.baseline_threshold),
+            (self.alpha, self.threshold),
+        ):
+            fingerprint = model_parameter_fingerprint(
+                alpha=alpha,
+                categories=model.categories,
+                log_likelihood_backend=model.log_likelihood_backend,
+                precision_digits=model.precision_digits,
+            )
+            if threshold.model_fingerprint != fingerprint:
+                raise ValueError("threshold model fingerprint does not match parameters")
+        if any(not isfinite(value) for value in (
+            self.baseline_threshold.threshold,
+            self.baseline_threshold.score_minimum,
+            self.baseline_threshold.score_median,
+            self.baseline_threshold.score_maximum,
+        )):
+            raise ValueError("baseline threshold statistics must be finite")
+        if (
+            self.baseline_threshold.score_type != self.calibration.score_type
+            or self.baseline_threshold.quantile != self.calibration.quantile
+        ):
+            raise ValueError("baseline threshold does not match calibration settings")
+        needs_volume_limit = (
+            self.adaptation.mode != "static" and self.adaptation.policy == "conservative"
+        )
+        if needs_volume_limit != (self.packet_count_limit is not None):
+            raise ValueError("packet count limit must match adaptation policy")
+        if self.adaptation.mode != "static" and (
+            self.adaptation.buffer_size < self.calibration.minimum_samples
+            or (self.adaptation.mode == "periodic_refit"
+                and self.adaptation.minimum_refit_windows > self.adaptation.buffer_size)
+        ):
+            raise ValueError("adaptation buffer is too small")
+        return self
 
 
 class AnomalyEventArtifact(ModelSchema):

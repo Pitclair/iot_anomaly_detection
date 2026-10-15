@@ -4,8 +4,8 @@ LM-IDNet stores models and results as readable JSON. Each artifact has an
 `artifact_type` that selects its Pydantic schema. Unknown fields and invalid
 values are rejected when an artifact is loaded.
 
-Artifacts do not currently carry schema versions, checksums, or migration
-logic. Those features can be added when the formats need long-term stability.
+Detector snapshots carry a schema version. Existing training and result formats
+remain unchanged; there is no automatic migration of older artifacts.
 
 ## Registered artifact types
 
@@ -15,6 +15,7 @@ logic. Those features can be added when the formats need long-term stability.
 | `threshold` | Model fingerprint, score convention, quantile, threshold, and calibration IQR |
 | `anomaly_event` | Device/window context, decision, severity, category residuals, and model fingerprint |
 | `experiment_manifest` | Run, command, data, configuration, and seed provenance |
+| `detector_state` | Active alpha and matching threshold, original safety references, and learning settings |
 
 Schemas live with the application layer that owns their data:
 
@@ -45,3 +46,17 @@ model = load_artifact(
 
 Missing, unreadable, mistyped, or invalid artifacts raise
 `ArtifactCompatibilityError`.
+
+## Detector snapshots
+
+`DetectorStateArtifact` keeps learned alpha and its fingerprint-bound threshold
+and score IQR together. It embeds the original model and threshold without
+rewriting their training or calibration provenance. Window duration, device
+MAC, calibration/estimator/adaptation settings, and the calibration-derived
+packet-count limit are saved for compatible restoration. Legacy and static
+states have no packet-count limit.
+
+Snapshot validation rejects invalid parameters, non-finite threshold statistics,
+mismatched fingerprints, incompatible calibration settings, and unusable buffer
+sizes. Each snapshot has its own version identifier and timestamp. A threshold
+change receives a new version even when the model fingerprint stays the same.
