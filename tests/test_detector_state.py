@@ -4,10 +4,15 @@ import json
 
 import pytest
 
-from lm_idnet.artifacts import artifact_fingerprint, validate_artifact
-from lm_idnet.exceptions import ArtifactCompatibilityError
+from lm_idnet.artifacts import (
+    artifact_fingerprint,
+    load_detector_version,
+    save_detector_version,
+    validate_artifact,
+)
+from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
-from lm_idnet.models.schemas import DetectorStateArtifact, ModelArtifact
+from lm_idnet.models.schemas import DetectorStateArtifact, DetectorStateIndex, ModelArtifact
 
 pytestmark = pytest.mark.unit
 
@@ -125,3 +130,56 @@ def test_threshold_only_changes_get_distinct_versions(state_factory):
     second = state_factory(threshold=-7.)
     assert first.threshold.model_fingerprint == second.threshold.model_fingerprint
     assert first.version_id != second.version_id
+
+
+def test_detector_version_stores_complete_pair_without_activating_it(tmp_path, state_factory):
+    state = state_factory()
+    path = save_detector_version(tmp_path, state)
+    assert path == tmp_path / "versions" / f"{state.version_id}.json"
+    assert load_detector_version(tmp_path, state.version_id) == state
+    assert not (tmp_path / "current.json").exists()
+
+
+def test_detector_versions_are_immutable(tmp_path, state_factory):
+    state = state_factory()
+    path = save_detector_version(tmp_path, state)
+    original = path.read_bytes()
+    replacement = state_factory(version_id=state.version_id, threshold=-7.)
+    with pytest.raises(DataValidationError, match="cannot save detector version"):
+        save_detector_version(tmp_path, replacement)
+    assert path.read_bytes() == original
+    assert load_detector_version(tmp_path, state.version_id) == state
+
+
+def test_detector_version_validates_even_modified_schema_instances(tmp_path, state_factory):
+    state = state_factory()
+    state.alpha = (0., 0., 0., 0.)
+    with pytest.raises(ArtifactCompatibilityError):
+        save_detector_version(tmp_path, state)
+    assert not (tmp_path / "versions").exists()
+
+
+@pytest.mark.parametrize("version_id", ["../escape", "/tmp/escape", "", "A" * 32])
+def test_loading_detector_version_rejects_unsafe_identifiers(tmp_path, version_id):
+    with pytest.raises(ArtifactCompatibilityError):
+        load_detector_version(tmp_path, version_id)
+
+
+def test_detector_version_must_match_filename(tmp_path, state_factory):
+    state = state_factory()
+    path = save_detector_version(tmp_path, state)
+    wrong_id = "0" * 32
+    path.rename(path.with_name(f"{wrong_id}.json"))
+    with pytest.raises(ArtifactCompatibilityError, match="filename"):
+        load_detector_version(tmp_path, wrong_id)
+
+
+def test_detector_index_round_trip_and_validation(state_factory):
+    first, second = state_factory(), state_factory()
+    index = DetectorStateIndex(active_version=second.version_id, previous_version=first.version_id)
+    assert validate_artifact(json.loads(index.model_dump_json()), expected_type="detector_state_index") == index
+    raw = index.model_dump(mode="json")
+    for invalid_previous in (second.version_id, "../escape"):
+        raw["previous_version"] = invalid_previous
+        with pytest.raises(ArtifactCompatibilityError):
+            validate_artifact(raw, expected_type="detector_state_index")

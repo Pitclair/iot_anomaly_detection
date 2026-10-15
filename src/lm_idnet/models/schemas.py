@@ -205,6 +205,21 @@ class DetectorStateArtifact(ModelSchema):
         return self
 
 
+class DetectorStateIndex(ModelSchema):
+    """The active snapshot and its previous accepted version."""
+
+    artifact_type: Literal["detector_state_index"] = "detector_state_index"
+    schema_version: Literal[1] = 1
+    active_version: str = Field(pattern=r"^[0-9a-f]{32}$")
+    previous_version: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
+
+    @model_validator(mode="after")
+    def versions_must_differ(self) -> "DetectorStateIndex":
+        if self.active_version == self.previous_version:
+            raise ValueError("active and previous versions must differ")
+        return self
+
+
 class AnomalyEventArtifact(ModelSchema):
     artifact_type: Literal["anomaly_event"] = "anomaly_event"
     device_id: str = Field(min_length=1)

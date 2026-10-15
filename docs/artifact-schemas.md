@@ -16,6 +16,7 @@ remain unchanged; there is no automatic migration of older artifacts.
 | `anomaly_event` | Device/window context, decision, severity, category residuals, and model fingerprint |
 | `experiment_manifest` | Run, command, data, configuration, and seed provenance |
 | `detector_state` | Active alpha and matching threshold, original safety references, and learning settings |
+| `detector_state_index` | Identifiers of the active and previous detector snapshots |
 
 Schemas live with the application layer that owns their data:
 
@@ -60,3 +61,10 @@ Snapshot validation rejects invalid parameters, non-finite threshold statistics,
 mismatched fingerprints, incompatible calibration settings, and unusable buffer
 sizes. Each snapshot has its own version identifier and timestamp. A threshold
 change receives a new version even when the model fingerprint stays the same.
+
+`save_detector_version(directory, state)` writes one complete snapshot to
+`versions/<version_id>.json` and rereads it through validation. Existing version
+files are never overwritten. `load_detector_version(directory, version_id)`
+rejects unsafe identifiers and a snapshot whose embedded identifier differs
+from its filename. The index format reserves `current.json` for the active and
+previous identifiers; saving an individual version does not activate it.

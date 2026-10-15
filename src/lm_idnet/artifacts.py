@@ -14,6 +14,7 @@ from lm_idnet.model_fingerprint import model_parameter_fingerprint
 from lm_idnet.models.schemas import (
     AnomalyEventArtifact,
     DetectorStateArtifact,
+    DetectorStateIndex,
     ModelArtifact,
     ThresholdArtifact,
 )
@@ -27,6 +28,7 @@ Artifact = (
     | AnomalyEventArtifact
     | ExperimentManifestArtifact
     | DetectorStateArtifact
+    | DetectorStateIndex
 )
 
 SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
@@ -35,6 +37,7 @@ SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
     "anomaly_event": AnomalyEventArtifact,
     "experiment_manifest": ExperimentManifestArtifact,
     "detector_state": DetectorStateArtifact,
+    "detector_state_index": DetectorStateIndex,
 }
 
 
@@ -121,3 +124,33 @@ def save_artifact(path: str | Path, artifact: Artifact) -> None:
         raise DataValidationError(
             f"cannot save {artifact.artifact_type} artifact: {artifact_path}"
         ) from error
+
+
+def load_detector_version(directory: str | Path, version_id: str) -> DetectorStateArtifact:
+    """Read one complete snapshot using a validated, path-safe identifier."""
+    index = cast(DetectorStateIndex, validate_artifact(
+        {"artifact_type": "detector_state_index", "active_version": version_id},
+        expected_type="detector_state_index",
+    ))
+    path = Path(directory) / "versions" / f"{index.active_version}.json"
+    state = cast(DetectorStateArtifact, load_artifact(path, expected_type="detector_state"))
+    if state.version_id != version_id:
+        raise ArtifactCompatibilityError("snapshot version does not match its filename")
+    return state
+
+
+def save_detector_version(directory: str | Path, state: DetectorStateArtifact) -> Path:
+    """Store and reread a new snapshot without overwriting an existing version."""
+    validated = cast(DetectorStateArtifact, validate_artifact(
+        state.model_dump(mode="python"), expected_type="detector_state",
+    ))
+    path = Path(directory) / "versions" / f"{validated.version_id}.json"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("x", encoding="utf-8") as output:
+            output.write(validated.model_dump_json(indent=2) + "\n")
+    except OSError as error:
+        raise DataValidationError(f"cannot save detector version: {path}") from error
+    if load_detector_version(directory, validated.version_id) != validated:
+        raise ArtifactCompatibilityError("saved detector version differs from supplied state")
+    return path
