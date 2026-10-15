@@ -97,7 +97,7 @@ lm-idnet forecast --config configs/d_link_day_cam5.json
 ```
 
 The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,
-`score`, `evaluate`, `adapt`, `forecast`, and `benchmark`. Use
+`score`, `evaluate`, `adapt`, `rollback`, `forecast`, and `benchmark`. Use
 `lm-idnet <command> --help` for command-specific options. Every command supports
 `--dry-run` to validate its configuration and CLI wiring without executing the
 stage.
@@ -150,6 +150,20 @@ counts, while legacy runs need only processed development counts.
 If starting models or thresholds are absent, first run `train` and `calibrate`
 with each device's configuration. Replacing those artifacts also changes the
 starting point of the comparison.
+
+To save accepted updates and resume them on the next invocation, supply a state
+directory explicitly. Use the same configuration and directory for rollback:
+
+```sh
+lm-idnet adapt --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json --state-dir artifacts/UNSW-Chromecast/detector-state
+lm-idnet rollback --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json --state-dir artifacts/UNSW-Chromecast/detector-state
+```
+
+The saved pair is restored before scoring, and a rejected save keeps the previous
+pair active. The directory permits one adaptive run or rollback at a time; another
+writer receives a clear error. Omitting `--state-dir` keeps the original experiment
+starting point. Resuming still replays the configured development captures;
+learning buffers and input positions are not restored.
 
 The complete command contract and current implementation status are documented
 in [`docs/command-line-interface.md`](docs/command-line-interface.md).

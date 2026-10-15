@@ -11,7 +11,10 @@ import pytest
 
 from lm_idnet.algorithms.dirichlet import DirichletFit
 from lm_idnet.algorithms.log_likelihood import ScipyLogLikelihood
-from lm_idnet.artifacts import artifact_fingerprint, load_artifact, load_detector_state
+from lm_idnet.artifacts import (
+    artifact_fingerprint, detector_state_lock, load_artifact,
+    load_detector_state, load_detector_version,
+)
 from lm_idnet.config import AdaptationConfig
 from lm_idnet.exceptions import ArtifactCompatibilityError, DataValidationError, DetectorStateCommitError
 from lm_idnet.models.calibration_stage import save_threshold
@@ -1002,3 +1005,74 @@ def test_post_switch_failure_stops_before_writing_success(persistent_detector, m
     assert config.outputs.events_path.read_text() == "previous events"
     assert not (config.outputs.reports_dir / "adaptation.json").exists()
     assert load_detector_state(state_dir, config).source == "periodic_refit"
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("policy", ["conservative", "legacy"])
+def test_cli_persists_restarts_and_rolls_back(adaptive_config, policy):
+    config = adaptive_config
+    config.adaptation.mode = "adaptive_threshold"
+    config.adaptation.policy = policy
+    config.adaptation.update_every = 3
+    state_dir = config.outputs.reports_dir.parent / "state"
+    config_path = state_dir.parent / "config.json"
+    config_path.write_text(config.model_dump_json())
+    environment = dict(os.environ, LM_IDNET_LOG_PATH=os.devnull)
+
+    def run(command):
+        result = subprocess.run([
+            sys.executable, "-m", "lm_idnet.cli", command, "--config", str(config_path),
+            "--state-dir", str(state_dir),
+        ], capture_output=True, text=True, env=environment, check=False)
+        assert result.returncode == 0, result.stderr
+        return json.loads(result.stdout)
+
+    first = run("adapt")
+    assert first["threshold_update_count"] == 1
+    config.outputs.model_path.unlink()
+    config.outputs.threshold_path.unlink()
+    for capture_id in config.ingest.partitions.calibration:
+        (config.ingest.processed_root / config.ingest.dataset_folder / f"{capture_id}.json").unlink()
+    second = run("adapt")
+    assert second["starting_state_version"] == first["final_state_version"]
+    index = json.loads((state_dir / "current.json").read_text())
+    previous = load_detector_version(state_dir, index["previous_version"])
+    restored = run("rollback")
+    assert restored["active_version"] == previous.version_id
+    assert load_detector_state(state_dir, config) == previous
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("command", ["adapt", "rollback"])
+def test_cli_busy_state_fails_without_success(adaptive_config, command):
+    config = adaptive_config
+    state_dir = config.outputs.reports_dir.parent / "state"
+    config_path = state_dir.parent / "config.json"
+    config_path.write_text(config.model_dump_json())
+    with detector_state_lock(state_dir):
+        result = subprocess.run([
+            sys.executable, "-m", "lm_idnet.cli", "--error-format", "json",
+            command, "--config", str(config_path), "--state-dir", str(state_dir),
+        ], capture_output=True, text=True,
+            env=dict(os.environ, LM_IDNET_LOG_PATH=os.devnull), check=False)
+    assert result.returncode == 8
+    assert not result.stdout
+    assert json.loads(result.stderr)["error"]["code"] == "policy_rejection_error"
+    assert not (state_dir / "current.json").exists()
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("command", ["adapt", "rollback"])
+def test_persistent_cli_dry_run_does_not_create_state(adaptive_config, command):
+    config = adaptive_config
+    state_dir = config.outputs.reports_dir.parent / "state"
+    config_path = state_dir.parent / "config.json"
+    config_path.write_text(config.model_dump_json())
+    result = subprocess.run([
+        sys.executable, "-m", "lm_idnet.cli", command, "--config", str(config_path),
+        "--state-dir", str(state_dir), "--dry-run",
+    ], capture_output=True, text=True,
+        env=dict(os.environ, LM_IDNET_LOG_PATH=os.devnull), check=False)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["status"] == "ready"
+    assert not state_dir.exists()

@@ -72,6 +72,13 @@ def test_root_help_lists_every_stable_command() -> None:
     assert "--verbose" in result.stdout
 
 
+def test_rollback_requires_state_directory() -> None:
+    result = run_cli("rollback", "--config", str(CONFIG))
+    assert result.returncode == 2
+    assert "--state-dir" in result.stderr
+    assert not result.stdout
+
+
 @pytest.mark.parametrize("command", COMMANDS)
 def test_subcommand_help(command: str) -> None:
     result = run_cli(command, "--help")
@@ -98,7 +105,10 @@ def test_subcommand_rejects_invalid_config(
     invalid = tmp_path / "invalid.json"
     invalid.write_text("{}", encoding="utf-8")
 
-    result = run_cli(command, "--config", str(invalid), "--dry-run")
+    result = run_cli(
+        command, "--config", str(invalid), "--dry-run",
+        *(["--state-dir", str(tmp_path / "state")] if command == "rollback" else []),
+    )
 
     assert result.returncode == 2
     assert "configuration_error" in result.stderr
@@ -112,6 +122,7 @@ def test_subcommand_minimal_dry_run_succeeds(command: str) -> None:
         "--config",
         str(CONFIG),
         "--dry-run",
+        *(["--state-dir", "unused-state"] if command == "rollback" else []),
     )
 
     assert result.returncode == 0

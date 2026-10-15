@@ -12,17 +12,20 @@ import pytest
 from lm_idnet import artifacts
 from lm_idnet.artifacts import (
     artifact_fingerprint,
+    detector_state_lock,
     load_detector_version,
     load_detector_state,
     save_artifact,
     save_detector_version,
     save_detector_state,
+    rollback_detector_state,
     validate_artifact,
 )
 from lm_idnet.exceptions import (
     ArtifactCompatibilityError,
     DataValidationError,
     DetectorStateCommitError,
+    PolicyRejectionError,
 )
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
 from lm_idnet.models.schemas import DetectorStateArtifact, DetectorStateIndex, ModelArtifact
@@ -485,3 +488,65 @@ def test_initialization_rejects_mismatched_pair_before_creating_state(tmp_path, 
     with pytest.raises(ArtifactCompatibilityError, match="fingerprint"):
         load_detector_state(directory, detector_config)
     assert not directory.exists()
+
+
+def test_rollback_restores_previous_pair_without_initial_artifacts(tmp_path, detector_config, state_factory):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    save_detector_state(tmp_path, second)
+    index = rollback_detector_state(tmp_path, detector_config)
+    assert index.active_version == first.version_id
+    assert index.previous_version == second.version_id
+    assert load_detector_state(tmp_path, detector_config) == first
+    rollback_detector_state(tmp_path, detector_config)
+    assert load_detector_state(tmp_path, detector_config) == second
+
+
+@pytest.mark.parametrize("has_initial_version", [False, True])
+def test_rollback_without_previous_version_does_not_initialize(tmp_path, detector_config, state_factory, has_initial_version):
+    directory = tmp_path / "detector"
+    if has_initial_version:
+        save_detector_state(directory, state_factory())
+    pointer = directory / "current.json"
+    before = pointer.read_bytes() if pointer.exists() else None
+    with pytest.raises(PolicyRejectionError, match="no previous"):
+        rollback_detector_state(directory, detector_config)
+    assert (pointer.read_bytes() if pointer.exists() else None) == before
+
+
+@pytest.mark.parametrize("failure", ["corrupt_previous", "wrong_configuration", "pointer_write"])
+def test_failed_rollback_preserves_active_pointer(tmp_path, detector_config, state_factory, monkeypatch, failure):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    save_detector_state(tmp_path, second)
+    pointer = tmp_path / "current.json"
+    before = pointer.read_bytes()
+    config = detector_config
+    if failure == "corrupt_previous":
+        (tmp_path / "versions" / f"{first.version_id}.json").write_text("{")
+    elif failure == "wrong_configuration":
+        config = config.model_copy(update={"ingest": config.ingest.model_copy(update={"window_minutes": 5})})
+    else:
+        def fail(*_args):
+            raise OSError("simulated rollback write failure")
+        monkeypatch.setattr(artifacts.os, "replace", fail)
+    with pytest.raises((ArtifactCompatibilityError, DataValidationError)):
+        rollback_detector_state(tmp_path, config)
+    assert pointer.read_bytes() == before
+    assert load_detector_version(tmp_path, second.version_id) == second
+
+
+def test_state_lock_blocks_aliases_and_releases_after_failure(tmp_path):
+    directory = tmp_path / "state"
+    alias = tmp_path / "alias"
+    alias.symlink_to(directory, target_is_directory=True)
+    with pytest.raises(RuntimeError):
+        with detector_state_lock(directory):
+            with pytest.raises(PolicyRejectionError, match="in use"):
+                with detector_state_lock(alias):
+                    pytest.fail("another writer acquired the same directory")
+            with detector_state_lock(tmp_path / "other"):
+                pass
+            raise RuntimeError("simulated interrupted writer")
+    with detector_state_lock(alias):
+        pass

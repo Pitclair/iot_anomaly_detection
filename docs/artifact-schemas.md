@@ -124,3 +124,8 @@ committed pair. The report records starting and final version identifiers.
 Omitting `state_dir` keeps existing experiment behavior. Resuming a batch run
 replays its configured captures with the restored state; this is not input-offset
 recovery. A single writer must own the directory while running adaptive scoring.
+`adapt_windows` holds `detector_state_lock(directory)` for the entire persistent
+run. `rollback_detector_state(directory, config)` takes the same lock, validates
+the previous snapshot, and atomically swaps the active and previous identifiers.
+Direct callers of the lower-level storage helpers must hold the lock themselves.
+The `.lock` file remains in place so processes always lock the same inode.

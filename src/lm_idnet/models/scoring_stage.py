@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Sequence
+from contextlib import nullcontext
 import json
 import logging
 from pathlib import Path
@@ -18,6 +19,7 @@ from lm_idnet.algorithms.log_likelihood import (
 )
 from lm_idnet.artifacts import (
     artifact_fingerprint,
+    detector_state_lock,
     load_artifact,
     load_detector_state,
     load_model,
@@ -592,14 +594,16 @@ def score_windows(config: AppConfig) -> dict[str, object]:
 
 def adapt_windows(config: AppConfig, *, state_dir: str | Path | None = None) -> dict[str, object]:
     """Run the configured detector mode and save its state-change report."""
-    summary, report = _run_detector(config, config.adaptation.mode, state_dir=state_dir)
-    report_path = config.outputs.reports_dir / "adaptation.json"
-    _save_json(report_path, report, "adaptation report")
-    return {
-        **summary,
-        "adaptation_mode": config.adaptation.mode,
-        "adaptation_policy": config.adaptation.policy,
-        "threshold_update_count": report["threshold_update_count"],
-        "model_refit_count": report["model_refit_count"],
-        "adaptation_report_path": str(report_path),
-    }
+    guard = detector_state_lock(state_dir) if state_dir is not None else nullcontext()
+    with guard:
+        summary, report = _run_detector(config, config.adaptation.mode, state_dir=state_dir)
+        report_path = config.outputs.reports_dir / "adaptation.json"
+        _save_json(report_path, report, "adaptation report")
+        return {
+            **summary,
+            "adaptation_mode": config.adaptation.mode,
+            "adaptation_policy": config.adaptation.policy,
+            "threshold_update_count": report["threshold_update_count"],
+            "model_refit_count": report["model_refit_count"],
+            "adaptation_report_path": str(report_path),
+        }

@@ -11,6 +11,7 @@ calibrate   Create a model-bound anomaly threshold
 score       Score windows and emit anomaly decisions
 evaluate    Evaluate detector outputs
 adapt       Assess an adaptive-model candidate
+rollback    Restore the previous accepted detector version
 forecast    Forecast traffic using a verified model
 benchmark   Measure backend and pipeline performance
 ```
@@ -135,6 +136,32 @@ static, and conservative outputs remain separate. The runner defaults to
 `adaptation_policy`, and `adaptation.json` includes `policy` so results can be
 attributed to their method. Legacy results retain the earlier contamination
 risk and should be identified as that research policy in the thesis.
+
+## Saved detector state
+
+`adapt --state-dir DIRECTORY` initializes or restores an accepted pair and saves
+each permitted update before using it. The same option is available to Python
+callers as `adapt_windows(config, state_dir=directory)`. Omitting the directory
+preserves fresh-start experiment behavior for both adaptation policies.
+
+```sh
+lm-idnet adapt --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json --state-dir artifacts/UNSW-Chromecast/detector-state
+lm-idnet rollback --config configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json --state-dir artifacts/UNSW-Chromecast/detector-state
+```
+
+`rollback` requires `--state-dir`, validates the previous snapshot against the
+configuration, and atomically swaps the active and previous identifiers. It does
+not retrain or require the initial artifacts or calibration counts. Missing
+previous versions and busy state directories fail with exit code 8; incompatible
+snapshots fail with exit code 7. No success JSON is emitted on failure.
+
+Persistent adaptation and rollback use a nonblocking Linux file lock. Only one
+can modify a directory at a time, including when paths refer to the same directory
+through a symlink. Locks release when the process exits. Python callers modifying
+state through low-level helpers must hold `detector_state_lock(directory)`.
+`--dry-run` validates arguments and configuration without opening a state directory.
+Resuming a batch run replays its configured captures with the restored pair;
+learning buffers, update counters, and input positions are not restored.
 
 ## Stage isolation
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, cast
@@ -16,6 +18,7 @@ from lm_idnet.exceptions import (
     ArtifactCompatibilityError,
     DataValidationError,
     DetectorStateCommitError,
+    PolicyRejectionError,
 )
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
 from lm_idnet.models.schemas import (
@@ -217,6 +220,27 @@ def _read_detector_index(directory: Path) -> DetectorStateIndex | None:
     return cast(DetectorStateIndex, load_artifact(path, expected_type="detector_state_index"))
 
 
+@contextmanager
+def detector_state_lock(directory: str | Path) -> Iterator[Path]:
+    """Hold one nonblocking Linux writer lock for a state directory."""
+    import fcntl
+
+    directory = Path(directory).resolve()
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        lock = (directory / ".lock").open("a")
+    except OSError as error:
+        raise DataValidationError(f"cannot open detector state lock: {directory}") from error
+    with lock:
+        try:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise PolicyRejectionError(f"detector state is in use: {directory}") from error
+        except OSError as error:
+            raise DataValidationError(f"cannot lock detector state: {directory}") from error
+        yield directory
+
+
 def save_detector_state(directory: str | Path, state: DetectorStateArtifact) -> DetectorStateIndex:
     """Commit a complete version, retaining the previous active snapshot."""
     directory = Path(directory)
@@ -279,7 +303,7 @@ def load_detector_state(directory: str | Path, config: "AppConfig") -> DetectorS
         _validate_detector_configuration(state, config)
         return state
     try:
-        if any(directory.iterdir()):
+        if any(path.name != ".lock" for path in directory.iterdir()):
             raise ArtifactCompatibilityError("detector state directory has no active index")
     except FileNotFoundError:
         pass
@@ -312,3 +336,18 @@ def load_detector_state(directory: str | Path, config: "AppConfig") -> DetectorS
     _validate_detector_configuration(state, config)
     save_detector_state(directory, state)
     return state
+
+
+def rollback_detector_state(directory: str | Path, config: "AppConfig") -> DetectorStateIndex:
+    """Validate the previous snapshot and atomically make it active again."""
+    with detector_state_lock(directory) as directory:
+        index = _read_detector_index(directory)
+        if index is None or index.previous_version is None:
+            raise PolicyRejectionError("no previous detector version is available")
+        previous = load_detector_version(directory, index.previous_version)
+        _validate_detector_configuration(previous, config)
+        restored = DetectorStateIndex(
+            active_version=index.previous_version, previous_version=index.active_version,
+        )
+        _write_detector_artifact(directory / "current.json", restored, replace=True)
+        return restored

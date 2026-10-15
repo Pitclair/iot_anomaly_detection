@@ -39,6 +39,7 @@ COMMANDS = (
     "score",
     "evaluate",
     "adapt",
+    "rollback",
     "forecast",
     "benchmark",
 )
@@ -51,6 +52,7 @@ COMMAND_HELP = {
     "score": "score processed windows and emit anomaly decisions",
     "evaluate": "evaluate detector outputs using the frozen protocol",
     "adapt": "run the configured static or adaptive detector",
+    "rollback": "restore the previous accepted detector version",
     "forecast": "forecast held-out traffic from a verified model",
     "benchmark": "measure configured backend and pipeline performance",
 }
@@ -133,6 +135,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="statistics JSON path (default: <reports_dir>/capture_statistics.json)",
     )
+    for command in ("adapt", "rollback"):
+        command_parsers[command].add_argument(
+            "--state-dir", type=Path, required=command == "rollback",
+            help="directory for accepted detector state (adapt resumes when supplied)",
+        )
     return parser
 
 
@@ -360,7 +367,10 @@ def run_command(argv: Sequence[str] | None = None) -> None:
     if args.command == "adapt":
         from lm_idnet.models.scoring_stage import adapt_windows
 
-        result = adapt_windows(config)
+        result = (
+            adapt_windows(config, state_dir=args.state_dir)
+            if args.state_dir is not None else adapt_windows(config)
+        )
         print(
             json.dumps(
                 {
@@ -371,6 +381,16 @@ def run_command(argv: Sequence[str] | None = None) -> None:
                 sort_keys=True,
             )
         )
+        return
+
+    if args.command == "rollback":
+        from lm_idnet.artifacts import rollback_detector_state
+
+        result = rollback_detector_state(args.state_dir, config)
+        print(json.dumps({
+            "command": "rollback", "status": "completed", "state_dir": str(args.state_dir),
+            "active_version": result.active_version, "previous_version": result.previous_version,
+        }, sort_keys=True))
         return
 
     if args.command == "evaluate":
