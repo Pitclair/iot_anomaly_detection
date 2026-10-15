@@ -18,6 +18,7 @@ from lm_idnet.artifacts import (
     save_artifact,
     save_detector_version,
     save_detector_state,
+    record_detector_update,
     rollback_detector_state,
     validate_artifact,
 )
@@ -550,3 +551,110 @@ def test_state_lock_blocks_aliases_and_releases_after_failure(tmp_path):
             raise RuntimeError("simulated interrupted writer")
     with detector_state_lock(alias):
         pass
+
+
+def test_version_retention_keeps_active_and_previous_and_cleans_orphans(tmp_path, detector_config, state_factory):
+    for offset in range(12):
+        current = state_factory(threshold=-8. + offset / 100)
+        index = save_detector_state(tmp_path, current)
+        expected = {index.active_version}
+        if index.previous_version is not None:
+            expected.add(index.previous_version)
+        assert {path.stem for path in (tmp_path / "versions").glob("*.json")} == expected
+    orphan = state_factory()
+    save_detector_version(tmp_path, orphan)
+    (tmp_path / "versions" / f"{'0' * 32}.json").write_text("interrupted write")
+    (tmp_path / "versions" / f".{'0' * 32}.json.abandoned.tmp").write_text("partial")
+    (tmp_path / ".current.json.abandoned.tmp").write_text("partial")
+    (tmp_path / ".history.json.abandoned.tmp").write_text("partial")
+    unrelated = tmp_path / "versions" / "notes.txt"
+    unrelated.write_text("keep this")
+
+    assert load_detector_state(tmp_path, detector_config) == current
+    assert {path.stem for path in (tmp_path / "versions").glob("*.json")} == expected
+    assert not list(tmp_path.rglob("*.tmp"))
+    assert unrelated.read_text() == "keep this"
+
+
+def test_cleanup_failure_does_not_reject_committed_version(tmp_path, detector_config, state_factory, monkeypatch, caplog):
+    first, second, third = state_factory(), state_factory(threshold=-7.), state_factory(threshold=-6.)
+    save_detector_state(tmp_path, first)
+    save_detector_state(tmp_path, second)
+    obsolete = tmp_path / "versions" / f"{first.version_id}.json"
+    original_unlink = Path.unlink
+
+    def fail_one_file(path, *args, **kwargs):
+        if path == obsolete:
+            raise PermissionError("simulated cleanup failure")
+        return original_unlink(path, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "unlink", fail_one_file)
+        index = save_detector_state(tmp_path, third)
+        assert index.active_version == third.version_id
+        assert load_detector_state(tmp_path, detector_config) == third
+    assert "Cannot clean detector state" in caplog.text
+    assert load_detector_state(tmp_path, detector_config) == third
+    assert not obsolete.exists()
+
+
+def test_update_history_bounds_record_count_and_reason_size(tmp_path, state_factory):
+    state = state_factory()
+    save_detector_state(tmp_path, state)
+    for offset in range(105):
+        record_detector_update(
+            tmp_path, source="periodic_refit", old_version=state.version_id,
+            promoted=False, reason=f"rejected {offset}: " + "x" * 2000,
+            after_window=offset + 1,
+        )
+    path = tmp_path / "history.json"
+    history = artifacts.load_artifact(path, expected_type="detector_state_history")
+    assert len(history.records) == 100
+    assert history.records[0].after_window == 6
+    assert history.records[-1].after_window == 105
+    assert all(len(record.reason) == 1024 for record in history.records)
+    assert path.stat().st_size < 160 * 1024
+
+
+def test_update_history_rejects_invalid_outcomes_and_excess_records(state_factory):
+    version = state_factory().version_id
+    record = {"source": "periodic_refit", "old_version": version, "promoted": False}
+    raw = {"artifact_type": "detector_state_history", "records": [record]}
+    with pytest.raises(ArtifactCompatibilityError, match="reason"):
+        validate_artifact(raw, expected_type="detector_state_history")
+    record["reason"] = "candidate rejected"
+    raw["records"] = [record] * 101
+    with pytest.raises(ArtifactCompatibilityError):
+        validate_artifact(raw, expected_type="detector_state_history")
+
+
+def test_rollback_records_version_change(tmp_path, detector_config, state_factory):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    save_detector_state(tmp_path, second)
+    rollback_detector_state(tmp_path, detector_config)
+    history = artifacts.load_artifact(tmp_path / "history.json", expected_type="detector_state_history")
+    assert len(history.records) == 1
+    change = history.records[0]
+    assert change.source == "rollback"
+    assert change.old_version == second.version_id
+    assert change.new_version == first.version_id
+    assert change.promoted is True
+
+
+def test_audit_failure_does_not_reject_rollback(tmp_path, detector_config, state_factory, monkeypatch, caplog):
+    first, second = state_factory(), state_factory(threshold=-7.)
+    save_detector_state(tmp_path, first)
+    save_detector_state(tmp_path, second)
+    original_write = artifacts._write_detector_artifact
+
+    def fail_history(path, artifact, **kwargs):
+        if path.name == "history.json":
+            raise DataValidationError("simulated audit storage failure")
+        return original_write(path, artifact, **kwargs)
+
+    monkeypatch.setattr(artifacts, "_write_detector_artifact", fail_history)
+    result = rollback_detector_state(tmp_path, detector_config)
+    assert result.active_version == first.version_id
+    assert load_detector_state(tmp_path, detector_config) == first
+    assert "Cannot save detector update history" in caplog.text

@@ -220,6 +220,35 @@ class DetectorStateIndex(ModelSchema):
         return self
 
 
+DETECTOR_HISTORY_LIMIT = 100
+
+
+class DetectorStateChange(ModelSchema):
+    """A bounded record of an adaptive decision or operator rollback."""
+
+    created_utc: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    source: Literal["adaptive_threshold", "periodic_refit", "rollback"]
+    old_version: str = Field(pattern=r"^[0-9a-f]{32}$")
+    new_version: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
+    promoted: bool
+    reason: str | None = Field(default=None, min_length=1, max_length=1024)
+    after_window: StrictInt | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def outcome_must_be_consistent(self) -> "DetectorStateChange":
+        if self.promoted != (self.new_version is not None):
+            raise ValueError("accepted changes must identify the new version")
+        if not self.promoted and not self.reason:
+            raise ValueError("rejected changes must record a reason")
+        return self
+
+
+class DetectorStateHistory(ModelSchema):
+    artifact_type: Literal["detector_state_history"] = "detector_state_history"
+    schema_version: Literal[1] = 1
+    records: tuple[DetectorStateChange, ...] = Field(default=(), max_length=DETECTOR_HISTORY_LIMIT)
+
+
 class AnomalyEventArtifact(ModelSchema):
     artifact_type: Literal["anomaly_event"] = "anomaly_event"
     device_id: str = Field(min_length=1)

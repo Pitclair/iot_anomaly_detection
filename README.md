@@ -165,6 +165,10 @@ writer receives a clear error. Omitting `--state-dir` keeps the original experim
 starting point. Resuming still replays the configured development captures;
 learning buffers and input positions are not restored.
 
+The state directory retains the active and previous versions plus `history.json`
+with the latest 100 update/rollback decisions. Interrupted-save leftovers are
+cleaned on restoration. Original experiment artifacts remain separate.
+
 The complete command contract and current implementation status are documented
 in [`docs/command-line-interface.md`](docs/command-line-interface.md).
 

@@ -942,6 +942,9 @@ def test_persistent_updates_restore_accepted_pair(persistent_detector, policy, m
     assert restarted["starting_state_version"] == saved.version_id
     assert events[0]["threshold"] == saved.threshold.threshold
     assert events[0]["model_fingerprint"] == saved.threshold.model_fingerprint
+    history = load_artifact(state_dir / "history.json", expected_type="detector_state_history")
+    assert any(record.promoted for record in history.records)
+    assert len(list((state_dir / "versions").glob("*.json"))) <= 2
 
 
 @pytest.mark.parametrize("policy", ["conservative", "legacy"])
@@ -967,6 +970,8 @@ def test_failed_persistence_rejects_whole_update(persistent_detector, monkeypatc
     assert all(event["threshold"] == initial.threshold.threshold for event in events)
     assert all(event["model_fingerprint"] == initial.threshold.model_fingerprint for event in events)
     assert all(update["reason"] == "storage unavailable" for update in report["threshold_update_attempts"])
+    history = load_artifact(state_dir / "history.json", expected_type="detector_state_history")
+    assert all(not record.promoted and record.reason == "storage unavailable" for record in history.records)
 
 
 def test_legacy_fitting_failure_persists_threshold_fallback(persistent_detector, monkeypatch):
@@ -987,6 +992,10 @@ def test_legacy_fitting_failure_persists_threshold_fallback(persistent_detector,
     assert saved.source == "adaptive_threshold"
     assert saved.alpha == saved.baseline_model.alpha
     assert saved.threshold.threshold != saved.baseline_threshold.threshold
+    history = load_artifact(state_dir / "history.json", expected_type="detector_state_history")
+    assert [(record.source, record.promoted) for record in history.records[:2]] == [
+        ("periodic_refit", False), ("adaptive_threshold", True),
+    ]
 
 
 def test_post_switch_failure_stops_before_writing_success(persistent_detector, monkeypatch):

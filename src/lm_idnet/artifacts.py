@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -22,9 +23,12 @@ from lm_idnet.exceptions import (
 )
 from lm_idnet.model_fingerprint import model_parameter_fingerprint
 from lm_idnet.models.schemas import (
+    DETECTOR_HISTORY_LIMIT,
     AnomalyEventArtifact,
     DetectorStateArtifact,
     DetectorStateIndex,
+    DetectorStateChange,
+    DetectorStateHistory,
     ModelArtifact,
     ThresholdArtifact,
 )
@@ -41,6 +45,7 @@ Artifact = (
     | ExperimentManifestArtifact
     | DetectorStateArtifact
     | DetectorStateIndex
+    | DetectorStateHistory
 )
 
 SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
@@ -50,6 +55,7 @@ SCHEMA_BY_TYPE: dict[str, type[BaseModel]] = {
     "experiment_manifest": ExperimentManifestArtifact,
     "detector_state": DetectorStateArtifact,
     "detector_state_index": DetectorStateIndex,
+    "detector_state_history": DetectorStateHistory,
 }
 
 
@@ -196,7 +202,7 @@ def _write_detector_artifact(path: Path, artifact: Artifact, *, replace: bool) -
         published = True
         _sync_directory(path.parent)
     except OSError as error:
-        if replace and published:
+        if replace and published and path.name == "current.json":
             raise DetectorStateCommitError(
                 f"detector state pointer changed but directory sync failed: {path}"
             ) from error
@@ -266,7 +272,63 @@ def save_detector_state(directory: str | Path, state: DetectorStateArtifact) -> 
         previous_version=previous.active_version if previous is not None else None,
     )
     _write_detector_artifact(directory / "current.json", index, replace=True)
+    _prune_detector_state(directory, index)
     return index
+
+
+def _prune_detector_state(directory: Path, index: DetectorStateIndex) -> None:
+    """Remove unreferenced versions and abandoned files after validating references."""
+    try:
+        retained = {index.active_version}
+        if index.previous_version is not None:
+            retained.add(index.previous_version)
+        for version_id in retained:
+            load_detector_version(directory, version_id)
+        versions = directory / "versions"
+        changed_directories = set()
+        for path in versions.iterdir():
+            obsolete = re.fullmatch(r"[0-9a-f]{32}\.json", path.name) and path.stem not in retained
+            abandoned = re.fullmatch(r"\.[0-9a-f]{32}\.json\..+\.tmp", path.name)
+            if obsolete or abandoned:
+                path.unlink()
+                changed_directories.add(versions)
+        for prefix in (".current.json.", ".history.json."):
+            for path in directory.glob(f"{prefix}*.tmp"):
+                path.unlink()
+                changed_directories.add(directory)
+        for changed in changed_directories:
+            _sync_directory(changed)
+    except (ArtifactCompatibilityError, OSError) as error:
+        logger.warning("Cannot clean detector state directory %s: %s", directory, error)
+
+
+def record_detector_update(
+    directory: str | Path,
+    *,
+    source: str,
+    old_version: str,
+    promoted: bool,
+    new_version: str | None = None,
+    reason: str | None = None,
+    after_window: int | None = None,
+) -> None:
+    """Keep recent decisions without letting audit failures undo committed state."""
+    path = Path(directory) / "history.json"
+    try:
+        history = cast(DetectorStateHistory, load_artifact(
+            path, expected_type="detector_state_history",
+        )) if path.exists() else DetectorStateHistory()
+        change = DetectorStateChange(
+            source=source, old_version=old_version, new_version=new_version,
+            promoted=promoted, after_window=after_window,
+            reason=reason[:1024] if reason else (None if promoted else "update rejected"),
+        )
+        history = DetectorStateHistory(records=(
+            *history.records[-(DETECTOR_HISTORY_LIMIT - 1):], change,
+        ))
+        _write_detector_artifact(path, history, replace=True)
+    except (ArtifactCompatibilityError, DataValidationError, OSError, ValueError) as error:
+        logger.warning("Cannot save detector update history %s: %s", path, error)
 
 
 def _validate_detector_configuration(state: DetectorStateArtifact, config: "AppConfig") -> None:
@@ -301,6 +363,7 @@ def load_detector_state(directory: str | Path, config: "AppConfig") -> DetectorS
     if index is not None:
         state = load_detector_version(directory, index.active_version)
         _validate_detector_configuration(state, config)
+        _prune_detector_state(directory, index)
         return state
     try:
         if any(path.name != ".lock" for path in directory.iterdir()):
@@ -350,4 +413,9 @@ def rollback_detector_state(directory: str | Path, config: "AppConfig") -> Detec
             active_version=index.previous_version, previous_version=index.active_version,
         )
         _write_detector_artifact(directory / "current.json", restored, replace=True)
+        _prune_detector_state(directory, restored)
+        record_detector_update(
+            directory, source="rollback", old_version=index.active_version,
+            new_version=restored.active_version, promoted=True,
+        )
         return restored

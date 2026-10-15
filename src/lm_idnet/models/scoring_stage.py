@@ -24,6 +24,7 @@ from lm_idnet.artifacts import (
     load_detector_state,
     load_model,
     model_parameter_fingerprint,
+    record_detector_update,
     save_detector_state,
 )
 from lm_idnet.config import AdaptationConfig, AppConfig
@@ -348,6 +349,7 @@ def _run_detector(
                 "promoted": False,
             }
             refit = None
+            previous_state = state
             if mode == "periodic_refit":
                 refit = {
                     **update_context,
@@ -507,6 +509,22 @@ def _run_detector(
                     current_threshold, current_score_iqr = new_threshold, new_score_iqr
                     if not conservative:
                         recent_scores = deque(candidate_scores, maxlen=config.adaptation.buffer_size)
+            if state is not None:
+                assert previous_state is not None and state_dir is not None
+                if refit is not None and not refit["promoted"]:
+                    record_detector_update(
+                        state_dir, source="periodic_refit", old_version=previous_state.version_id,
+                        promoted=False, reason=str(refit["reason"]), after_window=len(results),
+                    )
+                if update["promoted"] or refit is None or update.get("reason") != refit.get("reason"):
+                    record_detector_update(
+                        state_dir,
+                        source="adaptive_threshold" if update["source"] == "recent_scores" else mode,
+                        old_version=previous_state.version_id,
+                        new_version=state.version_id if update["promoted"] else None,
+                        promoted=bool(update["promoted"]), reason=update.get("reason"),
+                        after_window=len(results),
+                    )
             threshold_updates.append(update)
             if refit is not None:
                 model_refit_attempts.append(refit)

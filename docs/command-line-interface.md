@@ -163,6 +163,13 @@ state through low-level helpers must hold `detector_state_lock(directory)`.
 Resuming a batch run replays its configured captures with the restored pair;
 learning buffers, update counters, and input positions are not restored.
 
+Only the active and previous snapshots are retained. `history.json` keeps the
+latest 100 accepted/rejected updates and rollbacks, with rejection reasons capped
+at 1024 characters. Restoration cleans abandoned managed files after validating
+the referenced pair. Cleanup and audit failures are logged without undoing a
+committed update. Full batch events and evaluation reports retain their existing
+behavior.
+
 ## Stage isolation
 
 `train`, `diagnose`, `calibrate`, `forecast`, and later downstream commands

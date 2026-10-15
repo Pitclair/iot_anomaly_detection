@@ -17,6 +17,7 @@ remain unchanged; there is no automatic migration of older artifacts.
 | `experiment_manifest` | Run, command, data, configuration, and seed provenance |
 | `detector_state` | Active alpha and matching threshold, original safety references, and learning settings |
 | `detector_state_index` | Identifiers of the active and previous detector snapshots |
+| `detector_state_history` | The latest 100 adaptive decisions and operator rollbacks |
 
 Schemas live with the application layer that owns their data:
 
@@ -82,8 +83,11 @@ the previous pair active. A failure to synchronize the directory after replaceme
 raises `DetectorStateCommitError` with `committed=True`; callers must reload or stop
 instead of reporting a rejected update. Both referenced pairs remain complete.
 Temporary-file cleanup failures are logged without undoing a committed switch.
-Unreferenced snapshots can remain after interrupted saves; retention and automatic
-promotion are separate from these storage helpers.
+After a successful save, unreferenced managed snapshots and abandoned temporary
+files are removed. Only the active and previous versions are retained. The same
+cleanup runs on restoration after both referenced snapshots have been validated.
+Cleanup failures are logged and retried on a later restoration or successful save;
+they never undo a committed pointer switch. Unrelated files are left alone.
 
 ## Restoring a detector
 
@@ -129,3 +133,18 @@ run. `rollback_detector_state(directory, config)` takes the same lock, validates
 the previous snapshot, and atomically swaps the active and previous identifiers.
 Direct callers of the lower-level storage helpers must hold the lock themselves.
 The `.lock` file remains in place so processes always lock the same inode.
+
+## Bounded update history
+
+Persistent adaptation and rollback write `history.json` atomically. It retains the
+latest 100 decisions, recording timestamps, method, old/new version identifiers,
+acceptance or rejection, rejection reason, and the batch window position when
+applicable. Reasons are capped at 1024 characters. A rejected legacy refit followed
+by an accepted threshold fallback produces separate records.
+
+The active pointer and validated snapshot are authoritative. History is diagnostic:
+an interrupted process can commit an update before recording it. History failures
+are logged without rejecting an already committed update or rollback. Standalone
+storage helpers save versions without synthesizing adaptive decision records.
+The batch event array and experiment report remain available for full development
+results; this retention policy bounds the state directory and its recent audit.
