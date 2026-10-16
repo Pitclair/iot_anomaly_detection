@@ -129,6 +129,18 @@ def test_artifact_loads_from_disk(tmp_path) -> None:
     assert loaded.alpha == (1.0, 2.0, 3.0, 4.0)
 
 
+@pytest.mark.parametrize("field,value", [("threshold", -1.), ("threshold", float("nan")),
+                                         ("score_iqr", 0.), ("score_iqr", float("inf"))])
+def test_count_tails_reject_invalid_calibration_values(field, value):
+    threshold = artifact_examples()["threshold"]
+    threshold["count_tails"] = {
+        "total": {"threshold": 1., "score_iqr": 1., field: value},
+        "arp": {"threshold": 1., "score_iqr": 1.},
+    }
+    with pytest.raises(ArtifactCompatibilityError):
+        validate_artifact(threshold, expected_type="threshold")
+
+
 def test_model_fingerprint_uses_only_scoring_inputs() -> None:
     model = artifact_examples()["model"]
     changed_runtime = deepcopy(model)

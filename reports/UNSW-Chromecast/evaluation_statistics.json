@@ -9,6 +9,7 @@
   "f1_score": 0.6122448979591837,
   "false_negative": 17,
   "false_positive": 2,
+  "false_positive_rate": 0.004524886877828055,
   "matched_window_count": 474,
   "partition": "development_test",
   "precision": 0.8823529411764706,

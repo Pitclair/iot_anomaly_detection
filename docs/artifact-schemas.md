@@ -4,8 +4,8 @@ LM-IDNet stores models and results as readable JSON. Each artifact has an
 `artifact_type` that selects its Pydantic schema. Unknown fields and invalid
 values are rejected when an artifact is loaded.
 
-Detector snapshots carry a schema version. Existing training and result formats
-remain unchanged; there is no automatic migration of older artifacts.
+Detector snapshots carry a schema version. Optional scoring fields preserve
+loading of older artifacts; existing snapshots retain their embedded thresholds.
 
 ## Registered artifact types
 
@@ -33,6 +33,14 @@ the training capture IDs and likelihood backend. Its fitting diagnostics
 include convergence settings, likelihoods, and runtime.
 
 Processed captures use their own validated JSON format in `processing.storage`.
+
+New threshold artifacts include `count_tails` for `total` and `arp`. Each entry
+contains a finite, nonnegative log-count cutoff and a positive finite reference
+IQR. Both entries are required together. Events add `composition_score` and
+`feature_margins`; their combined score is the minimum margin and alerts below
+zero. DM-only artifacts omit these features. The threshold `score_iqr` is a fit
+reference scale for the joint detector and a calibration IQR for older artifacts.
+See [score semantics](likelihood-semantics.md#joint-detector-score).
 
 ## Loading artifacts
 

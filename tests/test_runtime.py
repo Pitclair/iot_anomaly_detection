@@ -394,8 +394,10 @@ def test_edge_rollback_cli_restores_previous_pair(edge_runtime):
 @pytest.mark.parametrize("score_type", ["raw", "normalized"])
 @pytest.mark.parametrize("policy", ["conservative", "legacy"])
 @pytest.mark.parametrize("mode", ["static", "adaptive_threshold", "periodic_refit"])
+@pytest.mark.parametrize("count_tails", [False, True])
 def test_streaming_cli_replay_matches_batch_updates(
     tmp_path, config_factory, edge_config_factory, monkeypatch, capsys, score_type, policy, mode,
+    count_tails,
 ):
     import numpy as np
     from lm_idnet.algorithms.dirichlet import DirichletFit
@@ -415,6 +417,13 @@ def test_streaming_cli_replay_matches_batch_updates(
     write_model(config)
     write_threshold(config, score_type, threshold_value=-8. if score_type == "raw" else -.8,
                     score_iqr=2. if score_type == "raw" else .2)
+    if count_tails:
+        raw_threshold = json.loads(config.outputs.threshold_path.read_text())
+        raw_threshold["count_tails"] = {
+            name: {"threshold": float(np.log1p(100)), "score_iqr": 1.}
+            for name in ("total", "arp")
+        }
+        config.outputs.threshold_path.write_text(json.dumps(raw_threshold))
     write_processed_captures(config, "calibration", counts=((1, 2, 3, 4), (4, 2, 3, 4)))
     write_processed_captures(config, counts=(
         (1, 2, 3, 4), (2, 2, 3, 4), (10000, 0, 0, 0),

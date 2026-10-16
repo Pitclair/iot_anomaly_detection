@@ -180,6 +180,9 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     )
     write_model(config, log_likelihood_backend="lm", precision_digits=7)
     write_calibration_datasets(config)
+    from test_scoring_stage import write_processed_captures
+
+    write_processed_captures(config, "fit", counts=((100, 200, 300, 400),))
     backend_calls = []
 
     def initialize_backend(backend_name, precision_digits=6):
@@ -214,6 +217,20 @@ def test_calibrate_threshold_scores_windows_and_saves_artifact(
     assert threshold.score_minimum <= threshold.score_median
     assert threshold.score_median <= threshold.score_maximum
     assert threshold.score_iqr > 0
+    assert threshold.count_tails.keys() == {"total", "arp"}
+    from lm_idnet.models.scoring_stage import score_window
+
+    model = load_artifact(model_path, expected_type="model")
+    calibrated_scores = [score_window(
+        window, device_id=config.ingest.device_id, capture_id="calibration",
+        model_categories=model.categories, expected_profile=model.mean_probabilities,
+        model_fingerprint=artifact_fingerprint(model), alpha=np.asarray(model.alpha),
+        log_likelihood=ScipyLogLikelihood(), threshold=threshold.threshold,
+        score_iqr=threshold.score_iqr, score_type=score_type, count_tails=threshold.count_tails,
+    )["score"] for window in load_calibration_windows(config, config.ingest.categories)]
+    assert np.quantile(calibrated_scores, threshold.quantile) == pytest.approx(0., abs=1e-12)
+    assert (threshold.count_tails["total"].threshold - threshold.count_tails["arp"].threshold
+            == pytest.approx(np.log1p(1000) - np.log1p(400)))
 
 
 def test_calibrate_threshold_requires_minimum_samples(

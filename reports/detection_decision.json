@@ -1,0 +1,156 @@
+{
+  "kept": [
+    "Dirichlet-multinomial category-count model unchanged",
+    "Joint normal-data calibration of composition, total volume, and ARP margins",
+    "Fixed reference DM and count tails during adaptation",
+    "Raw DM scores for learning; count-tail confidence gates in conservative mode"
+  ],
+  "rejected": [
+    "Per-packet normalization: weak recall on both current labeled datasets",
+    "Broad per-category tails: excessive false alerts on later Samsung traffic",
+    "Separately allocated extreme-tail budgets: recall losses",
+    "Joint rank-tail cutoff: later recall losses"
+  ],
+  "evidence": [
+    "reports/detection_experiments.json",
+    "reports/detection_final_audit.json",
+    "reports/detection_echo_transfer.json",
+    "reports/detection_rejected_experiments.json",
+    "reports/detection_backend_checks.json"
+  ],
+  "aggregate_protocol": "Pool the available labeled development/later replays from Chromecast and Samsung plus archived Echo development. Each partition and mode starts independently from the same fitted normal reference. These are retrospective results, not a fresh held-out test.",
+  "aggregate_results": [
+    {
+      "mode": "static",
+      "policy": "conservative",
+      "variant": "baseline",
+      "true_positive": 89,
+      "false_positive": 37,
+      "false_negative": 43,
+      "true_negative": 2344,
+      "window_count": 2513,
+      "f1_score": 0.689922480620155
+    },
+    {
+      "mode": "adaptive_threshold",
+      "policy": "conservative",
+      "variant": "baseline",
+      "true_positive": 89,
+      "false_positive": 55,
+      "false_negative": 43,
+      "true_negative": 2326,
+      "window_count": 2513,
+      "f1_score": 0.644927536231884
+    },
+    {
+      "mode": "periodic_refit",
+      "policy": "conservative",
+      "variant": "baseline",
+      "true_positive": 89,
+      "false_positive": 37,
+      "false_negative": 43,
+      "true_negative": 2344,
+      "window_count": 2513,
+      "f1_score": 0.689922480620155
+    },
+    {
+      "mode": "adaptive_threshold",
+      "policy": "legacy",
+      "variant": "baseline",
+      "true_positive": 61,
+      "false_positive": 21,
+      "false_negative": 71,
+      "true_negative": 2360,
+      "window_count": 2513,
+      "f1_score": 0.5700934579439252
+    },
+    {
+      "mode": "periodic_refit",
+      "policy": "legacy",
+      "variant": "baseline",
+      "true_positive": 62,
+      "false_positive": 21,
+      "false_negative": 70,
+      "true_negative": 2360,
+      "window_count": 2513,
+      "f1_score": 0.5767441860465117
+    },
+    {
+      "mode": "static",
+      "policy": "conservative",
+      "variant": "hybrid",
+      "true_positive": 88,
+      "false_positive": 29,
+      "false_negative": 44,
+      "true_negative": 2352,
+      "window_count": 2513,
+      "f1_score": 0.7068273092369478
+    },
+    {
+      "mode": "adaptive_threshold",
+      "policy": "conservative",
+      "variant": "hybrid",
+      "true_positive": 89,
+      "false_positive": 41,
+      "false_negative": 43,
+      "true_negative": 2340,
+      "window_count": 2513,
+      "f1_score": 0.6793893129770993
+    },
+    {
+      "mode": "periodic_refit",
+      "policy": "conservative",
+      "variant": "hybrid",
+      "true_positive": 88,
+      "false_positive": 29,
+      "false_negative": 44,
+      "true_negative": 2352,
+      "window_count": 2513,
+      "f1_score": 0.7068273092369478
+    },
+    {
+      "mode": "adaptive_threshold",
+      "policy": "legacy",
+      "variant": "hybrid",
+      "true_positive": 88,
+      "false_positive": 29,
+      "false_negative": 44,
+      "true_negative": 2352,
+      "window_count": 2513,
+      "f1_score": 0.7068273092369478
+    },
+    {
+      "mode": "periodic_refit",
+      "policy": "legacy",
+      "variant": "hybrid",
+      "true_positive": 89,
+      "false_positive": 29,
+      "false_negative": 43,
+      "true_negative": 2352,
+      "window_count": 2513,
+      "f1_score": 0.712
+    }
+  ],
+  "tradeoffs": [
+    "Echo static loses one attack window but removes eight false positives; its legacy modes add six false positives",
+    "Chromecast later legacy adaptation retains one original false alert that adaptation alone suppressed",
+    "Conservative updates are rejected on Chromecast and Samsung at their existing settings; Echo exercises accepted conservative threshold updates",
+    "D-Link is unlabeled: its alerts are not measured false positives",
+    "Direction and TCP SYN features were not retained because cross-dataset packet metadata is unavailable"
+  ],
+  "verification": {
+    "pytest_command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-m",
+      ""
+    ],
+    "passed": 582,
+    "skipped": 2,
+    "skipped_reason": "Docker deployment tests need LM_IDNET_EDGE_IMAGE",
+    "backend_decision_mismatches": 0
+  },
+  "activation": "Default threshold/event artifacts regenerated. Existing persisted detector states retain their original calibration; initialize a new state to use the new detector."
+}

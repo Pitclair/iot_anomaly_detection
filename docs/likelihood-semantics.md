@@ -100,3 +100,36 @@ The implementation contract is defined by
 [`algorithms/log_likelihood.py`](../src/lm_idnet/algorithms/log_likelihood.py)
 and its numerical tests in
 [`tests/test_likelihood.py`](../tests/test_likelihood.py).
+
+## Joint detector score
+
+New calibration artifacts keep the DM model unchanged and add two upper count
+tails: total packets and ARP packets. Total volume complements a model conditioned
+on the packet total; ARP volume exposes a small category that can be masked by
+dominant traffic. Both counts already exist in processed windows.
+
+Fit-only medians and IQRs put the DM log-probability, negative `log1p(total)`, and
+negative `log1p(ARP)` on comparable scales. Constant fit features use unit scale.
+The minimum of these three scores is calibrated once at the configured quantile
+on normal calibration windows. This accounts for their correlation without
+label-tuned weights or separate extreme-tail budget allocations. The quantile is
+an empirical calibration target, not a guarantee under future traffic drift.
+
+Events retain the raw DM value in `composition_score`. Their `feature_margins`
+give signed distances from the calibrated cutoffs; `score` is the minimum,
+`threshold` is zero, and `severity` is `max(0, -score)`. Negative margins alert.
+The threshold artifact's `score_iqr` stores the fit reference scale for the DM;
+each `count_tails` entry stores its log-count cutoff and reference scale.
+
+Adaptive modes update DM parameters/thresholds using DM scores, while keeping
+the original DM and count tails as fixed detection references. Conservative
+learning also excludes windows near either count cutoff. This prevents updates
+from absorbing volume evidence or suppressing an original DM alert. It can also
+retain an original false alert after benign drift; replacing that trusted
+reference requires a new normal-data fit/calibration. Legacy learning retains
+its historical admission and update policy, with the same fixed detection
+references when a new calibration artifact is supplied.
+
+Threshold artifacts without `count_tails` retain the earlier DM-only behavior.
+Run `calibrate` and prepare a new detector state to enable the combined detector;
+existing snapshots retain their embedded calibration.

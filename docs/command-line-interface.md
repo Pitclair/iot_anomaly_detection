@@ -100,8 +100,9 @@ is a successful exit; a final complete JSON record needs no trailing newline.
 At this milestone, every registered command has a callable handler. `train` loads the
 fit-partition matrix, estimates Dirichlet parameters with Minka's fixed-point
 iteration and the configured likelihood backend, and saves a validated model artifact.
-`calibrate` scores the configured calibration captures and saves a validated
-lower-quantile threshold artifact. `score` applies that threshold to
+`calibrate` uses normal fit counts to scale the DM, packet-volume, and ARP
+features, then calibrates their joint lower tail on the calibration captures.
+It saves a validated threshold artifact. `score` applies that detector to
 non-missing development-test windows and writes a JSON array with one result per
 window. `evaluate` compares development-test anomaly decisions with matching
 window labels and writes `evaluation_statistics.json` under the configured
@@ -141,6 +142,13 @@ limits, and counts of windows excluded from learning. See
 [`configuration.md`](configuration.md#conservative-update-limits) for defaults
 and units. Existing processed calibration JSON supplies the volume limit;
 PCAPs are not needed for this stage.
+
+With a new calibration artifact, count tails and the original DM remain fixed
+detection references in both adaptive modes. Updates use the underlying DM
+scores, and conservative admission also requires safe count-feature margins.
+Older threshold artifacts keep their DM-only decisions. See
+[`likelihood-semantics.md`](likelihood-semantics.md#joint-detector-score) for the
+combined score and reference-drift tradeoff.
 
 ## Earlier adaptation methods
 

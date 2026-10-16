@@ -16,6 +16,7 @@ from lm_idnet.artifacts import artifact_fingerprint, load_model, save_artifact
 from lm_idnet.config import AppConfig
 from lm_idnet.exceptions import DataValidationError
 from lm_idnet.models.schemas import ThresholdArtifact
+from lm_idnet.models.modeling_stage import load_training_matrix
 from lm_idnet.partitioning import calibration_partition_for_threshold
 from lm_idnet.processing.schemas import WindowRecord, validate_window_contract
 from lm_idnet.processing.storage import load_processed_dataset
@@ -86,18 +87,8 @@ def save_threshold(
     return threshold
 
 
-def _score_iqr(scores: np.ndarray) -> float:
-    quartile_1, quartile_3 = np.quantile(
-        scores, (0.25, 0.75), method="linear"
-    )
-    score_iqr = float(quartile_3 - quartile_1)
-    if score_iqr <= 0:
-        raise DataValidationError("calibration score IQR must be positive")
-    return score_iqr
-
-
 def calibrate_threshold(config: AppConfig) -> dict[str, object]:
-    """Calculate and save the configured lower-quantile threshold."""
+    """Calibrate the joint composition, packet-volume, and ARP score on normal traffic."""
     model = load_model(config)
     windows = load_calibration_windows(config, model.categories)
 
@@ -125,8 +116,35 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
         dtype=np.float64,
     )
     quantile = config.calibration.quantile
-    threshold_value = float(np.quantile(scores, quantile, method="linear"))
-    score_iqr = _score_iqr(scores)
+    fit_counts = load_training_matrix(config).counts
+    calibration_counts = np.asarray([window.counts for window in windows], dtype=np.int64)
+    arp_index = model.categories.index("arp")
+    fit_scores = np.asarray([
+        anomaly_score(row, alpha, log_likelihood, config.calibration.score_type)
+        for row in fit_counts
+    ])
+    fit_features = np.column_stack((
+        fit_scores, -np.log1p(fit_counts.sum(axis=1)), -np.log1p(fit_counts[:, arp_index]),
+    ))
+    calibration_features = np.column_stack((
+        scores, -np.log1p(calibration_counts.sum(axis=1)),
+        -np.log1p(calibration_counts[:, arp_index]),
+    ))
+    centers = np.median(fit_features, axis=0)
+    q1, q3 = np.quantile(fit_features, (0.25, 0.75), axis=0)
+    # shortcut: constant fit features use unit scale; calibration still sets the joint cutoff.
+    scales = np.where(q3 > q1, q3 - q1, 1.)
+    joint_scores = np.min((calibration_features - centers) / scales, axis=1)
+    joint_threshold = float(np.quantile(joint_scores, quantile, method="linear"))
+    threshold_value = float(centers[0] + joint_threshold * scales[0])
+    score_iqr = float(scales[0])
+    count_tails = {
+        name: {
+            "threshold": float(-centers[index] - joint_threshold * scales[index]),
+            "score_iqr": float(scales[index]),
+        }
+        for index, name in enumerate(("total", "arp"), start=1)
+    }
     selection = calibration_partition_for_threshold(config)
 
     threshold = save_threshold(
@@ -148,6 +166,7 @@ def calibrate_threshold(config: AppConfig) -> dict[str, object]:
             "score_median": float(np.median(scores)),
             "score_maximum": float(scores.max()),
             "score_iqr": score_iqr,
+            "count_tails": count_tails,
         },
     )
     logger.info(

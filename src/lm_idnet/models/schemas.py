@@ -125,6 +125,13 @@ class ModelArtifact(ModelSchema):
         return self
 
 
+class CountTailThreshold(ModelSchema):
+    """An upper tail of log1p packet or ARP counts from normal windows."""
+
+    threshold: float = Field(ge=0, allow_inf_nan=False)
+    score_iqr: float = Field(gt=0, allow_inf_nan=False)
+
+
 class ThresholdArtifact(ModelSchema):
     artifact_type: Literal["threshold"] = "threshold"
     model_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -140,6 +147,13 @@ class ThresholdArtifact(ModelSchema):
     score_median: float = Field(allow_inf_nan=False)
     score_maximum: float = Field(allow_inf_nan=False)
     score_iqr: float = Field(gt=0, allow_inf_nan=False)
+    count_tails: dict[str, CountTailThreshold] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def count_features_must_be_complete(self) -> "ThresholdArtifact":
+        if self.count_tails and self.count_tails.keys() != {"total", "arp"}:
+            raise ValueError("count tails must cover total packets and ARP")
+        return self
 
 
 class DetectorThresholdState(ModelSchema):
@@ -279,6 +293,8 @@ class AnomalyEventArtifact(ModelSchema):
     expected_profile: dict[str, float] = Field(min_length=2)
     category_residuals: dict[str, float] = Field(min_length=2)
     model_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    composition_score: float | None = Field(default=None, allow_inf_nan=False)
+    feature_margins: dict[str, float] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def values_must_be_consistent(self) -> "AnomalyEventArtifact":
@@ -305,4 +321,13 @@ class AnomalyEventArtifact(ModelSchema):
             raise ValueError("category residuals must equal observed minus expected")
         if self.is_anomaly != (self.score < self.threshold):
             raise ValueError("anomaly decision must match score and threshold")
+        if self.feature_margins:
+            if self.feature_margins.keys() != {"composition", "total", "arp"}:
+                raise ValueError("feature margins must cover composition, total packets, and ARP")
+            if self.composition_score is None or any(
+                not isfinite(value) for value in self.feature_margins.values()
+            ):
+                raise ValueError("feature scores must be finite")
+            if self.threshold != 0.0 or self.score != min(self.feature_margins.values()):
+                raise ValueError("combined score must equal the minimum feature margin")
         return self

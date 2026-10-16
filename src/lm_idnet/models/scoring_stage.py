@@ -33,7 +33,7 @@ from lm_idnet.exceptions import (
     LMIDNetError,
 )
 from lm_idnet.models.calibration_stage import load_calibration_packet_count_limit
-from lm_idnet.models.schemas import AnomalyEventArtifact, DetectorStateArtifact
+from lm_idnet.models.schemas import AnomalyEventArtifact, CountTailThreshold, DetectorStateArtifact
 from lm_idnet.partitioning import development_partition_for_evaluation
 from lm_idnet.processing.schemas import WindowRecord, validate_window_contract
 from lm_idnet.processing.storage import load_processed_dataset
@@ -54,6 +54,7 @@ def score_window(
     threshold: float,
     score_iqr: float,
     score_type: str,
+    count_tails: dict[str, CountTailThreshold] | None = None,
 ) -> dict[str, object]:
     """Score one prepared window without reading or writing external state."""
     if window.categories != model_categories:
@@ -67,6 +68,21 @@ def score_window(
 
     counts = np.asarray(window.counts, dtype=np.int64)
     score = anomaly_score(counts, alpha, log_likelihood, score_type)
+    composition_score = None
+    feature_margins = {}
+    if count_tails:
+        if count_tails.keys() != {"total", "arp"}:
+            raise DataValidationError("count tails must cover total packets and ARP")
+        composition_score = score
+        feature_margins = {"composition": (score - threshold) / score_iqr}
+        count_features = {"total": sum(window.counts), "arp": window.counts[model_categories.index("arp")]}
+        for name, count in count_features.items():
+            tail = count_tails[name]
+            feature_margins[name] = (
+                tail.threshold - float(np.log1p(count))
+            ) / tail.score_iqr
+        score = min(feature_margins.values())
+        threshold, score_iqr = 0.0, 1.0
     total = int(counts.sum())
     residuals = counts / total if total else np.zeros_like(counts)
     residuals = residuals - expected_profile
@@ -84,6 +100,8 @@ def score_window(
         expected_profile=dict(zip(model_categories, expected_profile)),
         category_residuals=dict(zip(model_categories, residuals)),
         model_fingerprint=model_fingerprint,
+        composition_score=composition_score,
+        feature_margins=feature_margins,
     ).model_dump(mode="json")
 
 
@@ -219,6 +237,7 @@ class WindowDetector:
             if self.state is not None else self.model.mean_probabilities
         )
         self.initial_threshold = threshold.threshold
+        self.count_tails = threshold.count_tails
         self.current_threshold = (
             self.state.threshold.threshold if self.state is not None else self.initial_threshold
         )
@@ -270,13 +289,31 @@ class WindowDetector:
             model_fingerprint=self.current_model_fingerprint, alpha=self.alpha,
             log_likelihood=self.log_likelihood, threshold=self.current_threshold,
             score_iqr=self.current_score_iqr, score_type=self.score_type,
+            count_tails=self.count_tails,
         )
         self.window_count += 1
         if self.mode == "static":
             return event, None, None
 
-        score = float(event["score"])
+        score = float(
+            event["composition_score"]
+            if event["composition_score"] is not None else event["score"]
+        )
         counts = np.asarray(window.counts, dtype=np.int64)
+        baseline_score = (
+            score if self.current_model_fingerprint == self.model_fingerprint
+            else anomaly_score(counts, self.initial_alpha, self.log_likelihood, self.score_type)
+        )
+        # Keep adaptation from erasing evidence against the trusted reference DM.
+        if self.count_tails:
+            margins = event["feature_margins"]
+            margins["composition"] = min(
+                margins["composition"],
+                (baseline_score - self.initial_threshold) / self.initial_score_iqr,
+            )
+            event["score"] = min(margins.values())
+            event["is_anomaly"] = event["score"] < 0.
+            event["severity"] = max(0., -event["score"])
         if not self.conservative:
             assert self.recent_scores is not None and self.recent_counts is not None
             self.recent_scores.append(score)
@@ -284,18 +321,13 @@ class WindowDetector:
         if self.volume_limit is not None and window.total_count > self.volume_limit:
             self.rejected_window_counts["excessive_volume"] += 1
         elif self.conservative or self.mode == "periodic_refit":
-            baseline_score = (
-                score
-                if self.current_model_fingerprint == self.model_fingerprint
-                else anomaly_score(
-                    counts,
-                    self.initial_alpha,
-                    self.log_likelihood,
-                    self.score_type,
-                )
-            )
             if (
-                (
+                (not self.conservative or all(
+                    margin >= self.config.adaptation.safe_margin
+                    for name, margin in event["feature_margins"].items()
+                    if name != "composition"
+                ))
+                and (
                     not self.conservative or score >= (
                         self.current_threshold
                         + self.config.adaptation.safe_margin * self.current_score_iqr

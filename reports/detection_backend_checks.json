@@ -1,0 +1,53 @@
+[
+  {
+    "dataset": "UNSW-Chromecast",
+    "comparisons": {
+      "alpha_maximum_absolute_difference": 4.442762471512651e-05,
+      "alpha_maximum_relative_difference": 1.7082570268746526e-06,
+      "likelihood_absolute_difference": 5.587935447692871e-08,
+      "threshold_absolute_difference": 1.24669682008971e-05,
+      "score_maximum_absolute_difference": 0.00024004282981593406,
+      "score_median_absolute_difference": 2.350168485065751e-05,
+      "decision_mismatch_count": 0,
+      "lm_over_scipy_runtime_ratio": {
+        "model_fit_median_seconds": 1.3395755680199604,
+        "likelihood_matrix_median_seconds": 1.6863309123008294,
+        "single_window_score_median_seconds": 0.921345517200322
+      }
+    }
+  },
+  {
+    "dataset": "UNSW-Samsung-Camera",
+    "comparisons": {
+      "alpha_maximum_absolute_difference": 7.591280017038571e-06,
+      "alpha_maximum_relative_difference": 8.556736740212534e-07,
+      "likelihood_absolute_difference": 4.2171450331807137e-08,
+      "threshold_absolute_difference": 5.007590075933877e-07,
+      "score_maximum_absolute_difference": 0.00012268118780411896,
+      "score_median_absolute_difference": 5.6980466780487404e-06,
+      "decision_mismatch_count": 0,
+      "lm_over_scipy_runtime_ratio": {
+        "model_fit_median_seconds": 1.2566871073325556,
+        "likelihood_matrix_median_seconds": 1.4660277242430686,
+        "single_window_score_median_seconds": 0.9183082668658024
+      }
+    }
+  },
+  {
+    "dataset": "D-LinkDayCam5",
+    "comparisons": {
+      "alpha_maximum_absolute_difference": 1.658685064853671e-05,
+      "alpha_maximum_relative_difference": 3.857063953689753e-07,
+      "likelihood_absolute_difference": 2.6746420189738274e-07,
+      "threshold_absolute_difference": 2.8864222656466154e-06,
+      "score_maximum_absolute_difference": 2.434281828556095e-06,
+      "score_median_absolute_difference": 5.233210256250231e-07,
+      "decision_mismatch_count": 0,
+      "lm_over_scipy_runtime_ratio": {
+        "model_fit_median_seconds": 1.0885819663651983,
+        "likelihood_matrix_median_seconds": 1.143866336750773,
+        "single_window_score_median_seconds": 0.9412797187589158
+      }
+    }
+  }
+]

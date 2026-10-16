@@ -21,10 +21,92 @@ from lm_idnet.models.calibration_stage import save_threshold
 from lm_idnet.models import scoring_stage
 from lm_idnet.models.modeling_stage import TrainingMatrix, save_model
 from lm_idnet.models.scoring_stage import adapt_windows, score_window, score_windows
+from lm_idnet.models.schemas import CountTailThreshold
 from lm_idnet.processing.schemas import Metadata, ProcessedDataset, WindowRecord
 from lm_idnet.processing.storage import load_processed_dataset, save_processed_dataset
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("tcp,anomaly", [(0, False), (10, False), (11, True), (100000, True)])
+def test_count_tail_detects_flood_without_composition_change(window_factory, tcp, anomaly):
+    window = window_factory(tcp=tcp, udp=0, ssdp=0, arp=0)
+    tails = {
+        name: CountTailThreshold(threshold=float(np.log1p(10)), score_iqr=1.)
+        for name in ("total", "arp")
+    }
+    event = score_window(
+        window, device_id="camera", capture_id="capture", model_categories=window.categories,
+        expected_profile=(.1, .2, .3, .4), model_fingerprint="0" * 64,
+        alpha=np.array([1., 2., 3., 4.]), log_likelihood=ScipyLogLikelihood(),
+        threshold=-1000., score_iqr=2., score_type="raw", count_tails=tails,
+    )
+    assert event["composition_score"] > -1000.
+    assert event["is_anomaly"] is anomaly
+    assert event["score"] == min(event["feature_margins"].values())
+    assert event["threshold"] == 0.
+    assert event["severity"] == max(0., -event["score"])
+
+
+def test_count_only_alert_is_excluded_from_conservative_learning(tmp_path, config_factory):
+    config = config_factory(
+        ingest={"processed_root": tmp_path / "processed"},
+        estimator={"log_likelihood_backend": "scipy"},
+        calibration={"minimum_samples": 2},
+        adaptation={"mode": "adaptive_threshold", "safe_margin": 0.},
+        outputs={"model_path": tmp_path / "model.json", "threshold_path": tmp_path / "threshold.json"},
+    )
+    write_model(config)
+    write_threshold(config, "raw", threshold_value=-1000.)
+    raw = json.loads(config.outputs.threshold_path.read_text())
+    raw["count_tails"] = {
+        name: {"threshold": float(np.log1p(10)), "score_iqr": 1.}
+        for name in ("total", "arp")
+    }
+    config.outputs.threshold_path.write_text(json.dumps(raw))
+    write_processed_captures(config, "calibration", counts=((100, 200, 300, 400),))
+    write_processed_captures(config, counts=((10, 0, 0, 0), (11, 0, 0, 0)))
+    detector = scoring_stage.WindowDetector(config)
+    capture_id = config.ingest.partitions.development_test[0]
+    dataset = load_processed_dataset(
+        config.ingest.processed_root / config.ingest.dataset_folder / f"{capture_id}.json",
+    )
+    for window in dataset.windows:
+        detector.process(window, device_id=config.ingest.device_id, capture_id=capture_id)
+    assert len(detector.safe_counts) == 1
+    assert detector.rejected_window_counts == {"excessive_volume": 0, "low_confidence": 1}
+
+
+@pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
+def test_adaptation_keeps_reference_composition_evidence(tmp_path, config_factory, mode):
+    config = config_factory(
+        estimator={"log_likelihood_backend": "scipy"},
+        adaptation={"mode": mode, "policy": "legacy"},
+        outputs={"model_path": tmp_path / "model.json", "threshold_path": tmp_path / "threshold.json"},
+    )
+    write_model(config)
+    write_threshold(config, "raw", threshold_value=-1.)
+    raw = json.loads(config.outputs.threshold_path.read_text())
+    raw["count_tails"] = {
+        name: {"threshold": float(np.log1p(100)), "score_iqr": 1.}
+        for name in ("total", "arp")
+    }
+    config.outputs.threshold_path.write_text(json.dumps(raw))
+    detector = scoring_stage.WindowDetector(config)
+    detector.current_threshold = -1000.
+    window = WindowRecord(
+        start_utc="2020-10-16T00:00:00Z", end_utc="2020-10-16T00:10:00Z",
+        categories=config.ingest.categories, counts=(1, 2, 3, 4), state="observed",
+    )
+    event, _, _ = detector.process(
+        window, device_id=config.ingest.device_id,
+        capture_id=config.ingest.partitions.development_test[0],
+    )
+    assert event["composition_score"] > detector.current_threshold
+    assert event["is_anomaly"] is True
+    assert event["feature_margins"]["composition"] == pytest.approx(
+        (event["composition_score"] - detector.initial_threshold) / detector.initial_score_iqr,
+    )
 
 
 def test_score_window_is_pure_and_rejects_missing_windows(window_factory) -> None:
@@ -220,6 +302,8 @@ def test_score_windows_writes_observed_and_silent_results(
             "expected_profile",
             "category_residuals",
             "model_fingerprint",
+            "composition_score",
+            "feature_margins",
         }
         for result in results
     )
