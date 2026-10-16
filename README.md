@@ -1,7 +1,25 @@
-# IoT Anomaly Detection Baseline
+# LM-IDNet
 
-This repository provides a scaffold for modeling and forecasting IoT network
-traffic using Dirichlet-based methods.
+LM-IDNet is a lightweight, unsupervised anomaly detector for IoT traffic. It
+learns each device's normal mixture of TCP, ordinary UDP, SSDP, and ARP packet
+counts in ten-minute windows using a Dirichlet–multinomial model. Separate
+benign windows calibrate likelihood, total-volume, and ARP margins. Fitting,
+calibration, and runtime decisions require no labelled attacks, attack
+signatures, or neural networks; offline evaluation and method selection use
+labels where available. A trusted normal reference is still required.
+
+The native Languasco–Migliardi numerical backend computes likelihood terms
+accurately. Static detection and guarded adaptation share the same scoring
+path. Every alert records its window, counts, expected profile, residuals,
+score, cutoff, and model fingerprint so the decision can be traced.
+
+Retrospective Chromecast and Samsung camera development results show 88.24%
+and 92.31% static precision, with 46.88% and 68.57% recall. Results vary across
+devices and adaptation policies. Resource measurements cover a local
+Linux/amd64 Docker simulation with one CPU and 512 MiB, rather than physical
+IoT hardware. The [full project report](docs/lm_idnet_full_project_report.tex)
+describes the evidence, rejected alternatives, and limits. The detector emits
+alerts; it does not block traffic automatically.
 
 Structure:
 
@@ -26,7 +44,8 @@ Use the runner from the repository root:
 ./scripts/run.sh preprocess --config configs/d_link_day_cam5.json
 ./scripts/run.sh diagnose --config configs/d_link_day_cam5.json
 ./scripts/run.sh train --config configs/d_link_day_cam5.json
-./scripts/run.sh forecast --config configs/d_link_day_cam5.json
+./scripts/run.sh calibrate --config configs/d_link_day_cam5.json
+./scripts/run.sh score --config configs/d_link_day_cam5.json
 ```
 
 The runner builds `lm-idnet:latest` using Docker's build cache and then starts
@@ -105,8 +124,9 @@ lm-idnet --help
 lm-idnet preprocess --config configs/d_link_day_cam5.json
 lm-idnet diagnose --config configs/d_link_day_cam5.json
 lm-idnet train --config configs/d_link_day_cam5.json
+lm-idnet calibrate --config configs/d_link_day_cam5.json
+lm-idnet score --config configs/d_link_day_cam5.json
 lm-idnet adapt --config configs/d_link_day_cam5.json
-lm-idnet forecast --config configs/d_link_day_cam5.json
 ```
 
 The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,

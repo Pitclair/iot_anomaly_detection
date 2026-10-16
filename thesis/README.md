@@ -20,8 +20,10 @@ From inside this folder, run `./build.sh`. Docker uses the existing
 
 Use the [writing guide](../docs/thesis_writing_guide.md) as the reference.
 The agreed main text is 60–100 pages, with a target of 80–100; front matter,
-bibliography, and appendices are excluded. The skeleton contains no results or
-substantial thesis prose. Replace all bracketed placeholders before submission.
+bibliography, and appendices are excluded. The English abstract is based on the
+official project abstract, revised to match the implementation and evidence;
+the chapters and Italian summary remain a skeleton. Replace all bracketed
+placeholders before submission.
 
 The container lacks Times New Roman. Drafts use TeX Gyre Termes, a bundled
 Times-style font; Times New Roman is selected automatically if available.

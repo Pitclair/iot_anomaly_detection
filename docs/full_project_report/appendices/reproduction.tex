@@ -51,6 +51,25 @@ lm-idnet rollback --config CONFIG.json --state-dir STATE_DIRECTORY
 Restart restores detector state, not a batch capture cursor. A rerun will replay
 the configured development sequence.
 
+\subsection{Detection and scoring comparisons}
+
+With the installed package and configured processed data, the common detector
+can be replayed without overwriting the accepted model/threshold pairs:
+
+\begin{verbatim}
+python scripts/evaluate_detection.py
+python scripts/evaluate_detection.py --partition final_test \
+  --output reports/detection_final_audit.json
+\end{verbatim}
+
+The first command compares development scoring and policies on the three
+configured reference datasets. The second generates the retrospective later
+audit; it is not an independent final test. The Echo transfer record identifies
+its separate archive revision and converted-count hashes, rather than implying
+that Echo data are included in the default configuration set. Existing saved
+states keep their embedded calibration; prepare a new state deliberately when
+selecting a different scoring contract.
+
 \subsection{Numerical comparison}
 
 \begin{verbatim}

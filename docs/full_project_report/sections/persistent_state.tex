@@ -6,7 +6,10 @@ Persisting alpha alone would be unsafe: a new model with an old threshold could
 silently change decisions. A detector snapshot therefore contains active alpha
 and its matching fingerprint-bound threshold/IQR, together with the original
 model, original threshold, input contract, calibration and adaptation settings,
-estimator settings, and the calibration-derived volume limit.
+estimator settings, and the calibration-derived volume limit. Combined detector
+snapshots also preserve the fixed volume/ARP cutoffs through the original
+threshold artefact. A DM-only snapshot keeps its recorded calibration contract;
+it is not silently converted when a different threshold file is generated.
 
 Each immutable snapshot has a version ID and creation time. The original model
 and threshold retain their training/calibration provenance; an adaptive version

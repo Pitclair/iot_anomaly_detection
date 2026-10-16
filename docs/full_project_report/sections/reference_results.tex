@@ -1,4 +1,4 @@
-\section{Static and Historical Legacy Results}
+\section{Static and Historical Adaptation Results}
 
 \subsection{Static detector}
 
@@ -15,14 +15,15 @@ more common than attack windows.
 \begin{tabular}{lrrrrr}
 \toprule
 \textbf{Dataset} & \textbf{$\alpha_0$} & \textbf{$\psi$} &
-\textbf{Threshold} & \textbf{Dev. windows} & \textbf{Flags} \\
+\textbf{DM cutoff} & \textbf{Dev. windows} & \textbf{Flags} \\
 \midrule
 D-Link Camera 5 & 122.22 & 0.00818 & $-22.5044$ & 270 & 3 \\
 UNSW Chromecast & 28.10 & 0.03559 & $-25.6108$ & 474 & 17 \\
 UNSW Samsung camera & 17.39 & 0.05749 & $-16.9221$ & 556 & 52 \\
 \bottomrule
 \end{tabular}
-\caption{Stored static models, thresholds, and development outputs. The three D-Link alerts have no ground-truth classification; they are not
+\caption{Stored static models, composition cutoffs, and development outputs.
+Combined events compare their margin score with zero. The three D-Link alerts have no ground-truth classification; they are not
 measured true or false positives.}
 \label{tab:static-model-summary}
 \end{table}
@@ -35,6 +36,9 @@ across devices. Decisions and labelled metrics provide the valid comparison.
 All adaptive numbers in this section belong to the historical legacy rules,
 not the current conservative default. The six explicit legacy configurations
 and their retained reports preserve these comparisons.
+The retained scoring and fixed-reference comparisons are presented separately
+in Section~\ref{sec:detector-scoring}; their learning policies and update
+schedules must not be conflated with these historical runs.
 
 \input{full_project_report/figures/historical_f1}
 
@@ -150,6 +154,12 @@ Flags from each backend & 3 \\
 \caption{LM and SciPy agreement in the D-Link production benchmark.}
 \label{tab:lm-agreement}
 \end{table}
+
+For the retained combined detector, the separate
+\path{reports/detection_backend_checks.json} record also compares LM and SciPy
+on all three configured datasets. It reports zero decision mismatches across
+their 1,300 development windows; that agreement does not itself measure an
+improvement in detection accuracy.
 
 The native matrix optimisation removes repeated LM setup while preserving the
 row-wise model. A separate experiment reproduces the aggregate calculation used

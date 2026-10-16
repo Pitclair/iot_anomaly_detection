@@ -2,18 +2,24 @@
 \thispagestyle{empty}
 
 \begin{abstract}
-This report describes the complete current LM-IDNet project: its statistical
-model, data preparation, native numerical backend, static and adaptive
-detectors, input safeguards, saved-state mechanism, streaming runtime, simulated
-edge deployment, tests, research branches, and thesis-writing workspace.
+LM-IDNet is a lightweight, unsupervised IoT anomaly detector that learns normal
+device traffic from TCP, ordinary UDP, SSDP, and ARP packet counts using a
+Dirichlet--multinomial model. Separate benign calibration supports likelihood
+scoring with compact volume and ARP checks. The Languasco--Migliardi numerical
+backend, guarded adaptation, and traceable alert records form a reproducible
+pipeline without attack signatures or neural models. This report describes
+its statistical basis, data preparation, static and adaptive detectors,
+input safeguards, saved state, streaming runtime, simulated edge deployment,
+tests, research branches, and thesis-writing workspace.
 It retains the earlier experiments, including unsuccessful ones, while
 identifying which implementation and adaptation policy produced each result.
 The reference software now supports conservative updates, restoration and
 rollback, and bounded supplied-window operation in a local Docker simulation.
-The scientific evidence remains more limited than the implementation: the
-labelled reference comparisons are development results, the conservative
-comparison reports still need a definitive run, and the reference command line
-does not yet expose the reserved final-test partition. The report is intended
+The scientific evidence remains more limited than the implementation: historical
+development results and retrospective cross-device comparisons do not establish
+performance on an untouched final test. The detector retains its DM foundation
+with compact count-based scoring and fixed detection references during updates.
+The report is intended
 as a technical and experimental reference for writing the thesis, rather than
 as a substitute for the thesis or a claim of production deployment.
 \end{abstract}
@@ -22,17 +28,17 @@ as a substitute for the thesis or a claim of production deployment.
 \begin{center}
 \begin{minipage}{0.92\textwidth}
 \small
-\textbf{Evidence boundary, 15 October 2026.}
-The checked-out branch is \texttt{feature/thesis-report}, based on
-\texttt{0d66bf8}; the reference detector is the \texttt{master} implementation
-at \texttt{db2a736}. The later commit adds the thesis workspace without changing
-detector code. Temporal research is read from \texttt{b0aa35d} and multi-signal
-research from \texttt{4279d84}. Neither branch was merged or executed for this
-report. Current configurations, compatible model--threshold pairs, processed
-window counts, retained JSON reports, and all 560 automated tests were checked.
-Earlier full-data experiments and long resource trials are reported from their
-retained records; they were not rerun. The report itself is a documentation change on this
-snapshot, not a new detector revision.
+\textbf{Evidence boundary, 16 October 2026.}
+The detector and scoring reference is \texttt{99bc189} on
+\texttt{feature/volume-anomaly}. Historical adaptation and edge measurements
+retain their recorded implementation boundaries; temporal research is read
+from \texttt{b0aa35d}. Current configurations, compatible model--threshold pairs,
+processed windows, and retained cross-device comparisons identify the evaluated
+system. Its full test record is 582 passes and two skipped Docker checks;
+the earlier image-specific verification and long resource trials are separate
+records. Final-partition replays are retrospective audits, not an independent
+locked test. This report uses the retained evidence without rerunning detector
+experiments as a documentation side effect.
 \end{minipage}
 \end{center}
 

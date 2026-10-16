@@ -39,26 +39,28 @@ Samsung contamination and concentration movement show why convergence and
 better in-buffer likelihood are insufficient safety conditions.
 
 The conservative implementation addresses specific failure mechanisms.
-Its usefulness still needs a fresh, retained real-data comparison. A run with
-zero promotions can support a rejection-cost or rejection-policy claim, but not
-a claim that learning improved the normal profile. Conversely, a controlled
-promotion test verifies code correctness rather than field effectiveness.
-The report preserves both findings instead of forcing an update to make a
-more attractive demonstration.
+Retrospective comparisons support pooled gains for the retained scoring and
+reference checks, with accepted threshold updates on Echo. Chromecast and
+Samsung still promote no conservative candidate, so their results do not prove
+that learning improved the normal profile. Controlled promotion tests verify
+code correctness, while candidate rejections and cross-device tradeoffs remain
+part of the empirical findings.
 
-\subsection{Branch results explain possible extensions}
+\subsection{Selected scoring and separate temporal research}
 
 The temporal branch establishes why a single nominal date split is not the
 same as an audited timestamp timeline. Its rolling folds and episode metrics
-show variability hidden by pooled window counts. The multi-signal branch
-shows that compact volume and direction measurements can recover attacks the
-composition baseline misses, but the gains are device-dependent.
+show variability hidden by pooled window counts. The retained detector uses
+only composition, packet volume, and ARP counts, with fixed references during
+updates. Broader category tails fail later specificity checks, while extra
+packet-level behaviour lacks a common validated input across the labelled
+devices. These choices favour a small count-based method over a collection of
+device-specific exceptions.
 
-Neither branch has been consolidated with the current persistence, safety,
-and edge implementation. Its final figures and incident definitions must not
-be mixed with current reference metrics as if one experiment produced them.
-Porting either branch would change the system being evaluated and would
-require a deliberate new reference revision.
+Temporal folds and incident definitions remain separate evidence. Their
+figures must not be mixed with the retained detector comparisons as if one
+experiment produced both. Retrospective gains also cannot substitute for
+an independently frozen final test.
 
 \subsection{Claims that remain unsupported}
 
@@ -69,6 +71,15 @@ not establish an independently locked final result for the current reference
 detector, a winning conservative configuration, an optimal window length,
 capture-block confidence intervals, or empirical forecasting from the
 installed forecast command.
+
+Resource suitability is measured in the bounded local simulation; physical
+embedded targets remain untested. The modest normal-window fits demonstrate
+the observed training requirement, without establishing a general
+sample-efficiency guarantee. High precision is demonstrated on the
+Chromecast and Samsung traces; the retained Echo static precision is only
+35.48\%. Guarded adaptation is implemented, but consistent recovery from
+legitimate drift has not been demonstrated across devices. Alert explanations
+describe statistical evidence, rather than proving that an attack occurred.
 
 These limits are compatible with a defensible thesis. The writing should
 answer what was actually measured, explain negative outcomes, and identify the

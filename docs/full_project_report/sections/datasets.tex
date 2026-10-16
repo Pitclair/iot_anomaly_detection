@@ -11,7 +11,7 @@ time-aligned JSON records.
 
 Complete captures, not random rows, are assigned to each role. Table
 \ref{tab:dataset-composition} reports the number of processed ten-minute windows
-currently stored on \texttt{master}.
+stored for the three configured reference devices.
 
 \begin{table}[H]
 \centering
@@ -83,6 +83,14 @@ May 31 contains 81 windows and June 1 contains 124, rather than a full 144.
 The labels therefore measure the observed recording coverage; a nominal day
 does not automatically supply a full day of evidence.
 
+An additional transfer replay uses 475 archived Amazon Echo development windows,
+including twelve attack windows, with its own earlier normal fit/calibration
+periods. The four-category counts, timestamps, and labels are retained from
+\texttt{4279d84}; extra packet-behaviour fields are discarded to match the common
+input contract. Its archive revision and converted-input hashes are recorded in
+\path{reports/detection_echo_transfer.json}. This is a count-level transfer check,
+not a third raw-capture preparation pipeline in the current configuration set.
+
 Direct inspection finds 187 observed-silent Chromecast development windows,
 30 silent Samsung development windows, and 19 silent Samsung final windows.
 No missing-state rows are stored in these three configured collections.
@@ -99,6 +107,8 @@ runs and diagnose failures.
 
 This capture-level split is preferable to random window sampling, but it is not
 the end of the temporal problem. Adjacent scores remain correlated, one boundary
-provides only one version of history, and the master validator checks dates in
+provides only one version of history, and the reference validator checks dates in
 capture identifiers rather than every processed timestamp. The separate temporal
 branch addresses those limitations in Section~\ref{sec:temporal-wip}.
+The later-partition detector comparisons also disclose prior label exposure;
+they cannot establish an independent final-test claim.

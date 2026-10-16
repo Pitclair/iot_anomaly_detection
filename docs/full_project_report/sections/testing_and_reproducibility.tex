@@ -1,13 +1,14 @@
 \section{Testing, Reproducibility, and Operational Errors}
 
-\subsection{Fresh verification for this report}
+\subsection{Recorded verification coverage}
 
-On the reference implementation plus the thesis workspace, the full suite was
-run with every marker group enabled and the production edge image selected.
-\textbf{All 560 tests passed in 39.56 seconds.} This includes the ten tests
-normally excluded by the default slow/PCAP/benchmark selection and the two
-opt-in Docker checks. A normal run without the image variable skips those
-Docker checks; it must not be described as container verification.
+At the retained detector revision, the full suite with every marker group
+enabled records \textbf{582 passes and two skipped Docker checks}. This includes
+the ten tests normally excluded by the default slow/PCAP/benchmark selection.
+The earlier production-image record contains 560 passes in 39.56 seconds,
+including its two opt-in container checks. That image-specific result belongs
+to its recorded boundary; the retained scoring verification must not be
+described as a fresh container test.
 
 Tests include small unit inputs, numerical comparisons, real CLI subprocesses,
 temporary state directories, synthetic packet/PCAP fixtures, and isolated
@@ -34,8 +35,10 @@ and FPR for hand-counted, no-benign-label, and zero-false-positive cases.
 Adaptation tests verify score-before-learn ordering, bounded buffers, admission
 rejection, concentration/proportion/threshold limits, convergence and
 likelihood rejection, permitted promotions, and preservation of legacy
-behaviour. Twelve mode/policy/score combinations compare real command
-dispatch with batch output and final detector state.
+behaviour. Batch/streaming comparisons cover both policies, both score
+conventions, all three modes, and DM-only/combined calibration artefacts.
+They compare real command dispatch, emitted events, and final detector state,
+including accepted updates and fixed reference evidence.
 
 State tests exercise immutable versions, pointer activation, restoration,
 locking, rollback, retained history, abandoned-file cleanup, and failures at
@@ -113,8 +116,9 @@ bundle rather than inferred from filenames.
 \subsection{Limits of this verification}
 
 All configured starting model/threshold pairs validate, and processed-window
-totals were checked directly. Historical and research-branch reports were read
-from their recorded revisions. No production code, final-test policy, or
-research branch was changed for the report. Full raw-data preprocessing,
+totals were checked directly. Historical and research-branch reports retain
+their recorded revisions; scoring comparisons use their per-device JSON and
+decision records. No production code or experiment policy was changed while
+editing the report. Full raw-data preprocessing,
 all historical fitting runs, long resource trials, physical hardware, and final
 PDF/A certification were not repeated.

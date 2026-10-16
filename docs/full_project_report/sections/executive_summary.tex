@@ -7,8 +7,12 @@ It converts packet captures into ten-minute windows of TCP, ordinary UDP, SSDP,
 and ARP counts, fits a Dirichlet--multinomial model on an earlier period, and
 calibrates an anomaly threshold on a separate benign period. A later window
 receives a score, an anomaly decision, and an explanation based on its traffic
-composition. Attack labels are used for evaluation, not to fit the normal model
-or decide whether to learn from a runtime window.
+composition, total packet volume, and ARP activity. Attack labels are used for
+evaluation, not to fit the normal model or decide whether to learn from a runtime window.
+This is unsupervised, normal-only learning: it still requires a trusted benign
+reference. No attack-signature database or deep-learning model is involved.
+Protection consists of detection and alert evidence; automatic blocking or
+remediation is outside the implemented pipeline.
 
 Batch commands produce research reports over configured captures. A streaming
 command receives one completed count window at a time and immediately emits
@@ -50,19 +54,20 @@ Native LM backend & \working & Numerical tests, SciPy comparisons, matrix
 optimisation, and retained production/paper-style benchmarks. \\
 Legacy adaptation & \working & Six explicit configurations, retained positive
 and negative development results, and a historical reproduction record. \\
-Conservative adaptation & \working & Admission and movement guards; controlled
-accepted/rejected update tests. Six definitive dataset comparison reports are
-not present at their configured paths. \\
+Conservative adaptation & \working & Admission and movement guards, controlled
+update tests, and retrospective cross-device comparisons; learning benefits
+remain device-dependent. \\
 Persistence and rollback & \working & Versioned complete pairs, a writer lock,
 atomic activation, bounded history, recovery, rollback, and failure tests. \\
 Edge simulation & \working & Offline Linux/amd64 image, bounded service,
 restart/stop checks, and 2,000/20,000-input-window resource trials. \\
 Temporal research & \wip & Separate branch with actual-timestamp validation,
 five rolling folds, and capture/episode metrics. \\
-Multi-signal research & \wip & Separate branch with volume, direction, and
-behaviour checks, cross-device evidence, and rejected alternatives. \\
-Final reference evaluation & \notdone & Final captures are configured, but
-reference scoring/evaluation select development data only. \\
+Detection and scoring & \working & DM composition with jointly calibrated
+packet/ARP counts and fixed update references; broader features rejected or
+excluded where common input evidence is unavailable. \\
+Independent final evaluation & \notdone & Later partitions have retrospective
+audits; ordinary scoring/evaluation commands select development data. \\
 Empirical forecasting & \notdone & The CLI is synthetic scaffolding; a separate
 paper-style experiment has a narrower forecast comparison. \\
 Physical gateway validation & Outside agreed simulation & No physical/ARM
@@ -74,17 +79,24 @@ tested Docker build; research prose and final evidence remain to be written. \\
 
 \subsection{The main findings}
 
-The static detector has high precision but misses attacks that do not change
-protocol composition enough. Historical periodic refitting improves the
+On the Chromecast and Samsung camera development sets, static precision is
+88.24\% and 92.31\%, with recall of 46.88\% and 68.57\%, respectively.
+These results support high precision on those traces, with incomplete attack
+coverage; they do not establish the same precision across devices.
+Historical periodic refitting improves the
 Chromecast development F1 from 61.22\% to 80.70\% at the selected 288/240 setting,
 but the same setting does not improve Samsung over its static baseline.
 The historical Samsung learning buffer also admits attacks and permits large
-concentration changes. Those findings motivated the conservative policy now
-implemented in the reference software.
+concentration changes. Those findings motivate the conservative learning policy
+and the fixed detection references used during updates.
 
-The conservative changes restrict what can be learned and how far a candidate
-can move. They are safety mechanisms, not evidence of improved detection by
-themselves. The long synthetic edge replay promoted no candidate: one attempt
+The retained count-based scoring and reference checks improve pooled F1 across
+2,513 labelled windows from Chromecast, Samsung, and archived Echo: from
+68.99\% to 70.68\% in static mode and from 64.49\% to 67.94\% with conservative
+threshold adaptation. Static recall on Chromecast and Samsung is unchanged,
+and individual device/mode tradeoffs remain. These retrospective results are
+distinct from evidence of useful model refitting. The long synthetic edge replay
+promoted no candidate: one attempt
 lacked enough accepted windows and 110 actual fits did not converge. Successful
 promotion is checked separately with controlled candidates. These two kinds of
 evidence answer different questions and must remain separate in the thesis.
@@ -100,7 +112,7 @@ processing time of 5.079 seconds, including refitting, under a one-CPU quota.
 Read the scientific and implementation sections to understand the delivered
 system, the result sections to identify supported claims, and the appendices to
 locate code, records, and reproduction commands. Historical branch evidence is
-included because it explains decisions and failed alternatives. It is not
-silently promoted into the current reference implementation. The immediate
+included because it explains decisions and failed alternatives; the retained
+scoring contract and its comparisons are identified separately. The immediate
 next work is a frozen, reproducible final evaluation and thesis writing; broader
 feature research is optional unless the thesis scope explicitly requires it.

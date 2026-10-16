@@ -21,8 +21,8 @@ unchanged.
 
 \subsection{Admission to the learning buffer}
 
-Let $s_t$ be the score under the active model and $s_0$ the score under the
-original model. The default conservative gate requires
+Let $s_t$ be the underlying DM score under the active model and $s_0$ its score
+under the original model. The default conservative gate requires
 \[
 s_t(\mathbf{x})\geq\tau_t+m\,\mathrm{IQR}_t,\qquad
 s_0(\mathbf{x})\geq\tau_0+m\,\mathrm{IQR}_0,\qquad N\leq V.
@@ -33,11 +33,11 @@ not a high-confidence learning example; a large total is rejected even if the
 protocol mixture looks ordinary. The current window is scored first, so an
 update can affect only later events.
 
-The volume limit is a learning safeguard. It does not add a second
-volume-based anomaly decision to the reference detector. A conditional DM
-probability can vary with $N$, but it does not estimate the distribution of
-traffic totals. This is why the separate multi-signal branch remains a
-different detector experiment.
+The volume limit $V$ is a learning safeguard, distinct from the jointly
+calibrated volume/ARP detection cutoffs. With combined scoring, both count
+margins must also clear $m$ before admission. The fixed count cutoffs and
+original DM remain detection references after updates, preventing adaptation
+from suppressing their evidence (Section~\ref{sec:detector-scoring}).
 
 Accepted counts are held in a bounded deque. The usual buffer contains at most
 288 windows. Counters record excessive-volume and low-confidence rejections.
@@ -79,11 +79,12 @@ proves that the code can accept a permitted update; it does not establish an
 improvement on real traffic. The long Docker trial adds measured rejection cost,
 not a positive adaptation result.
 
-The six conservative experiment configurations are present and validate, but
-their configured output directories do not currently contain the definitive
-adaptation/evaluation reports. The report therefore assigns them no invented
-precision, recall, or F1 values. A frozen comparison against static and legacy
-runs is still needed before claiming a detection benefit from these guards.
+The cross-device comparisons in Table~\ref{tab:retained-scoring} retain both
+accepted and rejected updates. At the existing settings, Chromecast and Samsung
+reject every conservative candidate; Echo accepts two threshold updates. This
+supports an observed threshold-adaptation result on Echo, not a claim that
+conservative model refitting improves all devices. The six schedule-specific
+configuration directories are a separate evidence bundle and remain incomplete.
 
 \subsection{How earlier methods remain accessible}
 

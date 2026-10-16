@@ -56,20 +56,24 @@ saved model identifies the source data, capture IDs, number of windows, and UTC
 range. It also records the numerical backend, precision, fitted parameters,
 whether fitting converged, the iteration count, the likelihood, and the runtime.
 
-Calibration then scores a different benign partition. It stores the chosen
-quantile, threshold, score minimum/median/maximum, and interquartile range. The threshold
+Calibration uses normal fit data to scale composition, total volume, and ARP
+activity, then sets their joint cutoff on a different benign partition. It
+stores the quantile, composition threshold/statistics, count cutoffs, and
+reference scales. The threshold
 also carries a deterministic model fingerprint. A model change invalidates the
 old threshold rather than allowing an apparently compatible filename to pass.
 
 Static scoring keeps the fitted model and threshold fixed. Every non-missing
 development window produces an event containing its counts, score, decision,
-severity, expected profile, category residuals, and model fingerprint. Residuals
+severity, underlying DM score, feature margins, expected profile, category
+residuals, and model fingerprint. Residuals
 identify which categories were high or low relative to expectation. They are a
 local explanation, not an attack-family diagnosis.
 
 The same pipeline also produces descriptive count statistics and separate daily
 Dirichlet fits. Raw and per-packet-normalised score conventions are available as
-explicit alternatives, but the reported detector uses raw scores throughout.
+explicit alternatives; the retained detector uses the raw DM convention within
+its combined margin score (Section~\ref{sec:detector-scoring}).
 Because every event identifies its source data, model, and threshold, detector
 variants can be compared window by window without guessing which artefacts were
 used.
@@ -82,9 +86,10 @@ matches are rejected, and unmatched counts are reported. The evaluator produces
 the confusion matrix, accuracy, precision, recall, F1, and false-positive rate. Labels are never
 loaded during training, calibration, or adaptive updates.
 
-The current \texttt{master} evaluator is deliberately limited to the development
-partition. Final capture IDs exist in configuration, but the reference scoring
-path has not yet been opened for a locked final run.
+The ordinary scoring/evaluation commands select the development partition.
+The experiment runner also replays declared later partitions through the shared
+detector. Those results are retrospective audits; they do not constitute an
+independent locked final test.
 
 Recall is TPR, while FPR uses only the benign-label denominator:
 \[
@@ -146,7 +151,7 @@ $\longrightarrow$ optionally promote future state}
 \end{center}
 
 Threshold-only adaptation keeps $\boldsymbol{\alpha}$ fixed and periodically
-recalculates the lower quantile and IQR from a bounded buffer of recent scores.
+recalculates the lower quantile and IQR from a bounded buffer of recent DM scores.
 It is intentionally naive: all recent non-missing scores enter the buffer,
 including anomalous ones. A non-positive candidate IQR causes the update to be
 rejected.
@@ -172,7 +177,9 @@ The audit records when each update was attempted, the old and proposed values,
 whether fitting converged and improved the likelihood, whether the update was
 accepted, and why a rejection occurred. The saved original model and threshold
 are never overwritten. The mechanism is therefore reproducible, but its legacy
-safety checks do not prevent every form of model poisoning.
+safety checks do not prevent every form of model poisoning. With combined
+calibration, the original DM and count tails also remain fixed detection
+references; historical DM-only artefacts retain their earlier scoring rules.
 
 Static, threshold-only, and periodic-refit variants use the same implementation
 and write to separate experiment directories. The initial experiments remain
@@ -188,9 +195,10 @@ or alter detector state, although CLI logging may create a log file. Expected fa
 typed errors and non-zero exit codes, while UTC logs provide an operational
 record.
 
-At this report boundary the complete suite passes \textbf{560 tests}, including
-the optional Docker checks. The ordinary default selection excludes ten slow,
-PCAP, or benchmark tests, and Docker checks require the image variable. The tests
+The recorded full-suite verification passes \textbf{582 tests}, with two
+optional Docker checks skipped. Earlier image-specific verification is reported
+separately. The ordinary default selection excludes ten slow, PCAP, or benchmark
+tests, and Docker checks require the image variable. The tests
 cover configuration, timestamps, packet classification, aggregation, schemas,
 failure handling, fitting, calibration, scoring, labelled evaluation, native LM
 agreement, benchmarking, adaptation ordering, candidate promotion and rejection,

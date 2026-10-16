@@ -1,4 +1,20 @@
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-% Write the problem, method, measured findings, and main limitation after results are final.
-\textit{[English abstract to be written.]}
+LM-IDNet is a lightweight, unsupervised anomaly-detection system for identifying
+abnormal network activity in IoT devices without attack signatures or
+deep-learning models. The central idea is that each device produces
+a characteristic mixture of network traffic—represented by TCP, UDP, SSDP,
+and ARP packet counts—and that deviations from this pattern can provide
+evidence of abnormal behaviour. LM-IDNet learns a normal device profile using
+a Dirichlet–multinomial model and identifies statistically unlikely traffic
+windows through calibrated likelihood scoring, complemented by compact volume
+and ARP checks. The system integrates the Languasco–Migliardi numerical method
+for accurate likelihood computation and supports guarded updates to the model
+and decision thresholds. Experiments on smart-camera and Chromecast traffic
+demonstrate high precision in the evaluated scenarios, while each alert retains
+traceable statistical evidence. Resource measurements in a constrained
+execution environment support the feasibility of lightweight operation. By
+combining probabilistic modelling, accurate numerical computation, and
+controlled adaptation in a reproducible pipeline, this thesis demonstrates an
+interpretable approach to IoT intrusion detection that learns from normal
+traffic without requiring labelled attack examples.

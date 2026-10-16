@@ -15,6 +15,15 @@ The categories are mutually exclusive: SSDP is separated from the remaining UDP
 traffic. This representation is small enough for an edge-oriented detector and
 retains protocol-level evidence that can be explained to an operator.
 
+Learning uses presumed-benign device windows without attack examples or
+signatures. Labels enter offline evaluation and method comparison, rather than
+the fitting objective, normal-data calibration, or runtime update decisions.
+The configured fits use 432--867 windows per device, plus separate calibration
+windows (Table~\ref{tab:dataset-composition}). This demonstrates a compact
+normal-reference workload, not a general minimum-data or sample-efficiency
+result; obtaining the counts can still involve large packet captures.
+Attacks that preserve the observed count pattern can remain undetected.
+
 A fixed multinomial distribution is often too rigid because ordinary device
 behaviour changes from window to window. The Dirichlet--multinomial distribution
 adds this overdispersion through a positive parameter vector
@@ -32,16 +41,18 @@ The complete log-probability of a window is
 \]
 
 A low score means that the observed mixture is unlikely under the normal model.
-The decision threshold $\tau$ is learned from a separate benign calibration
-period:
+For the DM-only baseline, the decision threshold $\tau$ is learned from a
+separate benign calibration period:
 
 \[
 \text{anomaly if }\log P(\mathbf{x}\mid\boldsymbol{\alpha})<\tau.
 \]
 
-The versioned experiments use a raw score and a one-percent lower calibration
-quantile. Per-packet normalisation remains available as a separate experiment;
-it is not silently mixed with the reported results.
+The retained detector uses this complete raw log-probability as its composition
+component, alongside total-packet and ARP count margins. Their joint normal-data
+calibration uses a one-percent lower quantile; the combined event score and
+comparison are defined in Section~\ref{sec:detector-scoring}. Per-packet
+normalisation is an evaluated alternative, not the retained score convention.
 
 \subsection{Dispersion and parameter estimation}
 
@@ -110,17 +121,25 @@ those decisions on labelled traffic from additional IoT devices.
 The D-Link captures remain useful as a matched numerical workload. They do not
 contain attack labels in this repository, so they cannot support measured
 precision, recall, or F1. This is why the main anomaly results use UNSW Chromecast
-and Samsung camera traces instead.
+and Samsung camera traces, with archived Amazon Echo counts as a third-device
+transfer check.
 
 \subsection{What an event explains}
 
+Every scored alert records the device and capture, UTC window bounds, observed
+counts, expected category profile, residuals, decision score and cutoff,
+severity, and model-parameter fingerprint. Combined events additionally retain
+the raw DM value and individual feature margins. These fields let an operator
+trace the decision to the observed window and its statistical reference.
+
 The expected category profile is $\boldsymbol{p}$ and the residual for an
 observed count is $x_k/N-p_k$ when $N>0$. For silence the observed proportions
-are represented by zeros, so the residual is $-p_k$. Severity is
+are represented by zeros, so the residual is $-p_k$. For DM-only events, severity is
 \[
 \frac{\max(0,\tau-s(\mathbf{x}))}{\mathrm{IQR}_{\mathrm{active}}}.
 \]
-It measures distance below the chosen threshold on the active calibration score
-scale. It is not a calibrated attack probability, causal attribution, or
-attack-family classifier. These explanations are useful precisely because
+Combined events use the minimum of the composition and count margins and
+report $\max(0,-s)$ as severity. Both conventions measure distance below a chosen
+cutoff on a reference scale. Neither is a calibrated attack probability,
+causal attribution, or attack-family classifier. These explanations are useful precisely because
 their limited meaning is explicit.

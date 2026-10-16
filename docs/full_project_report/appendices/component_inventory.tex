@@ -136,7 +136,9 @@ reports include capture checks/statistics, fingerprints, smoke evidence,
 production and paper-shaped numerical benchmarks, static metrics, historical
 and explicit legacy adaptations/evaluations, legacy reproduction evidence,
 and the four edge measurement/provenance files. Not every possible configured
-output exists: the six conservative comparison reports remain absent.
+output exists: the six schedule-specific conservative comparison directories
+remain incomplete. The central detection records retain cross-device static,
+conservative, and legacy replays, later audits, and the archived Echo check.
 
 \subsection{Root build and collaboration files}
 
@@ -148,22 +150,23 @@ files support development. Local environment contents are deliberately excluded
 from the report. No new automated CI or hidden external service is implied by
 those supporting filenames.
 
-\subsection{Branch reference map}
+\subsection{Evidence revision map}
 
-The source branch positions checked for this report are:
+The source revisions used for the report's distinct evidence boundaries are:
 \begin{center}
 \small
 \begin{tabular}{lll}
 \toprule
-\textbf{Branch} & \textbf{Revision} & \textbf{Role} \\
+\textbf{Source} & \textbf{Revision} & \textbf{Role} \\
 \midrule
-\texttt{master} / \texttt{feature/edge} & \texttt{db2a736} & Reference detector and simulation \\
-\texttt{feature/thesis-report} & \texttt{0d66bf8} & Current thesis workspace \\
+Edge detector snapshot & \texttt{db2a736} & Recorded simulation boundary \\
+Thesis workspace snapshot & \texttt{0d66bf8} & Writing structure \\
 \texttt{feature/adapt} & \texttt{cb8dd66} & Historical adaptive experiments \\
 \texttt{feature/lm-loglikelihood} & \texttt{96fb241} & Numerical/tooling history \\
 \texttt{feature/labeled-dataset} & \texttt{210f922} & Labelled-data/history material \\
 \texttt{feature/temporal-model} & \texttt{b0aa35d} & Separate chronology/fold research \\
-\texttt{feature/volume-anomaly} & \texttt{4279d84} & Separate multi-signal research \\
+Earlier feature experiments & \texttt{4279d84} & Historical detector research \\
+Retained detection/scoring & \texttt{99bc189} & Joint count scoring and update references \\
 \bottomrule
 \end{tabular}
 \end{center}
