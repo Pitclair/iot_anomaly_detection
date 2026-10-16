@@ -81,6 +81,7 @@ contracts, rather than silently importing every capsule helper.
 \path{scripts/docker-entrypoint.sh} & Direct installed-command execution; no startup compilation. \\
 \path{scripts/benchmark_edge.py} & Finite synthetic replay instrumenting the real runtime, fitting, resources, and hashes. \\
 \path{scripts/lm_professor_experiment.py} & Paired paper-shaped aggregate likelihood and forecast comparison. \\
+\path{scripts/evaluate_window_sizes.py} & Matched labelled duration study with fresh models, time-scaled adaptation, annotation coverage, delay, and saved decisions. \\
 \path{scripts/latex.sh} & Build technical LaTeX reports through the existing Compose service. \\
 \path{scripts/run_adaptation_experiments.sh} & Select six conservative or six legacy configurations, adapt, then evaluate. \\
 \path{unsw_iot_attack_pcaps/download_pcaps.sh} & Resume selected device/date source downloads. \\
@@ -92,7 +93,7 @@ contracts, rather than silently importing every capsule helper.
 
 \subsection{Tests and fixtures}
 
-The 28 test modules are grouped below. Temporary files and subprocesses are
+The test modules are grouped below. Temporary files and subprocesses are
 isolated by shared fixtures in \path{tests/conftest.py}; there is no need to
 modify real detector artefacts for a fault test.
 
@@ -107,6 +108,8 @@ modify real detector artefacts for a fault test.
 \paragraph{State and deployment} \path{test_detector_state.py}, \path{test_runtime.py}, \path{test_edge_deployment.py}, \path{test_adaptation_runner.py}.
 
 \paragraph{Dataset preparation and smoke} \path{test_unsw_label_preparation.py}, \path{test_unsw_scripts.py}, \path{test_smoke_fixture.py}.
+
+\paragraph{Research comparisons} \path{test_detection_experiments.py}, \path{test_window_size_experiments.py}.
 
 
 Fixture files include the tiny packet CSV, synthetic smoke JSON and its licence

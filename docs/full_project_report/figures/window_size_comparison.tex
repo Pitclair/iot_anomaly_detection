@@ -1,0 +1,31 @@
+\documentclass[tikz,border=5pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+\definecolor{deviceblue}{HTML}{1E5A96}
+\definecolor{deviceorange}{HTML}{B45F16}
+
+\begin{document}
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1,horizontal sep=1.8cm},
+  width=7.1cm,height=5.5cm,
+  xmin=6,xmax=64,xtick={10,20,30,60},xlabel={Window duration (minutes)},
+  grid=major,grid style={gray!20},
+  tick label style={font=\small},label style={font=\small},
+  legend style={draw=none,font=\small,at={(0.5,1.06)},anchor=south},
+  legend columns=2,
+]
+\nextgroupplot[ymin=0,ymax=100,ylabel={Window F1 (\%)}]
+\addplot[deviceblue,thick,mark=*,mark size=2.6pt] table[x=minutes,y=chromecast_f1,col sep=comma] {../../../reports/window_size/plot_data.csv};
+\addlegendentry{Chromecast}
+\addplot[deviceorange,thick,mark=square*,mark size=2.6pt] table[x=minutes,y=samsung_f1,col sep=comma] {../../../reports/window_size/plot_data.csv};
+\addlegendentry{Samsung camera}
+\nextgroupplot[ymin=0,ymax=45,ylabel={Median first-alert delay (minutes)}]
+\addplot[deviceblue,thick,mark=*,mark size=2.6pt] table[x=minutes,y=chromecast_delay,col sep=comma] {../../../reports/window_size/plot_data.csv};
+\addplot[deviceorange,thick,mark=square*,mark size=2.6pt] table[x=minutes,y=samsung_delay,col sep=comma] {../../../reports/window_size/plot_data.csv};
+\end{groupplot}
+\end{tikzpicture}
+\end{document}

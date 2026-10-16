@@ -24,6 +24,13 @@ normal-reference workload, not a general minimum-data or sample-efficiency
 result; obtaining the counts can still involve large packet captures.
 Attacks that preserve the observed count pattern can remain undetected.
 
+Window duration trades statistical aggregation against localisation and alert
+delay. A labelled 10/20/30/60-minute comparison finds stronger static attack
+coverage at thirty minutes, but earlier alerts at ten minutes and unstable
+threshold adaptation at longer durations (Section~\ref{sec:window-size-study}).
+Ten minutes remains the delivered default; the reference paper's precedent
+alone does not establish an optimal duration.
+
 A fixed multinomial distribution is often too rigid because ordinary device
 behaviour changes from window to window. The Dirichlet--multinomial distribution
 adds this overdispersion through a positive parameter vector

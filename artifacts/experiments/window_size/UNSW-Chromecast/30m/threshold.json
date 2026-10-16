@@ -1,0 +1,31 @@
+{
+  "artifact_type": "threshold",
+  "model_fingerprint": "045590126d5875f763f0f7adc828036199e5d9648ede92099d5e5f765b2780a1",
+  "score_type": "raw",
+  "quantile": 0.01,
+  "threshold": -31.086710387635677,
+  "calibration_capture_ids": [
+    "2018-10-16",
+    "2018-10-17",
+    "2018-10-18",
+    "2018-10-19"
+  ],
+  "calibration_window_count": 192,
+  "calibration_start_utc": "2018-10-15T13:00:00Z",
+  "calibration_end_utc": "2018-10-19T13:00:00Z",
+  "quantile_method": "linear",
+  "score_minimum": -35.22105197162546,
+  "score_median": -15.876821983981017,
+  "score_maximum": -13.823731373973715,
+  "score_iqr": 0.9514425026962954,
+  "count_tails": {
+    "total": {
+      "threshold": 35.831410529055645,
+      "score_iqr": 1.4873782105198625
+    },
+    "arp": {
+      "threshold": 9.924075676561284,
+      "score_iqr": 0.2823487264764184
+    }
+  }
+}

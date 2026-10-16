@@ -1,0 +1,66 @@
+{
+  "artifact_type": "model",
+  "schema_version": 2,
+  "dataset": "UNSW-Chromecast",
+  "device_id": "Chromecast",
+  "categories": [
+    "tcp",
+    "udp",
+    "ssdp",
+    "arp"
+  ],
+  "input_contract": {
+    "device_id": "Chromecast",
+    "device_mac": "f4:f5:d8:8f:0a:3c",
+    "window_minutes": 20,
+    "categories": [
+      "tcp",
+      "udp",
+      "ssdp",
+      "arp"
+    ],
+    "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1"
+  },
+  "alpha": [
+    1.6919542475610698,
+    30.085523580823953,
+    0.0022442468268494115,
+    0.6039778620082252
+  ],
+  "concentration": 32.3836999372201,
+  "mean_probabilities": [
+    0.052247095015119864,
+    0.92903292826788,
+    0.00006930174227158008,
+    0.01865067497472842
+  ],
+  "psi": 0.030879732764897975,
+  "log_likelihood_backend": "lm",
+  "precision_digits": 6,
+  "training_capture_ids": [
+    "2018-10-10",
+    "2018-10-11",
+    "2018-10-12",
+    "2018-10-13",
+    "2018-10-14",
+    "2018-10-15"
+  ],
+  "training_window_count": 432,
+  "training_start_utc": "2018-10-09T13:00:00Z",
+  "training_end_utc": "2018-10-15T13:00:00Z",
+  "fit_diagnostics": {
+    "initial_alpha": [
+      0.28508405558384625,
+      9.664455771224711,
+      0.00019288365790194617,
+      0.05026728953354001
+    ],
+    "iterations": 2322,
+    "converged": true,
+    "tolerance": 2e-9,
+    "max_iterations": 100000,
+    "initial_log_likelihood": -1474883.8904692477,
+    "final_log_likelihood": -1473986.8308019782,
+    "duration_seconds": 0.17747790296562016
+  }
+}

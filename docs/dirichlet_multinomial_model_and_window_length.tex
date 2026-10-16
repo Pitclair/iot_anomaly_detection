@@ -338,9 +338,11 @@ data is available for fitting and calibration.
 The present choice has a clear historical reason: the reference IoT study used
 ten-minute windows for the D-Link camera.  Retaining that duration gave this
 project a reproducible baseline and allowed direct comparison with the
-reference method.  It should therefore be described as the justified
-\emph{baseline}, not as a window length that has already been shown to be
-optimal for every device or attack.
+reference method. A labelled 10/20/30/60-minute study now shows the tradeoff:
+thirty minutes detects more annotated attacks under static operation, while
+ten minutes produces earlier alerts. Longer-window threshold adaptation can
+increase false alerts. Ten minutes remains the delivered default, without
+claiming that it maximises static coverage or is optimal for every device.
 
 The current boundary rule is also precise.  Windows are aligned to UTC epoch
 boundaries and are closed on the left and open on the right.  For example,
@@ -653,43 +655,34 @@ number of packets and the probability of each row change with duration.
 
 Changing only \texttt{window\_minutes} in the current configuration is not
 enough.  That setting controls aggregation while reading PCAPs; it does not
-automatically combine already processed JSON rows.  The repository currently
-has no processed-row conversion command, so this path would require a small,
-validated conversion step.
+automatically combine already processed JSON rows. The research runner
+\path{scripts/evaluate_window_sizes.py} supplies validated aggregation on
+matched observed coverage, with new fits, calibration, and isolated outputs.
 
 Derived files and artifacts should be written to new duration-specific paths.
 The ten-minute baseline should not be overwritten.  The record for a derived
 dataset should include the checksums of its ten-minute source files, the new
 duration, the boundary rule, and the conversion code version.
 
-\section{Current data limits for longer-window experiments}
+\section{Calibration design for the duration study}
 
-The amount of calibration data places a practical upper limit on window
-length.  The current files contain:
+All four durations use the same normal split and observed coverage. The study
+retains the minimum of thirty calibration observations. If the longest duration
+has fewer observations, the latest whole normal fitting capture is reserved
+for calibration before any duration is evaluated.
 
-\begin{itemize}
-  \item 576 ten-minute Chromecast calibration rows;
-  \item 81 ten-minute Samsung-camera calibration rows.
-\end{itemize}
+Samsung therefore fits May 28--29 and calibrates May 30--31, giving 37 hourly
+calibration observations. Chromecast retains its original normal split and
+has 96 hourly calibration observations. All durations are rerun with these
+fixed splits; no attack-bearing period is moved into fitting or calibration.
+The normal split and source hashes are recorded in the result artifact, and
+the production configurations remain unchanged.
 
-With non-overlapping, complete windows, the Samsung calibration set would
-contain 40 complete 20-minute rows and 27 complete 30-minute rows.  The current
-configuration requires at least 30 calibration rows.  Therefore:
-
-\begin{itemize}
-  \item a 20-minute comparison is technically possible for both labelled
-        devices, although 40 Samsung rows provide a weak basis for estimating a
-        first-percentile threshold;
-  \item a non-overlapping 30-minute Samsung experiment would fail the current
-        minimum-sample requirement;
-  \item 60-minute windows would leave still fewer calibration observations and
-        should not be treated as a comparable experiment with the present
-        partition.
-\end{itemize}
-
-Lowering the minimum merely to make a longer-window experiment run would not
-create the missing calibration evidence.  A larger benign calibration period
-would be the scientifically sound remedy.
+Adaptation retains a 48-hour observed-traffic buffer and 24-hour attempt
+cadence. Its nominal 24 accepted hours before refitting are still subject to
+the conservative minimum of thirty observations; at hourly resolution this
+requires at least thirty accepted hours. The empirical one-percent tail remains
+imprecise with a small calibration set, even when the minimum is satisfied.
 
 \section{Other no-PCAP adjustments}
 
@@ -735,31 +728,29 @@ is complete.
 
 \section{Recommendation for this project}
 
-Keep the current ten-minute system as the reference result.  The smallest fair
-window-length experiment that does not require PCAP files is:
+The full duration sweep supports a tradeoff rather than one universally best
+setting. Static development detection covers 38/54, 37/54, 45/54, and 45/54
+annotated attacks at 10, 20, 30, and 60 minutes. Thirty minutes gives the
+strongest pooled window F1, 85.11\%, compared with 73.37\% at ten minutes.
+However, alerts arrive by attack end for 32, 17, twelve, and six attacks,
+respectively. Ten minutes therefore retains a substantial response-time
+advantage, while thirty minutes is a useful static candidate.
 
-\begin{enumerate}
-  \item construct non-overlapping 20-minute rows and labels from pairs of
-        epoch-aligned ten-minute rows;
-  \item preserve missing intervals and discard incomplete boundary groups;
-  \item fit, calibrate, and score a completely separate 20-minute model;
-  \item keep the chronological partitions unchanged;
-  \item express adaptation intervals in hours before converting them back to a
-        number of windows;
-  \item compare the 10-minute and 20-minute systems using window metrics,
-        attack-episode detection, time to first alert, and false alerts per day.
-\end{enumerate}
-
-Twenty minutes is the only larger non-overlapping candidate that both labelled
-devices can currently calibrate without violating the configured minimum of 30
-rows.  Even then, the Samsung first-percentile threshold will be based on only
-40 rows and must be reported as a limitation.
+Periodic refitting promotes no model and matches static detection. Accepted
+threshold updates at longer durations can increase false alerts: Samsung's
+thirty-minute later audit rises from zero static false alerts to 66 under
+threshold adaptation. One hour also worsens Samsung specificity and adds more
+delay. The production default remains ten minutes; changing to thirty-minute
+static operation requires an explicit response-time objective and additional
+validation. Later partitions are retrospective audits. Full metrics,
+decisions, split provenance, and hashes are in \path{reports/window_size/};
+the full project report contains the saved figure and interpretation.
 
 If the aim is to reduce isolated false alarms rather than change the underlying
 count model, a two-consecutive-window incident rule is the smaller experiment.
 It uses the existing ten-minute scores and requires no count reconstruction.
-It should not replace the 20-minute comparison because the two approaches
-answer different questions.
+It would be a separate comparison because persistence rules and the completed
+duration study answer different questions.
 
 \section{Direct answer about alpha aggregation}
 

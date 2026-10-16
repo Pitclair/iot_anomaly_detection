@@ -21,6 +21,13 @@ IoT hardware. The [full project report](docs/lm_idnet_full_project_report.tex)
 describes the evidence, rejected alternatives, and limits. The detector emits
 alerts; it does not block traffic automatically.
 
+A labelled 10/20/30/60-minute study shows a detection/response-time tradeoff.
+Thirty minutes gives the strongest static development results, while ten
+minutes alerts sooner; longer-window threshold adaptation can add false alerts.
+The production default remains ten minutes. The saved
+[results](reports/window_size/results.json) cover static and both conservative
+adaptive modes with fresh fits and calibration at each duration.
+
 Structure:
 
 - `src/lm_idnet/`: installable Python package

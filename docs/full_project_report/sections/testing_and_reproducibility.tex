@@ -10,6 +10,15 @@ including its two opt-in container checks. That image-specific result belongs
 to its recorded boundary; the retained scoring verification must not be
 described as a fresh container test.
 
+With the duration-experiment checks included, the full suite records
+\textbf{595 passes and two skipped Docker checks}. The thirteen added cases cover
+epoch grouping, count conservation, incomplete boundaries, gaps, silence,
+missingness, invalid source alignment, thirty/hourly aggregation, chronological
+normal holdout expansion, and window-close attack-delay semantics.
+All 48 duration/mode/partition summaries are also checked against the saved
+decisions, equal traffic exposure, original annotation hashes, and unchanged
+reference detector artifacts.
+
 Tests include small unit inputs, numerical comparisons, real CLI subprocesses,
 temporary state directories, synthetic packet/PCAP fixtures, and isolated
 containers. Parameterisation contributes multiple cases to the count.

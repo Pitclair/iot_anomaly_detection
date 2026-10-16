@@ -1,0 +1,2459 @@
+{
+  "metadata": {
+    "device_id": "Samsung Camera",
+    "capture_id": "2018-06-05",
+    "partition": "final_test",
+    "date": "2018-06-05",
+    "file_source": "/home/usrtima/projects/iot_anomaly_detection/data/raw/UNSW-Samsung-Camera/2018-06-05.pcap"
+  },
+  "windows": [
+    {
+      "start_utc": "2018-06-05T00:00:00Z",
+      "end_utc": "2018-06-05T00:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        228,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T00:10:00Z",
+      "end_utc": "2018-06-05T00:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T00:20:00Z",
+      "end_utc": "2018-06-05T00:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        228,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T00:30:00Z",
+      "end_utc": "2018-06-05T00:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        226,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T00:40:00Z",
+      "end_utc": "2018-06-05T00:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        46
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T00:50:00Z",
+      "end_utc": "2018-06-05T01:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        224,
+        48
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T01:00:00Z",
+      "end_utc": "2018-06-05T01:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        47
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T01:10:00Z",
+      "end_utc": "2018-06-05T01:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        227,
+        48
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T01:20:00Z",
+      "end_utc": "2018-06-05T01:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        228,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T01:30:00Z",
+      "end_utc": "2018-06-05T01:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        238,
+        51
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T01:40:00Z",
+      "end_utc": "2018-06-05T01:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        163,
+        0,
+        226,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T01:50:00Z",
+      "end_utc": "2018-06-05T02:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        225,
+        47
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T02:00:00Z",
+      "end_utc": "2018-06-05T02:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        225,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T02:10:00Z",
+      "end_utc": "2018-06-05T02:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        232,
+        57
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T02:20:00Z",
+      "end_utc": "2018-06-05T02:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        236,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T02:30:00Z",
+      "end_utc": "2018-06-05T02:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        235,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T02:40:00Z",
+      "end_utc": "2018-06-05T02:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T02:50:00Z",
+      "end_utc": "2018-06-05T03:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        224,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T03:00:00Z",
+      "end_utc": "2018-06-05T03:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        230,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T03:10:00Z",
+      "end_utc": "2018-06-05T03:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        122,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T03:20:00Z",
+      "end_utc": "2018-06-05T03:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        225,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T03:30:00Z",
+      "end_utc": "2018-06-05T03:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        138,
+        0,
+        227,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T03:40:00Z",
+      "end_utc": "2018-06-05T03:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        226,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T03:50:00Z",
+      "end_utc": "2018-06-05T04:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T04:00:00Z",
+      "end_utc": "2018-06-05T04:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T04:10:00Z",
+      "end_utc": "2018-06-05T04:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        227,
+        47
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T04:20:00Z",
+      "end_utc": "2018-06-05T04:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        217,
+        42
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T04:30:00Z",
+      "end_utc": "2018-06-05T04:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        226,
+        45
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T04:40:00Z",
+      "end_utc": "2018-06-05T04:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        218,
+        59
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T04:50:00Z",
+      "end_utc": "2018-06-05T05:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        227,
+        45
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T05:00:00Z",
+      "end_utc": "2018-06-05T05:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        225,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T05:10:00Z",
+      "end_utc": "2018-06-05T05:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        219,
+        39
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T05:20:00Z",
+      "end_utc": "2018-06-05T05:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        8,
+        216,
+        42
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T05:30:00Z",
+      "end_utc": "2018-06-05T05:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        227,
+        47
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T05:40:00Z",
+      "end_utc": "2018-06-05T05:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T05:50:00Z",
+      "end_utc": "2018-06-05T06:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        217,
+        39
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T06:00:00Z",
+      "end_utc": "2018-06-05T06:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        120,
+        0,
+        217,
+        38
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T06:10:00Z",
+      "end_utc": "2018-06-05T06:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        162,
+        0,
+        210,
+        39
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T06:20:00Z",
+      "end_utc": "2018-06-05T06:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        210,
+        47
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T06:30:00Z",
+      "end_utc": "2018-06-05T06:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        224,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T06:40:00Z",
+      "end_utc": "2018-06-05T06:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        122,
+        0,
+        215,
+        39
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T06:50:00Z",
+      "end_utc": "2018-06-05T07:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        161,
+        0,
+        227,
+        40
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T07:00:00Z",
+      "end_utc": "2018-06-05T07:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        209,
+        44
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T07:10:00Z",
+      "end_utc": "2018-06-05T07:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        219,
+        59
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T07:20:00Z",
+      "end_utc": "2018-06-05T07:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T07:30:00Z",
+      "end_utc": "2018-06-05T07:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        160,
+        0,
+        219,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T07:40:00Z",
+      "end_utc": "2018-06-05T07:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        144,
+        0,
+        225,
+        51
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T07:50:00Z",
+      "end_utc": "2018-06-05T08:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        120,
+        0,
+        218,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T08:00:00Z",
+      "end_utc": "2018-06-05T08:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        217,
+        55
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T08:10:00Z",
+      "end_utc": "2018-06-05T08:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        226,
+        55
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T08:20:00Z",
+      "end_utc": "2018-06-05T08:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        226,
+        45
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T08:30:00Z",
+      "end_utc": "2018-06-05T08:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T08:40:00Z",
+      "end_utc": "2018-06-05T08:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        211,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T08:50:00Z",
+      "end_utc": "2018-06-05T09:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        218,
+        55
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T09:00:00Z",
+      "end_utc": "2018-06-05T09:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        120,
+        0,
+        208,
+        37
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T09:10:00Z",
+      "end_utc": "2018-06-05T09:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        225,
+        40
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T09:20:00Z",
+      "end_utc": "2018-06-05T09:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        219,
+        54
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T09:30:00Z",
+      "end_utc": "2018-06-05T09:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        211,
+        45
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T09:40:00Z",
+      "end_utc": "2018-06-05T09:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        151,
+        0,
+        228,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T09:50:00Z",
+      "end_utc": "2018-06-05T10:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        120,
+        0,
+        224,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T10:00:00Z",
+      "end_utc": "2018-06-05T10:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        162,
+        0,
+        227,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T10:10:00Z",
+      "end_utc": "2018-06-05T10:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        224,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T10:20:00Z",
+      "end_utc": "2018-06-05T10:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        122,
+        0,
+        207,
+        45
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T10:30:00Z",
+      "end_utc": "2018-06-05T10:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        162,
+        0,
+        227,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T10:40:00Z",
+      "end_utc": "2018-06-05T10:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        226,
+        47
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T10:50:00Z",
+      "end_utc": "2018-06-05T11:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        146,
+        0,
+        218,
+        42
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T11:00:00Z",
+      "end_utc": "2018-06-05T11:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        227,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T11:10:00Z",
+      "end_utc": "2018-06-05T11:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        209,
+        39
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T11:20:00Z",
+      "end_utc": "2018-06-05T11:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        8,
+        209,
+        38
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T11:30:00Z",
+      "end_utc": "2018-06-05T11:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        122,
+        0,
+        216,
+        40
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T11:40:00Z",
+      "end_utc": "2018-06-05T11:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        117,
+        0,
+        224,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T11:50:00Z",
+      "end_utc": "2018-06-05T12:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        65,
+        0,
+        76,
+        15
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T12:00:00Z",
+      "end_utc": "2018-06-05T12:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T12:10:00Z",
+      "end_utc": "2018-06-05T12:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T12:20:00Z",
+      "end_utc": "2018-06-05T12:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T12:30:00Z",
+      "end_utc": "2018-06-05T12:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T12:40:00Z",
+      "end_utc": "2018-06-05T12:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T12:50:00Z",
+      "end_utc": "2018-06-05T13:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T13:00:00Z",
+      "end_utc": "2018-06-05T13:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T13:10:00Z",
+      "end_utc": "2018-06-05T13:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T13:20:00Z",
+      "end_utc": "2018-06-05T13:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T13:30:00Z",
+      "end_utc": "2018-06-05T13:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T13:40:00Z",
+      "end_utc": "2018-06-05T13:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T13:50:00Z",
+      "end_utc": "2018-06-05T14:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T14:00:00Z",
+      "end_utc": "2018-06-05T14:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T14:10:00Z",
+      "end_utc": "2018-06-05T14:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T14:20:00Z",
+      "end_utc": "2018-06-05T14:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T14:30:00Z",
+      "end_utc": "2018-06-05T14:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T14:40:00Z",
+      "end_utc": "2018-06-05T14:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T14:50:00Z",
+      "end_utc": "2018-06-05T15:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T15:00:00Z",
+      "end_utc": "2018-06-05T15:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "observed-silent"
+    },
+    {
+      "start_utc": "2018-06-05T15:10:00Z",
+      "end_utc": "2018-06-05T15:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        162,
+        0,
+        217,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T15:20:00Z",
+      "end_utc": "2018-06-05T15:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        217,
+        45
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T15:30:00Z",
+      "end_utc": "2018-06-05T15:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        216,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T15:40:00Z",
+      "end_utc": "2018-06-05T15:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        219,
+        58
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T15:50:00Z",
+      "end_utc": "2018-06-05T16:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        225,
+        50
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T16:00:00Z",
+      "end_utc": "2018-06-05T16:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T16:10:00Z",
+      "end_utc": "2018-06-05T16:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T16:20:00Z",
+      "end_utc": "2018-06-05T16:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        216,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T16:30:00Z",
+      "end_utc": "2018-06-05T16:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T16:40:00Z",
+      "end_utc": "2018-06-05T16:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        139,
+        0,
+        228,
+        51
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T16:50:00Z",
+      "end_utc": "2018-06-05T17:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        219,
+        46
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T17:00:00Z",
+      "end_utc": "2018-06-05T17:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        227,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T17:10:00Z",
+      "end_utc": "2018-06-05T17:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        208,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T17:20:00Z",
+      "end_utc": "2018-06-05T17:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        122,
+        0,
+        216,
+        47
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T17:30:00Z",
+      "end_utc": "2018-06-05T17:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        209,
+        39
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T17:40:00Z",
+      "end_utc": "2018-06-05T17:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        162,
+        0,
+        219,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T17:50:00Z",
+      "end_utc": "2018-06-05T18:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        227,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T18:00:00Z",
+      "end_utc": "2018-06-05T18:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        226,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T18:10:00Z",
+      "end_utc": "2018-06-05T18:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        275,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T18:20:00Z",
+      "end_utc": "2018-06-05T18:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        223,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T18:30:00Z",
+      "end_utc": "2018-06-05T18:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T18:40:00Z",
+      "end_utc": "2018-06-05T18:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        2,
+        227,
+        69
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T18:50:00Z",
+      "end_utc": "2018-06-05T19:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        1778,
+        0,
+        225,
+        65
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T19:00:00Z",
+      "end_utc": "2018-06-05T19:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        241,
+        0,
+        226,
+        50
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T19:10:00Z",
+      "end_utc": "2018-06-05T19:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        3727,
+        0,
+        225,
+        51
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T19:20:00Z",
+      "end_utc": "2018-06-05T19:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        9469,
+        0,
+        224,
+        63
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T19:30:00Z",
+      "end_utc": "2018-06-05T19:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        146,
+        0,
+        226,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T19:40:00Z",
+      "end_utc": "2018-06-05T19:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        21750,
+        0,
+        225,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T19:50:00Z",
+      "end_utc": "2018-06-05T20:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        13977,
+        0,
+        227,
+        69
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T20:00:00Z",
+      "end_utc": "2018-06-05T20:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        225,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T20:10:00Z",
+      "end_utc": "2018-06-05T20:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        44
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T20:20:00Z",
+      "end_utc": "2018-06-05T20:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        224,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T20:30:00Z",
+      "end_utc": "2018-06-05T20:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        225,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T20:40:00Z",
+      "end_utc": "2018-06-05T20:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        162,
+        0,
+        226,
+        63
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T20:50:00Z",
+      "end_utc": "2018-06-05T21:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        120,
+        0,
+        223,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T21:00:00Z",
+      "end_utc": "2018-06-05T21:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        122,
+        8,
+        224,
+        50
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T21:10:00Z",
+      "end_utc": "2018-06-05T21:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        225,
+        51
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T21:20:00Z",
+      "end_utc": "2018-06-05T21:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        224,
+        51
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T21:30:00Z",
+      "end_utc": "2018-06-05T21:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        143,
+        0,
+        227,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T21:40:00Z",
+      "end_utc": "2018-06-05T21:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        226,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T21:50:00Z",
+      "end_utc": "2018-06-05T22:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        160,
+        0,
+        228,
+        61
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T22:00:00Z",
+      "end_utc": "2018-06-05T22:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        225,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T22:10:00Z",
+      "end_utc": "2018-06-05T22:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        120,
+        0,
+        226,
+        57
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T22:20:00Z",
+      "end_utc": "2018-06-05T22:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        160,
+        0,
+        226,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T22:30:00Z",
+      "end_utc": "2018-06-05T22:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        225,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T22:40:00Z",
+      "end_utc": "2018-06-05T22:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        142,
+        0,
+        224,
+        51
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T22:50:00Z",
+      "end_utc": "2018-06-05T23:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        226,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T23:00:00Z",
+      "end_utc": "2018-06-05T23:10:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        224,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T23:10:00Z",
+      "end_utc": "2018-06-05T23:20:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        224,
+        43
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T23:20:00Z",
+      "end_utc": "2018-06-05T23:30:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        121,
+        0,
+        225,
+        41
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T23:30:00Z",
+      "end_utc": "2018-06-05T23:40:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        131,
+        0,
+        226,
+        49
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T23:40:00Z",
+      "end_utc": "2018-06-05T23:50:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        141,
+        0,
+        226,
+        53
+      ],
+      "state": "observed"
+    },
+    {
+      "start_utc": "2018-06-05T23:50:00Z",
+      "end_utc": "2018-06-06T00:00:00Z",
+      "categories": [
+        "tcp",
+        "udp",
+        "ssdp",
+        "arp"
+      ],
+      "counts": [
+        140,
+        0,
+        226,
+        49
+      ],
+      "state": "observed"
+    }
+  ]
+}

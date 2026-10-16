@@ -1,0 +1,44 @@
+{
+  "full_suite": {
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-m",
+      ""
+    ],
+    "passed": 595,
+    "skipped": 2,
+    "duration_seconds": 28.22,
+    "skip_reason": "Two opt-in Docker deployment checks require LM_IDNET_EDGE_IMAGE"
+  },
+  "duration_unit_tests": 13,
+  "experiment_runs": 48,
+  "saved_decisions": 12204,
+  "checked": "All coarse and common-grid confusion counts match saved decisions and original labels; durations have identical exposure and annotated-attack denominators; calibration and effective adaptation sample guards hold; inputs, code and baseline hashes match; saved plotting data match the run summaries.",
+  "adaptive_decision_differences": [
+    {
+      "dataset": "UNSW-Samsung-Camera",
+      "minutes": 30,
+      "partition": "development_test",
+      "changed_decisions": 14
+    },
+    {
+      "dataset": "UNSW-Samsung-Camera",
+      "minutes": 30,
+      "partition": "final_test",
+      "changed_decisions": 67
+    },
+    {
+      "dataset": "UNSW-Samsung-Camera",
+      "minutes": 60,
+      "partition": "final_test",
+      "changed_decisions": 24
+    }
+  ],
+  "test_source_sha256": "557f641ade4095f6a6163ec0b920be4a7c402fd128e8fd82299ec4b27cae2f63",
+  "figure_sha256": "d84057aedd53cb483808b66d164f9a619705369af65fb927f8f23cdaf0fa2ccc",
+  "figure_data_sha256": "8ff6f973dccb010619aa95acf5d6916bfc5f5ba5e7dde8fe2b5d91ed8e0f4b49",
+  "figure_saved_before_report": true
+}

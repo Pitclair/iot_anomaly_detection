@@ -68,6 +68,26 @@ audit; it is not an independent final test. Existing saved
 states keep their embedded calibration; prepare a new state deliberately when
 selecting a different scoring contract.
 
+\subsection{Window-duration comparison}
+
+\begin{verbatim}
+./unsw_iot_attack_pcaps/download_annotations.sh
+python scripts/evaluate_window_sizes.py
+./scripts/latex.sh \
+  docs/full_project_report/figures/window_size_comparison.tex
+\end{verbatim}
+
+The annotation files must match the hashes in the retained labels. The runner
+compares both labelled devices on matched traffic. Derived data, configurations,
+and fitted models live under \path{artifacts/experiments/window_size/}.
+One shared normal split supports all four durations; the latest normal fitting
+capture is reserved for calibration where needed to preserve the sample guard.
+The split is recorded in the results and does not change production inputs.
+Metrics, decisions, and figure data are under \path{reports/window_size/}.
+Copy the built standalone figure PDF to
+\path{docs/full_project_report/figures/window_size_comparison.pdf} before
+rebuilding the report. This study does not overwrite the reference pairs.
+
 \subsection{Numerical comparison}
 
 \begin{verbatim}

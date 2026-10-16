@@ -1,0 +1,82 @@
+{
+  "precision_digits": 6,
+  "ingest": {
+    "device_id": "Samsung Camera",
+    "device_mac": "00:16:6c:ab:6b:88",
+    "window_minutes": 10,
+    "categories": [
+      "tcp",
+      "udp",
+      "ssdp",
+      "arp"
+    ],
+    "counting_policy": "device-mac-bidirectional-ssdp-exclusive-v1",
+    "raw_root": "data/raw",
+    "processed_root": "artifacts/experiments/window_size/UNSW-Samsung-Camera/10m/processed",
+    "dataset_folder": "UNSW-Samsung-Camera",
+    "time_col": "timestamp",
+    "protocol_col": "protocol",
+    "partitions": {
+      "fit": [
+        "2018-05-28",
+        "2018-05-29"
+      ],
+      "calibration": [
+        "2018-05-30",
+        "2018-05-31"
+      ],
+      "development_test": [
+        "2018-06-01",
+        "2018-06-02",
+        "2018-06-03",
+        "2018-06-04"
+      ],
+      "final_test": [
+        "2018-06-05",
+        "2018-06-06",
+        "2018-06-07",
+        "2018-06-08"
+      ]
+    },
+    "allowed_duplicate_captures": []
+  },
+  "estimator": {
+    "categories_k": 4,
+    "initial_alpha_concentration": 10.0,
+    "tolerance_delta": 2e-09,
+    "max_iterations": 100000,
+    "log_likelihood_backend": "lm"
+  },
+  "calibration": {
+    "quantile": 0.01,
+    "minimum_samples": 30,
+    "score_type": "raw"
+  },
+  "adaptation": {
+    "mode": "static",
+    "policy": "conservative",
+    "buffer_size": 288,
+    "update_every": 144,
+    "minimum_refit_windows": 144,
+    "safe_margin": 1.0,
+    "volume_quantile": 0.99,
+    "max_concentration_ratio": 1.25,
+    "max_category_shift": 0.05,
+    "max_threshold_shift_iqr": 2.0
+  },
+  "seeds": {
+    "simulation": 1001,
+    "model_fitting": 1002,
+    "bootstrap": 1003,
+    "randomized_algorithms": 1004
+  },
+  "outputs": {
+    "model_path": "artifacts/experiments/window_size/UNSW-Samsung-Camera/10m/model.json",
+    "threshold_path": "artifacts/experiments/window_size/UNSW-Samsung-Camera/10m/threshold.json",
+    "events_path": "artifacts/experiments/window_size/UNSW-Samsung-Camera/10m/events.json",
+    "reports_dir": "artifacts/experiments/window_size/UNSW-Samsung-Camera/10m"
+  },
+  "forecast": {
+    "horizon_hours": 24
+  }
+}
