@@ -1,0 +1,700 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=25mm]{geometry}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{booktabs,tabularx,longtable,array}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+\usepackage[backend=biber,style=numeric,sorting=none,maxnames=3,minnames=1,
+  doi=true,url=true,isbn=true]{biblatex}
+\addbibresource{thesis_reference_review.bib}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setcounter{secnumdepth}{1}
+\setcounter{tocdepth}{2}
+\newcommand{\referenceentry}[3]{%
+  \subsection{#1: #2}\label{ref:#3}%
+  \fullcite{#3}\par
+  \textbf{Citation key:} \texttt{#3}.\par}
+\newcommand{\field}[2]{\textbf{#1:} #2\par}
+
+\title{LM-IDNet: Verified References for Thesis Writing\\
+  \large An annotated shortlist with claim boundaries and reading pointers}
+\author{Project reference review}
+\date{Verified 16 October 2026}
+
+\begin{document}
+\maketitle
+
+This guide contains \textbf{30 scholarly works}: 28 journal or conference
+publications, one technical report, and one book. Two additional dataset records
+are listed separately. The selection follows the actual project: four-category
+traffic windows, a Dirichlet--multinomial (DM) device model, Minka estimation,
+LM likelihood evaluation, normal-data calibration, guarded adaptation,
+chronological evaluation, and a resource-limited Docker simulation.
+
+The annotations are reading and attribution notes, not ready-made thesis
+chapters. Each explains what a source can support, where it belongs, and what
+it cannot establish. \textbf{A reference supports an idea or precedent; it does
+not validate this project's numerical results or establish its novelty.}
+
+\tableofcontents
+\clearpage
+
+\section{How to use this shortlist}
+
+\subsection{What was verified}
+
+Titles, authors, publication venues, years, page ranges or article identifiers,
+and DOI/official URLs were checked against publisher pages, author or university
+records, proceedings, and DOI registrant metadata. Existing PDFs in
+\path{resouces/} were examined rather than trusting their filenames. Final
+publication metadata takes precedence over provisional manuscript headers.
+
+\textbf{Full text} means the relevant passage was inspected in a publisher
+copy, an author manuscript, a local supplied PDF, or an authorised HTML reprint.
+It does not mean every proof and experiment was audited. There are 27 such
+entries, with the particular version identified where necessary.
+\textbf{Limited access} applies to R01, R18, and R25: their existence and
+bibliographic identity were verified, but detailed passage-level checking was
+limited to the publisher record, abstract, or chapter summary. No unverified
+equation or narrow page claim is attributed to them here.
+
+The suggested use of each reference is an interpretation of its relevance to
+LM-IDNet. Page pointers distinguish printed journal pages from PDF page numbers.
+An author manuscript can have different pagination and content from the final
+publication. Search-result dates were not treated as publication dates.
+
+\subsection{Corrections to existing project references}
+
+\begin{itemize}
+\item The IoT forecasting study called a ``reference manuscript'' in
+  \path{docs/full_project_report/bibliography.tex} is published at
+  \textbf{ICNC 2025, pp.~28--32}
+  (\href{https://doi.org/10.1109/ICNC64010.2025.10993688}{published record}, R06).
+  Use that publication when attributing the four-category,
+  ten-minute Camera~5 precedent.
+\item \path{resouces/ALM2_new.pdf} is a 15-page preprint. The matching title and
+  authors have a published \textbf{ACDSA 2025, pp.~1--6} record (R07).
+  The final article and long preprint must not be assumed identical.
+\item The LM article belongs to the \textbf{2023} volume of
+  \emph{Computational Statistics}, although it appeared online in 2022 (R04).
+  The TPAMI article belongs to the \textbf{2025} issue, although its DOI and
+  online publication date contain 2024 (R05).
+\item The UNSW attack-trace page explicitly requests citation of
+  \textbf{Hamza et al., SOSR 2019} (R13). This is a different source from
+  UNSW-NB15, N-BaIoT, and the UNSW benign device-classification traces.
+\item Minka's report is \textbf{2000, revised through 2012} (R02), not a journal
+  article. Its DM count estimator is Eq.~(55), not the Dirichlet-proportions
+  update from its first section.
+\end{itemize}
+
+These corrections are recorded here; existing thesis chapters and older reports
+have not been rewritten.
+
+\subsection{A chapter and claim map}
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.43\textwidth}
+  >{\raggedright\arraybackslash}p{0.50\textwidth}@{}}
+\toprule
+\textbf{Topic or claim to support} & \textbf{Start with these entries} \\
+\midrule
+\endhead
+Introduction: IoT compromise and motivation &
+R10 (Mirai), R11 (device traffic), R28 (edge context). \\
+Background: anomaly detection and normal-reference assumptions &
+R08 (taxonomy), R09 (operational limitations), R20 (training contamination). \\
+Background: categorical counts and extra-multinomial variation &
+R01 (history), R02--R03 (accessible technical foundations), R05. \\
+Methodology: estimator versus numerical likelihood backend &
+R02 (update), R03--R05 (numerical methods), R07 and R26--R27 (implementation context). \\
+Methodology: inherited IoT representation and forecasting precedent &
+R06; use D1 separately for the original D-Link data. \\
+Related work: device profiles, shallow and neural detectors &
+R11--R17. R13 is also the attack-dataset paper. \\
+Adaptation: changing normal behaviour and contamination risks &
+R12, R18--R20. These motivate safeguards, not their exact constants. \\
+Experimental methodology: temporal splits, leakage, and development decisions &
+R21--R22; document the actual capture selection locally. \\
+Experimental methodology: imbalance and time-dependent anomalies &
+R23 (precision/recall), R24 (range metrics and timing). \\
+Experimental methodology: calibration quantiles and reproducibility &
+R30 (quantile convention), R29 (workflow provenance). \\
+Statistical comparisons: KL divergence &
+R25; R05's Table III also documents the inherited distance measures. \\
+Datasets, devices, annotations &
+R13 plus D2 for UNSW; R06 plus D1 for D-Link. \\
+Discussion: edge feasibility and limits &
+R15, R17, R28 for context; this project's measured hardware evidence separately. \\
+\bottomrule
+\end{longtable}
+
+For a first reading pass, prioritise R02, R04--R06, R08--R09, R12--R15,
+R19, and R21--R23. Read the remaining items where the corresponding chapter
+needs them; a shortlist is not a requirement to cite everything.
+
+\section{Statistical foundations and the inherited LM work}
+
+\referenceentry{R01}{Historical compound-multinomial foundation}{mosimann1962}
+\field{Use and placement}{Background: historical attribution for compounding a
+multinomial with a distribution over proportions. It prevents presenting the
+DM family as a new model introduced by this thesis.}
+\field{Verification and reading}{\textbf{Limited access.} Oxford's publisher
+record confirms the title, author, 1962 volume, and pp.~65--82. The article is
+PDF-only behind access controls; no specific derivation page was verified.
+Use R02--R03 for the technical passages available during this review.}
+\field{Boundary}{A foundational probability paper, not evidence that a
+particular IoT trace is overdispersed or that DM is the best detector.}
+\field{Project connection}{\path{docs/full_project_report/sections/scientific_basis.tex}:
+the DM generative model and concentration interpretation.}
+
+\referenceentry{R02}{The parameter estimator actually used}{minka2000}
+\field{Use and placement}{Background and methodology: maximum-likelihood
+estimation of DM parameters using fixed-point iteration. Attribute the alpha
+update to Minka, including when the likelihood backend is LM.}
+\field{Verification and reading}{\textbf{Full text.} Author's publication page
+and local \path{resouces/minka-dirichlet.pdf}. Section~3, PDF p.~5,
+Eqs.~(48)--(55); Eq.~(55) is the project's digamma-based update. Appendix~B,
+PDF pp.~12--13, gives its derivation.}
+\field{Boundary}{The report also models ordered categorical outcomes. Its
+likelihood expressions do not justify omitting the multinomial coefficient
+from a probability assigned to a count vector. A parameter-independent term
+can be dropped for fitting and still be necessary for cross-window scoring.}
+\field{Project connection}{\path{src/lm_idnet/algorithms/dirichlet.py} and
+\path{docs/likelihood-semantics.md}.}
+
+\referenceentry{R03}{The Yu--Shaw numerical predecessor}{yu2014}
+\field{Use and placement}{Background: the numerical problem near the
+multinomial limit and the Yu--Shaw approach to evaluating the DM likelihood.
+This is a mathematical predecessor even though its application is genomics.}
+\field{Verification and reading}{\textbf{Full text.} Local
+\path{resouces/bioinformatics_30_11_1547.pdf}, especially the introduction
+on printed p.~1547 and the methods that follow. PubMed corroborates the
+authors, journal, pp.~1547--1554, and DOI.}
+\field{Boundary}{Its speed and accuracy results concern its own numerical
+tests. They do not describe this project's four-category detector or establish
+an LM-versus-SciPy speed advantage.}
+\field{Project connection}{The Yu--Shaw comparison in
+\path{thesis/chapters/02_background_and_related_work.tex} and the numerical
+discussion in \path{docs/lm_paper_project_comparison_report.md}.}
+
+\referenceentry{R04}{The Languasco--Migliardi algorithm}{languasco2023}
+\field{Use and placement}{Background and methodology: the LM evaluation of
+nearby log-Gamma differences, error control, and computational complexity.
+This is the principal attribution for the native numerical kernel.}
+\field{Verification and reading}{\textbf{Full text.} Local
+\path{resouces/180_2022_1311_OnlinePDF.pdf} is a revised proof, not the
+paginated final issue. Read its introduction, Section~3 (Theorem~1), and
+Sections~4--5 (complexity and experiments). Padua's record and author
+publication list confirm the final 2023 citation, pp.~1995--2013.}
+\field{Boundary}{LM evaluates likelihood terms; it does not supply the
+Minka update or the project's anomaly decision rule. Numerical improvements
+must be separated from detection accuracy.}
+\field{Project connection}{\path{src/lm_idnet/algorithms/lm_native.py},
+\path{src/lm_idnet/algorithms/native/}, and the native-backend chapter.}
+
+\referenceentry{R05}{DM estimation and cross-domain numerical evidence}{alhajbaddar2025analysis}
+\field{Use and placement}{Background and methodology: DM fitting for
+overdispersed counts, fixed-point estimation, and empirical comparison of
+LM and Yu--Shaw. Also a direct precedent for the project's distance measures.}
+\field{Verification and reading}{\textbf{Full text.} Local TPAMI PDF:
+Section~II and Algorithm~1 on p.~1182; experiments in Section~III;
+Table~III on p.~1186 lists TVD, KL divergence, Euclidean distance, and MSE.
+The issue header and publication record agree on 47(2), 1181--1189, 2025.}
+\field{Boundary}{Polls, images, and IoT examples support a numerical modelling
+study. Its reported speedups and goodness-of-fit results are not LM-IDNet
+attack-detection scores or a universal comparison with SciPy.}
+\field{Project connection}{\path{docs/full_project_report/sections/numerical_experiments.tex}
+and \path{src/lm_idnet/evaluation/metrics.py}.}
+
+\referenceentry{R06}{The direct four-category IoT precursor}{alhajbaddar2025iot}
+\field{Use and placement}{Background and methodology: attribution for D-Link
+Camera~5 counts, TCP/UDP/SSDP/ARP categories, ten-minute aggregation,
+DM fitting, and traffic-profile forecasting. This is the closest source for
+the inherited representation.}
+\field{Verification and reading}{\textbf{Full text.} Local
+\path{resouces/ALM_IoT-CR.pdf}, Section~III beginning on PDF p.~2;
+modelling and forecast tables on later pages. Padua's publication record,
+the author's publication list, and DOI metadata confirm ICNC 2025,
+pp.~28--32. The local copy supplies the reading pagination.}
+\field{Boundary}{This study forecasts traffic; it does not establish the
+project's calibrated attack detection, guarded updates, or precision/recall.
+Ten minutes is a precedent, not proof of an optimal window duration.}
+\field{Project connection}{\path{docs/lm_paper_project_comparison_report.md}
+and \path{docs/full_project_report/sections/window_size_experiments.tex}.}
+
+\referenceentry{R07}{The later C-wrapped LM implementation}{alhajbaddar2025implementation}
+\field{Use and placement}{Methodology and related numerical work: a
+Python-accessible C implementation of LM and comparison with standard
+Python/SciPy likelihood evaluation. It helps attribute the supplied code's
+implementation lineage.}
+\field{Verification and reading}{\textbf{Full text of the supplied preprint.}
+\path{resouces/ALM2_new.pdf}: Section~3 discusses the C wrapper and Section~4
+the experiments. The 15-page preprint is dated 11 April 2025. Padua's
+record, the author list, and DOI metadata identify the later six-page ACDSA
+2025 publication. Final-text equivalence was not checked.}
+\field{Boundary}{Do not transfer the preprint's page numbers, dataset counts,
+or speedups to the final article without comparing versions. LM-IDNet's
+backend benchmark needs its own measurements.}
+\field{Project connection}{\path{lm-algorithm/}, the native wrapper, and
+\path{docs/lm_backend_change_record.tex}.}
+
+\section{Anomaly detection, IoT behaviour, and related systems}
+
+\referenceentry{R08}{Taxonomy and statistical anomaly detection}{chandola2009}
+\field{Use and placement}{Introduction and background: define anomalies,
+explain statistical low-likelihood detection, and distinguish supervised,
+normal-reference, and unlabelled-data settings.}
+\field{Verification and reading}{\textbf{Full text.} Author-hosted published
+article; Section~2 covers problem characteristics and training labels;
+Section~7 covers statistical techniques. The first page confirms article~15,
+41(3), 2009, 58 pages.}
+\field{Boundary}{In this taxonomy, training on presumed normal data is commonly
+called semi-supervised anomaly detection. Define precisely why this project
+uses ``unsupervised'': fitting and calibration require no attack labels, but
+a trusted normal reference is still assumed. Do not claim that labels never
+enter method selection or offline evaluation.}
+\field{Project connection}{The README's learning assumptions and
+\path{thesis/chapters/02_background_and_related_work.tex}.}
+
+\referenceentry{R09}{Operational limits of learned network detectors}{sommer2010}
+\field{Use and placement}{Introduction, related work, and limitations:
+motivate the distinction between a laboratory anomaly detector and a useful
+operational intrusion detector. Discuss normal-traffic diversity, evaluation,
+false alerts, and understanding decisions.}
+\field{Verification and reading}{\textbf{Full text.} Published 12-page paper
+inspected through a university-hosted
+\href{https://gangw.cs.illinois.edu/class/cs562/papers/Closed_World-IDS-sp10.pdf}{copy};
+read the abstract, introduction, and discussion of challenges and guidelines.
+DOI metadata confirms IEEE S\&P 2010, pp.~305--316.}
+\field{Boundary}{A general discussion of network intrusion detection, not a
+proof that machine learning cannot work or that a small DM model is superior.}
+\field{Project connection}{The trusted-baseline assumption, alert evidence,
+and deployment limits in \path{docs/full_project_report/sections/interpretation.tex}.}
+
+\referenceentry{R10}{An observed IoT botnet threat}{antonakakis2017}
+\field{Use and placement}{Introduction: motivate IoT security using a measured
+case of embedded devices participating in a large DDoS botnet.}
+\field{Verification and reading}{\textbf{Full text.} Official USENIX paper and
+proceedings citation; introduction on printed p.~1093 and the measurement
+analysis that follows. The PDF includes an extra proceedings cover, so PDF
+page numbers are offset from article pages.}
+\field{Boundary}{Mirai is a historical case study. Do not turn its measurements
+into present-day device totals, claim every IoT attack is volumetric, or say
+this project was evaluated on Mirai unless the dataset actually supports it.}
+\field{Project connection}{The threat motivation; the project's UNSW labels
+describe their own attacks and are not Mirai ground truth.}
+
+\referenceentry{R11}{Device-specific network traffic characteristics}{sivanathan2019}
+\field{Use and placement}{Background: empirical evidence that consumer IoT
+devices can exhibit useful device-specific traffic attributes, including
+activity cycles, flow volume, ports, and service interactions.}
+\field{Verification and reading}{\textbf{Full text.} Published IEEE copy and
+author's publication list; read the traffic-characterisation analysis,
+especially the attribute summary on printed p.~1752. Issue pagination is
+1745--1759, August 2019; online publication and some author BibTeX use 2018.}
+\field{Boundary}{This is primarily device classification using richer features.
+It does not prove that four protocol counts identify every attack or that
+one device's normal profile transfers to another.}
+\field{Project connection}{Per-device fitting and the compact representation
+described in \path{docs/full_project_report/sections/scientific_basis.tex}.}
+
+\referenceentry{R12}{Changing device behaviour and one-class models}{sivanathan2020}
+\field{Use and placement}{Related work: per-device one-class traffic models
+and detection of behavioural change, including legitimate changes associated
+with firmware upgrades. This is especially close to the motivation for
+adaptation.}
+\field{Verification and reading}{\textbf{Full text of the author manuscript.}
+Sections~III--IV describe flow attributes and clustering; Section~V.B--C
+evaluates behavioural changes and attacks. DOI metadata verifies the final
+7(8), 7295--7309, 2020 citation; manuscript pagination differs.}
+\field{Boundary}{Its clustering/classification architecture differs from DM
+likelihood scoring. A detected change can be benign; its update mechanisms
+and performance are not those implemented in LM-IDNet.}
+\field{Project connection}{\path{docs/full_project_report/sections/conservative_adaptation.tex}
+and the related-systems chapter.}
+
+\referenceentry{R13}{The UNSW attack-dataset paper and volume monitoring}{hamza2019}
+\field{Use and placement}{Related work and dataset methodology: provenance
+for the UNSW attack traces; monitoring per-device traffic activity to detect
+volumetric attacks and ARP spoofing. It is also relevant to the separate total
+and ARP count signals.}
+\field{Verification and reading}{\textbf{Full text of the author copy.}
+Sections~3--4 describe MUD/SDN monitoring and attack/data collection;
+Section~5 evaluates the prototype. DOI metadata confirms final pp.~36--48;
+the author copy numbers its pages 1--13. The dataset page names this paper
+as its requested citation (D2).}
+\field{Boundary}{LM-IDNet uses protocol windows, not this paper's MUD flow
+rules, SDN pipeline, or classifier. Cite the paper and actual annotations;
+do not describe the selected traces as UNSW-NB15.}
+\field{Project connection}{\path{docs/unsw-chromecast-dataset.md},
+\path{docs/unsw-samsung-camera-dataset.md}, and joint count scoring.}
+
+\referenceentry{R14}{Normal-device learning with deep autoencoders}{meidan2018}
+\field{Use and placement}{Related work: N-BaIoT learns benign device
+behaviour and detects deviations using deep autoencoders. Compare its feature
+representation and learning model with the project's compact count model.}
+\field{Verification and reading}{\textbf{Full text of the author manuscript.}
+Sections~3--4 describe the detector and evaluation; the feature discussion
+describes statistics over multiple temporal windows. Publisher DOI metadata
+confirms \emph{IEEE Pervasive Computing} 17(3), pp.~12--22 and the author
+order used in the companion BibTeX. The arXiv header/order differs.}
+\field{Boundary}{Its nine-device Mirai/BASHLITE study and dataset are distinct
+from the UNSW traces used here. Published detection figures cannot be ranked
+directly against LM-IDNet's results on different traces and window labels.}
+\field{Project connection}{The neural-detector comparison in related work;
+not an implemented experimental baseline.}
+
+\referenceentry{R15}{Online and resource-aware network detection}{mirsky2018}
+\field{Use and placement}{Related work: Kitsune/KitNET combines an ensemble
+of small autoencoders with incremental feature extraction for online network
+anomaly detection. It is a concrete precedent for gateway-oriented detection.}
+\field{Verification and reading}{\textbf{Full text.} Official NDSS paper;
+Section~IV describes the pipeline and complexity, Section~V the experiments,
+and Section~VI adversarial issues. The NDSS programme and DOI record confirm
+the title, authors, and 2018 venue.}
+\field{Boundary}{Kitsune's Raspberry Pi measurements belong to Kitsune.
+They do not establish the hardware performance of this project's Docker
+simulation. Neither unsupervised online detection nor low-resource deployment
+is a new idea introduced by this thesis.}
+\field{Project connection}{Bounded streaming and the comparison of count-based
+and neural representations.}
+
+\referenceentry{R16}{Device-type profiles and federated self-learning}{nguyen2019}
+\field{Use and placement}{Related work: D\"IoT models device-type-specific
+communication sequences and combines learning across gateways. It shows
+another way to learn normal IoT behaviour without attack-labelled training.}
+\field{Verification and reading}{\textbf{Full text of the accepted manuscript.}
+The arXiv copy identifies acceptance at ICDCS 2019. Read Section~III
+(packet-sequence modelling), Section~IV (federated learning), and
+Section~VII.B--D (behaviour evolution and adversarial limitations).
+Aalto's record and DOI metadata confirm pp.~756--767.}
+\field{Boundary}{LM-IDNet has neither federated training nor a GRU sequence
+model. Use D\"IoT as a related system, not as attribution for the specific
+DM update gate or evidence of transfer between devices.}
+\field{Project connection}{Device-specific baselines and the learning-architecture
+comparison in background.}
+
+\referenceentry{R17}{Compact IoT features and gateway placement}{doshi2018}
+\field{Use and placement}{Related work and motivation: selecting traffic
+features using IoT communication properties and evaluating DDoS detection
+with several machine-learning classifiers at a network middlebox.}
+\field{Verification and reading}{\textbf{Full text.} IEEE conference-hosted
+published PDF: introduction, feature-engineering subsection, and results.
+Printed pp.~29--35 and DOI 10.1109/SPW.2018.00013 are visible in the
+publisher copy. DLS was the workshop; SPW is the proceedings citation.}
+\field{Boundary}{The study uses labelled classifier experiments and features
+different from the project's four counts. It motivates low-cost monitoring,
+but neither proves an optimal feature set nor demonstrates this detector's
+physical gateway performance.}
+\field{Project connection}{Representation size and gateway placement; a
+literature comparison, not an algorithm included in the current experiments.}
+
+\section{Adaptation, drift, and contaminated learning data}
+
+\referenceentry{R18}{Concept drift terminology and adaptation context}{gama2014}
+\field{Use and placement}{Background: established terminology for evolving
+data and adaptive learning, and a framework for introducing why a static
+normal model may become stale.}
+\field{Verification and reading}{\textbf{Limited access.} Publisher abstract
+and bibliographic record checked: ACM Computing Surveys 46(4), article~44,
+37 pages, 2014. The abstract explicitly describes its main setting as
+\emph{online supervised learning}. Obtain the full final text before relying
+on a detailed algorithm or page-specific argument.}
+\field{Boundary}{Its central setting includes target labels. In LM-IDNet,
+describe changing unlabelled traffic as distributional or behavioural drift
+unless a stronger concept-drift claim is justified. The survey does not
+validate the project's update policy or update constants.}
+\field{Project connection}{The rationale for static, threshold-adaptive, and
+periodic-refit modes.}
+
+\referenceentry{R19}{Poisoning an online anomaly detector}{kloft2012}
+\field{Use and placement}{Background, adaptation methodology, and limitations:
+online anomaly models can be manipulated by admitted observations; safeguards
+and attacker assumptions need to be explicit.}
+\field{Verification and reading}{\textbf{Full text.} JMLR's official article
+and 44-page PDF, pp.~3681--3724. The abstract and attack analysis distinguish
+full/limited traffic control and external false-positive constraints.}
+\field{Boundary}{The formal bounds concern online centroid anomaly detection,
+not DM fitting. Cite the poisoning risk as motivation; do not claim those
+bounds prove the safety of this project's confidence gate, fixed baseline,
+or per-update movement limits. Small accepted shifts may accumulate.}
+\field{Project connection}{\path{docs/full_project_report/sections/conservative_adaptation.tex}:
+admission gates, bounded buffers, fixed references, and movement checks.}
+
+\referenceentry{R20}{Why unlabelled training data may need sanitisation}{cretu2008}
+\field{Use and placement}{Background and methodology: contaminated training
+traffic can corrupt anomaly sensors. This supports stating the trusted-normal
+assumption and motivates selective admission during adaptation.}
+\field{Verification and reading}{\textbf{Full text of the author copy.}
+Sections~2--3 describe local sanitisation and its evaluation; Section~3.4
+discusses long-lasting training attacks; Section~4 introduces collaborative
+sanitisation. The paper and DOI record identify IEEE S\&P 2008,
+pp.~81--95.}
+\field{Boundary}{The paper's micro-model voting and collaborative cleaning
+are different mechanisms. LM-IDNet's filtering is an engineering safeguard,
+not an implementation of this sanitisation algorithm or a guarantee that
+accepted observations are attack-free.}
+\field{Project connection}{Presumed-benign fitting/calibration inputs and
+the conservative learning buffer.}
+
+\section{Evaluation design and interpretation}
+
+\referenceentry{R21}{Temporal and distributional evaluation bias}{pendlebury2019}
+\field{Use and placement}{Experimental methodology: motivate chronological
+training/testing and deployment-representative distributions. Explain why
+random mixing across time can produce misleading security results.}
+\field{Verification and reading}{\textbf{Full text.} Official USENIX paper,
+Sections~3.2--3.3 and~4.1. Its
+\href{https://www.usenix.org/system/files/sec19_errata_6.pdf}{official erratum}
+corrects an extra normalisation factor in Eq.~(4) on p.~735;
+the authors state their released implementation and results are unaffected.}
+\field{Boundary}{The experiments concern Android malware classification.
+The evaluation principle transfers, but the paper does not verify this
+repository's splits. Earlier label exposure still prevents a later partition
+from becoming an independently locked test merely because it is chronological.}
+\field{Project connection}{\path{docs/temporal-partitions.md} and
+\path{docs/full_project_report/sections/datasets.tex}.}
+
+\referenceentry{R22}{Security-specific experimental pitfalls}{arp2022}
+\field{Use and placement}{Experimental methodology and limitations: justify
+clear baselines, label provenance, leakage controls, appropriate metrics,
+and careful separation of laboratory measurements from deployment claims.}
+\field{Verification and reading}{\textbf{Full text.} Official USENIX paper;
+Figure~1 and Section~2 identify data snooping, biased parameters,
+inappropriate measures, base-rate effects, and lab-only evaluation.
+The proceedings page confirms pp.~3971--3988.}
+\field{Boundary}{This paper supplies methodological guidance. It cannot certify
+that LM-IDNet avoids every pitfall. Any development-label use for choosing
+window length, count signals, or adaptation policy must be disclosed even
+when labels never enter the runtime learning rule.}
+\field{Project connection}{\path{thesis/chapters/04_experimental_methodology.tex}
+and the project's explicit limitations.}
+
+\referenceentry{R23}{Precision and recall under class imbalance}{saito2015}
+\field{Use and placement}{Experimental methodology: explain precision, recall,
+false positives, and why accuracy or an ROC plot alone can hide the operational
+burden when attack windows are rare.}
+\field{Verification and reading}{\textbf{Full text.} PLOS publisher article;
+``Theoretical Background,'' Table~1, and the subsection on precision for
+imbalanced datasets. The publisher confirms 10(3), e0118432, 2015.}
+\field{Boundary}{The motivating datasets are biological, but the binary-metric
+argument applies to labelled windows. It does not say ROC analysis is always
+invalid. Window precision is not attack-episode recall; class prevalence and
+the unit of evaluation must remain explicit.}
+\field{Project connection}{Confusion counts, precision/recall/F1, and the
+class-imbalanced Chromecast and Samsung development partitions.}
+
+\referenceentry{R24}{Time ranges and event-level detection}{tatbul2018}
+\field{Use and placement}{Experimental methodology and limitations: motivate
+why detecting a time interval has additional dimensions such as coverage,
+fragmentation, and positional preference, beyond pointwise classification.}
+\field{Verification and reading}{\textbf{Full text.} Author-hosted paper and
+official NeurIPS 2018 record. Section~4 defines range precision/recall;
+Section~4.3 discusses customisation. The official record identifies volume~31;
+no unverified proceedings page range is inserted in the BibTeX.}
+\field{Boundary}{The project's window metrics and episode summary are not
+automatically Tatbul's range metrics. Cite it as motivation and define the
+implemented metric separately. A label triggered by any attack overlap is
+different from weighting a window by its attack duration.}
+\field{Project connection}{Window-size comparisons, annotation overlap,
+episode interpretation, and response-time reporting.}
+
+\section{Supporting mathematics, software, deployment, and reproducibility}
+
+\referenceentry{R25}{A book source for relative entropy}{cover2006}
+\field{Use and placement}{Background or methodology: information-theoretic
+context for KL divergence when comparing fitted and observed category
+distributions. Cite this book for the definition, and R05--R06 for its use
+in the inherited modelling experiments.}
+\field{Verification and reading}{\textbf{Limited access.} Wiley's book record
+confirms the second edition and ISBN. Its table of contents assigns
+Chapter~2, ``Entropy, Relative Entropy, and Mutual Information,''
+\textbf{pp.~13--55}; the
+\href{https://onlinelibrary.wiley.com/doi/10.1002/047174882X.ch2}{chapter summary}
+explicitly lists relative entropy. The chapter's complete text was not inspected.
+Use the 2006 print-edition year; Wiley also exposes a 2005 online date.}
+\field{Boundary}{No narrower book page or theorem was verified. Do not cite
+this chapter for a specific Jensen--Shannon or TVD formula without checking it.
+KL between category profiles is not an attack probability.}
+\field{Project connection}{\path{src/lm_idnet/evaluation/metrics.py}.}
+
+\referenceentry{R26}{Floating-point cancellation and numerical stability}{goldberg1991}
+\field{Use and placement}{Background: explain why subtracting nearby
+large floating-point values can expose rounding error, motivating stable
+formulations of log-Gamma differences and reference calculations.}
+\field{Verification and reading}{\textbf{Full text.} Oracle's authorised,
+edited HTML reprint, the ``Cancellation'' subsection under ``Rounding
+Error.'' The reprint identifies the original March 1991 ACM article;
+its original citation is 23(1), pp.~5--48.}
+\field{Boundary}{The HTML reprint's layout/pagination is not the original
+journal pagination. This is general numerical background; R03--R04 provide
+the DM-specific argument. It does not prove a particular error bound for
+the project's compiled kernel.}
+\field{Project connection}{Backend accuracy checks and
+\path{docs/full_project_report/sections/numerical_experiments.tex}.}
+
+\referenceentry{R27}{Credit for the numerical software dependency}{virtanen2020}
+\field{Use and placement}{Methodology and reproducibility: acknowledge SciPy,
+including the special functions used by the estimator and the reference
+likelihood implementation.}
+\field{Verification and reading}{\textbf{Full text.} Nature Methods publisher
+article, the subpackages overview and its \texttt{special} description:
+Gamma-related and information-theory functions are listed. Publisher and DOI
+metadata confirm 17(3), pp.~261--272, 2020. The publisher also links an author
+correction; this guide relies on the current article's software description.}
+\field{Boundary}{The paper is a software citation, not documentation of the
+exact installed version or a guarantee of accuracy in every regime. Record
+the project's actual package versions and benchmark environment separately.}
+\field{Project connection}{\path{pyproject.toml},
+\path{src/lm_idnet/algorithms/dirichlet.py}, and
+\path{src/lm_idnet/algorithms/log_likelihood.py}.}
+
+\referenceentry{R28}{Why process data near the network edge}{shi2016}
+\field{Use and placement}{Introduction and deployment background: define
+edge computing and motivate local processing in terms of latency, bandwidth,
+resource constraints, and data handling.}
+\field{Verification and reading}{\textbf{Full text.} Author-hosted published
+IEEE paper, Section~II, ``What Is Edge Computing,'' and its case studies and
+challenges. The first page confirms 3(5), October 2016, p.~637;
+the article ends at p.~646 and prints the DOI.}
+\field{Boundary}{Architectural motivation is not evidence of LM-IDNet running
+on physical IoT hardware, meeting packet-line-rate requirements, or reducing
+energy use. A one-CPU, 512-MiB Linux/amd64 Docker simulation supports the
+measurements actually collected in that environment.}
+\field{Project connection}{\path{docs/edge-deployment.md} and
+\path{docs/full_project_report/sections/edge_deployment.tex}.}
+
+\referenceentry{R29}{Reproducible computational experiments}{sandve2013}
+\field{Use and placement}{Experimental methodology and reproducibility
+appendix: motivate tracking inputs, commands, software versions, random seeds,
+intermediate artifacts, and the path from raw data to a result.}
+\field{Verification and reading}{\textbf{Full text.} PLOS publisher article;
+Rules~1--4 cover workflow, manual steps, software versions, and version
+control; Rules~6--7 cover random seeds and intermediate results. The publisher
+confirms 9(10), e1003285, 2013.}
+\field{Boundary}{This is guidance originating in computational research,
+not a claim that fingerprints or containers alone guarantee reproducibility.
+The actual artifacts, versions, and commands remain part of the thesis's
+own evidence.}
+\field{Project connection}{\path{docs/dataset-fingerprints.md},
+\path{docs/deterministic-randomness.md}, and saved experiment manifests.}
+
+\referenceentry{R30}{The empirical quantile convention}{hyndman1996}
+\field{Use and placement}{Methodology: empirical quantiles have multiple
+definitions, so calibration should state its interpolation convention.
+This is a reference for the estimator of the quantile, not for selecting
+the one-percent operating point.}
+\field{Verification and reading}{\textbf{Full text.} Author's five-page scanned
+PDF; printed p.~363 was rendered and inspected. Definition~7 uses plotting
+positions $(k-1)/(n-1)$. The
+\href{https://numpy.org/doc/stable/reference/generated/numpy.quantile.html}{official NumPy documentation}
+also explicitly maps \texttt{method="linear"} to Definition~7.
+The author's publication page confirms 50(4), pp.~361--365 and lists
+\href{https://robjhyndman.com/publications/quantiles/}{errata}, including
+corrections to the properties and tail-frequency discussion.}
+\field{Boundary}{A one-percent empirical lower quantile is not a guaranteed
+one-percent future false-positive rate under dependence or drift. The paper
+does not choose the project's quantile, IQR gates, or movement bounds.}
+\field{Project connection}{\path{src/lm_idnet/models/calibration_stage.py}:
+\texttt{np.quantile(..., method="linear")}, calibration artifacts, and IQR scales.}
+
+\section{Supplementary dataset records}
+
+These two records are \textbf{additional to the 30 scholarly works}. Cite
+the dataset and the relevant method paper together when describing provenance.
+
+\referenceentry{D1}{Original D-Link dataset, version 1}{chowdhury2021data}
+\field{Use and placement}{Dataset methodology: original source of D-Link
+packet traces used in the Camera~5 modelling workload.}
+\field{Verification and reading}{Mendeley Data's publisher page confirms
+the four contributors, version~1, 14 January 2021 publication date, DOI,
+14-device description, and CC~BY~4.0 licence. It describes packet-level and
+802.11 MAC-frame traces, collected between September 2020 and January 2021.}
+\field{Boundary}{The dataset description is not attack ground truth for the
+project's selected Camera~5 captures. The selected dates, MAC filter,
+counts, partitions, and fingerprints must be documented from project records.
+R06 is the source for the subsequent four-category modelling procedure.}
+
+\referenceentry{D2}{UNSW attack traces and annotation description}{unswattackdata}
+\field{Use and placement}{Dataset methodology: publisher's release of benign
+and mixed attack/benign daily packet traces and device attack annotations.
+The page's ``Cite our data'' block requests R13.}
+\field{Verification and reading}{The web index exposed the publisher's original
+description, date lists, annotation example, and citation block. Direct HTTP
+retrieval returned 404 during this review, so the link is recorded as a
+\textbf{source with an access limitation}, not a freshly downloadable release.
+R13's accessible author paper independently describes the data collection.}
+\field{Boundary}{The publisher's example labels its own flow records;
+LM-IDNet's half-open-window overlap rule is a separate processing choice.
+The repository's annotation hashes and coverage/exclusion records establish
+which bytes and intervals were actually used. The local licence statement
+was not independently reconfirmed from a live release page.}
+
+\section{Attribution boundaries to retain while drafting}
+
+\begin{itemize}
+\item \textbf{Inherited ideas:} DM modelling and fixed-point estimation
+  (R01--R03); LM likelihood evaluation (R04--R05, R07); Camera~5,
+  the protocol categories, and ten-minute precedent (R06); learned normal
+  device behaviour (R11--R17); adaptive learning and contamination concerns
+  (R18--R20). Attribute these before describing the implementation.
+\item \textbf{Project choices requiring local justification:} the joint minimum
+  of standardised DM, total-volume, and ARP scores; the selected quantile;
+  the exact confidence margins, buffer lengths, refit schedules, movement
+  bounds, fixed-reference decisions, and persistence/rollback design.
+  Related literature motivates the problems; none of the reviewed papers
+  validates this exact combination or proves it novel.
+\item \textbf{Overdispersion:} compare conditional count variation with the
+  multinomial expectation at the same total count. ``Variance exceeds the
+  mean'' is not a universal definition for multinomial counts.
+  Define the project's inverse concentration $\psi=1/\alpha_0$ explicitly
+  rather than assuming all sources use the same dispersion parameter.
+\item \textbf{Modelling versus detection:} the DM is conditional on the
+  observed packet total. A good category-profile fit does not establish good
+  attack detection or make raw likelihood an attack probability. Separate
+  count margins are a project design choice. Residual explanations show
+  statistical deviation, not causal attack attribution.
+\item \textbf{Unlabelled learning versus unlabelled research:} attack labels
+  are absent from fitting and runtime update admission. They are present
+  in offline evaluation and have informed development comparisons. A later
+  evaluation partition with prior label exposure is not an untouched final test.
+\item \textbf{Measured outcomes:} precision, recall, alert delay, adaptation
+  improvements, numerical error, and resource usage require this project's
+  own versioned evidence. None can be borrowed from these publications.
+\end{itemize}
+
+\subsection{Existing resources deliberately left out of the main shortlist}
+
+\path{resouces/Proposte_di_Ricerca_basate_su_Dirichlet_Multinomial.pdf} is
+the local project brief, useful for scope and provenance rather than external
+scientific evidence. Its neural DirichletSoftmax proposal is a different
+project, not part of the implemented detector.
+
+The locally supplied survey \emph{Optimal Countermeasures Selection Against
+Cyber Attacks: A Comprehensive Survey on Reaction Frameworks} concerns response
+and countermeasure selection. It could support a future-work paragraph on
+automated reaction, but LM-IDNet emits alerts rather than selecting or enforcing
+countermeasures. It was not used merely to increase the reference count.
+
+\subsection{Using the files}
+
+This review compiles independently of the thesis:
+\begin{verbatim}
+./scripts/latex.sh docs/thesis_reference_review.tex
+\end{verbatim}
+The PDF is written to \path{out/thesis_reference_review.pdf}. The build uses
+the repository's existing TeX Live/latexmk service and Biber for the companion
+\path{docs/thesis_reference_review.bib}.
+
+The companion file contains all 30 scholarly records and D1--D2 with stable
+citation keys. Copy selected entries into \path{thesis/references.bib} as the
+corresponding passages are written. For example, cite
+\verb|\cite{minka2000,languasco2023}| when distinguishing estimation from
+likelihood evaluation, and \verb|\cite{hamza2019,unswattackdata}| when
+introducing the attack traces. Read the cited passage before final submission,
+especially the three limited-access entries and version-sensitive R07.
+
+\end{document}
