@@ -90,11 +90,11 @@ The historical Samsung learning buffer also admits attacks and permits large
 concentration changes. Those findings motivate the conservative learning policy
 and the fixed detection references used during updates.
 
-The retained count-based scoring and reference checks improve pooled F1 across
-2,513 labelled windows from Chromecast, Samsung, and archived Echo: from
-68.99\% to 70.68\% in static mode and from 64.49\% to 67.94\% with conservative
-threshold adaptation. Static recall on Chromecast and Samsung is unchanged,
-and individual device/mode tradeoffs remain. These retrospective results are
+Across 2,038 labelled Chromecast and Samsung windows, retained scoring and
+reference checks preserve static and conservative-adaptive F1 at 74.76\%.
+Under legacy adaptation, pooled threshold F1 improves from 56.50\% to 74.76\%,
+and periodic-refit F1 from 57.30\% to 75.36\%. Static score ranking improves on
+Chromecast, while individual device/mode tradeoffs remain. These retrospective results are
 distinct from evidence of useful model refitting. The long synthetic edge replay
 promoted no candidate: one attempt
 lacked enough accepted windows and 110 actual fits did not converge. Successful

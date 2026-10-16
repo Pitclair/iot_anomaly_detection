@@ -589,19 +589,13 @@ Dirichlet–multinomial raises it to 92.54 percent.
 Each accepted change addresses an observed failure. The experiment does not add
 a general classifier or an opaque learned feature layer.
 
-Transition: A second device shows which parts of that improvement transfer and
-which still need calibration.
+Transition: Development results and later-data audits answer different questions.
 
-## Slide 31 — Detector Experiment: Cross-Device Evidence
+## Slide 31 — Detector Experiment: Evaluation Boundaries
 
-The latest experimental detector reaches 92.54 percent F1 and 99.70 percent
-ROC–AUC on Chromecast development data.
-
-It is then applied to Amazon Echo without device-specific retuning. Echo reaches
-69.23 percent F1 and 95.93 percent ROC–AUC. It detects every labelled ARP attack
-window, but it misses several low-rate UDP windows and produces more benign
-alerts. This is useful transfer evidence, but it also shows that the additional
-feature thresholds need cross-device calibration.
+The historical six-signal experimental detector reaches 92.54 percent F1 and
+99.70 percent ROC–AUC on Chromecast development data. That experiment is
+separate from the retained four-count detector.
 
 An earlier frozen six-signal detector was evaluated once on Chromecast final
 data and achieved 66.67 percent F1. That dataset cannot provide unbiased
@@ -613,8 +607,8 @@ does not accumulate features without evidence.
 
 ## Slide 32 — Detector Experiment: Rejected and Retained Changes
 
-Adjacent-window byte change recovered one Echo attack window but added false
-alerts across devices. Mean packet-size tails were unstable. Feature
+Adjacent-window byte change added false alerts. Mean packet-size tails were
+unstable. Feature
 corroboration rules suppressed attacks that were correctly visible in only one
 signal. Automatic promotion of an adapted candidate also failed a later-traffic
 safety check.

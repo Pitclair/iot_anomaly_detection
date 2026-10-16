@@ -29,11 +29,11 @@ category model.
 
 \subsection{Cross-device comparison}
 
-The comparison pools 2,513 labelled windows: Chromecast and Samsung development
-and later partitions, plus 475 archived Echo development windows. Each partition
-and mode starts independently from the same fitted normal reference. Confusion
-counts are summed before calculating pooled F1; this is not a mean of device
-F1 values. The retained method uses the same settings across devices and is
+The comparison pools 2,038 labelled windows from the Chromecast and Samsung
+development and later partitions. Each partition and mode starts independently
+from the same fitted normal reference. Confusion counts are summed before
+calculating pooled F1; this is not a mean of device F1 values. The retained
+method uses the same settings across devices and is
 compared with DM-only scoring under each learning policy.
 
 \begin{table}[H]
@@ -42,11 +42,11 @@ compared with DM-only scoring under each learning policy.
 \toprule
 \textbf{Mode and policy} & \textbf{DM-only F1} & \textbf{Retained detector F1} \\
 \midrule
-Static & 68.99\% & 70.68\% \\
-Threshold, conservative & 64.49\% & 67.94\% \\
-Periodic refit, conservative & 68.99\% & 70.68\% \\
-Threshold, legacy & 57.01\% & 70.68\% \\
-Periodic refit, legacy & 57.67\% & 71.20\% \\
+Static & 74.76\% & 74.76\% \\
+Threshold, conservative & 74.76\% & 74.76\% \\
+Periodic refit, conservative & 74.76\% & 74.76\% \\
+Threshold, legacy & 56.50\% & 74.76\% \\
+Periodic refit, legacy & 57.30\% & 75.36\% \\
 \bottomrule
 \end{tabular}
 \caption{Retrospective pooled comparisons with a 288-window buffer and
@@ -56,20 +56,17 @@ Periodic refit, legacy & 57.67\% & 71.20\% \\
 \end{table}
 
 Static classifications on Chromecast and Samsung are unchanged. Chromecast
-development ROC--AUC improves from 0.9092 to 0.9332; Echo static F1 improves
-from 46.15\% to 51.16\%, removing eight false positives while losing one true
-positive. Under the legacy learning policy, Samsung development F1 improves
-from 54.00\% to 78.69\%, and its later F1 from 66.67\% to 90.91\%.
-These are aggregate gains with specific tradeoffs: Echo legacy modes add six
-false positives, and the later Chromecast legacy audit retains one original
-false alert that adaptation alone suppressed.
+development ROC--AUC improves from 0.9092 to 0.9332. Under the legacy learning
+policy, Samsung development F1 improves from 54.00\% to 78.69\%, and its later
+F1 from 66.67\% to 90.91\%.
+The pooled gains occur under legacy adaptation; static and conservative
+decisions remain unchanged. The later Chromecast legacy audit retains one
+original false alert that adaptation alone suppressed.
 
 All conservative candidates on Chromecast and Samsung remain rejected at their
-existing settings. Echo exercises two accepted conservative threshold updates;
-its threshold-adaptive F1 improves from 34.29\% to 42.86\%. These results do not
-establish a successful conservative model-refitting benefit. D-Link static alert
-counts remain 3/270 development and 6/288 later windows; without labels, neither
-count is a measured FPR.
+existing settings. These results do not establish a successful conservative
+learning benefit. D-Link static alert counts remain 3/270 development and 6/288
+later windows; without labels, neither count is a measured FPR.
 
 \subsection{Rejected choices and scope of the evidence}
 

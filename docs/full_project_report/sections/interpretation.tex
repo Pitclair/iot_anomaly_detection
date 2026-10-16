@@ -39,10 +39,10 @@ Samsung contamination and concentration movement show why convergence and
 better in-buffer likelihood are insufficient safety conditions.
 
 The conservative implementation addresses specific failure mechanisms.
-Retrospective comparisons support pooled gains for the retained scoring and
-reference checks, with accepted threshold updates on Echo. Chromecast and
-Samsung still promote no conservative candidate, so their results do not prove
-that learning improved the normal profile. Controlled promotion tests verify
+Retrospective comparisons support pooled gains under legacy adaptation for the
+retained scoring and reference checks. Static and conservative decisions remain
+unchanged. Chromecast and Samsung promote no conservative candidate, so their
+results do not prove that learning improved the normal profile. Controlled promotion tests verify
 code correctness, while candidate rejections and cross-device tradeoffs remain
 part of the empirical findings.
 
@@ -76,9 +76,8 @@ Resource suitability is measured in the bounded local simulation; physical
 embedded targets remain untested. The modest normal-window fits demonstrate
 the observed training requirement, without establishing a general
 sample-efficiency guarantee. High precision is demonstrated on the
-Chromecast and Samsung traces; the retained Echo static precision is only
-35.48\%. Guarded adaptation is implemented, but consistent recovery from
-legitimate drift has not been demonstrated across devices. Alert explanations
+Chromecast and Samsung traces. Guarded adaptation is implemented, but consistent
+recovery from legitimate drift has not been demonstrated across devices. Alert explanations
 describe statistical evidence, rather than proving that an attack occurred.
 
 These limits are compatible with a defensible thesis. The writing should

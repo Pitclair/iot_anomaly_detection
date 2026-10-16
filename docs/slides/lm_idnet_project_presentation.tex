@@ -1146,15 +1146,14 @@ The composition score asks, ``Is this protocol mixture normal?'' It does not ask
 
 \end{frame}
 
-\begin{frame}{Detector Experiment: Cross-Device Evidence}
+\begin{frame}{Detector Experiment: Evaluation Boundaries}
 \centering
 \small
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
 \textbf{Evaluation} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{F1} & \textbf{ROC--AUC}\\
 \midrule
-Chromecast development, latest detector & 31 & 4 & 1 & 92.54\% & 99.70\%\\
-Amazon Echo development, no retuning & 9 & 5 & 3 & 69.23\% & 95.93\%\\
+Chromecast development, six-signal run & 31 & 4 & 1 & 92.54\% & 99.70\%\\
 Chromecast final, earlier frozen detector & 4 & 2 & 2 & 66.67\% & 99.77\%\\
 \bottomrule
 \end{tabular}
@@ -1162,15 +1161,15 @@ Chromecast final, earlier frozen detector & 4 & 2 & 2 & 66.67\% & 99.77\%\\
 \vspace{0.45cm}
 \begin{columns}[T,onlytextwidth]
 \column{0.48\textwidth}
-\begin{exampleblock}{What transferred}
-The Echo run detected every labelled ARP attack window and showed sub-millisecond
-mean scoring latency on the development host.
+\begin{exampleblock}{Development evidence}
+The feature-rich experiment improves Chromecast development results. Its
+six-signal endpoint is separate from the retained four-count detector.
 \end{exampleblock}
 
 \column{0.48\textwidth}
-\begin{alertblock}{What did not transfer cleanly}
-Low-rate UDP attacks remained difficult, false alerts increased, and the opened
-Chromecast final data cannot validate later direction or score-ranking changes.
+\begin{alertblock}{Evaluation limit}
+The opened Chromecast final data cannot validate later direction or
+score-ranking changes as an independent test.
 \end{alertblock}
 \end{columns}
 \end{frame}
