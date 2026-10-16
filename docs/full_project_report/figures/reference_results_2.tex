@@ -1,0 +1,55 @@
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=3 by 1, horizontal sep=0.8cm},
+  ybar,
+  /pgf/bar width=5pt,
+  width=0.29\textwidth,
+  height=0.31\textwidth,
+  ymin=0,
+  symbolic x coords={dlink,chromecast,samsung},
+  xtick=data,
+  xticklabels={D-Link,Chromecast,Samsung},
+  x tick label style={font=\scriptsize,rotate=28,anchor=east},
+  y tick label style={font=\scriptsize},
+  grid=major,
+  grid style={gray!20},
+  enlarge x limits=0.22,
+  title style={font=\small\bfseries},
+  legend style={font=\small,draw=none,at={(1.72,-0.36)},anchor=north,
+    legend columns=2},
+]
+\nextgroupplot[title={Complete model fit},ylabel={Time (ms)},ymax=285]
+\addplot[fill=linkblue!70] coordinates {
+  (dlink,191.04) (chromecast,254.17) (samsung,42.46)
+};
+\addlegendentry{LM}
+\addplot[fill=workinggreen!70] coordinates {
+  (dlink,180.59) (chromecast,194.40) (samsung,34.47)
+};
+\addlegendentry{SciPy}
+
+\nextgroupplot[title={Training likelihood},ylabel={Time ($\mu$s)},ymax=95]
+\addplot[fill=linkblue!70] coordinates {
+  (dlink,55.02) (chromecast,84.69) (samsung,45.69)
+};
+\addplot[fill=workinggreen!70] coordinates {
+  (dlink,49.79) (chromecast,52.12) (samsung,31.57)
+};
+
+\nextgroupplot[title={Single-window score},ylabel={Time ($\mu$s)},ymax=15]
+\addplot[fill=linkblue!70] coordinates {
+  (dlink,12.00) (chromecast,12.22) (samsung,12.18)
+};
+\addplot[fill=workinggreen!70] coordinates {
+  (dlink,13.18) (chromecast,13.22) (samsung,13.20)
+};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Historical median LM and SciPy runtimes for three production workloads. A complete
+fit excludes data loading and file output; training likelihood is one call on
+the complete fit matrix; single-window scoring uses one non-silent window. Lower
+is better.}
+\label{fig:lm-runtime}
+\end{figure}

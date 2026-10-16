@@ -1,0 +1,85 @@
+\section{Input Contracts and Data Quality}
+
+\subsection{What one count vector means}
+
+A count vector is useful only when training and inference give its entries the
+same meaning. The current model therefore stores an input contract containing
+the device identity, MAC address, ordered categories, trained duration, and
+counting-policy identifier. The policy is
+\path{device-mac-bidirectional-ssdp-exclusive-v1}: select either Ethernet
+direction and matching ARP hardware addresses, count TCP and ARP directly,
+classify UDP source/destination port 1900 as SSDP, and exclude it from ordinary
+UDP. Unsupported protocols are ignored by the four-category representation.
+
+MAC identity selects traffic from mixed-device captures; it is not inferred
+from an IP address that might change. The device name is the human-readable
+identity in events and artefacts. The input contract binds both identities and
+the counting interpretation to the model fingerprint.
+
+The edge producer supplies completed counts rather than raw packets. The
+consumer can check declared identity, dimensions, duration, timestamps, and
+values; it cannot independently prove that an external producer counted every
+packet correctly. That producer must implement the documented contract.
+
+\subsection{Values, silence, and missing observations}
+
+\path{WindowRecord} rejects negative counts, booleans, numeric strings,
+fractional values, non-finite values, mismatched category lengths, and invalid
+time bounds. Each count and the total must not exceed $2^{63}-2$ so the
+implementation can add one without overflowing its integer range.
+This is an input-range check, not a promise of exact floating-point arithmetic
+for arbitrarily large counts.
+
+An observed window contains traffic; an observed-silent window contains zeros;
+a missing window contains no count vector. Missing data are not scored or
+learned from. A silent vector is a legitimate observation and receives the
+model's probability for $N=0$. Its raw score is zero, so a negative lower-tail
+threshold will not flag silence simply because no packets were seen.
+Detecting an outage from silence would need an additional, explicitly defined
+signal; it is not supplied by this conditional composition model.
+
+Training, calibration, and shared scoring check the configured duration and
+category order. Dataset metadata must match the selected capture and device.
+Streaming additionally enforces the UTC grid and chronological non-overlap.
+The batch metadata checks do not replace the separate temporal branch's
+complete cross-capture timeline validation.
+
+\subsection{Inventory, structural validation, and fingerprints}
+
+These are distinct gates. Inventory establishes whether configured files exist,
+their size and checksum, and whether identical source bytes require an explicit
+duplicate explanation. Structural validation reads classic PCAP to physical
+EOF and distinguishes recoverable warnings from fatal corruption.
+Fingerprinting identifies source bytes together with the policy that shapes
+them into data. Passing one gate does not imply the others have been run.
+
+The classic-PCAP validator checks global and packet headers, byte order,
+microsecond/nanosecond resolution, version, snapshot length, packet boundaries,
+and captured/original length relationships. Out-of-order timestamps,
+snapshot-truncated packets, and zero-length records are counted as warnings,
+with at most ten examples per warning code. Incomplete records, impossible
+lengths, missing sources, or unsupported formats fail after a diagnostic report
+has been written. PCAPNG is not supported by this structural validator, even
+though the packet-reading path can encounter Scapy-supported PCAPNG sources.
+
+The retained D-Link validation report records 12 configured captures, 721,934
+packets, no fatal error, and 26 warnings in one capture. All twelve were parsed
+to EOF. These are stored structural results, not a fresh re-read of every raw
+capture for this report. UNSW preparation must not be described as having the
+same complete classic-PCAP validation evidence when its source format differs.
+
+A dataset hash covers ordered source hashes and sizes, category order, timestamp
+policy, half-open windowing, duration, and partitions. Absolute clone paths and
+generation timestamps are excluded. A model fingerprint instead covers the
+parameters and inference semantics. A snapshot identifier names one accepted
+version. These identifiers solve different reproducibility problems.
+
+\subsection{Format changes and historical records}
+
+Models and detector snapshots now use version 2 with the embedded input
+contract. Older models without it fail clearly and must be regenerated with
+matching thresholds; changing a configuration cannot prove how an old model was
+trained. The bundled model pairs were regenerated without changing their
+numeric alpha vectors or thresholds. Historical experiment records are retained
+as records of their original revisions. A newer fingerprint need not have the
+same bytes as an older fingerprint even when the numerical decisions agree.

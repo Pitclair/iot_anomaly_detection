@@ -1,0 +1,30 @@
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.94\textwidth,
+  height=0.37\textwidth,
+  ymin=55,
+  ymax=96,
+  xmin=0.7,
+  xmax=6.3,
+  xtick={1,2,3,4,5,6},
+  xticklabels={DM baseline,Packet count,Traffic checks,ARP count,Silence fix,Direction model},
+  x tick label style={font=\small,rotate=25,anchor=east},
+  y tick label style={font=\small},
+  ylabel={Chromecast development F1 (\%)},
+  grid=major,
+  grid style={gray!20},
+  mark options={solid},
+  nodes near coords,
+  nodes near coords style={font=\scriptsize},
+]
+\addplot[color=linkblue,very thick,mark=*] coordinates {
+  (1,61.22) (2,64.00) (3,86.15) (4,89.55) (5,90.91) (6,92.54)
+};
+\end{axis}
+\end{tikzpicture}
+\caption{Changes that improved the experimental detector. Later score
+normalisation changed the ranking of anomalies but did not change any alert.}
+\label{fig:experiment-evolution}
+\end{figure}

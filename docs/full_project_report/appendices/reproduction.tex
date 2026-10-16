@@ -1,0 +1,133 @@
+\section{Reproduction Commands}
+
+\subsection{Research pipeline}
+
+Run from the repository root after preparing the configured source data.
+These commands are examples of the supported interfaces; they were not all
+rerun for this documentation update. Training and calibration overwrite their
+configured starting artefacts, so preserve the frozen evidence bundle before
+deliberately regenerating it.
+
+\begin{verbatim}
+./scripts/run.sh preprocess --config configs/unsw_chromecast.json
+./scripts/run.sh diagnose --config configs/unsw_chromecast.json
+./scripts/run.sh train --config configs/unsw_chromecast.json
+./scripts/run.sh calibrate --config configs/unsw_chromecast.json
+./scripts/run.sh score --config configs/unsw_chromecast.json
+./scripts/run.sh evaluate --config configs/unsw_chromecast.json
+\end{verbatim}
+
+The Samsung and D-Link commands use their corresponding base configurations.
+For data gates, the preprocess command also accepts
+\texttt{--inventory-only}, \texttt{--validate-captures-only}, and
+\texttt{--fingerprint-only}, with their documented output-path overrides.
+A dry run checks configuration/dispatch, not source availability, native
+loading, or compatibility of every saved artefact.
+
+\subsection{Keep legacy and conservative experiments distinct}
+
+\begin{verbatim}
+./scripts/run_adaptation_experiments.sh legacy
+./scripts/run_adaptation_experiments.sh conservative
+\end{verbatim}
+
+The no-argument runner selects conservative. To reproduce the historical
+selected legacy variant explicitly:
+
+\begin{verbatim}
+./scripts/run.sh adapt --config \
+  configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json
+./scripts/run.sh evaluate --config \
+  configs/experiments/legacy/unsw_chromecast_periodic_refit_288_240.json
+\end{verbatim}
+
+Persistent adaptation adds \texttt{--state-dir <directory>}. Stop any writer
+before rollback and use the same compatible configuration:
+
+\begin{verbatim}
+lm-idnet rollback --config CONFIG.json --state-dir STATE_DIRECTORY
+\end{verbatim}
+
+Restart restores detector state, not a batch capture cursor. A rerun will replay
+the configured development sequence.
+
+\subsection{Numerical comparison}
+
+\begin{verbatim}
+./scripts/run.sh benchmark --config configs/d_link_day_cam5.json
+./scripts/run.sh benchmark --config configs/unsw_chromecast.json
+./scripts/run.sh benchmark --config configs/unsw_samsung_camera.json
+\end{verbatim}
+
+These create new benchmark reports with the current environment; they do not
+reproduce old timing numbers bit for bit. The separate paper-shaped script can
+be run in the installed local environment with native LM available:
+
+\begin{verbatim}
+python scripts/lm_professor_experiment.py
+\end{verbatim}
+
+It uses its declared dates, fractions, seed, and output path. It is a separate
+experiment and must not be substituted for the production benchmark.
+
+\subsection{Prepared-image simulation}
+
+\begin{verbatim}
+docker build --platform linux/amd64 \
+  --build-arg VCS_REF="$(git rev-parse HEAD)" -t lm-idnet:edge .
+test ! -e artifacts/edge-state && \
+  cp -R artifacts/edge-initial-state artifacts/edge-state
+./scripts/run-edge.sh < tests/data/edge/windows.jsonl
+\end{verbatim}
+
+Copy the initial state only when creating a new experiment; reuse the accepted
+directory for recovery. The complete service and constrained resource-replay
+commands, including mounts and retained outputs, are in
+\path{docs/edge-deployment.md}. The finite file emits four events and exits
+cleanly rather than running a perpetual replay.
+
+\begin{verbatim}
+export HOST_UID="$(id -u)" HOST_GID="$(id -g)"
+docker compose -p lm-idnet-edge -f compose.edge.yaml up --detach
+docker compose -p lm-idnet-edge -f compose.edge.yaml stop
+./scripts/run-edge.sh rollback \
+  --config /app/configs/edge_example.json --state-dir /state
+\end{verbatim}
+
+Rollback requires a previously accepted version. The supplied initial state
+alone has no previous update to restore.
+
+\subsection{Tests, smoke, and writing builds}
+
+\begin{verbatim}
+LM_IDNET_EDGE_IMAGE=lm-idnet:edge python -m pytest -q -m ""
+python -m lm_idnet.smoke \
+  --fixture tests/data/smoke/synthetic_packet_counts.json \
+  --config configs/d_link_day_cam5.json \
+  --output /tmp/lm-idnet-smoke.json
+./scripts/latex.sh docs/lm_idnet_full_project_report.tex
+./thesis/build.sh
+\end{verbatim}
+
+The report builds to \path{out/lm_idnet_full_project_report.pdf}; the thesis
+builds separately to \path{out/thesis/thesis.pdf}. Both use
+\path{compose.latex.yaml}; neither alters detector behaviour.
+
+\subsection{Separate temporal research checkout}
+
+The following interfaces belong to \texttt{feature/temporal-model}, not the
+reference installation. Use a separate checkout at the recorded revision
+rather than trying to call missing reference commands:
+
+\begin{verbatim}
+scripts/run_temporal_fold.sh \
+  configs/temporal_folds/unsw_chromecast_fold_1.json
+python -m lm_idnet.evaluation.fold_selection \
+  --max-false-alert-episodes-per-day 2 \
+  --output reports/temporal-fold-summary.json \
+  reports/temporal-folds/UNSW-Chromecast/fold-*/evaluation_statistics.json
+\end{verbatim}
+
+The number two is an example operational budget, not a threshold selected or
+validated by this report. The final-test accessor is not a supported reference
+CLI evaluation path yet.

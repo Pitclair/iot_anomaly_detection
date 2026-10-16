@@ -1,0 +1,135 @@
+\section{Packaged Edge Simulation and Resource Evidence}
+\label{sec:edge}
+
+\subsection{The agreed target}
+
+The current target is a local Linux/amd64 Docker container limited to one CPU
+and 512 MiB of memory. This was chosen because Docker already belongs to the
+project and the present deliverable is a simulation using supplied count
+windows. It needs neither a new gateway nor a live packet collector.
+The quota makes the execution budget explicit, but a share of a desktop Ryzen
+processor does not reproduce an embedded processor's speed, memory hierarchy,
+or power use.
+
+The resource records identify an AMD Ryzen 7 9700X host running AlmaLinux 10.2,
+Docker 29.7.2, and a Debian 13/Python 3.11.17 application image. Exact dependency,
+package-source, native-library, fixture, and measurement-script hashes are kept
+in the three JSON files under \path{reports/edge/}. The measured image was built
+from a working tree based on \texttt{8365870}, with that dirty-tree status
+explicit, before the final implementation commit. The recorded package-source
+hash identifies the measured runtime more precisely than a later documentation
+commit label would.
+
+\subsection{Build once and start offline}
+
+The Dockerfile uses a build stage with gcc to compile native LM and install the
+normal package. Its final stage copies the installation, configuration, and a
+small entrypoint that directly executes \texttt{lm-idnet}. The final image has
+neither gcc nor pytest. Native coefficients are package data, so no source
+checkout or compilation is needed at startup.
+
+\path{scripts/run.sh} remains the development convenience runner and can build
+the image. The separate \path{scripts/run-edge.sh} requires a prebuilt image
+and prepared writable state, keeps standard input open, runs as the host's
+numeric user/group, and mounts configuration read-only.
+Its root filesystem is read-only and networking is disabled.
+It supplies a 16-MiB temporary filesystem, a 64-process limit, and single-thread
+numerical-library settings from the image. No new service framework or Python
+dependency was introduced.
+
+\subsection{An ordinary bounded service}
+
+\path{compose.edge.yaml} runs the same detector with persistent state and logs.
+Its producer is a finite prepared JSON-lines file by default. EOF exits zero
+and leaves the service stopped. Failures are retried up to three times, and an
+explicit stop stays stopped. A collector-owned FIFO can replace the file, but
+that collector owns reconnection and the input position.
+
+The stop grace period is 30 seconds. This gives a running detector operation
+time to finish before Docker's final kill. The measured maximum below fits that
+budget, but the configuration is not a proof about every possible future fit.
+A restarted file input replays from its beginning and can update again.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.33\textwidth}X}
+\toprule\textbf{Data} & \textbf{Bound or policy} \\
+\midrule
+Application log & 5 MiB per file, current file and two backups. \\
+Docker event/stderr log & Local driver, 5 MB per file, at most three files,
+with Docker's own metadata/compression overhead. \\
+Accepted detector versions & Active and previous complete snapshots. \\
+Diagnostic state history & Most recent 100 decisions; reasons at most
+1,024 characters. \\
+Temporary filesystem & 16 MiB. \\
+Runtime memory and processes & 512 MiB limit, one-CPU quota, 64-process limit. \\
+\bottomrule
+\end{tabularx}
+\caption{Concrete limits for the supplied service.}
+\end{table}
+
+Docker's bounded log store is the unattended event destination. Removing the
+container removes those events. An unlimited shell append would bypass this
+retention policy. A producer/consumer must be chosen consistently with the
+required evidence retention; the simulation does not supply a durable archive.
+
+\subsection{Workload and measurement method}
+
+The five-record synthetic fixture contains ordinary counts, silence, a missing
+window, and an alerting count vector. The benchmark advances timestamps and
+repeats it as fast as possible, retaining counters and a small set of resource
+samples rather than all results. Both trials start from an isolated copy of
+the conservative D-Link state with a 288-window buffer and 144-window cadence.
+No admission or movement limit is loosened to force a promotion.
+
+Timing runs through real validation, scoring, candidate fitting, persistence
+when applicable, JSON serialization, and stdout flush. Actual estimator calls
+are timed separately. CPU, peak process RSS, sampled Linux RSS, state/log sizes,
+environment, and hashes are retained. Synthetic producer work contributes to
+total throughput. Time spent collecting a ten-minute traffic window does not
+contribute to this processing latency.
+
+\input{full_project_report/tables/edge_measurements}
+
+The long trial's sampled RSS rises from 67.08 to 68.92 MiB and its final two
+samples are equal. History reaches the 100-record limit. These observations,
+together with explicit bounded structures, support the finite-run memory and
+storage claim. They do not prove leak-free indefinite operation. The Linux
+resource counters use slightly different accounting, so their two RSS maxima
+are reported separately.
+
+\subsection{Refits, startup, and what did not happen}
+
+The long replay makes 111 refit attempts. The first lacks enough accepted
+windows; 110 actually call the estimator and fail to converge.
+\textbf{No update is promoted.} The recorded state size therefore does not
+measure a succession of accepted model replacements. Persistence/retention
+correctness after promotion is established by separate controlled tests.
+
+Container launch to first event takes 0.595, 0.439, and 0.436 seconds in three
+starts through the edge runner. The long benchmark's internal initialisation
+time is 0.157 seconds and excludes Docker/interpreter launch.
+Continuous accelerated replay consumes about 99.3\% of its one-CPU allowance.
+The highest sampled RSS uses about 13.5\% of the memory limit, and the worst
+observed 5.079-second window uses about 0.85\% of the 600-second interval.
+These comparisons show observed headroom rather than worst-case guarantees.
+
+The image's Docker-reported size is 145,782,693 bytes. The long trial retains
+16,000 events with 11,720,000 exported payload bytes within its log allowance.
+This is not the complete on-disk cost including Docker metadata.
+The separate rotation test forces eviction with 1-KiB/two-file limits; the long
+trial itself is not claimed to have exhausted the production retention budget.
+
+\subsection{Failure behaviour and deployment limits}
+
+A save failure before pointer activation preserves the valid pair; uncertain
+post-activation durability stops the writer. Application audit/log output can
+be missing after storage failures. Docker storage failure can lose event
+delivery even when detector state remains valid.
+
+Tests exercise offline native loading, accepted state across container removal,
+restart after a failing input record with a held-open FIFO, explicit stop,
+resource configuration, forced event rotation, application rotation, and slow
+output. The deployment is therefore checked for its agreed simulation.
+It is not a tested physical gateway, ARM port, live packet collector, dashboard,
+or exactly-once event-processing system.

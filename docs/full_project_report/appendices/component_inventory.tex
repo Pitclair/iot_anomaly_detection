@@ -1,0 +1,178 @@
+\section{Complete Component and Support Inventory}
+
+This inventory groups source files by their role instead of reproducing raw
+captures or generated event arrays as prose. Module paths in the first table
+are relative to \path{src/lm_idnet/}. Package \path{__init__.py} files establish
+import namespaces; they are not additional detector algorithms.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.43\textwidth}>{\raggedright\arraybackslash}p{0.49\textwidth}}
+\caption{Installed Python implementation map.}\label{tab:source-inventory}\\
+\toprule\textbf{File} & \textbf{Responsibility} \\
+\midrule\endfirsthead
+\toprule\textbf{File} & \textbf{Responsibility} \\
+\midrule\endhead
+\path{cli.py} & Command parser, dispatch, UTC/rotating logs, structured errors, and stable exit codes. \\
+\path{config.py} & Strict shared detector, research, and partition-free edge configuration. \\
+\path{artifacts.py} & Typed loading, fingerprints, atomic snapshots, locks, history, restoration, and rollback. \\
+\path{model_fingerprint.py} & Deterministic inference-parameter and input-contract identity. \\
+\path{dataset_fingerprint.py} & Streaming source-byte and data-shaping-policy identity. \\
+\path{partitioning.py} & Purpose-scoped fit, calibration, development, and reserved final selections. \\
+\path{randomness.py} & Independent named simulation and model-fitting generators. \\
+\path{runtime.py} & Bounded JSON-line input, chronology, synchronous events, and signal lifecycle. \\
+\path{smoke.py} & Public synthetic infrastructure experiment and subprocess reproducibility. \\
+\path{algorithms/dirichlet.py} & Minka fixed-point fitting and fit diagnostics. \\
+\path{algorithms/dirichlet_multinomial.py} & Multinomial coefficient, complete window probability, and raw/normalised scores. \\
+\path{algorithms/log_likelihood.py} & Validated SciPy and native LM parameter-dependent matrix kernels. \\
+\path{algorithms/lm_native.py} & ctypes loading, coefficient initialisation, contiguous inputs, native lock, and precision errors. \\
+\path{algorithms/estimator_factory.py} & One configured construction path for the existing estimator. \\
+\path{models/modeling_stage.py} & Fit-capture validation, training matrix, initial estimation, and model provenance. \\
+\path{models/calibration_stage.py} & Benign calibration windows, score quantile/IQR, and fixed packet-count limit. \\
+\path{models/scoring_stage.py} & Events, shared one-window detector, both update policies, and batch reports. \\
+\path{models/schemas.py} & Models, thresholds, events, accepted snapshots, pointer, and bounded history schemas. \\
+\path{models/forecasting_stage.py} & Synthetic forecast scaffold; not held-out future-traffic validation. \\
+\path{processing/categories.py} & Canonical taxonomy and exclusive packet classification. \\
+\path{processing/inventory.py} & Configured sources, checksums, complete classic-PCAP counts, and duplicate explanations. \\
+\path{processing/pcap_validation.py} & Structural EOF validation, bounded warning examples, and corruption reports. \\
+\path{processing/pcap_processor.py} & Raw-frame MAC/ARP filtering, supported Ethernet decoding, and timestamps. \\
+\path{processing/packet_transformer.py} & UTC time series, aligned windows, silence, discontinuities, and count matrices. \\
+\path{processing/processing_manager.py} & Configured capture orchestration and processed metadata. \\
+\path{processing/schemas.py} & Count/type/state validation and shared category/duration contract. \\
+\path{processing/storage.py} & Validated canonical processed JSON input/output. \\
+\path{processing/statistics.py} & Per-capture descriptive counts and daily dispersion fits. \\
+\path{processing/timestamps.py} & Explicit timezone-aware UTC normalisation. \\
+\path{processing/window_policy.py} & Window duration and common half-open alignment policy. \\
+\path{evaluation/evaluation_stage.py} & Development event/label alignment, confusion matrix, FPR, and summary metrics. \\
+\path{evaluation/benchmark_stage.py} & Isolated LM/SciPy fit, matrix, score, and decision comparisons. \\
+\path{evaluation/metrics.py} & TVD, KL, MSE, Brier, and Jensen--Shannon helpers. \\
+\path{evaluation/schemas.py} & Experiment-manifest provenance schema. \\
+\path{exceptions.py} & Domain failure classes, committed-state distinction, and CLI exit mapping. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Native and supplied scientific files}
+
+The production native directory contains \path{LM_time_lib.c}, horizontal-shift
+and initialisation C/header files, the constants header, coefficient tables,
+\path{LICENSE.}, and the shared object. The image builds its own shared object;
+a checked-in binary is not trusted as architecture-independent evidence.
+Only the required runtime library and log-Gamma coefficient files need to be
+installed. Related digamma/trigamma tables remain supplied material, not a
+claim that the Python alpha update has been replaced by a new native solver.
+
+The preserved capsule under \path{lm-algorithm/} contains the original and
+instrumented Python comparison drivers, executors, source and compiled C
+library, coefficient tables, make/run helpers, row-scrambling helper, nine
+cross-domain example CSV datasets, and fitting/test CSV inputs. Its environment
+Docker/post-install files, metadata YAML, and \path{REPRODUCING.md} document the
+original Code Ocean capsule. These are third-party reproduction assets. The
+production package and the local paper-shaped experiment have their own
+contracts, rather than silently importing every capsule helper.
+
+\subsection{Project and dataset scripts}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.43\textwidth}>{\raggedright\arraybackslash}p{0.49\textwidth}}
+\caption{Executable research, deployment, and preparation paths.}\label{tab:script-inventory}\\
+\toprule\textbf{File} & \textbf{Responsibility} \\
+\midrule\endfirsthead
+\toprule\textbf{File} & \textbf{Responsibility} \\
+\midrule\endhead
+\path{scripts/run.sh} & Build/run convenience for research commands with persistent data/result mounts. \\
+\path{scripts/run-edge.sh} & Prebuilt offline constrained streaming/rollback launcher. \\
+\path{scripts/docker-entrypoint.sh} & Direct installed-command execution; no startup compilation. \\
+\path{scripts/benchmark_edge.py} & Finite synthetic replay instrumenting the real runtime, fitting, resources, and hashes. \\
+\path{scripts/lm_professor_experiment.py} & Paired paper-shaped aggregate likelihood and forecast comparison. \\
+\path{scripts/latex.sh} & Build technical LaTeX reports through the existing Compose service. \\
+\path{scripts/run_adaptation_experiments.sh} & Select six conservative or six legacy configurations, adapt, then evaluate. \\
+\path{unsw_iot_attack_pcaps/download_pcaps.sh} & Resume selected device/date source downloads. \\
+\path{unsw_iot_attack_pcaps/download_annotations.sh} & Retrieve the separate official device annotations. \\
+\path{unsw_iot_attack_pcaps/prepare_dataset.sh} & Build flat symbolic-link source views without copying capture bytes. \\
+\path{unsw_iot_attack_pcaps/prepare_labels.py} & Align official attack intervals to actual capture windows and record provenance. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Tests and fixtures}
+
+The 28 test modules are grouped below. Temporary files and subprocesses are
+isolated by shared fixtures in \path{tests/conftest.py}; there is no need to
+modify real detector artefacts for a fault test.
+
+\paragraph{Configuration and CLI} \path{test_config.py}, \path{test_cli.py}, \path{test_failure_semantics.py}, \path{test_testing_architecture.py}.
+
+\paragraph{Data identity and input processing} \path{test_capture_inventory.py}, \path{test_pcap_validation.py}, \path{test_dataset_fingerprint.py}, \path{test_partitioning.py}, \path{test_timestamps.py}, \path{test_processing.py}.
+
+\paragraph{Numerical and artefact contracts} \path{test_algorithms.py}, \path{test_dirichlet_multinomial.py}, \path{test_likelihood.py}, \path{test_lm_native_matrix.py}, \path{test_estimator_factory.py}, \path{test_artifact_schemas.py}.
+
+\paragraph{Training, calibration, scoring, metrics} \path{test_modeling_stage.py}, \path{test_calibration_stage.py}, \path{test_scoring_stage.py}, \path{test_evaluation_stage.py}, \path{test_benchmark_stage.py}.
+
+\paragraph{State and deployment} \path{test_detector_state.py}, \path{test_runtime.py}, \path{test_edge_deployment.py}, \path{test_adaptation_runner.py}.
+
+\paragraph{Dataset preparation and smoke} \path{test_unsw_label_preparation.py}, \path{test_unsw_scripts.py}, \path{test_smoke_fixture.py}.
+
+
+Fixture files include the tiny packet CSV, synthetic smoke JSON and its licence
+README, five-window edge JSON lines, quarantined truncated-PCAP hex, and a
+normalised configuration snapshot. They exercise exact contracts rather than
+redistributing the full mixed-device packet archive.
+
+\subsection{Configuration, data, artefact, and output inventory}
+
+There are three base device configurations and one edge configuration. Six
+conservative and six explicit legacy experiment files cover both labelled
+devices and their threshold/refit variants. Current experiment paths separate
+policies. Older adaptive output directories remain historical records rather
+than being overwritten under new policy names.
+
+At the pre-report snapshot, tracked data comprise 64 D-Link raw captures,
+12 D-Link processed captures, 17 Chromecast processed captures, and twelve
+Samsung processed captures. The label directories contain 18 Chromecast and
+13 Samsung files, including their manifests. The configured processed counts
+and role totals appear in the dataset section. Raw UNSW staging is ignored;
+the prepared local symbolic-link views are not a second source archive.
+
+Tracked reference artefacts include three initial model/threshold/event sets,
+six historical adaptive event sets, six explicit legacy event sets, and the
+prepared edge pointer/snapshot. Mutable local edge state is ignored. Retained
+reports include capture checks/statistics, fingerprints, smoke evidence,
+production and paper-shaped numerical benchmarks, static metrics, historical
+and explicit legacy adaptations/evaluations, legacy reproduction evidence,
+and the four edge measurement/provenance files. Not every possible configured
+output exists: the six conservative comparison reports remain absent.
+
+\subsection{Root build and collaboration files}
+
+\path{Dockerfile}, \path{pyproject.toml}, \path{main.py}, and \path{README.md}
+define the installed package and its user entry points. The two Compose files
+separate edge operation from LaTeX tooling. Git and Docker ignore rules,
+attributes, the commit-instruction location, and local installation/environment
+files support development. Local environment contents are deliberately excluded
+from the report. No new automated CI or hidden external service is implied by
+those supporting filenames.
+
+\subsection{Branch reference map}
+
+The source branch positions checked for this report are:
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Branch} & \textbf{Revision} & \textbf{Role} \\
+\midrule
+\texttt{master} / \texttt{feature/edge} & \texttt{db2a736} & Reference detector and simulation \\
+\texttt{feature/thesis-report} & \texttt{0d66bf8} & Current thesis workspace \\
+\texttt{feature/adapt} & \texttt{cb8dd66} & Historical adaptive experiments \\
+\texttt{feature/lm-loglikelihood} & \texttt{96fb241} & Numerical/tooling history \\
+\texttt{feature/labeled-dataset} & \texttt{210f922} & Labelled-data/history material \\
+\texttt{feature/temporal-model} & \texttt{b0aa35d} & Separate chronology/fold research \\
+\texttt{feature/volume-anomaly} & \texttt{4279d84} & Separate multi-signal research \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Thesis source inventory}
+
+The writing workspace contains the main document, metadata, preamble,
+PDF metadata sidecar, executable build script, reference README, downloaded
+upstream source, seal asset, eight front-matter files, seven chapter files,
+bibliography source/output wrapper, and reproducibility appendix. The previous
+section explains what each group does. Generated PDFs and auxiliary files
+belong under ignored \path{out/}, not inside chapter source directories.

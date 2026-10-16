@@ -1,0 +1,24 @@
+% Values are calculated directly from the two retained simulation JSON files.
+\begin{table}[H]
+\centering\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Measurement} & \textbf{Short replay} & \textbf{Long replay} \\
+\midrule
+Input windows & 2,000 & 20,000 \\
+Scored windows & 1,600 & 16,000 \\
+Elapsed replay (s) & 42.82 & 479.76 \\
+Mean processing (ms) & 26.75 & 29.97 \\
+Worst window (s) & 4.449 & 5.079 \\
+Actual estimator calls & 10 & 110 \\
+Worst estimator call (s) & 4.430 & 5.069 \\
+Peak RSS, getrusage (MiB) & 67.88 & 68.62 \\
+Highest sampled RSS (MiB) & 67.63 & 68.92 \\
+Retained state (KiB) & 6.78 & 31.25 \\
+Application logs (KiB) & 10.84 & 109.55 \\
+Promoted updates & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Retained one-CPU/512-MiB simulation measurements, including rejected-refit cost.}
+\label{tab:edge-measurements}
+\end{table}

@@ -1,0 +1,36 @@
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  bar width=8pt,
+  width=0.93\textwidth,
+  height=0.36\textwidth,
+  ymin=45,
+  ymax=85,
+  ylabel={F1 score (\%)},
+  symbolic x coords={static,threshold,periodic144,periodic288},
+  xtick=data,
+  xticklabels={Static,Threshold only,Periodic 144/144,Periodic 288/240},
+  x tick label style={font=\small,rotate=18,anchor=east},
+  y tick label style={font=\small},
+  grid=major,
+  grid style={gray!20},
+  legend style={draw=none,at={(0.5,-0.30)},anchor=north,legend columns=2},
+  nodes near coords,
+  nodes near coords style={font=\scriptsize},
+]
+\addplot[fill=linkblue!70] coordinates {
+  (static,61.22) (threshold,55.32) (periodic144,58.33) (periodic288,80.70)
+};
+\addlegendentry{Chromecast}
+\addplot[fill=workinggreen!70] coordinates {
+  (static,78.69) (threshold,54.00) (periodic144,54.00) (periodic288,77.31)
+};
+\addlegendentry{Samsung camera}
+\end{axis}
+\end{tikzpicture}
+\caption{Historical static and legacy development comparison. The 288/240 result is selected
+development evidence, not a locked final result.}
+\label{fig:headline-f1}
+\end{figure}

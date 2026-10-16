@@ -1,0 +1,36 @@
+\section{Complete Multi-Signal Research Iteration Index}
+
+All twenty iteration notes below belong to \texttt{feature/volume-anomaly} at
+\texttt{4279d84}. They are included to preserve positive, negative, numerical,
+transfer, and operational evidence. No iteration is silently incorporated into
+the reference detector, and these records were read rather than rerun for this
+report. Later changes must not inherit the final-test claim of iteration 005.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.45\textwidth}>{\raggedright\arraybackslash}p{0.47\textwidth}}
+\caption{Research iteration records and their decisions.}\label{tab:research-iterations}\\
+\toprule\textbf{Record} & \textbf{Role in the project} \\
+\midrule\endfirsthead
+\toprule\textbf{Record} & \textbf{Role in the project} \\
+\midrule\endhead
+\path{reports/UNSW-Chromecast/iteration-001-baseline.md} & Records the four-category DM baseline and the attacks it misses. \\
+\path{reports/UNSW-Chromecast/iteration-002-volume-hybrid.md} & Adds a high packet-count tail; recovers a flood without another development false alert. \\
+\path{reports/UNSW-Chromecast/iteration-003-behavior-tails.md} & Adds byte, SYN, and direction behaviour checks; improves attack coverage. \\
+\path{reports/UNSW-Chromecast/iteration-004-arp-tail.md} & Adds an ARP-count tail for low-rate ARP attacks. \\
+\path{reports/UNSW-Chromecast/iteration-005-locked-final.md} & Freezes an earlier detector and records its one-time final evaluation. \\
+\path{reports/D-LinkDayCam5/iteration-006-cross-device-normal.md} & Tests transfer on unlabelled D-Link traffic; alerts are not measured FPR. \\
+\path{reports/UNSW-Chromecast/iteration-007-silent-window-abstention.md} & Avoids treating an undefined direction in silent windows as an anomaly. \\
+\path{reports/UNSW-Chromecast/iteration-008-temporal-incident-evaluation.md} & Adds offline incident/delay metrics; rejects noisy EWMA and port-churn features. \\
+\path{reports/UNSW-Chromecast/iteration-009-edge-benchmark.md} & Measures scoring latency, state size, and process memory on the development host. \\
+\path{reports/UNSW-Chromecast/iteration-010-guarded-adaptation.md} & Builds an anchored shadow candidate; eligibility does not automatically promote it. \\
+\path{reports/UNSW-Chromecast/iteration-011-native-lm-backend.md} & Uses native Languasco--Migliardi likelihood with numerical/decision agreement. \\
+\path{reports/D-LinkDayCam5/iteration-012-long-horizon-drift.md} & Exposes persistent directional drift over 1,218 later D-Link windows. \\
+\path{reports/UNSW-Chromecast/iteration-013-two-block-direction-dm.md} & Replaces raw direction fraction with a two-category direction DM model. \\
+\path{reports/UNSW-Chromecast/iteration-014-jackknife-robustness.md} & Checks omitted fit/calibration days; preserves recall with limited false-alert variation. \\
+\path{reports/UNSW-AmazonEcho/iteration-015-third-device-transfer.md} & Applies the frozen architecture to Amazon Echo without device-specific tuning. \\
+\path{reports/iteration-016-calibrated-tail-fusion.md} & Calibrates feature score ranks; keeps decisions while increasing retained threshold size. \\
+\path{reports/iteration-017-temporal-byte-change-rejection.md} & Rejects adjacent-window byte change because of false alerts and transfer cost. \\
+\path{reports/iteration-018-levenberg-marquardt-audit.md} & Rejects a true Levenberg--Marquardt optimiser after a valid synthetic failure. \\
+\path{reports/iteration-019-mean-packet-size-rejection.md} & Rejects mean-packet-size tails after cross-device false-positive growth. \\
+\path{reports/iteration-020-corroboration-rule-rejection.md} & Rejects corroboration rules that suppress valid single-signal attacks. \\
+\bottomrule
+\end{longtable}

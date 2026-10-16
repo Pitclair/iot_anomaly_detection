@@ -1,0 +1,130 @@
+\section{Temporal Evaluation Research on a Separate Branch}
+\label{sec:temporal-wip}
+
+\subsection{Why chronological capture splits were not enough}
+
+The master split already moves forward in time and keeps each capture intact.
+This is much safer than randomly mixing ten-minute windows, but it gives only one
+answer for one choice of fitting, calibration, and development dates. Device
+behaviour can change with its operating state, daily routine, or traffic volume,
+so a detector that works after one boundary may perform differently when that
+boundary moves by a day.
+
+The windows are also not independent repetitions. A cloud upload, scanning
+burst, or attack can continue across several consecutive windows. Autocorrelation
+measures this relationship; at a lag of one it compares each ten-minute window
+with the window immediately after it. Within individual captures, Chromecast
+total packet counts had an autocorrelation of about $0.86$, while Samsung
+protocol proportions ranged from about $0.46$ to $0.60$. The anomaly scores were
+also correlated across adjacent windows, at about $0.39$ for Chromecast and
+$0.42$ for Samsung. These values do not prove that the Dirichlet--multinomial
+model is wrong, but they do show that 144 windows from one day are not equivalent
+to 144 independent days of evidence.
+
+For the same reason, six adjacent attack windows may represent one continuing
+attack rather than six separate incidents. Window-level precision and recall
+remain useful, but the evaluation must also group consecutive alerts and labels
+into episodes. Episode recall answers whether an attack was detected at all;
+false-alert episodes per day describe how often an operator would be interrupted;
+and detection delay shows how long the detector took to react. Results should
+also remain visible for each capture so one poor day cannot be hidden inside a
+large pooled confusion matrix.
+
+The improved architecture therefore keeps complete captures together and repeats
+the evaluation at several points in time. Each fold uses earlier normal captures
+to fit the model, later normal captures to calibrate its threshold, and a
+still-later capture to measure performance. The fitting history expands in the
+next fold, while the final-test captures remain untouched.
+
+Before these folds are used to select final settings, the temporal branch must be
+combined with the current detector. The master branch should check the actual
+time ranges inside every capture and record how overlapping or complementary
+fragments were handled. Each fold should keep its own model, threshold, events,
+and report, and results should be shown by capture and attack episode. If the
+thesis reports confidence intervals, it should resample complete captures rather
+than individual windows.
+
+One D-Link data issue also remains: the October 8 and 9 fitting captures overlap
+and must be resolved before the final model is fitted.
+
+\subsection{Changes implemented on the temporal branch}
+
+The \texttt{feature/temporal-model} branch orders every processed window by its
+actual UTC start and end time. It stops when two captures overlap unless the
+configuration explains how to resolve them, and it checks that fitting,
+calibration, development, and final data occur in that order. For the known
+exceptions, it combines three complementary Chromecast fragments. The report
+records each decision.
+
+The branch also defines expanding three-block folds:
+
+\begin{center}
+earlier fit history $\longrightarrow$ later threshold calibration
+$\longrightarrow$ still-later validation
+\end{center}
+
+Each fold writes its model, threshold, events, and report to separate paths.
+Besides the usual totals for individual windows, its report shows results for
+each capture, groups consecutive attack windows into episodes, counts false-alert
+episodes per day, and measures detection delay. Detector settings can then be
+compared under a maximum false-alert rate chosen before the experiment. Final
+captures remain outside every fold.
+
+\subsection{Results from the temporal folds}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.18\textwidth}
+>{\raggedright\arraybackslash}p{0.13\textwidth} r r r X}
+\toprule
+\textbf{Dataset} & \textbf{Fold} & \textbf{Windows} & \textbf{Window FP}
+& \textbf{Episode recall} & \textbf{\shortstack[l]{False-alert\\episodes/day}} \\
+\midrule
+Chromecast & Benign 1 & 288 & 12 & -- & 4.00 \\
+Chromecast & Benign 2 & 288 & 2 & -- & 1.00 \\
+Chromecast & Labelled 3 & 474 & 4 & 0.70 & 0.91 \\
+Samsung camera & Benign 1 & 81 & 1 & -- & 1.78 \\
+Samsung camera & Labelled 2 & 556 & 4 & 0.82 & 0.78 \\
+\bottomrule
+\end{tabularx}
+\caption{Committed temporal-fold reports. Episode recall is undefined in folds
+without attack episodes.}
+\label{tab:temporal-folds}
+\end{table}
+
+The two benign Chromecast periods contain the same number of windows, yet the
+one-percent threshold produces 12 false alerts in one and two in the other. The
+future false-alert rate is therefore not fixed by the calibration quantile. In
+the labelled periods, the detector finds seven of ten Chromecast attack episodes
+and 23 of 28 Samsung episodes. These figures describe the temporal branch only;
+they cannot be compared directly with the adaptive results because that branch
+was created before adaptation was implemented.
+
+\subsection{The exact fold and timeline boundaries}
+
+The three Chromecast folds expand fit history from October 10--13 to 10--15
+and then 10--17, using later two-day calibration blocks and still-later
+validation. Samsung's two folds move from May 28--29 fit/May 30 calibration/
+May 31 validation to May 28--30 fit/May 31 calibration/June 1--4 validation.
+They are complete-capture blocks, not random resamplings of adjacent windows.
+
+The D-Link configuration on this branch excludes the overlapping October 8
+capture. Its retained timeline validates eleven captures and 1,501 windows
+without an unresolved overlap. Chromecast's declared complementary fragments
+are resolved by explicit policy rather than silently counted twice.
+These decisions change data provenance; they are not already present merely
+because the reference configuration checks nominal dates.
+
+The fold runner validates the actual timeline, fits and calibrates into
+isolated paths, scores the fold's validation data, and writes capture/episode
+reports. A selector groups candidates by score type, calibration quantile,
+and window length, then applies a predeclared false-alert-episode budget before
+ranking eligible attack-episode recall. Its source and reports are available
+on the branch, but there is no claim of a new joint static/legacy/conservative
+fold study in the current reference.
+
+The reference branch and temporal branch also have different episode
+capabilities. Episode counts, false-alert episodes/day, and detection delay
+must not be attributed to the current reference evaluator, which still reports
+window-level metrics only.

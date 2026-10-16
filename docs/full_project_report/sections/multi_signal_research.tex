@@ -1,0 +1,263 @@
+\section{Additional Detector Experiments}
+\label{sec:experiment-wip}
+
+\subsection{Purpose and relation to the master branch}
+
+These experiments began because the static four-category
+Dirichlet--multinomial detector missed several labelled attack windows. One clear
+example was a high-rate UDP flood: its protocol proportions still resembled
+normal traffic even though the device was sending far more packets. The
+composition score evaluates the relative mixture of TCP, UDP, SSDP, and ARP
+within a window; it does not decide whether that window's total traffic volume is
+normal. Other missed attacks changed byte volume, TCP connection attempts, ARP
+activity, or traffic direction without always making the four-category mixture
+unlikely. The Dirichlet--multinomial model was therefore retained as the
+baseline, but it was no longer treated as a complete detector by itself.
+
+The \texttt{feature/volume-anomaly} branch tests the smallest additional
+measurements that address those misses. It checks packet count, byte count, TCP
+SYN count, ARP count, and traffic direction against ranges learned from benign
+calibration data. The branch diverged before the current master architecture and
+uses different artefact and evaluation formats, so its results remain
+experimental until the selected changes are ported and rerun on the reference
+devices.
+
+\subsection{How the detector changed}
+
+Figure~\ref{fig:experiment-evolution} shows the Chromecast development progression.
+Each accepted change addressed an observed failure rather than adding a general
+machine-learning model.
+
+\input{full_project_report/figures/multi_signal_research_1}
+
+A high packet-count check detected one UDP flood without adding a false alert.
+Separate checks for total bytes, TCP SYN packets, and traffic direction then
+detected most of the remaining attack types. An ARP-count check detected the
+low-rate ARP attacks. The next change stopped silent windows, which have no
+traffic direction, from being flagged for that reason alone. Finally, a
+two-category Dirichlet--multinomial model of incoming and outgoing traffic
+replaced the raw incoming fraction. It reduced false alerts on later D-Link data
+and detected one more Chromecast attack window.
+
+The latest branch version puts the different feature scores on one scale. For
+each feature, it records where a new score falls among that feature's benign
+calibration scores. This change did not alter any development alert, but it made
+the combined anomaly ranking easier to interpret. It also made the threshold
+file larger because the benign calibration scores must be retained.
+
+\subsection{The final feature and score contract}
+
+The retained endpoint has six signals: composition likelihood, packet count,
+packet bytes, TCP SYN count, ARP count, and direction. The direction signal
+uses a two-category incoming/outgoing DM only when Pearson dispersion on the
+fit data exceeds one; otherwise it keeps the empirical incoming fraction.
+Scalar volume measurements use empirical tails rather than being forced
+into a multinomial model. Silent windows abstain from direction scoring.
+
+The threshold artefact retains sorted benign calibration scores for each
+signal. A safe observation is mapped to an empirical tail probability divided
+by that signal's Bonferroni component budget. The combined score is the
+least-safe log tail ratio. Beyond a strict threshold breach, the existing
+IQR margin extrapolates severity, avoiding the identical extreme scores that
+a saturated empirical rank would produce. The alert decision remains a
+strict logical OR over the six calibrated tails; score fusion does not learn
+attack-specific weights or change which windows alert.
+
+All 949 labelled development decisions remain unchanged by this score
+normalisation. Chromecast ROC--AUC moves from 0.998162 to 0.996960, while Echo
+improves from 0.932955 to 0.959323. It is therefore a cross-device ranking
+tradeoff, not a universal improvement or an F1 gain. A 576-window calibration
+set adds 27,648 bytes of float64 state before JSON representation. Pure
+empirical minimum-tail scoring was rejected for saturation; summing breached
+margins was rejected because correlated signals would be counted repeatedly
+for negligible ranking benefit.
+
+\subsection{Evidence across devices}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Labelled development set} & \textbf{TP} & \textbf{TN} & \textbf{FP}
+& \textbf{FN} & \textbf{F1} & \textbf{ROC--AUC} \\
+\midrule
+Chromecast & 31 & 438 & 4 & 1 & 92.54\% & 99.70\% \\
+Amazon Echo & 9 & 458 & 5 & 3 & 69.23\% & 95.93\% \\
+\bottomrule
+\end{tabular}
+\caption{Current development evidence on the experimental branch.}
+\label{tab:experimental-labelled}
+\end{table}
+
+The completed detector was applied to Amazon Echo without retuning it for that
+device. It detected every ARP attack window, but missed several low-rate UDP
+windows because none of the added measurements was unusual enough. Compared
+with protocol composition alone, it found one more attack window and incorrectly
+flagged four more benign windows. This shows that the extra feature thresholds
+still need cross-device calibration.
+
+The branch also measures model size and scoring speed after score normalisation.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Dataset} & \textbf{Model and threshold} &
+\textbf{Mean latency per window} \\
+\midrule
+Chromecast & 99,957 bytes & 0.130 ms \\
+Amazon Echo & 99,618 bytes & 0.077 ms \\
+\bottomrule
+\end{tabular}
+\caption{Development-host edge-path measurements on the experimental branch.}
+\label{tab:experimental-edge}
+\end{table}
+
+Python process memory, not detector state, dominates. These measurements support
+gateway feasibility, but they do not replace testing on the intended edge
+hardware.
+
+\subsection{Final result from an earlier branch version}
+
+Before later direction and fusion refinements, the six-feature Chromecast
+architecture was frozen and evaluated once on its declared final partition.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+\textbf{Partition} & \textbf{TP} & \textbf{TN} & \textbf{FP} & \textbf{FN}
+& \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{ROC--AUC} \\
+\midrule
+Chromecast final & 4 & 424 & 2 & 2 & 66.67\% & 66.67\% & 66.67\% & 99.77\% \\
+\bottomrule
+\end{tabular}
+\caption{One-time final result for the earlier frozen experimental detector.}
+\label{tab:experimental-final}
+\end{table}
+
+The 99.77\% ROC--AUC means that, when one attack window and one benign window are
+compared, the detector almost always gives the attack window the more anomalous
+score. This does not mean that every attack crosses the chosen alert threshold:
+the fixed threshold detected four of the six attack windows and missed two.
+Later branch iterations did not use this result for tuning. Even so, the labels
+have now been examined, so this partition cannot be used to validate the later
+direction model or score-ranking change. Those changes need another untouched
+dataset or a new external test declared in advance.
+
+The Echo final partition contained no labelled attacks and produced two alerts
+in 432 windows. It supports normal-specificity evidence only; recall and F1 are
+correctly undefined.
+
+\subsection{Experiments that did not help}
+
+Not every plausible feature improved the system. The branch deliberately removes
+failed candidates while retaining their written reports.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.25\textwidth}
+>{\raggedright\arraybackslash}p{0.18\textwidth} X}
+\toprule
+\textbf{Candidate} & \textbf{Decision} & \textbf{Reason} \\
+\midrule
+Adjacent-window byte change & Rejected & Recovered one Echo attack window but
+added false alerts on both labelled devices and more D-Link alerts. \\
+Mean packet-size tails & Rejected & Added many Echo false positives and did not
+improve Chromecast attack recall. \\
+Feature corroboration rules & Rejected & Suppressed valid single-signal attacks;
+the only softer gain removed one shallow development false alert. \\
+Automatic adaptive promotion & Rejected & A candidate that helped Chromecast
+increased alerts on later unlabelled D-Link traffic, so the safety check rejected
+it. \\
+\bottomrule
+\end{tabularx}
+\caption{Experimental changes that were tested and rejected.}
+\label{tab:rejected-experiments}
+\end{table}
+
+These failures are part of the project contribution. They show why more features
+or more temporal state are not automatically better. The current experimental
+endpoint keeps Minka fixed-point estimation, LM likelihood evaluation, and six
+interpretable signals. It also requires a person to approve an adapted model
+rather than promoting one automatically.
+
+\subsection{Changes worth carrying forward}
+
+The packet, byte, TCP SYN, and ARP counts are the clearest detector additions.
+The direction model, results by attack episode, and detector-health report also
+address observed failures and have evidence from more than one device. Score
+normalisation is worth carrying forward only if the thesis needs one ranking or
+severity scale across all features, because it substantially enlarges the
+threshold file without changing the current alerts.
+
+The rejected derivative, mean-size, corroboration, and automatic-promotion
+variants should remain experiment records. They solve no demonstrated
+cross-device problem. Any selected multi-signal subset must be ported into the
+current master interfaces and rerun on all three reference devices before it is
+called part of the working system.
+
+\subsection{Long-horizon drift and omission checks}
+
+A nine-date D-Link audit spans October holdout and weekly observations through
+December, totalling 1,218 windows. With the earlier raw inbound-fraction tail,
+it produces 412 alerts, or 33.826\%. The inbound feature triggers 401 of those
+alerts, with overlap between feature triggers allowed. These recordings lack
+attack labels, so the result is a presumed-benign alert-rate warning rather
+than a measured FPR. A health report records excessive alert rate and
+feature-specific attribution without suppressing alerts or automatically
+retraining.
+
+Replacing the raw inbound fraction with a two-category direction DM reduces
+the retained later D-Link alerts to 13 of 1,218 in the corresponding
+subsequent robustness record. Fit-day omission tests leave the Chromecast
+development decisions and D-Link transfer decisions unchanged across six
+omitted-day cases for each device. Omitting a calibration day preserves attack
+recall but can add one Chromecast false-positive window or up to three D-Link
+later alerts. These are narrow stability checks, not confidence intervals or
+proof of cross-device performance.
+
+\subsection{Shadow adaptation is a different policy}
+
+The experimental branch's adaptation stage trains a candidate in shadow.
+Its buffer retains trusted original windows alongside recent accepted data.
+It compares candidate and live alerts on a later development capture and never
+automatically overwrites the live pair.
+
+The retained Chromecast example keeps all 30 live alerts and adds one in 144
+shadow windows, remaining under its one-percent added-alert gate. Post-hoc
+development labels identify that extra alert as a missed SSDP attack window.
+The same policy on D-Link adds nine alerts in 126 windows, or 7.143\%, and is
+rejected. Those figures belong to the shadow experiment, not the reference
+conservative policy or a new final result.
+
+After the later direction and score changes, the retained shadow checks keep
+31 Chromecast live alerts and add none; keep nine Echo alerts but add seven
+of 144 windows, exceeding the gate; and keep two D-Link alerts while adding
+one of 126, within the gate. Chromecast and D-Link are eligible in these
+later checks, but neither is automatically promoted. The earlier rejection
+and later eligibility describe different candidate versions, not conflicting
+outcomes from the same run.
+
+\subsection{Rejected temporal features and optimiser}
+
+An inbound-fraction EWMA recovers two missed Chromecast windows but increases
+false alerts and D-Link alarms. UDP source-port churn, unique-port fraction,
+and unique-port count do not recover those attacks. They remain negative
+experiments rather than additional dependencies in the endpoint.
+
+The separate Levenberg--Marquardt audit finds a large fitting speedup on the
+current device matrices, but a valid overdispersed synthetic matrix exposes
+initialisation-dependent escape to a huge concentration and a worse
+likelihood. A small gradient residual near infinity is not sufficient evidence
+of a finite maximum. The branch rejects that optimiser and keeps Minka
+fixed point with the Languasco--Migliardi likelihood backend.
+
+The twenty recorded iterations, including feature additions, frozen final
+evaluation, drift, omissions, third-device transfer, score fusion, and
+rejected alternatives, are indexed in the appendix. Their sequence is
+experimental provenance; it is not a new mandatory implementation plan.

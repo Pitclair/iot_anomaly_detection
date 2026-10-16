@@ -1,0 +1,80 @@
+\section{Remaining Work Before Final Thesis Claims}
+
+\subsection{Start writing from the implemented method}
+
+The methodology, architecture, numerical contracts, input safeguards, recovery
+mechanism, and simulation design can be written now. The system has enough
+completed implementation to support those chapters. The next phase should
+freeze the reported software and complete its evidence, rather than adding
+every feature mentioned in an older plan.
+
+Record one reference revision, chosen datasets, device selectors, counting
+policy, window duration, calibration rule, policy variants, metrics, and
+artifact paths. Keep static, legacy, and conservative results identifiable.
+The reference code remains the four-count detector unless a research extension
+is explicitly selected and integrated.
+
+\subsection{Connect the reserved final-test path}
+
+The concrete remaining reference code gap is small and specific:
+\path{score_windows()}, \path{adapt_windows()}, and
+\path{evaluate_scores()} currently select the development partition.
+A purpose-scoped final accessor exists in \path{partitioning.py}, but it is
+not wired into an explicit locked scoring/evaluation command.
+
+The final path should reuse the shared detector and evaluation machinery,
+retain development as the ordinary default, select only the declared final
+captures, and isolate its events and reports. Tests should show that the
+chosen partition and metadata agree and that no fitting or calibration data
+are selected from the final set. Relabelling final captures as development
+would hide the protocol boundary rather than implement it.
+
+This report identifies the gap; it does not score final captures or choose a
+new evaluation policy as a documentation side effect. Stored coverage is
+inventoried separately from final-test performance.
+
+\subsection{Refresh the definitive comparison reports}
+
+All three research starting pairs and all experiment configurations validate.
+The six configured conservative comparison directories currently lack their
+adaptation and evaluation records. The fourteen retained reference/legacy
+metric reports also predate the new FPR output field. Their FPR values in this
+report are calculated from the stored confusion counts, not represented as
+newly generated evaluation outputs.
+
+After the protocol is frozen, run the required static, legacy, and
+conservative comparison from isolated output paths with the same starting
+pair and declared traffic. Retain event files, accepted/rejected attempts,
+alpha and threshold movement, metrics, environment, configuration, and
+revision together. If every conservative candidate is rejected, report that
+negative result. Do not loosen guards solely to manufacture a promotion.
+
+\subsection{Handle chronology and final-data reuse honestly}
+
+The current validator enforces chronology of capture identifiers; the stream
+enforces actual window order within its own run. Complete source-timestamp
+validation across captures remains on the temporal branch. Known D-Link
+October 8/9 overlap must be resolved or the affected numerical-only result
+clearly bounded before a new scientific fit relies on it.
+The temporal implementation is available for reuse if that work is selected.
+
+Final-test access must be assessed across the whole project, not only one
+branch. The experimental branch already evaluated the Chromecast final dates.
+They cannot be called wholly unseen after selecting a later detector using
+knowledge of those results. Freeze what can validly be tested on the remaining
+data, disclose prior exposure, and select a new external test if an independent
+claim about a refined detector requires one.
+
+\subsection{Optional research and future deployment}
+
+Merging rolling folds, porting the multi-signal detector, comparing several
+window durations, adding block confidence intervals, implementing empirical
+forecasting, or validating a physical gateway are separate scope decisions.
+The minimum supplied-window simulation does not require all of them.
+Older reports' broader improvement lists should not become new mandatory
+software requirements merely because they exist in the repository.
+
+For the thesis, complete the evidence required by the agreed research
+questions, generate figures and tables from that frozen bundle, write the
+results and discussion, and validate the final PDF/A and metadata.
+The completed local simulation should remain labelled as simulation.

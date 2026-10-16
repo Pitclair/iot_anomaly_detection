@@ -1,0 +1,234 @@
+\section{Reference Pipeline Implementation}
+
+\subsection{Foundation, configuration, and operational controls}
+
+The early scaffold was converted into an installable Python package with a
+neutral Docker entry point and one authoritative dependency file. Its command
+line separates preprocessing, modelling, calibration, scoring, adaptation,
+evaluation, and benchmarking into explicit stages. Commands return structured
+output, use stable error codes, support dry runs that validate configuration without executing the pipeline, and write UTC
+logs.
+
+Each device has a strict JSON configuration. It records the device identity and
+MAC address, input and output locations, protocol order, window length,
+chronological partitions, estimator, likelihood backend, calibration rule,
+adaptation mode, and random seeds. Misspelled fields, inconsistent category
+counts, invalid quantiles, duplicate capture assignments, reversed partitions,
+and impossible adaptation buffer sizes are rejected before a run begins. The
+shell experiment runner selects reviewed configuration files instead of
+requiring detector edits for each run.
+
+Pydantic schemas validate models, thresholds, events, and manifests when they
+are loaded. Model and dataset fingerprints also prevent artefacts from different
+runs from being combined merely because their filenames look compatible.
+
+\subsection{Data engineering and capture validation}
+
+Source PCAPs can first be inventoried, read completely for structural validation,
+or fingerprinted without running model code. The fingerprint hashes both capture
+bytes and the policies that give those bytes meaning, including category order,
+windowing, and partition assignment. A changed file or experiment definition
+therefore produces a different dataset identity.
+
+The processor selects one device by Ethernet or ARP hardware address. It filters
+raw frames before asking Scapy to decode them, an important improvement for large
+mixed-device captures. An experiment on a 1.48~GB UNSW capture recorded a
+reduction from 280.0 seconds to 12.5 seconds with byte-identical processed JSON.
+
+Retained packets are classified once, timestamps are normalised to UTC, and
+counts are placed in epoch-aligned half-open intervals $[t,t+10\text{ minutes})$.
+Observed silence is stored as a valid zero vector. Missing capture coverage is a
+different state and is excluded from model fitting and scoring. This distinction
+prevents ``the device sent nothing'' from being confused with ``the recording
+contains no evidence.''
+
+The Chromecast and Samsung captures were filtered and converted into this common
+window format. Their official attack annotations were stored separately using
+the same capture ID and exact time bounds as the scored windows. Provenance
+records document retained and excluded captures, incomplete days, file hashes,
+attack intervals, and partition choices.
+
+\subsection{Statistical modelling, calibration, and scoring}
+
+Training loads only the declared fit captures, checks the device and category
+names, and fits $\boldsymbol{\alpha}$ with Minka's fixed-point estimator. The
+saved model identifies the source data, capture IDs, number of windows, and UTC
+range. It also records the numerical backend, precision, fitted parameters,
+whether fitting converged, the iteration count, the likelihood, and the runtime.
+
+Calibration then scores a different benign partition. It stores the chosen
+quantile, threshold, score minimum/median/maximum, and interquartile range. The threshold
+also carries a deterministic model fingerprint. A model change invalidates the
+old threshold rather than allowing an apparently compatible filename to pass.
+
+Static scoring keeps the fitted model and threshold fixed. Every non-missing
+development window produces an event containing its counts, score, decision,
+severity, expected profile, category residuals, and model fingerprint. Residuals
+identify which categories were high or low relative to expectation. They are a
+local explanation, not an attack-family diagnosis.
+
+The same pipeline also produces descriptive count statistics and separate daily
+Dirichlet fits. Raw and per-packet-normalised score conventions are available as
+explicit alternatives, but the reported detector uses raw scores throughout.
+Because every event identifies its source data, model, and threshold, detector
+variants can be compared window by window without guessing which artefacts were
+used.
+
+\subsection{Labelled evaluation}
+
+Attack labels are stored separately from processed counts. Evaluation joins a
+decision and label only when capture ID and exact time bounds agree. Duplicate
+matches are rejected, and unmatched counts are reported. The evaluator produces
+the confusion matrix, accuracy, precision, recall, F1, and false-positive rate. Labels are never
+loaded during training, calibration, or adaptive updates.
+
+The current \texttt{master} evaluator is deliberately limited to the development
+partition. Final capture IDs exist in configuration, but the reference scoring
+path has not yet been opened for a locked final run.
+
+Recall is TPR, while FPR uses only the benign-label denominator:
+\[
+\mathrm{Precision}=\frac{TP}{TP+FP},\qquad
+\mathrm{TPR}=\frac{TP}{TP+FN},\qquad
+\mathrm{FPR}=\frac{FP}{FP+TN}.
+\]
+Accuracy is $(TP+TN)/(TP+TN+FP+FN)$ and F1 is the harmonic mean of precision and
+recall. A zero precision/recall/FPR denominator produces JSON null; the current
+F1 calculation also produces null when precision and recall sum to zero.
+These conventions must be retained when presenting undefined metrics.
+
+\subsection{Native LM integration}
+\label{sec:lm-changes}
+
+The professor-supplied code under \path{lm-algorithm/code/} is preserved as a
+reference. The application calls a separate production copy under
+\path{src/lm_idnet/algorithms/native/}. The mathematical approximation is
+unchanged; the integration work makes it safe and efficient to use inside the
+detector:
+
+\begin{enumerate}
+  \item Zero counts return the exact zero log-Gamma difference, so sparse and
+  fully silent windows are valid inputs.
+  \item Coefficient paths, file reads, and allocations are checked, and native
+  failures are returned to Python instead of terminating the process.
+  \item Native workspaces are released after successful, repeated, or failed
+  calls.
+  \item A matrix entry point validates dimensions and sums the likelihood of the
+  independent rows used by the detector.
+  \item The Python adapter converts fitted alpha parameters into the form
+  expected by the native code, translates native errors into project exceptions,
+  and protects the legacy global state.
+  \item Setup that is common to every row is performed once for the complete
+  matrix rather than repeated for every window.
+  \item The container compiles the shared library reproducibly instead of using
+  an unexplained pre-built object.
+\end{enumerate}
+
+The aggregate experiment that follows the reference paper checks convergence
+with one pooled count vector, even though its estimator updates separate rows.
+Since the Dirichlet--multinomial likelihood is nonlinear, the likelihood of the
+pooled vector is not equal to the sum of the row likelihoods. The production
+detector keeps the row-wise calculation and removes only repeated numerical
+setup.
+
+\subsection{The preserved legacy adaptation rules}
+
+The following rules describe the preserved legacy policy. The conservative
+default and its additional gates are described in Section~\ref{sec:conservative}.
+Both use the same chronological scoring path. A configuration
+selects \texttt{static}, \texttt{adaptive\_threshold}, or
+\texttt{periodic\_refit}. In every mode the current window is scored before it can
+affect future state:
+
+\begin{center}
+\fbox{score $\longrightarrow$ record decision $\longrightarrow$ update buffers
+$\longrightarrow$ optionally promote future state}
+\end{center}
+
+Threshold-only adaptation keeps $\boldsymbol{\alpha}$ fixed and periodically
+recalculates the lower quantile and IQR from a bounded buffer of recent scores.
+It is intentionally naive: all recent non-missing scores enter the buffer,
+including anomalous ones. A non-positive candidate IQR causes the update to be
+rejected.
+
+Periodic refitting also keeps a buffer of windows that appear safe. A window is
+accepted only when its score under the original, unchanged detector satisfies
+
+\[
+s_0(\mathbf{x}_t)\geq
+\tau_0+m\operatorname{IQR}_0.
+\]
+
+When enough accepted windows are available, the existing estimator tries to fit
+a new alpha vector. Before fitting, one artificial single-count row is added for
+each of the four protocol categories. This prevents a temporarily absent
+protocol from receiving an invalid zero alpha. The detector accepts the new
+model only if fitting converges, improves the likelihood of the accepted data,
+and gives the recent scores a positive IQR. The alpha vector, expected protocol
+profile, fingerprint, threshold, and IQR are updated together. If any check
+fails, the old model remains active and only a threshold update is attempted.
+
+The audit records when each update was attempted, the old and proposed values,
+whether fitting converged and improved the likelihood, whether the update was
+accepted, and why a rejection occurred. The saved original model and threshold
+are never overwritten. The mechanism is therefore reproducible, but its legacy
+safety checks do not prevent every form of model poisoning.
+
+Static, threshold-only, and periodic-refit variants use the same implementation
+and write to separate experiment directories. The initial experiments remain
+available beside the later 288/240 development configuration, together with
+reports of detection performance, buffer contamination, parameter movement, and
+rejected updates.
+
+\subsection{Validation and generated evidence}
+
+The installed command is \texttt{lm-idnet}. Each subcommand performs one stage;
+it never silently invokes a previous one. Every command also supports \texttt{--dry-run}; it does not execute the stage
+or alter detector state, although CLI logging may create a log file. Expected failures are converted into stable
+typed errors and non-zero exit codes, while UTC logs provide an operational
+record.
+
+At this report boundary the complete suite passes \textbf{560 tests}, including
+the optional Docker checks. The ordinary default selection excludes ten slow,
+PCAP, or benchmark tests, and Docker checks require the image variable. The tests
+cover configuration, timestamps, packet classification, aggregation, schemas,
+failure handling, fitting, calibration, scoring, labelled evaluation, native LM
+agreement, benchmarking, adaptation ordering, candidate promotion and rejection,
+and output fingerprints.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.22\textwidth}
+>{\raggedright\arraybackslash}p{0.70\textwidth}}
+\caption{Working command and evidence map.}\label{tab:command-map}\\
+\toprule
+\textbf{Command or location} & \textbf{Responsibility} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Command or location} & \textbf{Responsibility} \\
+\midrule
+\endhead
+\texttt{preprocess} & Inventory, validate, fingerprint, or convert configured
+captures into device-specific windows. \\
+\texttt{diagnose} & Report capture-level count statistics, dispersion, and daily
+Dirichlet fits. \\
+\texttt{train} & Fit and store the normal Dirichlet--multinomial model. \\
+\texttt{calibrate} & Learn and store a model-bound benign threshold. \\
+\texttt{score} & Run the frozen static detector on development traffic. \\
+\texttt{adapt} & Run the configured static, threshold-only, or periodic-refit
+system and write an adaptation audit. \\
+\texttt{evaluate} & Align development events with labels and store detection
+metrics. \\
+\texttt{run} & Read bounded count-window JSON lines and flush shared detector events. \\
+\texttt{rollback} & Restore the previous complete accepted model--threshold pair. \\
+\texttt{benchmark} & Compare LM and SciPy using the same fit, calibration, and
+scoring workload. \\
+\texttt{forecast} & Run the current synthetic metric scaffold; this is not an
+empirical forecasting result. \\
+\path{artifacts/} & Models, thresholds, scored events, and experiment-specific
+adaptive outputs. \\
+\path{reports/} & Evaluation, adaptation, capture, fingerprint, and benchmark
+records. \\
+\path{logs/} & UTC application messages; run/rollback logs rotate, while research
+command logs use their existing file logging. \\
+\bottomrule
+\end{longtable}

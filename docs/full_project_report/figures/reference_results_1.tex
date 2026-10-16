@@ -1,0 +1,50 @@
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 1, horizontal sep=1cm},
+  width=0.43\textwidth,
+  height=0.32\textwidth,
+  xmin=135,
+  xmax=440,
+  ymin=50,
+  ymax=85,
+  xtick={144,192,216,240,288,336,360,432},
+  x tick label style={font=\scriptsize,rotate=45,anchor=east},
+  y tick label style={font=\scriptsize},
+  grid=major,
+  grid style={gray!25},
+  xlabel={Update interval (windows)},
+  ylabel={F1 score (\%)},
+  title style={font=\bfseries},
+  legend style={font=\scriptsize,draw=none,at={(0.5,-0.38)},anchor=north},
+]
+\nextgroupplot[title={Chromecast}]
+\addplot[color=linkblue,mark=*] coordinates {
+  (144,55.32) (192,55.32) (216,55.32) (240,61.22)
+  (288,66.67) (336,66.67) (360,55.32) (432,55.32)
+};
+\addlegendentry{Threshold only}
+\addplot[color=workinggreen,mark=square*] coordinates {
+  (144,58.33) (192,55.32) (216,55.32) (240,61.22)
+  (288,80.70) (336,78.57) (360,55.32) (432,55.32)
+};
+\addlegendentry{Periodic refit}
+\addplot[color=black,dashed] coordinates {(144,61.22) (432,61.22)};
+\addlegendentry{Static}
+
+\nextgroupplot[title={Samsung camera},ylabel={}]
+\addplot[color=linkblue,mark=*] coordinates {
+  (144,54.00) (192,60.95) (216,66.06) (240,71.93)
+  (288,77.31) (336,79.34) (360,78.69) (432,78.69)
+};
+\addplot[color=workinggreen,mark=square*] coordinates {
+  (144,54.00) (192,59.62) (216,66.06) (240,71.93)
+  (288,77.31) (336,79.34) (360,78.69) (432,78.69)
+};
+\addplot[color=black,dashed] coordinates {(144,78.69) (432,78.69)};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Historical legacy development sensitivity to update cadence, retained from the adaptation-stage report.}
+\label{fig:cadence-sensitivity}
+\end{figure}

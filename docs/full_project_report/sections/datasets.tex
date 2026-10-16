@@ -1,0 +1,104 @@
+\section{Datasets and Experimental Protocol}
+
+\subsection{Dataset roles and composition}
+
+The project uses datasets according to what their evidence can support. D-Link
+Camera 5 supplies the reference-study workload and has no attack ground truth in
+the repository. The two UNSW datasets contain mixed-device captures and official
+attack annotations; preprocessing isolates the selected device by MAC address.
+Source files remain unchanged, and label preparation produces separate,
+time-aligned JSON records.
+
+Complete captures, not random rows, are assigned to each role. Table
+\ref{tab:dataset-composition} reports the number of processed ten-minute windows
+currently stored on \texttt{master}.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.22\textwidth}
+>{\raggedright\arraybackslash}p{0.15\textwidth} X rr}
+\toprule
+\textbf{Dataset} & \textbf{Role} & \textbf{Capture dates} & \textbf{Windows}
+& \textbf{Attack windows} \\
+\midrule
+D-Link Camera 5 & Fit & Oct. 8--13, 2020 & 846 & -- \\
+{} & Calibration & Oct. 14--15, 2020 & 288 & -- \\
+{} & Development & Oct. 16 and 19, 2020 & 270 & -- \\
+{} & Final & Oct. 21--22, 2020 & 288 & -- \\
+\midrule
+UNSW Chromecast & Fit & Oct. 10--15, 2018 & 867 & 0 \\
+{} & Calibration & Oct. 16--19, 2018 & 576 & 0 \\
+{} & Development & Oct. 20--23, 2018 & 474 & 32 \\
+{} & Final & Oct. 25--27, 2018 & 432 & 6 \\
+\midrule
+UNSW Samsung camera & Fit & May 28--30, 2018 & 432 & 0 \\
+{} & Calibration & May 31, 2018 & 81 & 0 \\
+{} & Development & June 1--4, 2018 & 556 & 70 \\
+{} & Final & June 5--8, 2018 & 576 & 12 \\
+\bottomrule
+\end{tabularx}
+\caption{Stored window composition by experimental role. Dashes indicate that
+attack labels are unavailable.}
+\label{tab:dataset-composition}
+\end{table}
+
+The Chromecast October 24 source is excluded because the publisher's capture is
+truncated; six annotations on that date are consequently outside the retained
+dataset.
+
+\subsection{Source preparation and annotation alignment}
+
+The retained D-Link raw archive contains 64 tracked captures, but its research
+configuration selects twelve. Only the selected 1,692 processed windows enter
+the four declared research roles. A large raw directory
+does not imply that every capture was used for model fitting.
+
+The prepared Chromecast and Samsung views use symbolic links to downloaded
+sources rather than duplicating PCAP bytes. The download scripts keep
+device-specific benign and mixed staging, resume transfers, and reproduce the
+declared date selection. The preparation script exposes the flat source view
+expected by the configured processor. Source bytes remain separate from
+filtered device windows.
+
+\path{prepare_labels.py} selects the official device annotation file and
+derives window bounds from packet timestamps, not just the nominal filename.
+A label is positive when
+$a_{\mathrm{start}}<w_{\mathrm{end}}$ and
+$a_{\mathrm{end}}>w_{\mathrm{start}}$.
+The union of overlapping annotation intervals determines overlap seconds,
+preventing duplicate attack intervals from exceeding the window's duration.
+Labels and processed counts remain separate JSON files joined only offline.
+
+The Chromecast record contains 27 official attack intervals, of which 21
+match retained captures. It yields 2,349 labelled windows and 38 positives:
+32 in development and six in final data. October 21 ends after about seven
+hours and contributes only 42 windows. The removed October 24 source accounts
+for the six unmatched intervals. Its publisher-side truncation is a recorded
+data-selection decision, not a detector failure.
+
+Samsung's 42 intervals all match retained captures. Its 1,645 labelled windows
+include 82 positives, with 70 in development and twelve in final data.
+May 31 contains 81 windows and June 1 contains 124, rather than a full 144.
+The labels therefore measure the observed recording coverage; a nominal day
+does not automatically supply a full day of evidence.
+
+Direct inspection finds 187 observed-silent Chromecast development windows,
+30 silent Samsung development windows, and 19 silent Samsung final windows.
+No missing-state rows are stored in these three configured collections.
+That absence does not prove gap-free source coverage; explicit synthetic
+discontinuities and the edge fixture exercise the missing state separately.
+
+\subsection{Chronology and leakage policy}
+
+Model fitting and calibration use different earlier captures. The development
+stream comes later, and declared final captures come later again. No label is
+used to fit alpha, choose a calibration threshold, or decide whether an adaptive
+window enters a buffer. Development labels are allowed only to compare completed
+runs and diagnose failures.
+
+This capture-level split is preferable to random window sampling, but it is not
+the end of the temporal problem. Adjacent scores remain correlated, one boundary
+provides only one version of history, and the master validator checks dates in
+capture identifiers rather than every processed timestamp. The separate temporal
+branch addresses those limitations in Section~\ref{sec:temporal-wip}.

@@ -1,0 +1,21 @@
+% Confusion counts and metrics are read from the static and explicit legacy JSON reports.
+\begin{sidewaystable}[p]
+\centering\small
+\begin{tabular}{llrrrrrrrrr}
+\toprule
+\textbf{Device} & \textbf{System} & \textbf{TP} & \textbf{TN} & \textbf{FP} & \textbf{FN} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{FPR} \\
+\midrule
+Chromecast & Static & 15 & 440 & 2 & 17 & 95.99\% & 88.24\% & 46.88\% & 61.22\% & 0.45\% \\
+Chromecast & Legacy threshold, 144 & 13 & 440 & 2 & 19 & 95.57\% & 86.67\% & 40.63\% & 55.32\% & 0.45\% \\
+Chromecast & Legacy refit, 144/144 & 14 & 440 & 2 & 18 & 95.78\% & 87.50\% & 43.75\% & 58.33\% & 0.45\% \\
+Chromecast & Legacy refit, 288/240 & 23 & 440 & 2 & 9 & 97.68\% & 92.00\% & 71.88\% & 80.70\% & 0.45\% \\
+\midrule
+Samsung & Static & 48 & 482 & 4 & 22 & 95.32\% & 92.31\% & 68.57\% & 78.69\% & 0.82\% \\
+Samsung & Legacy threshold, 144 & 27 & 483 & 3 & 43 & 91.73\% & 90.00\% & 38.57\% & 54.00\% & 0.62\% \\
+Samsung & Legacy refit, 144/144 & 27 & 483 & 3 & 43 & 91.73\% & 90.00\% & 38.57\% & 54.00\% & 0.62\% \\
+Samsung & Legacy refit, 288/240 & 46 & 483 & 3 & 24 & 95.14\% & 93.88\% & 65.71\% & 77.31\% & 0.62\% \\
+\bottomrule
+\end{tabular}
+\caption{Retained static and legacy development results. FPR is calculated here from the stored FP/TN counts because the older JSON reports predate that output field. The refit labels give update cadence and minimum accepted-window count.}
+\label{tab:master-results}
+\end{sidewaystable}

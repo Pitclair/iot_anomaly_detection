@@ -1,0 +1,178 @@
+\section{Static and Historical Legacy Results}
+
+\subsection{Static detector}
+
+The static models use the native LM backend, six-digit precision, raw scoring,
+and a one-percent calibration quantile. Their complete development results appear
+with the adaptive variants in Table~\ref{tab:master-results}. The main pattern is
+high precision with incomplete recall, especially for Chromecast. Accuracy is
+reported but should not dominate interpretation because benign windows are much
+more common than attack windows.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Dataset} & \textbf{$\alpha_0$} & \textbf{$\psi$} &
+\textbf{Threshold} & \textbf{Dev. windows} & \textbf{Flags} \\
+\midrule
+D-Link Camera 5 & 122.22 & 0.00818 & $-22.5044$ & 270 & 3 \\
+UNSW Chromecast & 28.10 & 0.03559 & $-25.6108$ & 474 & 17 \\
+UNSW Samsung camera & 17.39 & 0.05749 & $-16.9221$ & 556 & 52 \\
+\bottomrule
+\end{tabular}
+\caption{Stored static models, thresholds, and development outputs. The three D-Link alerts have no ground-truth classification; they are not
+measured true or false positives.}
+\label{tab:static-model-summary}
+\end{table}
+
+Absolute thresholds are model-specific score values and should not be ranked
+across devices. Decisions and labelled metrics provide the valid comparison.
+
+\subsection{Legacy adaptation comparison}
+
+All adaptive numbers in this section belong to the historical legacy rules,
+not the current conservative default. The six explicit legacy configurations
+and their retained reports preserve these comparisons.
+
+\input{full_project_report/figures/historical_f1}
+
+\input{full_project_report/tables/static_legacy_metrics}
+
+
+Threshold-only adaptation made both devices worse. In the first periodic-refit
+configuration, the detector attempted an update every 144 windows and required
+144 accepted windows before refitting. It recovered one Chromecast attack
+window relative to threshold-only adaptation, while remaining below static;
+it made no difference to the Samsung decisions. The model fits
+succeeded, so the next experiment tested whether the detector was updating at
+the wrong time.
+
+Update intervals from 144 to 432 windows were tested with the same 288-window
+buffer and safety margin. Figure~\ref{fig:cadence-sensitivity} shows how F1
+changed on both development sets.
+
+\input{full_project_report/figures/reference_results_1}
+
+With an update interval of 288 windows, Samsung does not perform the early update
+that caused the loss at window 144, while Chromecast still refits once before
+the later attacks. The selected configuration requires 240 accepted windows
+because both devices had at least that many at the useful update. Figure
+\ref{fig:cadence-sensitivity} also shows why this remains a development result:
+the apparent best interval depends strongly on when attacks occur in these two
+streams.
+
+\subsection{Adaptation safety findings}
+
+After each run, the labels were used to count how many attack windows had been
+accepted into the adaptation buffer. The detector itself did not use those
+labels when it selected windows or updated its state. This check shows that the
+safety gate rejected all Chromecast attacks before the first update, but
+accepted 22 Samsung attack windows.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Device} & \textbf{Update} & \textbf{Accepted windows} &
+\textbf{Attack windows} & \textbf{Contamination} \\
+\midrule
+Chromecast & 288 & 285 & 0 & 0.00\% \\
+Chromecast & 432 & 288 & 3 & 1.04\% \\
+Samsung camera & 288 & 241 & 22 & 9.13\% \\
+Samsung camera & 432 & 288 & 20 & 6.94\% \\
+\bottomrule
+\end{tabular}
+\caption{Attack windows found in each periodic-refit buffer after the run.}
+\label{tab:safe-contamination}
+\end{table}
+
+Increasing the score margin alone did not remove the Samsung contamination.
+Those attacks already look ordinary to a detector that observes only four
+protocol proportions. This supports an independent volume or rate safeguard
+rather than a larger value of the same composition-score margin.
+
+Refitting also changes the total concentration $\alpha_0$. The Chromecast value
+moves moderately, whereas the Samsung value becomes more than nine times larger
+under the selected configuration.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}Xrrr}
+\toprule
+\textbf{Device} & \textbf{Experiment} & \textbf{Initial $\alpha_0$} &
+\textbf{Final $\alpha_0$} & \textbf{Ratio} \\
+\midrule
+Chromecast & Periodic refit, 144/144 & 28.10 & 36.05 & 1.28 \\
+Chromecast & Periodic refit, 288/240 (selected) & 28.10 & 34.47 & 1.23 \\
+Samsung camera & Periodic refit, 144/144 & 17.39 & 206.40 & 11.87 \\
+Samsung camera & Periodic refit, 288/240 (selected) & 17.39 & 166.62 & 9.58 \\
+\bottomrule
+\end{tabularx}
+\caption{Movement of Dirichlet concentration during promoted refits. In each
+periodic-refit name, the first number is the update interval and the second is
+the minimum number of accepted windows required for refitting.}
+\label{tab:alpha-movement}
+\end{table}
+
+Convergence and a better fit to the accepted buffer are therefore not enough to
+make a refitted model safe. These findings motivated the concentration, proportion, threshold, and volume
+guards now implemented by the conservative policy. They do not measure how
+often the new policy will learn successfully on representative traffic.
+
+\subsection{LM backend evidence}
+
+Figure~\ref{fig:lm-runtime} compares LM and SciPy directly on the D-Link,
+Chromecast, and Samsung training matrices. This three-dataset comparison is retained from the report of
+9 September 2026 and is not a new timing run. Only the D-Link production
+benchmark JSON is retained at its current reference path; its exact stored
+timings are given separately below. Model fitting is
+shown in milliseconds; the two faster operations are shown in microseconds.
+
+\input{full_project_report/figures/reference_results_2}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+\textbf{Agreement measure} & \textbf{Stored value} \\
+\midrule
+Maximum relative alpha difference & $3.86\times10^{-7}$ \\
+Maximum absolute score difference & $1.09\times10^{-5}$ \\
+Decision mismatches & 0 of 270 \\
+Flags from each backend & 3 \\
+\bottomrule
+\end{tabular}
+\caption{LM and SciPy agreement in the D-Link production benchmark.}
+\label{tab:lm-agreement}
+\end{table}
+
+The native matrix optimisation removes repeated LM setup while preserving the
+row-wise model. A separate experiment reproduces the aggregate calculation used
+by the reference study.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{Xrrr}
+\toprule
+\textbf{Architecture} & \textbf{\shortstack{Paired fits\\converged}} &
+\textbf{\shortstack{Likelihood-time\\reduction}} &
+\textbf{\shortstack{Wall-time\\reduction}} \\
+\midrule
+Reference-paper aggregate & 79 of 84 & 12.2\% & 8.8\% \\
+\bottomrule
+\end{tabularx}
+\caption{LM timing result for the aggregate reference-paper experiment.}
+\label{tab:professor-benchmark}
+\end{table}
+
+That result applies only to the aggregate calculation. In the production
+benchmark, LM is slower for complete fitting and matrix likelihood on all three
+datasets, but slightly faster for single-window scoring. The numerical agreement
+in Table~\ref{tab:lm-agreement} shows that the backend choice does not change the
+D-Link decisions.

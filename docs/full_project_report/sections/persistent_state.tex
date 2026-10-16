@@ -1,0 +1,92 @@
+\section{Accepted State, Recovery, and Rollback}
+
+\subsection{What is persisted}
+
+Persisting alpha alone would be unsafe: a new model with an old threshold could
+silently change decisions. A detector snapshot therefore contains active alpha
+and its matching fingerprint-bound threshold/IQR, together with the original
+model, original threshold, input contract, calibration and adaptation settings,
+estimator settings, and the calibration-derived volume limit.
+
+Each immutable snapshot has a version ID and creation time. The original model
+and threshold retain their training/calibration provenance; an adaptive version
+does not pretend to be a new supervised training run. Paths may change when a
+state directory is copied, but device and detector settings must remain
+compatible.
+
+\begin{center}
+\fbox{\begin{minipage}{0.91\textwidth}
+\centering
+\path{versions/<id>.json}: one complete validated pair\\[0.25em]
+\path{current.json}: active and previous version IDs\\[0.25em]
+\path{history.json}: the most recent 100 decisions\\[0.25em]
+\path{.lock}: one writer for the state directory
+\end{minipage}}
+\end{center}
+
+\subsection{The activation boundary}
+
+The state writer creates a temporary file beside its destination, writes and
+flushes it, synchronises the file, reloads it through the schema, and publishes
+an immutable snapshot without replacing an existing version ID.
+Only after the complete version exists does it atomically replace
+\path{current.json}. File and directory synchronisation target an ordinary local
+Linux filesystem.
+
+The pointer replacement is the commit point. Failure before it leaves the
+previous pair active and rejects the update. A failure to synchronise the
+directory after replacement is different: the pointer has already changed.
+The code raises \path{DetectorStateCommitError} with a committed flag, and the
+runtime stops rather than claiming the update was rejected.
+Restart then validates the committed pair.
+
+Cleanup retains active and previous snapshots and removes only managed obsolete
+versions and abandoned temporary files. It validates references before deletion.
+Cleanup failure is logged and retried; it does not undo an activation.
+Unrelated files are left alone.
+
+This transaction protects accepted detector state. Ordinary research model,
+threshold, event-array, and report writes do not all share the same atomic
+activation protocol. They should be generated into isolated experiment paths
+and retained together before a thesis number is treated as reproducible.
+
+\subsection{Restoration and compatibility}
+
+A research configuration can initialise a missing or empty state directory from
+its model and threshold. Conservative adaptive preparation also loads benign
+calibration counts once to derive the volume guard. An edge configuration
+requires prepared state: it cannot invent that calibration evidence.
+Once prepared, restoration uses the embedded artefacts and settings even if the
+original model files and research captures are unavailable.
+
+An existing corrupt or incompatible directory fails rather than silently
+resetting to the initial detector. Validation covers the model--threshold pair,
+input semantics, backend, precision, learning settings, and relevant research
+provenance. Learning buffers and scheduling counters restart empty.
+
+\subsection{One writer and operator rollback}
+
+Persistent batch adaptation, streaming, and rollback hold a nonblocking Linux
+file lock on the same state directory. A second writer receives a policy error,
+including when paths reach the same directory through a symlink. Direct callers
+of lower-level storage helpers must hold that lock themselves.
+
+Rollback is an operator action: stop the writer, validate and activate the
+previous complete snapshot, then restart. The command accepts either research
+or edge configuration and swaps the active and previous IDs. It does not
+retrain, reconstruct a threshold from guesses, or hot-swap a running process.
+A missing or invalid previous snapshot prevents rollback.
+
+\subsection{History and delivery limits}
+
+The history records timestamps, policy action, old/new versions, acceptance or
+rejection, reason, and window position when available. It retains at most 100
+entries, and reasons are capped at 1,024 characters. Audit writes are best
+effort: a process can commit a pair before it records the history entry.
+The active pointer and snapshot remain authoritative.
+
+Saved state does not contain the producer's input position or guarantee that
+every event reached a consumer. A restart can score and learn from replayed
+windows again. A signal during an update can leave the new pair committed
+before its event is delivered. Durable queues, acknowledgements, and replay
+prevention are outside the supplied-window simulation.

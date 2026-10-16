@@ -1,0 +1,95 @@
+\section{Repository Structure and Configuration}
+
+\subsection{The reference implementation and the research branches}
+
+The repository contains a maintained detector, preserved scientific code,
+research data and results, supporting explanations, and a separate thesis
+workspace. These have different roles. Files existing somewhere in repository
+history do not establish that one installed command contains all their
+behaviour. The reference detector is \texttt{master} at \texttt{db2a736};
+the current writing branch adds the workspace at \texttt{0d66bf8}.
+The temporal and multi-signal branch heads remain \texttt{b0aa35d} and
+\texttt{4279d84} respectively.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.25\textwidth}X}
+\toprule\textbf{Location} & \textbf{Role} \\
+\midrule
+\path{src/lm_idnet/} & Installed detector, schemas, input processing,
+numerical methods, state, CLI, and evaluation. \\
+\path{configs/} & Three device research configurations, twelve policy/variant
+experiment configurations, and one prepared edge configuration. \\
+\path{data/} & Selected processed captures and independent labels, plus the
+larger D-Link raw archive. Configured captures are a subset of that archive. \\
+\path{artifacts/}, \path{reports/} & Model/threshold pairs, events, adaptation
+records, data checks, benchmarks, and simulation measurements. \\
+\path{unsw_iot_attack_pcaps/} & Download, symlink preparation, official
+annotation metadata, and label preparation. \\
+\path{lm-algorithm/} & Preserved authors' numerical capsule and example data;
+not the installed application entry point. \\
+\path{resouces/} & Supplied brief, research papers, and explanatory material.
+The directory spelling is retained for existing references. \\
+\path{tests/} & Unit, numerical, subprocess, storage, PCAP, and optional
+production-container checks with small fixtures. \\
+\path{docs/}, \path{thesis/} & Technical/research records and the independently
+buildable thesis skeleton. \\
+\bottomrule
+\end{tabularx}
+\caption{The main repository areas. Detailed file maps appear in the appendices.}
+\end{table}
+
+\subsection{Installation and dependencies}
+
+\path{pyproject.toml} is the authoritative Python package definition. It names
+Python 3.11 or later, defines the \texttt{lm-idnet} console command, and pins
+mpmath, NumPy, pandas, Pydantic, Scapy, SciPy, and tabulate. Pytest is a test
+extra rather than a production dependency. The \path{main.py} file is a
+compatibility launcher. It does not define a competing pipeline.
+
+\input{full_project_report/tables/dependencies}
+
+The native shared library and its coefficient files are packaged with the
+application. Docker compiles the library during image creation. Local editable
+installation needs the documented compiler step first. A binary built for one
+machine must not be assumed usable on another architecture. Older numerical
+records name their own Python, NumPy, and SciPy versions; they are not rewritten
+to look as though they were measured in today's pinned environment.
+
+\subsection{Research configuration}
+
+An \path{AppConfig} records source and processed roots, dataset and device
+identity, the MAC selector, category order, trained window duration, capture
+partitions, seed settings, estimator, calibration, adaptation, and outputs.
+Pydantic rejects unknown fields. Capture IDs must contain valid dates, remain
+unique, and form strictly ordered, disjoint fit, calibration, development, and
+final groups. Category count must agree with the estimator, and adaptive buffers
+must be large enough for the requested updates.
+
+The current device configurations use four categories, ten-minute windows,
+six-digit native LM, raw scores, and the one-percent lower calibration quantile.
+The fitting tolerance is $2\times10^{-9}$ with at most 100,000 iterations.
+Configuration makes these choices explicit; their presence is not evidence
+that every alternative has been experimentally compared.
+
+\subsection{Edge configuration}
+
+An \path{EdgeConfig} retains detector input semantics and learning settings but
+does not require raw-data roots or a list of future capture dates. It identifies
+a prepared state directory and compatible model/threshold paths. The snapshot
+contains the baseline pair, current pair, safety references, and calibration
+volume limit, so restoration does not need research captures.
+
+Both configuration types share the same detector fields. The rollback command
+accepts either strict format; the run command requires the edge format.
+This separation removes a research-only requirement without weakening device,
+category, duration, backend, precision, policy, or model--threshold checks.
+
+\subsection{Supporting files and local material}
+
+The root README, Docker ignore rules, Git ignore rules and attributes, and the
+commit-instruction location support installation and collaboration. Local
+environment and installation-marker files are also present. Their contents are
+not thesis evidence and are not reproduced here. Generated logs and
+\path{out/} builds are local outputs. Optional raw UNSW staging is ignored and
+is not redistributed as though it were part of a small public fixture.

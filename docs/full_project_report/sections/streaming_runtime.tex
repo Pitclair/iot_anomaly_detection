@@ -1,0 +1,69 @@
+\section{Shared One-Window Processing and Streaming}
+
+\subsection{The same detector for batch and edge use}
+
+\path{WindowDetector.process()} is the common scoring and adaptation path.
+Construction loads the backend and accepted detector once. One call returns
+only the current event, threshold attempt, and refit attempt; absent work is
+represented by \texttt{None}. Batch code collects those returns into complete
+research arrays. Streaming consumes them immediately.
+
+This arrangement avoids maintaining separate statistical rules for deployment.
+It also preserves a useful distinction: the runtime is bounded, while a batch
+research report intentionally grows with the finite experiment. The detector
+retains bounded deques, active/original parameters, and counters rather than
+accumulating every event or update attempt.
+
+\subsection{The input and output interface}
+
+The \texttt{run} command accepts UTF-8 JSON lines on standard input.
+Each line has a device ID, a source ID, and a nested window with UTC time bounds,
+ordered categories, counts, and observation state. The source ID becomes the
+event's capture context; it need not contain a date or belong to a research
+partition.
+
+The maximum physical line is 65,536 bytes, including its ending. The reader
+enforces that bound while reading, before a long line can enter memory.
+It validates JSON, finite numeric values, required fields, device, count types,
+category order, exact trained duration, and epoch-aligned UTC boundaries.
+Timezone-aware offsets are normalised to UTC. Overlapping, duplicate, and
+backward windows fail. A gap does not create an invented zero vector.
+
+Missing windows advance chronology without producing events or learning data.
+Observed silence is scored normally. A valid last record does not require a
+newline. Blank, malformed, truncated, oversized, or incompatible records stop
+with a line-numbered error and a nonzero exit code. Earlier emitted events
+remain usable.
+
+Standard output contains only the existing anomaly-event JSON, including raw
+score, threshold, decision, severity, expected profile, residuals, and model
+fingerprint. Each event is flushed before the next input read. Status and
+accepted/rejected update reasons go to application logs; verbose mode also
+uses standard error.
+
+\subsection{Flow control and shutdown}
+
+Input reading and event writing are synchronous. A slow consumer pauses further
+reads instead of creating a growing output queue. Output and input errors
+terminate the run. This keeps the memory design simple; it does not guarantee
+delivery if a pipe or container log store fails.
+
+SIGINT and SIGTERM stop an idle reader cleanly. During scoring or persistence,
+the first stop request is deferred until the detector operation completes.
+This protects atomic activation; it is not a hard guarantee that an arbitrary
+future refit will finish within a service timeout. Signal handlers are restored
+after the run, and the directory lock is released.
+
+\subsection{Python access and tested equivalence}
+
+The Python API accepts a validated \path{WindowRecord}; callers construct one
+detector and hold the state lock around successive calls. The streaming
+boundary adds line-size, chronology, and UTC-grid checks beyond the shared
+per-window device/category/duration validation.
+
+Twelve controlled CLI/batch combinations cover two score conventions, both
+policies, and three modes. Comparisons include events, alpha, thresholds,
+fingerprints, and accepted/rejected outcomes. Other tests verify the first
+event arrives while input is still open, signal handling at an activation
+boundary, idle shutdown, a slow output consumer, malformed inputs, state
+restoration, and edge-configuration rollback.

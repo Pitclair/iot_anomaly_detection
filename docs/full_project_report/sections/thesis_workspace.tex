@@ -1,0 +1,76 @@
+\section{Thesis Workspace and Supporting Documents}
+
+\subsection{A separate writing deliverable}
+
+The root \path{thesis/} directory is an English LaTeX skeleton, not a finished
+thesis or another detector implementation. The small \path{thesis.tex} entry
+file specifies document order. Personal details and the approved title are
+centralised in \path{metadata.tex}; layout and PDF metadata have their own
+files. This report does not reproduce the student's personal metadata.
+
+Each front-matter item has a separate source: frontispiece, English abstract,
+Italian summary, optional acknowledgements, contents, figure list, table list,
+and acronyms. Seven chapter files contain short prompts and headings for the
+introduction, background, implementation, experimental method, results,
+discussion, and conclusions. The bibliography and reproducibility appendix are
+also separate. This avoids a single source file containing the entire thesis.
+
+\subsection{Template and build provenance}
+
+The workspace adapts the community Overleaf DEI template by
+Cecco di Ronchitti da Bruzene under CC BY 4.0. Its publicly displayed source is
+preserved in \path{thesis/upstream/main.tex}. Exporting the complete original
+Overleaf project ZIP requires an account; the local copy is explicitly
+described as the public-source adaptation, not an unmodified complete ZIP.
+The university seal comes unchanged from the official English frontispiece.
+Template attribution and the changes are recorded in the workspace README.
+
+\path{thesis/build.sh} uses the existing \path{compose.latex.yaml} service
+with LuaLaTeX and latexmk. It works from the repository root or thesis folder,
+and writes the PDF and auxiliary files below \path{out/thesis/}.
+The original \path{scripts/latex.sh} remains available for the technical
+reports using their established PDFLaTeX setup. The Compose service is shared;
+the detector image does not acquire a TeX distribution.
+
+The skeleton was compiled and its cover inspected when created. Metadata,
+English labels, all front-matter items, seven chapter headings, and short
+source files were checked. It uses 12-point text, 1.5 spacing, and the indicative
+DEI margins. Times New Roman is selected if installed; the existing container
+instead uses a disclosed TeX Gyre Termes draft fallback. PDF/A-2b settings and
+metadata are configured, but the final document still needs actual conformance
+validation. A metadata declaration alone is not certification.
+
+\subsection{Length, writing guide, and scope}
+
+The supervisor-approved project budget is a minimum of 60 main-text pages,
+a target of 80--100, and a cap of 100. It counts the Introduction through the
+Conclusions, including figures and tables, but excludes front matter,
+bibliography, and appendices. This is the agreed writing budget, not a numerical
+university page rule. The writing guide records the official sources checked
+and the distinction between a file-size limit and a page count.
+
+\path{docs/thesis_writing_guide.md} also records the chapter plan, citation and
+visual conventions, evidence requirements, writing order, and final review.
+This project report is a larger reference for those chapters; it is not
+governed by the submitted thesis's chapter/page budget. Results should be
+generated from retained artefacts, and text should be written in the student's
+own academic voice under the applicable university guidance.
+
+\subsection{How the older documents fit together}
+
+The proposal describes the broad original architecture and research questions.
+The status and adaptation reports describe earlier implementation boundaries.
+The LM implementation plan, change record, row-wise meeting report, paper
+comparison, and professor-style experiment record explain numerical decisions.
+The overdispersion and window-length notes support the statistical discussion.
+The temporal review and branch reports explain remaining data/evaluation work.
+The edge guideline and deployment notes describe different stages of the
+gateway deliverable.
+
+These records are not all synchronised status pages. For example, an early UNSW
+checklist still leaves training unchecked even though fitted artefacts and
+development evaluations now exist. Older reports also list adaptation safety
+and edge packaging as future work. This report resolves those status changes
+against current code and evidence while keeping the historical documents
+available for provenance. The minimum-completion plan defines the agreed
+detector scope; it does not require every research extension in the proposal.

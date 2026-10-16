@@ -1,0 +1,104 @@
+\section{Conservative Adaptation and Legacy Access}
+\label{sec:conservative}
+
+\subsection{Why the policies are separate}
+
+The historical adaptation experiments showed visible changes, including a useful
+Chromecast improvement. They also exposed Samsung contamination and large
+parameter movement. The software now keeps those earlier methods under the
+explicit \texttt{legacy} policy while making \texttt{conservative} the default.
+Both policies support static, threshold-adaptive, and periodic-refit modes.
+The mode chooses what may change; the policy chooses which observations and
+candidates are allowed to change it.
+
+This distinction matters when reading old results. The historical threshold
+method uses all recent scored windows, including anomalies. A legacy refit uses
+the original baseline-confidence gate and checks convergence and likelihood,
+but it does not impose the newer volume and movement limits. A fitting
+rejection may still lead to a legacy threshold fallback. The conservative
+policy rejects the complete candidate pair and leaves both model and threshold
+unchanged.
+
+\subsection{Admission to the learning buffer}
+
+Let $s_t$ be the score under the active model and $s_0$ the score under the
+original model. The default conservative gate requires
+\[
+s_t(\mathbf{x})\geq\tau_t+m\,\mathrm{IQR}_t,\qquad
+s_0(\mathbf{x})\geq\tau_0+m\,\mathrm{IQR}_0,\qquad N\leq V.
+\]
+The margin $m$ defaults to one. The fixed volume limit $V$ is the 0.99 empirical
+quantile of benign calibration totals. A flagged or near-threshold window is
+not a high-confidence learning example; a large total is rejected even if the
+protocol mixture looks ordinary. The current window is scored first, so an
+update can affect only later events.
+
+The volume limit is a learning safeguard. It does not add a second
+volume-based anomaly decision to the reference detector. A conditional DM
+probability can vary with $N$, but it does not estimate the distribution of
+traffic totals. This is why the separate multi-signal branch remains a
+different detector experiment.
+
+Accepted counts are held in a bounded deque. The usual buffer contains at most
+288 windows. Counters record excessive-volume and low-confidence rejections.
+Labels are absent from this decision. Original safety references are retained
+after updates and across restoration rather than moving along with every new
+model.
+
+\subsection{Candidate fitting and movement limits}
+
+Threshold-only candidates are calculated from accepted counts scored under the
+active model. A periodic candidate refits alpha on accepted counts, with one
+single-count smoothing row per category, then recalculates its matching
+threshold and IQR. It needs enough samples for both fitting and calibration.
+Parameters must be finite, positive, and dimensionally compatible; the fit
+must converge and must not worsen likelihood beyond the configured tolerance.
+
+The default movement bounds are
+\[
+\frac{1}{1.25}\leq
+\frac{\alpha'_0}{\alpha_{0,t}}\leq1.25,\qquad
+\max_k|p'_k-p_{k,t}|\leq0.05,\qquad
+|\tau'-\tau_t|\leq2\,\mathrm{IQR}_0.
+\]
+The candidate IQR must be finite and positive. A failed conservative refit
+cannot fall back to an unrelated threshold change. A valid candidate is saved
+as a complete pair before it becomes active in memory.
+
+The likelihood comparison currently uses the fitting buffer, not an independent
+candidate holdout. The source records that limit. Per-update movement bounds
+also do not prove a bound on cumulative movement over an unlimited sequence of
+updates. Neither safeguard establishes immunity to stealthy attacks that
+already resemble accepted traffic.
+
+\subsection{What a rejected update proves}
+
+A rejected candidate proves that its configured gate prevented activation.
+It does not show useful adaptation. Successful promotion in a controlled test
+proves that the code can accept a permitted update; it does not establish an
+improvement on real traffic. The long Docker trial adds measured rejection cost,
+not a positive adaptation result.
+
+The six conservative experiment configurations are present and validate, but
+their configured output directories do not currently contain the definitive
+adaptation/evaluation reports. The report therefore assigns them no invented
+precision, recall, or F1 values. A frozen comparison against static and legacy
+runs is still needed before claiming a detection benefit from these guards.
+
+\subsection{How earlier methods remain accessible}
+
+The existing \texttt{adapt} command and Python
+\path{adapt_windows(config)} entry point select policy through configuration.
+The streaming runtime uses the same policy field. No HTTP service is needed
+to expose the existing software methods. Six legacy configurations cover both
+labelled devices and the original threshold/refit schedules, with isolated
+outputs under \path{artifacts/experiments/legacy/} and
+\path{reports/experiments/legacy/}.
+
+The retained \path{reports/experiments/legacy/reproduction_check.json}
+documents exact event-field, final-state, and metric agreement with the
+historical implementation at its recorded boundary. Later input-contract
+migration is a separate provenance change. Current tests also compare batch
+and streaming behaviour across both policies, both score conventions, and all
+three modes. These checks preserve access without presenting legacy risk as a
+property of the conservative default.

@@ -1,0 +1,126 @@
+\section{Research Problem and Scientific Basis}
+
+\subsection{Why IoT traffic can be modelled as counts}
+
+Many IoT devices perform a narrow set of tasks and repeatedly communicate with
+the same local and cloud services. Their traffic is not constant, but its protocol
+mixture often has a recognisable structure. For one window the system stores
+
+\[
+\mathbf{x}=(x_{\mathrm{TCP}},x_{\mathrm{UDP}},x_{\mathrm{SSDP}},x_{\mathrm{ARP}}),
+\qquad N=\sum_k x_k.
+\]
+
+The categories are mutually exclusive: SSDP is separated from the remaining UDP
+traffic. This representation is small enough for an edge-oriented detector and
+retains protocol-level evidence that can be explained to an operator.
+
+A fixed multinomial distribution is often too rigid because ordinary device
+behaviour changes from window to window. The Dirichlet--multinomial distribution
+adds this overdispersion through a positive parameter vector
+$\boldsymbol{\alpha}$. Its expected traffic mixture is
+$\alpha_k/\alpha_0$, where $\alpha_0=\sum_k\alpha_k$. The project also reports
+$\psi=1/\alpha_0$ as a compact dispersion indicator.
+
+The complete log-probability of a window is
+
+\[
+\log P(\mathbf{x}\mid\boldsymbol{\alpha})
+=\log\frac{N!}{\prod_k x_k!}
++\log\frac{\Gamma(\alpha_0)}{\Gamma(\alpha_0+N)}
++\sum_k\log\frac{\Gamma(\alpha_k+x_k)}{\Gamma(\alpha_k)}.
+\]
+
+A low score means that the observed mixture is unlikely under the normal model.
+The decision threshold $\tau$ is learned from a separate benign calibration
+period:
+
+\[
+\text{anomaly if }\log P(\mathbf{x}\mid\boldsymbol{\alpha})<\tau.
+\]
+
+The versioned experiments use a raw score and a one-percent lower calibration
+quantile. Per-packet normalisation remains available as a separate experiment;
+it is not silently mixed with the reported results.
+
+\subsection{Dispersion and parameter estimation}
+
+The model is conditional on the observed total $N$. Writing
+$p_k=\alpha_k/\alpha_0$, its conditional variance is
+\[
+\operatorname{Var}(X_k\mid N)
+=N p_k(1-p_k)\frac{N+\alpha_0}{1+\alpha_0}.
+\]
+For the same expected mixture, smaller concentration permits greater
+window-to-window variation. The reported $\psi=1/\alpha_0$ is an inverse
+concentration; the common correlation parameter is
+$1/(1+\alpha_0)=\psi/(1+\psi)$. It should not be confused with an unrelated
+software threshold or probability of attack.
+
+The fitting objective omits only the count-dependent multinomial coefficient:
+\[
+K(\mathbf{x};\boldsymbol{\alpha})=
+\log\Gamma(\alpha_0)-\log\Gamma(N+\alpha_0)
++\sum_k\{\log\Gamma(x_k+\alpha_k)-\log\Gamma(\alpha_k)\}.
+\]
+For independent rows the objective is $\sum_iK(\mathbf{x}_i;\boldsymbol{\alpha})$.
+The complete window score adds
+$\log\Gamma(N+1)-\sum_k\log\Gamma(x_k+1)$.
+The optional normalised convention divides the complete score by
+$\max(N,1)$. Calibration and scoring must select the same convention.
+Training kernel values and anomaly thresholds therefore belong to different
+scales and cannot be compared directly.
+
+The initial alpha vector is the pooled category proportion multiplied by the
+configured initial concentration, usually ten. Minka's fixed-point update is
+\[
+\alpha_k^{\mathrm{new}}
+=\alpha_k\,
+\frac{\sum_i[\operatorname{digamma}(x_{ik}+\alpha_k)-\operatorname{digamma}(\alpha_k)]}
+{\sum_i[\operatorname{digamma}(N_i+\alpha_0)-\operatorname{digamma}(\alpha_0)]}.
+\]
+The implementation uses SciPy's digamma for this update regardless of the
+likelihood backend. It stops when the absolute likelihood change is below the
+configured tolerance, or returns non-convergence at its iteration limit.
+Changing the likelihood backend is not replacing this estimator.
+
+\subsection{The role of the LM method}
+
+The Languasco--Migliardi (LM) method evaluates close log-Gamma differences
+accurately inside the Dirichlet--multinomial likelihood \cite{lmcore,tpami}.
+Parameter estimation uses Minka's
+fixed-point equations \cite{minka}; LM or SciPy supplies the likelihood used for
+convergence checks and scoring.
+
+This distinction prevents an important overclaim. A numerical backend can change
+runtime and numerical behaviour near the multinomial limit, but it does not make
+an unchanged statistical detector inherently more accurate. The system keeps a
+SciPy implementation as an independent reference and selects six-digit native LM
+in the versioned research configurations.
+
+\subsection{Relation to the supplied IoT work}
+
+The reference study models D-Link Camera 5 traffic as daily ten-minute vectors
+with the same four categories and compares likelihood methods in modelling and
+forecasting experiments \cite{iotpaper}. \projectname{} retains that statistical
+foundation but changes the application protocol. It fits one device baseline,
+uses a separate threshold-calibration period, emits anomaly decisions, and tests
+those decisions on labelled traffic from additional IoT devices.
+
+The D-Link captures remain useful as a matched numerical workload. They do not
+contain attack labels in this repository, so they cannot support measured
+precision, recall, or F1. This is why the main anomaly results use UNSW Chromecast
+and Samsung camera traces instead.
+
+\subsection{What an event explains}
+
+The expected category profile is $\boldsymbol{p}$ and the residual for an
+observed count is $x_k/N-p_k$ when $N>0$. For silence the observed proportions
+are represented by zeros, so the residual is $-p_k$. Severity is
+\[
+\frac{\max(0,\tau-s(\mathbf{x}))}{\mathrm{IQR}_{\mathrm{active}}}.
+\]
+It measures distance below the chosen threshold on the active calibration score
+scale. It is not a calibrated attack probability, causal attribution, or
+attack-family classifier. These explanations are useful precisely because
+their limited meaning is explicit.

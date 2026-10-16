@@ -1,0 +1,107 @@
+\section{Repository Evidence and Document Map}
+
+Paths below describe the pre-report reference snapshot. Many documents are
+historical notes, not synchronised promises of current completion. The current
+report resolves their implementation status against source, retained artefacts,
+and the fresh test run. Generated section files for this report are a writing
+structure, not new detector components.
+
+\subsection{Technical, research, and writing documents}
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.45\textwidth}>{\raggedright\arraybackslash}p{0.47\textwidth}}
+\caption{Complete pre-report documentation map.}\label{tab:evidence-map}\\
+\toprule\textbf{Record} & \textbf{Role in the project} \\
+\midrule\endfirsthead
+\toprule\textbf{Record} & \textbf{Role in the project} \\
+\midrule\endhead
+\path{docs/additional_resources.txt} & Curated additional literature leads; verify primary publications before citing them. \\
+\path{docs/artifact-schemas.md} & Persisted formats, compatibility, complete snapshots, and retained history. \\
+\path{docs/capture-inventory.md} & Source existence, hashes, counts, and explained duplicates. \\
+\path{docs/command-line-interface.md} & Stable commands, flags, outputs, runtime, and rollback contract. \\
+\path{docs/configuration.md} & Configuration fields, defaults, validation, and policy settings. \\
+\path{docs/dataset-fingerprints.md} & Source-byte and preprocessing-policy identity. \\
+\path{docs/deterministic-randomness.md} & Named independent random streams and limits of repeatability. \\
+\path{docs/dirichlet_multinomial_model_and_window_length.tex} & Statistical interpretation, temporal aggregation, and the window-duration tradeoff. \\
+\path{docs/edge-deployment.md} & Exact image, replay/service, resource, recovery, and measurement instructions. \\
+\path{docs/edge-detector.md} & Input contract, preparation, shared Python API, and streaming behaviour. \\
+\path{docs/edge-implementation-guideline.md} & Earlier gateway/static-pilot guidance; current deployment status is in this report. \\
+\path{docs/failure-semantics.md} & Domain errors, process exits, and fail-closed boundaries. \\
+\path{docs/likelihood-semantics.md} & Fitting kernel versus complete anomaly probability. \\
+\path{docs/lm_backend_change_record.tex} & Production native changes, mathematical preservation, and validation. \\
+\path{docs/lm_backend_implementation_plan.tex} & Earlier native-integration plan and acceptance rationale. \\
+\path{docs/lm_idnet_adaptation_stage_report.tex} & Historical policy design, cadence sweep, contamination, and parameter movement. \\
+\path{docs/lm_idnet_full_project_report.tex} & This comprehensive reference; section sources are under full\_project\_report/. \\
+\path{docs/lm_idnet_project_status_report.tex} & Earlier baseline architecture and evidence snapshot. \\
+\path{docs/lm_paper_project_comparison_report.md} & Differences between the supplied numerical paper and the detector implementation. \\
+\path{docs/lm_professor_architecture_experiment_report.md} & Aggregate experiment, paired timings, controlled forecasts, and accuracy probes. \\
+\path{docs/lm_rowwise_likelihood_meeting_report.pdf} & Retained compiled meeting version of the corresponding LaTeX source. \\
+\path{docs/lm_rowwise_likelihood_meeting_report.tex} & Explanation of the row-wise production objective and native setup optimisation. \\
+\path{docs/pcap-validation.md} & Structural EOF validation, warnings, fatal errors, and quarantine fixture. \\
+\path{docs/proposal.pdf} & Retained proposal material; distinguish intentions from delivered features. \\
+\path{docs/slides/anomaly_detector.png} & Supporting detector illustration used with project presentation material. \\
+\path{docs/slides/lm-backend_presentation.pdf} & Retained compiled numerical presentation. \\
+\path{docs/slides/lm-backend_presentation.tex} & Numerical backend presentation source. \\
+\path{docs/slides/lm_idnet_project_presentation.tex} & Project presentation source. \\
+\path{docs/slides/lm_idnet_project_presentation_speaker_notes.md} & Plain-language accompanying presentation notes. \\
+\path{docs/slides/uaf pres.pdf} & Additional retained presentation material, not an experiment output. \\
+\path{docs/smoke-fixture.md} & Public synthetic fixture, exact expected windows, and infrastructure-only claim. \\
+\path{docs/task-tesi.txt} & Dated administrative/research-training planning note; not current verified university rules. \\
+\path{docs/temporal-partitions.md} & Frozen capture assignments and purpose-scoped access boundaries. \\
+\path{docs/temporal_dataset_architecture_review_and_improvement.tex} & Temporal dependence, timeline issues, episode evaluation, and research design. \\
+\path{docs/testing.md} & Marker groups, full-suite commands, reusable fixtures, and image opt-in. \\
+\path{docs/thesis_project_minimum_completion_plan.tex} & Agreed minimum detector deliverable and implementation status. \\
+\path{docs/thesis_proposal_and_system_architecture.tex} & Broad scientific motivation, theory, proposed architecture, and research questions. \\
+\path{docs/thesis_writing_guide.md} & Writing sources, chapter plan, approved page budget, evidence and final-format checks. \\
+\path{docs/understanding_overdispersion.tex} & Interpretation of concentration, extra variability, and statistical assumptions. \\
+\path{docs/unsw-chromecast-dataset.md} & Source/MAC selection, excluded capture, annotations, partitions, and preparation history. \\
+\path{docs/unsw-samsung-camera-dataset.md} & Second labelled reference device, dates, annotation provenance, and coverage. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Supplied scientific resources}
+
+The PDFs are retained reading material, not files generated by this software.
+They support motivation and mathematical derivation; authors' published claims
+are not automatically experimental results of this thesis. The original
+licences and academic attribution must be retained. Paths are relative to
+\path{resouces/}.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.45\textwidth}>{\raggedright\arraybackslash}p{0.47\textwidth}}
+\caption{Supplied brief and reading material.}\label{tab:resource-map}\\
+\toprule\textbf{Record} & \textbf{Role in the project} \\
+\midrule\endfirsthead
+\toprule\textbf{Record} & \textbf{Role in the project} \\
+\midrule\endhead
+\path{180_2022_1311_OnlinePDF.pdf} & Languasco--Migliardi log-likelihood paper; numerical foundation. \\
+\path{ALM2_new.pdf} & Supplied fast/accurate implementation manuscript and cross-domain context. \\
+\path{ALM_IoT-CR.pdf} & Supplied IoT modelling/forecasting study that motivates the four-count workload. \\
+\path{Efficient_Analysis_of_Overdispersed_Data_Using_an_Accurate_Computation_of_the_Dirichlet_Multinomial_Distribution.pdf} & Published TPAMI article on accurate DM computation. \\
+\path{Optimal_Countermeasures_Selection_Against_Cyber_Attacks_A_Comprehensive_Survey_on_Reaction_Frameworks.pdf} & Background on reaction frameworks; no automated countermeasure component is delivered. \\
+\path{Proposte_di_Ricerca_basate_su_Dirichlet_Multinomial.pdf} & Two-project brief; this project follows adaptive IoT detection, not the neural DirichletSoftmax extension. \\
+\texttt{Why ALM is important - Sherenaz Al-Haj Baddar, [02102025 1.txt} & Supplied explanatory numerical-method note, not an experimental measurement. \\
+\path{bioinformatics_30_11_1547.pdf} & Yu--Shaw likelihood-computation reference for related numerical methods. \\
+\path{minka-dirichlet.pdf} & Fixed-point and related estimation derivations for Dirichlet/DM models. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Numerical and experiment records}
+
+\path{reports/D-LinkDayCam5/lm_backend_benchmark.json} is the retained production
+backend comparison; \path{lm_professor_experiment.json} in the same directory is
+the controlled aggregate study. Static device metrics live under their device
+report directories. Historical adaptation records remain under
+\path{reports/experiments/<device>/<variant>/}; explicit reproduced legacy
+records use \path{reports/experiments/legacy/}. The reproduction check in that
+legacy directory identifies the historical code boundary and protected hashes.
+
+The edge directory contains \path{simulation-2000.json},
+\path{simulation-20000.json}, \path{simulation-environment.json}, and the human
+\path{simulation.md} report. The new metric tables read their numeric inputs
+from retained JSON; the older three-dataset timing and cadence figures are
+explicitly identified as historical document records.
+
+Temporal fold/timeline reports belong to branch \texttt{b0aa35d} under
+\path{reports/temporal-folds/} and the device report directories. Multi-signal
+metrics, health reports, shadow assessments, benchmarks, and iteration notes
+belong to \texttt{4279d84}. Inspect those exact revisions rather than expecting
+their files or APIs in the reference checkout.

@@ -1,0 +1,111 @@
+\section{Numerical Experiments and Forecasting Boundaries}
+
+\subsection{The retained production benchmark}
+
+The current D-Link JSON benchmark compares both backends on the same
+846-by-4 fit matrix, 288 calibration windows, and 270 development windows.
+It builds temporary artefacts rather than replacing the accepted model.
+Complete fit timing excludes data loading and saving. Likelihood timing uses
+200 calls per batch and score timing 1,000, with five batches and warm-up.
+The fit median uses five measurements.
+
+\input{full_project_report/tables/retained_backend}
+
+The retained environment is Python 3.12.14, NumPy 2.5.1, and SciPy 1.18.0 on
+Linux x86-64. These are the versions in that record, not the versions pinned
+for the later edge image. The separately retained three-dataset figure belongs
+to the earlier report's timing run. Neither is an observation that the entire
+software was freshly benchmarked during this documentation update.
+
+The numerical comparison finds a maximum relative alpha difference of
+$3.8571\times10^{-7}$ and maximum absolute score difference of
+$1.0917\times10^{-5}$, with zero decision mismatches in 270 windows.
+Both backends flag three windows. These small differences establish agreement
+on this workload; they do not prove every possible threshold decision is
+insensitive to numerical error.
+
+\subsection{Why the matrix optimisation matters}
+
+The authors' numerical source was preserved, while a separate production copy
+was adapted for safe Python use. The older adapter repeated allocation and the
+adaptive Euler--Maclaurin/horizontal-shift setup for every row.
+That setup depends on alpha, category count, and requested precision, not on
+each row's observed counts. Moving it outside the row loop removes repeated
+work while preserving the sum of independent-row kernels.
+
+The recorded native experiment compared old and optimised libraries in 1,000
+seeded cases and found bit-identical results. It reduced the D-Link LM matrix
+call from 114.68 to 55.46 microseconds and complete fit time from 0.30410 to
+0.19297 seconds. The retained SciPy fit is 0.18129 seconds. The useful claim is
+that an identified integration cost was removed; it is not that LM always
+outperforms SciPy in this production workload.
+
+\subsection{Paper-shaped aggregate experiment}
+
+\path{scripts/lm_professor_experiment.py} separately follows the supplied
+study's aggregate convergence architecture. It uses seven D-Link days,
+10/15/20/25-percent samples, three fixed repeats, moment-based initialisation,
+row-wise digamma updates, and a pooled-vector stopping likelihood.
+The two backends receive identical samples.
+
+There are 84 paired fits, of which 79 converge for both backends.
+The five matching failures occur in small samples approaching the multinomial
+boundary. Across all pairs, recorded likelihood time falls from 24.3311 to
+21.3625 seconds and wall time from 33.7594 to 30.7930 seconds with LM.
+These correspond to reductions of 12.2\% and 8.8\%.
+
+Local daily row counts differ from those in the source paper, and its precise
+sampling realisations are not recoverable. The experiment is therefore a
+controlled architectural/backend comparison on local data, not a literal
+reproduction of every published table. A pooled-vector likelihood is also not
+equal to a sum of row likelihoods. Its speed cannot justify silently replacing
+the production objective.
+
+\subsection{Where numerical accuracy becomes important}
+
+The retained high-precision probe compares aggregate kernels with a
+100-decimal-digit mpmath reference. At the current concentration, about 122,
+both backends are already accurate. At concentration $10^{10}$, the recorded
+absolute errors are approximately $2.83\times10^{-5}$ for SciPy and
+$5.65\times10^{-8}$ for LM; at $10^{14}$ they are about $0.337$ and $0.00103$.
+Subtracting large, close log-Gamma values is increasingly difficult in that
+regime. These are specific probes of numerical behaviour, not measured
+improvements in attack recall.
+
+The native wrapper checks library availability and coefficient loading, converts
+inputs to contiguous doubles, and serialises calls around the supplied global
+state. Non-finite precision failures return typed Python errors. Sparse, zero,
+large-concentration, repeated-call, and backend agreement tests exercise this
+boundary. The original mathematical approximation and licence are retained.
+
+\subsection{Two different forecasting paths}
+
+The installed \texttt{forecast} command is a scaffold. It draws synthetic
+multinomial outcomes from the same fitted mean that supplies its expected-count
+forecast, using a fixed local seed and a total of 100 per hour. Its Brier and
+Jensen--Shannon outputs exercise helper code; they are not accuracy measurements
+against independently observed future traffic.
+
+The paper-shaped script does perform a narrower real-count comparison:
+1,000 Dirichlet samples from each 25-percent daily model are averaged and
+compared with observed proportions on October 19, 21, and 22.
+Identical random streams make the backend comparison fair. The largest
+recorded Brier difference is $2.84\times10^{-13}$, far smaller than the
+roughly $10^{-4}$ changes caused by choosing another fixed training sample.
+This experiment does not make the installed forecast scaffold an empirical
+forecasting service.
+
+\subsection{Small metric utilities}
+
+The evaluation package also contains total variation distance, KL divergence,
+mean squared error, Brier score, and Jensen--Shannon divergence.
+Their inputs and reduction rules matter: the Brier helper averages the
+per-row squared probability error, while the current Jensen--Shannon helper
+uses the summed KL terms supplied to it. These utilities support modelling
+experiments; their existence is not evidence that the detector has been
+benchmarked against Poisson, neural, or countermeasure-selection alternatives.
+
+Finally, LM here means \emph{Languasco--Migliardi}. A true
+\emph{Levenberg--Marquardt} alpha solver was separately audited on the
+multi-signal branch and rejected after a synthetic failure. The similar
+initials must not turn a numerical likelihood backend into a claimed optimiser.

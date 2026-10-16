@@ -1,0 +1,76 @@
+\section{Policy and Configuration Reference}
+
+\subsection{The selected historical legacy variant}
+
+The visible legacy 288/240 development results use a 288-window buffer,
+an update every 288 scored windows, at least 240 safe refit windows,
+and a baseline margin of one IQR:
+
+\begin{verbatim}
+"adaptation": {
+  "mode": "periodic_refit",
+  "policy": "legacy",
+  "buffer_size": 288,
+  "update_every": 288,
+  "minimum_refit_windows": 240,
+  "safe_margin": 1.0
+}
+\end{verbatim}
+
+With ten-minute windows, 288 scored observations represent a nominal two-day
+cadence. Missing windows do not increment the scored-window count, and gaps in
+the supplied stream can make elapsed wall time longer.
+
+\subsection{The conservative settings}
+
+The corresponding conservative variant retains that cadence but adds admission
+and movement limits. The standard 144-window variants and supplied edge example
+use a different cadence/minimum while keeping these guards:
+
+\begin{verbatim}
+"adaptation": {
+  "mode": "periodic_refit",
+  "policy": "conservative",
+  "buffer_size": 288,
+  "update_every": 288,
+  "minimum_refit_windows": 240,
+  "safe_margin": 1.0,
+  "volume_quantile": 0.99,
+  "max_concentration_ratio": 1.25,
+  "max_category_shift": 0.05,
+  "max_threshold_shift_iqr": 2.0
+}
+\end{verbatim}
+
+If policy is omitted, conservative is the default. The configuration filename
+by itself does not prove that a stored report used that policy; historical
+reports without a policy field must be interpreted with their recorded code
+revision.
+
+\subsection{Calibration, fitting, and input semantics}
+
+The current reference examples use raw scores, quantile 0.01, and at least
+30 calibration samples. The estimator has four categories, initial
+concentration ten, absolute likelihood-change tolerance $2\times10^{-9}$,
+100,000 iterations, native LM, and six requested digits. Scoring always follows
+the backend and precision recorded with the compatible model.
+
+The input contract identifies the device name/MAC, ordered
+\texttt{tcp, udp, ssdp, arp} categories, trained duration of ten minutes,
+and the explicit counting policy. Models and state snapshots use schema
+version 2. The prepared edge example adds a state directory without capture
+partitions; the policy and detector settings must match its saved snapshot.
+
+\subsection{Field groups that remain deliberately separate}
+
+Source roots, dataset folders, capture partitions, source column names, duplicate
+explanations, seeds, and experiment output paths belong to research
+configuration. Precision, input semantics, estimator, calibration, and
+adaptation are shared detector fields. Edge configuration replaces research
+input/output details with prepared-state and artefact paths.
+A changed path is not a changed model; a changed category order or duration is.
+
+The four declared seeds are simulation 1001, model fitting 1002, bootstrap 1003,
+and randomised algorithms 1004. Their declared presence must not be confused
+with an implemented bootstrap study or stochastic production estimator.
+The forecast horizon is an independent scaffold setting, normally 24 hours.

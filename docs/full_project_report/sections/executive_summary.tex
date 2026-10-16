@@ -1,0 +1,106 @@
+\section{Executive Summary}
+
+\subsection{What the project does}
+
+LM-IDNet learns a device's ordinary network traffic from categorical counts.
+It converts packet captures into ten-minute windows of TCP, ordinary UDP, SSDP,
+and ARP counts, fits a Dirichlet--multinomial model on an earlier period, and
+calibrates an anomaly threshold on a separate benign period. A later window
+receives a score, an anomaly decision, and an explanation based on its traffic
+composition. Attack labels are used for evaluation, not to fit the normal model
+or decide whether to learn from a runtime window.
+
+Batch commands produce research reports over configured captures. A streaming
+command receives one completed count window at a time and immediately emits
+its event. Both call the same one-window implementation. Static operation,
+threshold adaptation, and periodic refitting remain available under explicit
+conservative and historical legacy policies.
+
+\begin{center}
+\fbox{\begin{minipage}{0.94\textwidth}
+\centering
+capture bytes $\longrightarrow$ validated device windows
+$\longrightarrow$ fitted normal model $\longrightarrow$ benign calibration\\[0.35em]
+$\longrightarrow$ shared static/adaptive detector
+$\longrightarrow$ events, accepted state, and offline evaluation
+\end{minipage}}
+\end{center}
+
+\subsection{What is complete and what still needs evidence}
+
+The agreed minimum supplied-window software is implemented, including input
+compatibility, conservative learning gates, atomic state activation, restart,
+rollback, bounded streaming, offline packaging, service operation, and a local
+one-CPU/512-MiB Docker simulation. This is a usable software deliverable.
+It does not follow that every research question has a positive answer or that
+the final experimental protocol is complete.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.24\textwidth}
+>{\raggedright\arraybackslash}p{0.23\textwidth}
+>{\raggedright\arraybackslash}p{0.43\textwidth}}
+\caption{Current implementation and evidence status.}\label{tab:executive-status}\\
+\toprule
+\textbf{Area} & \textbf{Status} & \textbf{Evidence and limit} \\
+\midrule\endfirsthead
+\toprule\textbf{Area} & \textbf{Status} & \textbf{Evidence and limit} \\
+\midrule\endhead
+Reference detector & \working & Device windows, fitting, calibration,
+explainable scoring, and labelled development results. \\
+Native LM backend & \working & Numerical tests, SciPy comparisons, matrix
+optimisation, and retained production/paper-style benchmarks. \\
+Legacy adaptation & \working & Six explicit configurations, retained positive
+and negative development results, and a historical reproduction record. \\
+Conservative adaptation & \working & Admission and movement guards; controlled
+accepted/rejected update tests. Six definitive dataset comparison reports are
+not present at their configured paths. \\
+Persistence and rollback & \working & Versioned complete pairs, a writer lock,
+atomic activation, bounded history, recovery, rollback, and failure tests. \\
+Edge simulation & \working & Offline Linux/amd64 image, bounded service,
+restart/stop checks, and 2,000/20,000-input-window resource trials. \\
+Temporal research & \wip & Separate branch with actual-timestamp validation,
+five rolling folds, and capture/episode metrics. \\
+Multi-signal research & \wip & Separate branch with volume, direction, and
+behaviour checks, cross-device evidence, and rejected alternatives. \\
+Final reference evaluation & \notdone & Final captures are configured, but
+reference scoring/evaluation select development data only. \\
+Empirical forecasting & \notdone & The CLI is synthetic scaffolding; a separate
+paper-style experiment has a narrower forecast comparison. \\
+Physical gateway validation & Outside agreed simulation & No physical/ARM
+performance, packet collector, or durable event-delivery claim. \\
+Thesis workspace & Working skeleton & Modular English LaTeX sources and a
+tested Docker build; research prose and final evidence remain to be written. \\
+\bottomrule
+\end{longtable}
+
+\subsection{The main findings}
+
+The static detector has high precision but misses attacks that do not change
+protocol composition enough. Historical periodic refitting improves the
+Chromecast development F1 from 61.22\% to 80.70\% at the selected 288/240 setting,
+but the same setting does not improve Samsung over its static baseline.
+The historical Samsung learning buffer also admits attacks and permits large
+concentration changes. Those findings motivated the conservative policy now
+implemented in the reference software.
+
+The conservative changes restrict what can be learned and how far a candidate
+can move. They are safety mechanisms, not evidence of improved detection by
+themselves. The long synthetic edge replay promoted no candidate: one attempt
+lacked enough accepted windows and 110 actual fits did not converge. Successful
+promotion is checked separately with controlled candidates. These two kinds of
+evidence answer different questions and must remain separate in the thesis.
+
+The native LM backend preserves the intended row-wise likelihood and agrees
+closely with SciPy. Its speed advantage depends on the workload; fitting and
+single-window scoring do not have the same result. The resource simulation
+observed about 69 MiB peak sampled process memory and a worst complete window
+processing time of 5.079 seconds, including refitting, under a one-CPU quota.
+
+\subsection{How to use this report}
+
+Read the scientific and implementation sections to understand the delivered
+system, the result sections to identify supported claims, and the appendices to
+locate code, records, and reproduction commands. Historical branch evidence is
+included because it explains decisions and failed alternatives. It is not
+silently promoted into the current reference implementation. The immediate
+next work is a frozen, reproducible final evaluation and thesis writing; broader
+feature research is optional unless the thesis scope explicitly requires it.
