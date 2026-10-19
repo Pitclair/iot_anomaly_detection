@@ -129,6 +129,26 @@ def test_artifact_loads_from_disk(tmp_path) -> None:
     assert loaded.alpha == (1.0, 2.0, 3.0, 4.0)
 
 
+@pytest.mark.parametrize("margins,composition,valid", [
+    ({"total": -1., "arp": 2.}, None, True),
+    ({"total": 0., "arp": 2.}, None, False),
+    ({"total": -1.}, None, False),
+    ({"composition": -1., "total": 2., "arp": 2.}, None, False),
+    ({"total": -1., "arp": 2.}, -50., False),
+    ({"total": -1., "arp": float("inf")}, None, False),
+])
+def test_count_only_events_require_finite_complete_count_evidence(margins, composition, valid):
+    event = artifact_examples()["anomaly_event"]
+    event.update(feature_margins=margins, composition_score=composition,
+                 score=min(margins.values()), threshold=0., is_anomaly=min(margins.values()) < 0.,
+                 severity=max(0., -min(margins.values())))
+    if valid:
+        assert validate_artifact(event, expected_type="anomaly_event").composition_score is None
+    else:
+        with pytest.raises(ArtifactCompatibilityError):
+            validate_artifact(event, expected_type="anomaly_event")
+
+
 @pytest.mark.parametrize("field,value", [("threshold", -1.), ("threshold", float("nan")),
                                          ("score_iqr", 0.), ("score_iqr", float("inf"))])
 def test_count_tails_reject_invalid_calibration_values(field, value):

@@ -2,7 +2,7 @@
 
 \subsection{Recorded verification coverage}
 
-The closing full-suite run records \textbf{601 passes, with no skipped tests},
+The closing full-suite run records \textbf{643 passes, with no skipped tests},
 including slow, PCAP, and benchmark markers. Both opt-in Docker checks run. Eight
 final-evaluation cases protect final-only input access, exact labels and original
 annotation provenance, device/partition identity, duration, and actual timestamp
@@ -37,6 +37,9 @@ Numerical tests compare SciPy, native LM, and high-precision reference cases;
 they cover sparse and zero counts, large concentrations, matrix semantics,
 repeated calls, and precision failures. Modelling/calibration/scoring tests
 check the common statistical convention and threshold fingerprint.
+Scoring regressions cover count-tail early exits, recovery through the maximum
+accepted packet count, and continued stream processing after high-volume
+windows in all three modes on both labelled devices.
 Evaluation tests check exact label alignment, duplicates, confusion counts,
 and FPR for hand-counted, no-benign-label, and zero-false-positive cases.
 

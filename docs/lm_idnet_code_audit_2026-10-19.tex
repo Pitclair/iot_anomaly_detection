@@ -1,0 +1,284 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black,
+  pdftitle={LM-IDNet Code Quality and Structure Audit}
+}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\setlength{\emergencystretch}{2em}
+\Urlmuskip=0mu plus 1mu
+\setlist[enumerate]{leftmargin=1.8em,itemsep=1em,topsep=0.4em,
+  label=\textbf{\arabic*.}}
+
+\title{\textbf{LM-IDNet Code Quality and Structure Audit}}
+\author{}
+\date{19 October 2026}
+
+\begin{document}
+\maketitle
+
+\textbf{What this repo does:} LM-IDNet turns device traffic into count windows,
+learns a normal model, and produces explainable anomaly alerts with optional
+guarded updates. The assumed load is one researcher running batch experiments
+and one streaming process per device state directory.
+
+The overall structure is understandable. Processing, modelling, runtime, and
+saved state have clear roles, and batch and streaming share the detector.
+\textbf{601 tests passed}, including container checks. The cases below were also
+reproduced using temporary files. \textbf{No code was changed during the audit.}
+
+\section*{Must fix}
+
+\begin{enumerate}[series=findings]
+\item \begin{minipage}[t]{\linewidth}
+\textbf{A valid high-volume window stops the detector}
+
+\path{src/lm_idnet/models/scoring_stage.py:70}
+
+\textbf{What this is:} Likelihood scoring runs before the volume checks.
+
+\textbf{Problem:} Five million TCP packets in a Chromecast window trigger
+\path{NumericalPrecisionError}. The streaming process emits no event and
+leaves the next window unprocessed.
+
+\textbf{Fix:} Handle precision failures per window, report them explicitly,
+exclude that window from learning, and continue. Preserve any independently
+available volume evidence.
+
+\textbf{If we skip it:} A traffic burst can interrupt monitoring.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Normal preprocessing accepts incomplete inputs}
+
+\path{src/lm_idnet/processing/processing_manager.py:59}
+
+\textbf{What this is:} The normal preprocessing command converts configured
+captures into windows.
+
+\textbf{Problem:} Missing captures produce a warning and are skipped. A capture
+with a truncated record header also produced processed JSON, although the
+separate validator correctly rejected it.
+
+\textbf{Fix:} Enforce complete-file checks during preprocessing and fail on
+missing configured captures, preserving support for both capture formats.
+
+\textbf{If we skip it:} A successful command can leave incomplete or stale
+processed data.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Batch scoring accepts incompatible calibration settings}
+
+\path{src/lm_idnet/artifacts.py:148}
+
+\textbf{What this is:} This loads the saved model and threshold.
+
+\textbf{Problem:} Changing the configured quantile to \texttt{0.5} still accepts
+a threshold calibrated at \texttt{0.01}. An increased minimum sample requirement
+is also ignored.
+
+\textbf{Fix:} Check the saved quantile, calibration captures, and sample count
+against the configuration, as state restoration already does.
+
+\textbf{If we skip it:} An experiment can run with different calibration settings
+from those its configuration declares.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{The ordinary evaluator accepts mismatched evidence}
+
+\path{src/lm_idnet/evaluation/evaluation_stage.py:45}
+
+\textbf{What this is:} The CLI matches prediction events to labels.
+
+\textbf{Problem:} Events naming another device were accepted. Removing an attack
+window's prediction also produced 100\% accuracy on the remaining matched window.
+
+\textbf{Fix:} Check device identity and require coverage of observed windows.
+Allow omissions only for explicitly missing source coverage.
+
+\textbf{If we skip it:} Wrong or incomplete event files can produce misleading
+summaries.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Failed writes can destroy saved research artifacts}
+
+\path{src/lm_idnet/artifacts.py:164}
+
+\textbf{What this is:} Ordinary model and threshold saves overwrite their
+destination directly.
+
+\textbf{Problem:} A simulated disk-full failure left a previously valid model
+containing only \texttt{\{}. The protected detector-state writer already handles
+this more safely.
+
+\textbf{Fix:} Write a temporary file and replace the destination only after
+successful completion.
+
+\textbf{If we skip it:} Interrupted training or calibration can destroy the
+previous usable artifact.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{F1 is missing when every attack is missed}
+
+\path{src/lm_idnet/evaluation/evaluation_stage.py:115}
+
+\textbf{What this is:} F1 combines precision and recall.
+
+\textbf{Problem:} With an attack present and no detections, the CLI returns
+\texttt{null} instead of \texttt{0}. The experiment helper handles this case
+correctly.
+
+\textbf{Fix:} Calculate F1 directly from the confusion counts and test the
+all-missed case.
+
+\textbf{If we skip it:} The least successful runs can disappear from comparisons
+as unavailable results.
+\end{minipage}
+
+\end{enumerate}
+
+\section*{Should fix}
+
+\begin{enumerate}[resume=findings]
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Batch inputs lack the stream's timestamp safeguards}
+
+\path{src/lm_idnet/models/modeling_stage.py:85}
+
+\textbf{What this is:} Training loads count windows from processed files.
+
+\textbf{Problem:} Repeating the same timestamped window twice is accepted as two
+observations. Streaming already rejects duplicates and overlaps.
+
+\textbf{Fix:} Add a shared check for ordered, non-overlapping windows within
+each capture.
+
+\textbf{If we skip it:} Duplicated records can distort fitting, calibration,
+or adaptation timing.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Two production dependencies have no application callers}
+
+\path{pyproject.toml:11}
+
+\textbf{What this is:} Every installation includes \texttt{mpmath} and
+\texttt{tabulate}.
+
+\textbf{Problem:} Neither the installed application nor its tests imports
+either package. The original research capsule declares its own
+\texttt{mpmath} requirement separately.
+
+\textbf{Fix:} Remove both from application dependencies; retain the capsule's
+environment.
+
+\textbf{If we skip it:} Installations carry unnecessary packages and version
+constraints.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{The production native file still contains unused demonstration code}
+
+\path{src/lm_idnet/algorithms/native/LM_time_lib.c:23}
+
+\textbf{What this is:} The compiled library includes old demonstration entry
+points alongside the numerical implementation.
+
+\textbf{Problem:} Functions such as \texttt{pippero()} read \path{gaucho.txt};
+other unused functions load experimental datasets. No current application
+caller uses these functions.
+
+\textbf{Fix:} Remove these entry points from the production copy. Preserve the
+original research capsule, numerical routines, and attribution.
+
+\textbf{If we skip it:} Maintainers must distinguish obsolete experiments from
+functioning detector code.
+\end{minipage}
+
+\end{enumerate}
+
+\section*{Nice to have}
+
+\begin{enumerate}[resume=findings]
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Remove configuration fields that do nothing}
+
+\path{src/lm_idnet/config.py:169}
+
+\textbf{What this is:} \texttt{time\_col} and \texttt{protocol\_col} look like
+preprocessing controls.
+
+\textbf{Problem:} No packet reader uses them. They only change fingerprint
+metadata.
+
+\textbf{Fix:} Remove them from active configurations, schemas, and corresponding
+fingerprint fields.
+
+\textbf{If we skip it:} Users can change an apparent input setting without
+changing processing.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Delete the unused distance-metric module}
+
+\path{src/lm_idnet/evaluation/metrics.py:1}
+
+\textbf{What this is:} It defines three small distance functions.
+
+\textbf{Problem:} None has a caller in the application or tests; the research
+script calculates its own distances.
+
+\textbf{Fix:} Delete the unused module and update its documentation references.
+
+\textbf{If we skip it:} Another implementation remains for readers to interpret
+and maintain.
+\end{minipage}
+
+\item \begin{minipage}[t]{\linewidth}
+\textbf{Remove a broken package export}
+
+\path{src/lm_idnet/processing/__init__.py:4}
+
+\textbf{What this is:} The package advertises an \texttt{aggregation} module.
+
+\textbf{Problem:} That module does not exist.
+\texttt{from lm\_idnet.processing import *} raises \texttt{AttributeError}.
+
+\textbf{Fix:} Delete the stale export.
+
+\textbf{If we skip it:} The advertised package interface remains broken.
+\end{minipage}
+
+\end{enumerate}
+
+\bigskip
+\begin{samepage}
+\textbf{Verdict:} Keep the existing architecture. Fix the stream failure and
+input/evaluation boundaries first, then remove the unused scaffolding.
+
+\textbf{Lean:} Approximately 175 fewer lines and two fewer production
+dependencies are possible.
+
+\textbf{Not checked:} Formal mathematical proofs, every original
+research-capsule script, exhaustive raw captures, physical hardware,
+or a fresh image build.
+\end{samepage}
+
+\end{document}

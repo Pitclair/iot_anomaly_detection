@@ -55,6 +55,7 @@ def score_window(
     score_iqr: float,
     score_type: str,
     count_tails: dict[str, CountTailThreshold] | None = None,
+    short_circuit_count_alerts: bool = True,
 ) -> dict[str, object]:
     """Score one prepared window without reading or writing external state."""
     if window.categories != model_categories:
@@ -67,20 +68,28 @@ def score_window(
         raise DataValidationError("calibration score IQR must be positive")
 
     counts = np.asarray(window.counts, dtype=np.int64)
-    score = anomaly_score(counts, alpha, log_likelihood, score_type)
     composition_score = None
     feature_margins = {}
     if count_tails:
         if count_tails.keys() != {"total", "arp"}:
             raise DataValidationError("count tails must cover total packets and ARP")
-        composition_score = score
-        feature_margins = {"composition": (score - threshold) / score_iqr}
         count_features = {"total": sum(window.counts), "arp": window.counts[model_categories.index("arp")]}
         for name, count in count_features.items():
             tail = count_tails[name]
             feature_margins[name] = (
                 tail.threshold - float(np.log1p(count))
             ) / tail.score_iqr
+    # A calibrated count-tail breach already establishes the joint alert.
+    if (
+        not short_circuit_count_alerts
+        or not feature_margins
+        or min(feature_margins.values()) >= 0.0
+    ):
+        score = anomaly_score(counts, alpha, log_likelihood, score_type)
+        if count_tails:
+            composition_score = score
+            feature_margins["composition"] = (score - threshold) / score_iqr
+    if feature_margins:
         score = min(feature_margins.values())
         threshold, score_iqr = 0.0, 1.0
     total = int(counts.sum())
@@ -290,9 +299,20 @@ class WindowDetector:
             log_likelihood=self.log_likelihood, threshold=self.current_threshold,
             score_iqr=self.current_score_iqr, score_type=self.score_type,
             count_tails=self.count_tails,
+            # The historical policy learns from every recent DM score.
+            short_circuit_count_alerts=self.conservative or self.mode == "static",
         )
         self.window_count += 1
         if self.mode == "static":
+            return event, None, None
+
+        if self.count_tails and event["composition_score"] is None:
+            reason = (
+                "excessive_volume"
+                if self.volume_limit is not None and window.total_count > self.volume_limit
+                else "low_confidence"
+            )
+            self.rejected_window_counts[reason] += 1
             return event, None, None
 
         score = float(

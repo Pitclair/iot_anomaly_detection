@@ -41,19 +41,46 @@ def test_count_tail_detects_flood_without_composition_change(window_factory, tcp
         alpha=np.array([1., 2., 3., 4.]), log_likelihood=ScipyLogLikelihood(),
         threshold=-1000., score_iqr=2., score_type="raw", count_tails=tails,
     )
-    assert event["composition_score"] > -1000.
+    if anomaly:
+        assert event["composition_score"] is None
+        assert event["feature_margins"].keys() == {"total", "arp"}
+    else:
+        assert event["composition_score"] > -1000.
     assert event["is_anomaly"] is anomaly
     assert event["score"] == min(event["feature_margins"].values())
     assert event["threshold"] == 0.
     assert event["severity"] == max(0., -event["score"])
 
 
-def test_count_only_alert_is_excluded_from_conservative_learning(tmp_path, config_factory):
+@pytest.mark.parametrize("tcp,arp", [(11, 0), (0, 11)])
+def test_count_tail_alert_does_not_run_likelihood(window_factory, monkeypatch, tcp, arp):
+    def unexpected_score(*_args):
+        pytest.fail("a count-tail alert must bypass likelihood scoring")
+
+    monkeypatch.setattr(scoring_stage, "anomaly_score", unexpected_score)
+    window = window_factory(tcp=tcp, udp=0, ssdp=0, arp=arp)
+    event = score_window(
+        window, device_id="camera", capture_id="capture", model_categories=window.categories,
+        expected_profile=(.1, .2, .3, .4), model_fingerprint="0" * 64,
+        alpha=np.array([1., 2., 3., 4.]), log_likelihood=ScipyLogLikelihood(),
+        threshold=-1000., score_iqr=2., score_type="raw",
+        count_tails={
+            "total": CountTailThreshold(threshold=float(np.log1p(10 if tcp else 100)), score_iqr=1.),
+            "arp": CountTailThreshold(threshold=float(np.log1p(10)), score_iqr=1.),
+        },
+    )
+    assert event["is_anomaly"] is True
+    assert event["composition_score"] is None
+
+
+@pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])
+@pytest.mark.parametrize("policy", ["conservative", "legacy"])
+def test_count_tail_alert_preserves_each_adaptation_policy(tmp_path, config_factory, mode, policy):
     config = config_factory(
         ingest={"processed_root": tmp_path / "processed"},
         estimator={"log_likelihood_backend": "scipy"},
         calibration={"minimum_samples": 2},
-        adaptation={"mode": "adaptive_threshold", "safe_margin": 0.},
+        adaptation={"mode": mode, "policy": policy, "safe_margin": 0.},
         outputs={"model_path": tmp_path / "model.json", "threshold_path": tmp_path / "threshold.json"},
     )
     write_model(config)
@@ -73,8 +100,14 @@ def test_count_only_alert_is_excluded_from_conservative_learning(tmp_path, confi
     )
     for window in dataset.windows:
         detector.process(window, device_id=config.ingest.device_id, capture_id=capture_id)
-    assert len(detector.safe_counts) == 1
-    assert detector.rejected_window_counts == {"excessive_volume": 0, "low_confidence": 1}
+    if policy == "conservative":
+        assert len(detector.safe_counts) == 1
+        assert detector.rejected_window_counts == {"excessive_volume": 0, "low_confidence": 1}
+    if policy == "legacy":
+        assert len(detector.recent_counts) == len(detector.recent_scores) == 2
+        if mode == "periodic_refit":
+            assert len(detector.safe_counts) == 2
+        assert detector.rejected_window_counts == {"excessive_volume": 0, "low_confidence": 0}
 
 
 @pytest.mark.parametrize("mode", ["adaptive_threshold", "periodic_refit"])

@@ -15,10 +15,18 @@ $-\log(1+N)$, and $-\log(1+x_{\mathrm{ARP}})$; a constant fit feature uses unit
 scale. Their minimum is calibrated once at the configured lower quantile on
 separate normal calibration windows. Joint calibration accommodates correlated
 signals without label-tuned weights or separate extreme-tail allocations.
-Events retain the underlying DM value in \path{composition_score}; their
-\path{feature_margins} are signed distances from the calibrated cutoffs. The
-combined score is the minimum margin, alerts below zero, and has severity
-$\max(0,-s)$. It is not an attack probability.
+The inexpensive total and ARP checks run first. In static and conservative
+adaptive modes, a count-tail breach establishes an alert without likelihood
+scoring or learning from that window; its
+\path{composition_score} is null. Otherwise that field retains the computed DM
+value. The \path{feature_margins} record signed distances from the cutoffs for
+the evaluated features. Their minimum is the combined score, alerts below zero,
+and has severity $\max(0,-s)$. It is not an attack probability. If the native
+precision guard rejects a required likelihood calculation, the installed
+high-precision library recomputes the same complete DM probability and the
+recovery is logged; the fitted model and calibrated cutoffs are unchanged.
+The legacy research policy retains complete DM scoring for its historical
+recent-score buffer.
 
 During adaptation the original DM and count cutoffs remain detection
 references. An update cannot suppress an alert supported by the reference DM.
@@ -56,7 +64,9 @@ Periodic refit, legacy & 57.30\% & 75.36\% \\
 \end{table}
 
 Static classifications on Chromecast and Samsung are unchanged. Chromecast
-development ROC--AUC improves from 0.9092 to 0.9332. Under the legacy learning
+development ROC--AUC improves from 0.9092 to 0.9331.\footnote{Scoring-order
+replay evidence: \path{reports/scoring_order_verification.json}.}
+Under the legacy learning
 policy, Samsung development F1 improves from 54.00\% to 78.69\%, and its later
 F1 from 66.67\% to 90.91\%.
 The pooled gains occur under legacy adaptation; static and conservative

@@ -122,6 +122,18 @@ open. Status messages and accepted/rejected update attempts go to a rotating log
 `LM_IDNET_LOG_PATH`; use global `--verbose` to also see informational logs on
 standard error. The output consumer owns event retention.
 
+Calibrated total-packet and ARP checks run before likelihood scoring. In static
+and conservative adaptive modes, a count-tail alert skips the likelihood
+calculation and learning for that window; its
+`composition_score` is `null`, and `feature_margins` contains only `total` and
+`arp`. Its score and severity describe those computed margins. Otherwise, the
+DM score is calculated normally. If the native precision guard rejects that
+calculation, the same full DM probability is recomputed with the installed
+high-precision library and the recovery is logged. The learning-volume limit
+remains a separate admission guard, not an alert cutoff.
+The legacy research policy retains DM scoring for every window to preserve its
+historical recent-score buffer.
+
 The reader allows at most 65,536 bytes per line, including its ending. It checks
 UTF-8 JSON, required fields, integer counts, the device, category order, duration,
 and UTC window grid before scoring. Timezone-aware offsets are normalised to UTC.

@@ -16,6 +16,7 @@ import pytest
 
 from lm_idnet import cli, runtime
 from lm_idnet.artifacts import detector_state_lock, load_detector_state, save_detector_state
+from lm_idnet.config import load_config
 from lm_idnet.exceptions import DataValidationError, DetectorStateCommitError, PolicyRejectionError
 from lm_idnet.models.schemas import DetectorStateArtifact
 from lm_idnet.models.scoring_stage import WindowDetector
@@ -66,6 +67,38 @@ def test_stream_matches_shared_detector_and_distinguishes_silence_missing_and_ga
     assert set(expected[1]["counts"].values()) == {0}
     with detector_state_lock(config.state_dir):
         pass
+
+
+@pytest.mark.parametrize("dataset,total", [("unsw_chromecast", 5_000_000),
+                                           ("unsw_samsung_camera", 10_000_000)])
+@pytest.mark.parametrize("mode", ["static", "adaptive_threshold", "periodic_refit"])
+def test_high_volume_window_does_not_interrupt_stream(
+    tmp_path, edge_config_factory, dataset, total, mode, caplog,
+):
+    config = load_config(Path(__file__).resolve().parents[1] / f"configs/{dataset}.json")
+    config.adaptation.mode = mode
+    directory = tmp_path / "state"
+    initial = load_detector_state(directory, config)
+    edge = edge_config_factory(config, directory)
+    records = [record(edge, counts=(total, 0, 0, 0)), record(edge, 10)]
+    output = io.StringIO()
+
+    runtime.run_windows(edge, io.BytesIO(b"".join(map(line, records))), output)
+
+    events = [json.loads(value) for value in output.getvalue().splitlines()]
+    assert len(events) == 2
+    assert events[0]["counts"]["tcp"] == total
+    assert events[1]["counts"] == dict(
+        zip(config.ingest.categories, records[1]["window"]["counts"])
+    )
+    if dataset == "unsw_samsung_camera":
+        assert events[0]["is_anomaly"] is True
+        assert events[0]["composition_score"] is None
+        assert "high-precision DM scoring" not in caplog.text
+    else:
+        assert events[0]["composition_score"] is not None
+        assert "high-precision DM scoring" in caplog.text
+    assert load_detector_state(directory, edge).version_id == initial.version_id
 
 
 @pytest.mark.parametrize(("section", "field", "value"), [

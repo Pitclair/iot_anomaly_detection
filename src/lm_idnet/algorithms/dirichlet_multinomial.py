@@ -1,10 +1,14 @@
 """Distribution-level Dirichlet-multinomial calculations."""
 
+import logging
+
 import numpy as np
 from numpy.typing import NDArray
 from scipy.special import gammaln
 
-from lm_idnet.exceptions import DataValidationError
+from lm_idnet.exceptions import DataValidationError, NumericalPrecisionError
+
+logger = logging.getLogger(__name__)
 
 
 def log_multinomial_coefficient(counts: NDArray[np.int64]) -> float:
@@ -29,7 +33,27 @@ def log_probability(counts, alpha, log_likelihood) -> float:
 
 def anomaly_score(counts, alpha, log_likelihood, score_type: str) -> float:
     """Return a raw or per-packet normalized anomaly score."""
-    score = log_probability(counts, alpha, log_likelihood)
+    try:
+        score = log_probability(counts, alpha, log_likelihood)
+    except NumericalPrecisionError:
+        from mpmath import mp
+
+        # Recompute the full probability so large factorial terms cancel accurately.
+        context = mp.clone()
+        largest = max(float(max(counts)), float(max(alpha)), 1.0)
+        context.dps = max(50, int(np.log10(largest)) + 40)
+        total = sum(int(count) for count in counts)
+        parameters = [context.mpf(float(value)) for value in alpha]
+        concentration = context.fsum(parameters)
+        score = float(context.fsum([
+            context.loggamma(total + 1),
+            context.loggamma(concentration),
+            -context.loggamma(concentration + total),
+            *(context.loggamma(int(count) + parameter)
+              - context.loggamma(parameter) - context.loggamma(int(count) + 1)
+              for count, parameter in zip(counts, parameters)),
+        ]))
+        logger.warning("Native likelihood precision limit reached; used high-precision DM scoring")
     if score_type == "raw":
         return score
     if score_type == "normalized":

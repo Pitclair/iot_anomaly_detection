@@ -322,11 +322,14 @@ class AnomalyEventArtifact(ModelSchema):
         if self.is_anomaly != (self.score < self.threshold):
             raise ValueError("anomaly decision must match score and threshold")
         if self.feature_margins:
-            if self.feature_margins.keys() != {"composition", "total", "arp"}:
-                raise ValueError("feature margins must cover composition, total packets, and ARP")
-            if self.composition_score is None or any(
-                not isfinite(value) for value in self.feature_margins.values()
-            ):
+            expected_margins = {"total", "arp"}
+            if self.composition_score is not None:
+                expected_margins.add("composition")
+            elif not self.is_anomaly:
+                raise ValueError("a count-only event must already establish an alert")
+            if self.feature_margins.keys() != expected_margins:
+                raise ValueError("feature margins must match the computed scoring features")
+            if any(not isfinite(value) for value in self.feature_margins.values()):
                 raise ValueError("feature scores must be finite")
             if self.threshold != 0.0 or self.score != min(self.feature_margins.values()):
                 raise ValueError("combined score must equal the minimum feature margin")
