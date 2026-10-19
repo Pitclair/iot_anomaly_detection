@@ -1,0 +1,561 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\graphicspath{{../slides/}{docs/slides/}}
+\input{evidence.tex}
+
+% Visual system retained from docs/slides/lm_idnet_project_presentation.tex.
+\definecolor{burgundy}{HTML}{990000}
+\definecolor{darkburgundy}{HTML}{59000E}
+\definecolor{dustyrose}{HTML}{D1545B}
+\definecolor{palerose}{HTML}{E5D5D6}
+\definecolor{paper}{HTML}{F7F6F2}
+\definecolor{softgray}{HTML}{ECEAE7}
+\definecolor{midgray}{HTML}{77736F}
+\definecolor{charcoal}{HTML}{434343}
+\definecolor{ink}{HTML}{111111}
+\setbeamercolor{normal text}{fg=ink,bg=paper}
+\setbeamercolor{structure}{fg=burgundy}
+\setbeamercolor{frametitle}{fg=ink,bg=paper}
+\setbeamercolor{block title}{fg=white,bg=darkburgundy}
+\setbeamercolor{block body}{fg=ink,bg=softgray}
+\setbeamercolor{takeaway}{fg=darkburgundy,bg=palerose!65!paper}
+\setbeamerfont{normal text}{size=\large}
+\setbeamerfont{frametitle}{series=\bfseries,size=\Large}
+\setbeamerfont{block title}{series=\bfseries,size=\normalsize}
+\setbeamersize{text margin left=.65cm,text margin right=.65cm}
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize item}{\color{burgundy}$\blacktriangleright$}
+\setbeamertemplate{frametitle}{%
+  \vspace{.18cm}\insertframetitle\par\vspace{-.1cm}%
+  {\color{burgundy}\rule{\textwidth}{.6pt}}%
+}
+\newcommand{\slideprefix}{}
+\newcommand{\slidetotal}{/12}
+\setbeamertemplate{footline}{%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.83\paperwidth,ht=2.8ex,dp=1.1ex,leftskip=1em]{author in head/foot}%
+      \color{charcoal}\scriptsize LM-IDNet\quad\textbullet\quad\insertsectionhead
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.17\paperwidth,ht=2.8ex,dp=1.1ex,rightskip=1em]{date in head/foot}%
+      \hfill\color{burgundy}\scriptsize\slideprefix\insertframenumber\slidetotal
+    \end{beamercolorbox}%
+  }%
+}
+\newcommand{\takeaway}[1]{%
+  \vfill\begin{beamercolorbox}[sep=.16cm,wd=\textwidth]{takeaway}%
+    \normalsize\bfseries #1
+  \end{beamercolorbox}}
+\newcommand{\evidence}[1]{\par\vspace{.09cm}{\fontsize{8}{9}\selectfont\color{charcoal}#1\par}}
+\newcommand{\bigvalue}[1]{{\color{burgundy}\fontsize{29}{31}\selectfont\bfseries #1}}
+\tikzset{
+  flowbox/.style={draw=burgundy,line width=.8pt,rounded corners=1pt,
+    fill=paper,minimum height=1cm,text width=2.6cm,align=center,font=\normalsize},
+  lightbox/.style={flowbox,draw=charcoal,fill=softgray},
+  flowarrow/.style={-{Latex[length=2.3mm]},thick,draw=charcoal}
+}
+\pgfplotsset{discussion/.style={
+  axis lines=left,axis line style={charcoal},tick style={draw=none},
+  tick label style={font=\small,text=ink},label style={font=\small,text=ink},
+  title style={font=\normalsize\bfseries,text=ink},
+  ymajorgrids=true,grid style={softgray},
+  legend style={draw=none,fill=paper,font=\small,cells={anchor=west}},
+  every axis plot/.append style={line width=1.4pt},
+  clip=false,
+},values/.style={nodes near coords,point meta=y,
+  every node near coord/.append style={font=\small,text=ink,
+    /pgf/number format/fixed,/pgf/number format/precision=1}}}
+
+\title{LM-IDNet}
+\subtitle{Learning normal traffic. Detecting meaningful change.}
+\author{Fatemeh Mahvari}
+\institute{Supervisor: Professor Mauro Migliardi}
+\date{19 October 2026}
+\hypersetup{pdftitle={LM-IDNet — Discussion Presentation},
+  pdfauthor={Fatemeh Mahvari},pdfsubject={12-minute presentation with reference slides}}
+\pdfstringdefDisableCommands{\def\translate#1{#1}}
+
+\begin{document}
+
+% 01 | 00:00–00:30 | 30 seconds
+\begin{frame}[plain]
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[ink] (current page.south west) rectangle (current page.north east);
+  \fill[darkburgundy] (current page.south west) rectangle
+    ([xshift=.64\paperwidth]current page.north west);
+  \fill[burgundy,opacity=.28] ([xshift=.58\paperwidth]current page.south west)
+    rectangle ([xshift=.67\paperwidth]current page.north west);
+  \node[anchor=east,inner sep=0pt] (detector)
+    at ([xshift=-.42cm]current page.east)
+    {\includegraphics[height=.91\paperheight]{anomaly_detector.png}};
+  \draw[palerose,line width=.8pt]
+    ([xshift=-.10cm,yshift=.10cm]detector.north west) rectangle
+    ([xshift=.10cm,yshift=-.10cm]detector.south east);
+  \node[anchor=west,text width=.52\paperwidth]
+    at ([xshift=.72cm,yshift=1.6cm]current page.west)
+    {\color{white}\fontsize{30}{33}\selectfont\bfseries LM-IDNet};
+  \node[anchor=west,text width=.51\paperwidth]
+    at ([xshift=.72cm,yshift=.25cm]current page.west)
+    {\color{palerose}\Large Learning normal traffic.\\Detecting meaningful change.};
+  \node[anchor=west,text width=.50\paperwidth]
+    at ([xshift=.72cm,yshift=-1.15cm]current page.west)
+    {\color{white}\normalsize A compact, explainable anomaly detector\\for IoT network traffic};
+  \node[anchor=south west,text width=.53\paperwidth]
+    at ([xshift=.72cm,yshift=.42cm]current page.south west)
+    {\color{white}\normalsize\bfseries Fatemeh Mahvari\\[.08cm]
+     \color{palerose}\small Supervisor: Professor Mauro Migliardi\\
+     Discussion presentation\quad\textbullet\quad19 October 2026};
+  \node[anchor=south east,fill=ink,inner sep=2pt]
+    at ([xshift=-.06cm,yshift=.06cm]detector.south east)
+    {\color{palerose}\fontsize{6}{7}\selectfont REFERENCE IMAGE / PRYPIAT DETECTOR};
+\end{tikzpicture}
+\end{frame}
+
+\section{System}
+
+% 02 | 00:30–01:25 | 55 seconds
+\begin{frame}{A small traffic profile for each IoT device}
+\begin{columns}[c,onlytextwidth]
+\column{.62\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.1cm,height=5.1cm,ybar,bar width=10pt,
+  ymin=0,ymax=100,ytick={0,25,50,75,100},xmin=.4,xmax=4.6,
+  xtick={1,2,3,4},xticklabels={TCP,UDP,SSDP,ARP},
+  ylabel={Fitted normal mean (\%)},
+  legend style={at={(.5,1.04)},anchor=south},legend columns=2]
+  \addplot[fill=burgundy,draw=burgundy] coordinates {\ProfileChromecast};
+  \addplot[fill=charcoal,draw=charcoal] coordinates {\ProfileSamsung};
+  \legend{Chromecast,Samsung camera}
+\end{axis}
+\end{tikzpicture}
+\column{.34\textwidth}
+{\large\bfseries The question}\par\medskip
+Can a device's own normal traffic reveal suspicious change?\par\bigskip
+\textbf{4 exclusive counts}\\per ten-minute window\par\medskip
+Learn from a trusted benign period; flag unusual later behaviour.
+\end{columns}
+\takeaway{A separate normal model captures each device's traffic pattern.}
+\evidence{Fitted means from saved normal-only models. UDP excludes SSDP; bars are model expectations.}
+\end{frame}
+
+% 03 | 01:25–02:40 | 75 seconds
+\begin{frame}{One normal model, three complementary signals}
+\centering
+\begin{tikzpicture}[node distance=.45cm]
+  \node[lightbox,text width=3cm] (input) at (-4.25,0)
+    {\textbf{Device traffic}\\TCP / UDP / SSDP / ARP};
+  \node[flowbox,text width=3cm] (counts) at (0,0)
+    {\textbf{Ten-minute counts}\\$\mathbf{x}=(x_1,x_2,x_3,x_4)$};
+  \node[lightbox,text width=3cm] (output) at (4.25,0)
+    {\textbf{Alert evidence}\\Which signal\\crossed its cutoff?};
+  \draw[flowarrow] (input) -- (counts);
+  \node[flowbox,text width=3.3cm] (dm) at (-3.9,-1.8)
+    {\textbf{DM likelihood}\\Protocol composition};
+  \node[flowbox,text width=3.3cm] (volume) at (0,-1.8)
+    {\textbf{Total packets}\\Traffic volume};
+  \node[flowbox,text width=3.3cm] (arp) at (3.9,-1.8)
+    {\textbf{ARP packets}\\Local activity};
+  \draw[flowarrow] (counts.south) -- ++(0,-.25) -| (dm.north);
+  \draw[flowarrow] (counts.south) -- (volume.north);
+  \draw[flowarrow] (counts.south) -- ++(0,-.25) -| (arp.north);
+  \node[lightbox,text width=10.8cm,minimum height=.8cm] (cal) at (0,-3.3)
+    {\textbf{Joint calibration on separate benign traffic}\\
+     Alert if any feature margin is negative};
+  \draw[flowarrow] (dm.south) -- (dm.south |- cal.north);
+  \draw[flowarrow] (volume.south) -- (cal.north);
+  \draw[flowarrow] (arp.south) -- (arp.south |- cal.north);
+  \draw[flowarrow] (cal.east) -- ++(.7,0) |- (output.east);
+\end{tikzpicture}
+\takeaway{The DM model represents ordinary variation; count tails add complementary evidence.}
+\evidence{Normal-only fitting and calibration. The native LM backend evaluates the DM likelihood.}
+\end{frame}
+
+% 04 | 02:40–03:30 | 50 seconds
+\begin{frame}{From a numerical method to a usable detector}
+\centering
+\begin{tikzpicture}
+  \node[lightbox,text width=3.2cm] (input) at (-4.8,0)
+    {\textbf{Validated inputs}\\PCAP batches or supplied windows};
+  \node[flowbox,text width=3.2cm] (runtime) at (0,0)
+    {\textbf{Shared detector}\\Static + adaptive modes};
+  \node[lightbox,text width=3.2cm] (event) at (4.8,0)
+    {\textbf{Traceable events}\\Decision, margins,\\source fingerprints};
+  \draw[flowarrow] (input) -- (runtime);
+  \draw[flowarrow] (runtime) -- (event);
+  \node[flowbox,text width=3.9cm] (native) at (-3,-2)
+    {\textbf{Native LM integration}\\One likelihood contribution\\per window};
+  \node[flowbox,text width=4.1cm] (state) at (3,-2)
+    {\textbf{Model + threshold}\\Guarded activation,\\restart and rollback};
+  \draw[flowarrow] (native.north) -- ++(0,.35) -| (runtime.south west);
+  \draw[flowarrow] (runtime.south east) |- (state.north);
+\end{tikzpicture}
+\vspace{.28cm}
+\begin{columns}[c,onlytextwidth]
+\column{.24\textwidth}\centering\bigvalue{0 / 270}
+\column{.72\textwidth}LM versus SciPy decision mismatches in the retained D-Link benchmark.\\
+\small Maximum absolute score difference: $1.09\times10^{-5}$.
+\end{columns}
+\takeaway{The contribution spans numerical integration, detection, and reliable operation.}
+\evidence{Retained backend benchmark and runtime/state contracts; timings are in reference slide R2.}
+\end{frame}
+
+\section{Evaluation}
+
+% 05 | 03:30–04:35 | 65 seconds
+\begin{frame}{Normal learning first; labelled evaluation later}
+\centering
+\begin{tikzpicture}[x=.94cm]
+  \fill[palerose!55!paper] (8.55,.95) rectangle (11.5,-2.65);
+  \foreach \x/\label in {0/Fit,3.35/Calibrate,6.7/Develop,10.05/Final replay}{
+    \node[font=\normalsize\bfseries,text=darkburgundy] at (\x,.6) {\label};
+  }
+  \node[anchor=east,font=\small\bfseries] at (-1.6,0) {Chromecast};
+  \node[anchor=east,font=\small\bfseries,align=right] at (-1.6,-1.65) {Samsung\\camera};
+  \draw[flowarrow,line width=1pt] (-1.35,0) -- (11.55,0);
+  \draw[flowarrow,line width=1pt] (-1.35,-1.65) -- (11.55,-1.65);
+  \foreach \x/\n/\detail in {0/867/normal,3.35/576/normal,6.7/474/32 attack,10.05/432/6 attack}{
+    \fill[burgundy] (\x,0) circle (3pt);
+    \node[font=\normalsize,align=center,text width=2.35cm] at (\x,-.6)
+      {\textbf{\n{} windows}\\\detail};
+  }
+  \foreach \x/\n/\detail in {0/432/normal,3.35/81/normal,6.7/556/70 attack,10.05/576/12 attack}{
+    \fill[burgundy] (\x,-1.65) circle (3pt);
+    \node[font=\normalsize,align=center,text width=2.35cm] at (\x,-2.25)
+      {\textbf{\n{} windows}\\\detail};
+  }
+  \draw[dustyrose,dashed,thick] (8.35,1) -- (8.35,-2.65);
+  \node[font=\small,align=center,text=charcoal] at (3.35,-3.15)
+    {Earlier complete captures\quad$\longrightarrow$\quad Later complete captures};
+\end{tikzpicture}
+\takeaway{Final replay: fixed settings, saved normal-only starting pairs, labels only for metrics.}
+\evidence{Original reference partitions. Timeline shows role order, not elapsed time. D-Link is a numerical workload without attack labels.}
+\end{frame}
+
+% 06 | 04:35–06:00 | 85 seconds
+\begin{frame}{80\% pooled F1 on the final partitions}
+\centering
+\normalsize Two labelled devices\quad\textbullet\quad1,008 windows\quad\textbullet\quad18 attack windows
+\vspace{.12cm}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=14.2cm,height=4.8cm,ybar,bar width=20pt,
+  ymin=0,ymax=117,ytick={0,25,50,75,100},ylabel={Score (\%)},
+  xmin=.5,xmax=3.5,xtick={1,2,3},xticklabels={Chromecast,Samsung camera,Pooled},
+  legend style={at={(.5,1)},anchor=south},legend columns=3]
+  \addplot[fill=charcoal,draw=charcoal,values] coordinates {\FinalPrecision};
+  \addplot[fill=dustyrose,draw=dustyrose,values] coordinates {\FinalRecall};
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\FinalFone};
+  \legend{Precision,Recall,F1}
+\end{axis}
+\end{tikzpicture}
+\takeaway{14/18 attack windows flagged; 3/990 benign windows flagged (0.30\% FPR).}
+\evidence{Final results. Pooled metrics use summed confusion counts. All three selected modes make the same decisions.}
+\end{frame}
+
+% 07 | 06:00–07:05 | 65 seconds
+\begin{frame}{Eight of nine attacks detected; seven by attack end}
+\begin{columns}[c,onlytextwidth]
+\column{.66\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.8cm,height=5.15cm,
+  xmin=0,xmax=15,ymin=.4,ymax=9.6,xtick={0,5,10,15},
+  ytick={1,2,3,4,5,6,7,8,9},yticklabels/.expanded={\IncidentLabels},
+  xlabel={Minutes since attack onset},ymajorgrids=false,xmajorgrids=true,
+  grid style={softgray}]
+  \IncidentBars
+  \addplot[only marks,mark=diamond*,mark size=3pt,color=burgundy]
+    coordinates {\IncidentAlerts};
+\end{axis}
+\end{tikzpicture}
+\column{.30\textwidth}
+\textcolor{burgundy}{$\blacklozenge$}\ \textbf{First alert}\\
+\textcolor{palerose}{\rule{.5cm}{4pt}}\ Annotated attack\par\bigskip
+\textbf{Median delay}\\among detected attacks\par\medskip
+\bigvalue{6.9}\ min\\Chromecast\par\medskip
+\bigvalue{7.5}\ min\\Samsung camera
+\end{columns}
+\takeaway{The ten-minute collection interval is part of the detection delay.}
+\evidence{Final official attack intervals, aligned to onset; C = Chromecast, S = Samsung. Alerts occur at window close.}
+\end{frame}
+
+% 08 | 07:05–08:05 | 60 seconds
+\begin{frame}{Conservative updates preserved the starting detector}
+\begin{columns}[c,onlytextwidth]
+\column{.64\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.3cm,height=4.6cm,ybar,bar width=36pt,
+  ymin=0,ymax=8.5,ytick={0,2,4,6,8},xmin=.5,xmax=3.5,
+  xtick={1,2,3},xticklabels={Threshold move,Concentration,Too few samples},
+  ylabel={Rejected update attempts},x tick label style={font=\small,align=center}]
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\Rejections};
+\end{axis}
+\end{tikzpicture}
+\column{.32\textwidth}
+\bigvalue{0 / 14}\\updates activated\par\bigskip
+Score before learning.\par\medskip
+Keep original detection references.\par\medskip
+Activate only a complete validated model--threshold pair.
+\end{columns}
+\takeaway{No adaptive gain is established on this final replay.}
+\evidence{Seven threshold attempts and seven refit attempts across both devices; paired threshold/refit records counted once.}
+\end{frame}
+
+% 09 | 08:05–09:20 | 75 seconds
+\begin{frame}{Window size trades coverage for response time}
+\begin{columns}[c,onlytextwidth]
+\column{.66\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.7cm,height=4.9cm,
+  xmin=5,xmax=65,ymin=0,ymax=56,ytick={0,18,36,54},
+  xtick={10,20,30,60},xlabel={Window duration (minutes)},
+  ylabel={Attacks out of 54},
+  legend style={at={(.5,1.04)},anchor=south},legend columns=1]
+  \addplot[color=burgundy,mark=*,mark size=2.5pt,values]
+    coordinates {\WindowDetected};
+  \addplot[color=charcoal,dashed,mark=square*,mark size=2.5pt,values,
+    every node near coord/.append style={anchor=west,xshift=3pt,
+      fill=paper,inner sep=1pt}]
+    coordinates {\WindowTimely};
+  \legend{Eventually detected,Alerted by attack end}
+\end{axis}
+\end{tikzpicture}
+\column{.30\textwidth}
+\textbf{Delivered default}\par\smallskip\bigvalue{10}\ minutes\par\bigskip
+\textbf{Static coverage candidate}\\30 minutes\par\medskip
+45/54 attacks detected, but only 12/54 alerted by attack end.
+\end{columns}
+\takeaway{Retain ten minutes for earlier response; validate longer windows against the use case.}
+\evidence{Separate static development study on matched traffic and 54 attacks; fresh fits with a common normal split across durations.}
+\end{frame}
+
+\section{Achievements and limits}
+
+% 10 | 09:20–10:25 | 65 seconds
+\begin{frame}{A measured path towards edge operation}
+\begin{columns}[c,onlytextwidth]
+\column{.65\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.5cm,height=4.8cm,
+  xmin=0,xmax=20,ymin=0,ymax=100,ytick={0,25,50,75,100},
+  xtick={0,5,10,15,20},xlabel={Input windows (thousands)},
+  ylabel={Sampled process memory (MiB)}]
+  \addplot[color=burgundy,mark=*,mark size=2pt] coordinates {\EdgeMemory};
+  \node[anchor=south east,font=\normalsize\bfseries,text=burgundy]
+    at (axis cs:19.8,73) {$\sim$69 MiB};
+\end{axis}
+\end{tikzpicture}
+\column{.31\textwidth}
+\textbf{Local Docker simulation}\\1 CPU / 512 MiB\par\bigskip
+\bigvalue{\EdgeWorst\ s}\\worst observed processing\\\small including a rejected refit\par\bigskip
+\normalsize 20,000 supplied windows\\16,000 scored; 4,000 missing
+\end{columns}
+\takeaway{Processing has observed headroom; physical gateway performance remains unmeasured.}
+\evidence{Retained x86\_64 synthetic replay; no update promoted. Processing starts after input arrival; collection delay is separate.}
+\end{frame}
+
+% 11 | 10:25–11:45 | 80 seconds
+\begin{frame}{A complete detector with a clear operating tradeoff}
+\begin{columns}[T,onlytextwidth]
+\column{.31\textwidth}
+\bigvalue{4 counts}\par\medskip
+\textbf{Compact statistical core}\par\smallskip
+Normal-only DM learning, native likelihood, explainable count signals.
+\column{.31\textwidth}
+\bigvalue{80\% F1}\par\medskip
+\textbf{Traceable final evidence}\par\smallskip
+Two labelled devices, 1,008 windows, full decisions and update records.
+\column{.31\textwidth}
+\bigvalue{$\sim$69 MiB}\par\medskip
+\textbf{Operational software}\par\smallskip
+Shared batch/streaming detection, guarded state, restart and rollback.
+\end{columns}
+\vspace{.45cm}
+\textbf{Evidence limits}\quad18 final attack windows; count-preserving attacks can be missed;
+useful conservative learning remains unproven.
+\par\vspace{.25cm}
+\begin{tikzpicture}
+  \node[lightbox,text width=3.65cm,minimum height=.75cm] (a) {More devices and attacks};
+  \node[lightbox,text width=3.65cm,minimum height=.75cm,right=.7cm of a] (b) {Longer drift evaluation};
+  \node[lightbox,text width=3.65cm,minimum height=.75cm,right=.7cm of b] (c) {Physical gateway\\validation};
+  \draw[flowarrow] (a) -- (b);\draw[flowarrow] (b) -- (c);
+\end{tikzpicture}
+\takeaway{LM-IDNet turns a compact traffic model into a measured, reproducible detection system.}
+\end{frame}
+
+% 12 | 11:45–12:00 | 15 seconds
+\begin{frame}[plain,label=thanks]
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[darkburgundy] (current page.south west) rectangle (current page.north east);
+  \fill[ink] ([xshift=.76\paperwidth]current page.south west) rectangle (current page.north east);
+  \node[anchor=west] at ([xshift=1cm,yshift=.9cm]current page.west)
+    {\color{white}\fontsize{34}{38}\selectfont\bfseries Thank you};
+  \node[anchor=west,text width=10cm] at ([xshift=1cm,yshift=-.3cm]current page.west)
+    {\color{palerose}\Large Questions and discussion};
+  \node[anchor=south west,text width=12cm] at ([xshift=1cm,yshift=.7cm]current page.south west)
+    {\color{white}\normalsize LM-IDNet\quad\textbullet\quad Fatemeh Mahvari\\[.18cm]
+     \color{palerose}\small Reference slides follow: model, backend, counts, guards, duration, sources.};
+\end{tikzpicture}
+\end{frame}
+
+\appendix
+\setcounter{framenumber}{0}
+\renewcommand{\slideprefix}{R}
+\renewcommand{\slidetotal}{}
+\section{Reference / questions only}
+
+\begin{frame}[label=reference-model]{R1 / What is fitted, and what triggers an alert?}
+\normalsize
+\textbf{DM composition model}\quad$\alpha_k>0$, $\alpha_0=\sum_k\alpha_k$, $N=\sum_kx_k$
+\[
+\ell(\mathbf{x})=\log\frac{N!}{\prod_kx_k!}
++\log\frac{\Gamma(\alpha_0)}{\Gamma(\alpha_0+N)}
++\sum_k\log\frac{\Gamma(\alpha_k+x_k)}{\Gamma(\alpha_k)}.
+\]
+\textbf{Three signals}\quad$\ell(\mathbf{x})$, $-\log(1+N)$, $-\log(1+x_{\mathrm{ARP}})$.
+\par\medskip
+Fit-only medians and IQRs scale each signal. The minimum scaled signal is
+calibrated jointly at the 1\% lower quantile on separate benign windows.
+\par\medskip
+The event score is the minimum signed margin from the resulting cutoffs:
+\[
+s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
+\text{alert if }s<0,\qquad\text{severity}=\max(0,-s).
+\]
+\takeaway{During updates, original DM and count references remain active detection checks.}
+\evidence{Constant fit features use unit scale. A count-tail breach can decide early. Severity is not an attack probability.}
+\end{frame}
+
+\begin{frame}[label=reference-backend]{R2 / Native accuracy and speed are separate claims}
+\begin{columns}[c,onlytextwidth]
+\column{.65\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.5cm,height=4.8cm,ybar,bar width=33pt,
+  xmin=.5,xmax=3.5,ymin=0,ymax=1.4,ytick={0,.5,1,1.25},
+  xtick={1,2,3},xticklabels={Complete fit,Matrix kernel,Window score},
+  ylabel={LM time / SciPy time},
+  every node near coord/.append style={/pgf/number format/precision=3}]
+  \draw[charcoal,dashed,thick] (axis cs:.5,1) -- (axis cs:3.5,1);
+  \addplot[fill=burgundy,draw=burgundy,values,
+    every node near coord/.append style={/pgf/number format/precision=3,
+      fill=paper,inner sep=1pt}]
+    coordinates {\BackendRatios};
+\end{axis}
+\end{tikzpicture}
+\column{.31\textwidth}
+\textbf{D-Link workload}\\846 $\times$ 4 fit matrix\\270 scored windows\par\medskip
+\textbf{Numerical agreement}\\$3.86\times10^{-7}$ max. relative $\alpha$ difference\\[.12cm]
+$1.09\times10^{-5}$ max. absolute score difference\\[.12cm]
+0/270 decision mismatches
+\end{columns}
+\takeaway{LM is slightly faster for single-window scoring on this workload; fitting is slower.}
+\evidence{Retained D-Link benchmark, five timing batches. Ratio 1 = equal time; smaller = faster. No fresh performance run.}
+\end{frame}
+
+\begin{frame}[label=reference-counts]{R3 / What sits behind the final percentages?}
+\begin{columns}[c,onlytextwidth]
+\column{.63\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.2cm,height=4.8cm,ybar,bar width=17pt,
+  xmin=.5,xmax=2.5,ymin=0,ymax=12,ytick={0,2,4,6,8,10,12},
+  xtick={1,2},xticklabels={Chromecast,Samsung camera},ylabel={Windows},
+  legend style={at={(.5,1.02)},anchor=south},legend columns=3]
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\FinalTP};
+  \addplot[fill=charcoal,draw=charcoal,values] coordinates {\FinalFP};
+  \addplot[fill=dustyrose,draw=dustyrose,values] coordinates {\FinalFN};
+  \legend{True positive,False positive,False negative}
+\end{axis}
+\end{tikzpicture}
+\column{.33\textwidth}
+\textbf{Pooled confusion counts}\\TP = 14\quad FP = 3\\FN = 4\quad TN = 987\par\medskip
+Precision $=14/17=82.35\%$\par\smallskip
+Recall $=14/18=77.78\%$\par\smallskip
+F1 $=28/35=80.00\%$\par\smallskip
+FPR $=3/990=0.30\%$
+\end{columns}
+\takeaway{Window recall and attack-interval coverage answer different questions.}
+\evidence{True negatives: Chromecast 423, Samsung 564. Any attack overlap labels a window positive; all 1,008 windows match labels.}
+\end{frame}
+
+\begin{frame}[label=reference-guards]{R4 / What does conservative learning permit?}
+\centering
+\begin{tikzpicture}
+  \node[lightbox,text width=3.3cm] (score) {\textbf{Score first}\\Emit current decision};
+  \node[flowbox,text width=3.3cm,right=.7cm of score] (admit)
+    {\textbf{Admit safe evidence}\\Active + original confidence,\\volume + ARP guards};
+  \node[lightbox,text width=3.3cm,right=.7cm of admit] (fit)
+    {\textbf{Check candidate}\\Enough data, valid fit,\\bounded movement};
+  \draw[flowarrow] (score) -- (admit);\draw[flowarrow] (admit) -- (fit);
+\end{tikzpicture}
+\vspace{.2cm}
+\begin{align*}
+  1/1.25\;&\leq\alpha'_0/\alpha_{0,t}\leq1.25
+    &&\text{concentration ratio}\\[.12cm]
+  \max_k|p'_k-p_{k,t}|\;&\leq0.05
+    &&\text{protocol proportions}\\[.12cm]
+  |\tau'-\tau_t|\;&\leq2\,\mathrm{IQR}_0
+    &&\text{threshold movement}
+\end{align*}
+\normalsize Defaults: 288-window buffer; attempt every 144 scored windows;
+144 accepted windows required for periodic fitting.
+\takeaway{Rejecting a candidate retains the complete active pair; accepted pairs support rollback.}
+\evidence{Per-update guards do not establish immunity to stealthy attacks or unlimited cumulative drift. Final replay promoted no candidates.}
+\end{frame}
+
+\begin{frame}[label=reference-duration]{R5 / Duration sensitivity beyond the headline}
+\begin{columns}[c,onlytextwidth]
+\column{.49\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=7.0cm,height=4.6cm,
+  title={Pooled window F1},xmin=5,xmax=65,ymin=0,ymax=100,
+  xtick={10,20,30,60},ytick={0,25,50,75,100},
+  xlabel={Window duration (min)},ylabel={F1 (\%)}]
+  \addplot[color=burgundy,mark=*,values] coordinates {\WindowFone};
+\end{axis}
+\end{tikzpicture}
+\column{.49\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=7.0cm,height=4.6cm,
+  title={Median first-alert delay},xmin=5,xmax=65,ymin=0,ymax=44,
+  xtick={10,20,30,60},ytick={0,10,20,30,40},
+  xlabel={Window duration (min)},ylabel={Delay (min)},
+  legend style={at={(.03,.97)},anchor=north west,font=\small}]
+  \addplot[color=burgundy,mark=*] coordinates {\DelayChromecast};
+  \addplot[color=charcoal,dashed,mark=square*] coordinates {\DelaySamsung};
+  \legend{Chromecast,Samsung}
+\end{axis}
+\end{tikzpicture}
+\end{columns}
+\takeaway{F1 changes with label granularity; median delay is conditional on detection.}
+\evidence{Static development study. Samsung uses May 28--29 to fit and May 30--31 to calibrate at every duration. Lines join measured settings.}
+\end{frame}
+
+\begin{frame}[label=reference-sources]{R6 / Scientific basis and evidence trail}
+\normalsize
+\textbf{Statistical learning}\par\smallskip
+Minka, \emph{Estimating a Dirichlet distribution}, 2000 / revised 2012.\\
+Fixed-point estimation of the DM parameters.
+\par\medskip
+\textbf{Native likelihood method}\par\smallskip
+Languasco and Migliardi, \emph{Computational Statistics} 38, 2023.\\
+\href{https://doi.org/10.1007/s00180-022-01311-7}{doi: 10.1007/s00180-022-01311-7}\\
+Al-Haj Baddar, Languasco and Migliardi, \emph{IEEE TPAMI} 47(2), 2025.\\
+\href{https://doi.org/10.1109/TPAMI.2024.3489645}{doi: 10.1109/TPAMI.2024.3489645}
+\par\medskip
+\textbf{Project evidence}\par\smallskip
+Final protocol, results and events: \texttt{reports/final\_evaluation/}\\
+Duration study: \texttt{reports/window\_size/}\\
+Backend benchmark: \texttt{reports/D-LinkDayCam5/}\\
+Supplied-window simulation: \texttt{reports/edge/}
+\takeaway{Speaker notes map every numerical slide to its retained source files.}
+\end{frame}
+
+\end{document}
