@@ -46,6 +46,17 @@
 \begin{document}
 
 \maketitle
+
+\begin{quote}
+\textbf{Archived design/experiment record.} This document retains its original
+implementation boundary. The agreed detector and final-partition evaluation
+are complete; current results and supported interfaces are documented in
+\path{docs/lm_idnet_full_project_report.tex} and
+\path{reports/final_evaluation/results.json}. Unselected proposals are future
+work, as collected in \path{docs/future-work.md}, rather than an active software
+backlog. Historical timings and findings below retain their original meaning.
+\end{quote}
+
 \thispagestyle{empty}
 
 \begin{abstract}
@@ -100,7 +111,6 @@ Threshold calibration & \operational & A lower-tail threshold is learned from a 
 Development scoring and explanations & \operational & Each window receives a score, decision, severity, expected profile, and per-category residuals. \\
 Labelled evaluation & \operational & Chromecast and Samsung camera development results include confusion matrices and standard classification measures. \\
 Numerical backend comparison & \operational & LM and SciPy are compared through the same end-to-end pipeline, with stored timing and agreement evidence. \\
-Forecasting & \partlyimplemented & The command currently provides a synthetic metric scaffold rather than an empirical result. \\
 Locked final-test evaluation & \partlyimplemented & Final partitions are declared in configuration, but the accepted scoring and evaluation path currently targets development data. \\
 Online guarded adaptation & \pending & The command and configuration surface exist, but the adaptation algorithm is deliberately not implemented. \\
 Edge-device deployment claim & \pending & Containerised execution works on the development platform; low-power hardware has not been benchmarked. \\
@@ -249,7 +259,6 @@ For datasets with attack intervals, labels are matched to scored windows by capt
 
 The benchmark command runs equivalent LM and SciPy training, calibration, and scoring paths in isolated temporary outputs. This tests both numerical agreement and actual pipeline cost.
 
-The forecast command demonstrates Brier score and Jensen--Shannon divergence calculations using synthetic samples. It is a software scaffold, not an empirical result.
 
 \section{Project Structure}
 
@@ -271,7 +280,7 @@ The repository is arranged by responsibility rather than as one monolithic scrip
 \path{src/lm_idnet/processing/} & Packet filtering, protocol classification, timestamp handling, and window construction. \\
 \path{src/lm_idnet/statistics/} & Dataset summaries and dispersion diagnostics. \\
 \path{src/lm_idnet/algorithms/} & Dirichlet--multinomial estimation, LM/SciPy likelihood backends, and the production native LM source. \\
-\path{src/lm_idnet/models/} & Model, threshold, scoring, forecasting, and typed artefact schemas. \\
+\path{src/lm_idnet/models/} & Model, threshold, scoring, and typed artefact schemas. \\
 \path{src/lm_idnet/evaluation/} & Label alignment and development metrics. \\
 \path{src/lm_idnet/cli.py} & Explicit commands for each pipeline stage and stable error reporting. \\
 \path{artifacts/} & Machine-readable models, thresholds, events, evaluations, manifests, fingerprints, and benchmark results. \\
@@ -409,7 +418,6 @@ Compare against baselines & Partly implemented & LM and SciPy are compared as nu
 {} & Implemented & Strict configurations, capture inventories, and deterministic dataset fingerprints were added to reject inconsistent experiments and make changes to source data detectable. \\
 {} & Implemented & Self-identifying model, threshold, event, and evaluation artefacts were added with compatibility checks so outputs from different devices or model versions cannot be mixed silently. \\
 {} & Implemented & Exact label alignment, stable command errors, UTC logs, deterministic seeds, container builds, and automated tests were added to make the offline workflow reviewable and repeatable. \\
-{} & Experimental & A synthetic forecast-metric command is available as a software scaffold; it does not provide empirical evidence and is not part of the anomaly-detection evaluation. \\
 {} & Not implemented & Final captures are declared but the accepted scoring and evaluation path remains development-only. A final mode is needed once modelling choices are frozen to limit optimistic tuning. \\
 {} & Not implemented & On the reference branch, grouped rolling-origin evaluation, block-based uncertainty, and per-day reporting remain open. These are needed because adjacent traffic windows are correlated. \\
 {} & Not implemented & Repeated alerts are not grouped into incidents and serial dependence is not modelled. Add these only if per-day results show that window-level decisions are insufficient operationally. \\
@@ -467,7 +475,7 @@ A device that sends no retained packets for ten minutes has produced a meaningfu
 
 \subsection{Explicit commands rather than a hidden automatic pipeline}
 
-The command line exposes \texttt{preprocess}, \texttt{diagnose}, \texttt{train}, \texttt{calibrate}, \texttt{score}, \texttt{evaluate}, \texttt{forecast}, and \texttt{benchmark}. Each stage can be reviewed and rerun on its own. This is slightly more manual, but it makes the experimental record easier to inspect and prevents an evaluation command from silently changing its own model.
+The command line exposes \texttt{preprocess}, \texttt{diagnose}, \texttt{train}, \texttt{calibrate}, \texttt{score}, \texttt{evaluate}, and \texttt{benchmark}. Each stage can be reviewed and rerun on its own. This is slightly more manual, but it makes the experimental record easier to inspect and prevents an evaluation command from silently changing its own model.
 
 \subsection{Labels remain outside training}
 
@@ -536,7 +544,6 @@ The commands correspond directly to the pipeline stages:
   \item[\texttt{score}] Produce development anomaly events from a frozen model and threshold.
   \item[\texttt{evaluate}] Align development events with labels and calculate metrics.
   \item[\texttt{benchmark}] Compare LM and SciPy through equivalent isolated pipeline runs.
-  \item[\texttt{forecast}] Run the current synthetic forecast-metric scaffold.
   \item[\texttt{adapt}] Reserved interface; exits explicitly as not implemented.
 \end{description}
 
@@ -560,7 +567,7 @@ The following repository documents contain the detailed evidence condensed into 
 
 \bibitem{iotpaper}
 S. Al-Haj Baddar, A. Languasco, and M. Migliardi,
-``Modeling and forecasting overdispersed IoT data using an efficient and accurate computation of the Dirichlet Multinomial distribution,'' reference manuscript supplied with the repository.
+ICNC 2025, pp.~28--32, doi: 10.1109/ICNC64010.2025.10993688.
 
 \bibitem{lmcore}
 A. Languasco and M. Migliardi,

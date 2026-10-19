@@ -62,8 +62,5 @@
     "threshold_path": "artifacts/UNSW-Samsung-Camera/threshold.json",
     "events_path": "artifacts/UNSW-Samsung-Camera/events.json",
     "reports_dir": "reports/UNSW-Samsung-Camera"
-  },
-  "forecast": {
-    "horizon_hours": 24
   }
 }

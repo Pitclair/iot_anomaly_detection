@@ -275,7 +275,7 @@ def main() -> None:
     baseline_hashes = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in baseline_paths}
     results, coverage, inputs, splits = [], {}, {}, {}
     with (args.output / "decisions.csv").open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["dataset", "minutes", "partition", "mode", "capture_id", "start_utc", "end_utc", "score", "is_attack", "is_anomaly"])
+        writer = csv.DictWriter(stream, lineterminator="\n", fieldnames=["dataset", "minutes", "partition", "mode", "capture_id", "start_utc", "end_utc", "score", "is_attack", "is_anomaly"])
         writer.writeheader()
         for config in (Path("configs/unsw_chromecast.json"), Path("configs/unsw_samsung_camera.json")):
             device_results, device_coverage, hashes, split = run_device(config, args.artifacts, writer)
@@ -299,7 +299,7 @@ def main() -> None:
     }
     (args.output / "results.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     with (args.output / "plot_data.csv").open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["minutes", "chromecast_f1", "samsung_f1", "chromecast_delay", "samsung_delay"])
+        writer = csv.DictWriter(stream, lineterminator="\n", fieldnames=["minutes", "chromecast_f1", "samsung_f1", "chromecast_delay", "samsung_delay"])
         writer.writeheader()
         for minutes in DURATIONS:
             rows = {row["dataset"]: row for row in results

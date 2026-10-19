@@ -20,7 +20,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data/processed/D-LinkDayCam5"
 OUTPUT = ROOT / "reports/D-LinkDayCam5/lm_professor_experiment.json"
 TRAIN_DATES = ("2020-10-08", "2020-10-09", "2020-10-12", "2020-10-13", "2020-10-14", "2020-10-15", "2020-10-16")
-TEST_DATES = ("2020-10-19", "2020-10-21", "2020-10-22")
 FRACTIONS = (0.10, 0.15, 0.20, 0.25)
 SEED = 1004
 REPEATS = 3
@@ -97,19 +96,8 @@ def distances(actual: np.ndarray, estimate: np.ndarray) -> dict[str, float]:
     }
 
 
-def forecast_metrics(actual: np.ndarray, forecast: np.ndarray) -> dict[str, float]:
-    midpoint = 0.5 * (actual + forecast)
-    return {
-        "brier_score": float(np.square(actual - forecast).sum()),
-        "js_divergence": float(
-            0.5
-            * (rel_entr(actual, midpoint).sum() + rel_entr(forecast, midpoint).sum())
-        ),
-    }
-
-
 def main() -> None:
-    days = {date: load_day(date) for date in TRAIN_DATES + TEST_DATES}
+    days = {date: load_day(date) for date in TRAIN_DATES}
     backends = {"scipy": ScipyLogLikelihood(), "lm": LmLogLikelihood(6)}
     records: list[dict[str, object]] = []
 
@@ -191,35 +179,6 @@ def main() -> None:
                 }
             )
 
-    forecasts: list[dict[str, object]] = []
-    for repeat in range(REPEATS):
-        for backend in backends:
-            fitted = [
-                record
-                for record in records
-                if record["fraction"] == 0.25
-                and record["repeat"] == repeat
-                and record["backend"] == backend
-            ]
-            fitted.sort(key=lambda record: TRAIN_DATES.index(record["date"]))
-            rng = np.random.default_rng(np.random.SeedSequence([SEED, 99, repeat]))
-            samples = np.concatenate(
-                [rng.dirichlet(np.asarray(record["alpha"]), size=1000) for record in fitted]
-            )
-            forecast = samples.mean(axis=0)
-            for date in TEST_DATES:
-                actual = days[date].sum(axis=0)
-                actual /= actual.sum()
-                forecasts.append(
-                    {
-                        "backend": backend,
-                        "date": date,
-                        "repeat": repeat,
-                        "forecast": forecast.tolist(),
-                        **forecast_metrics(actual, forecast),
-                    }
-                )
-
     paired = []
     for scipy_record in (record for record in records if record["backend"] == "scipy"):
         lm_record = next(
@@ -252,7 +211,6 @@ def main() -> None:
         },
         "method": {
             "training_dates": TRAIN_DATES,
-            "testing_dates": TEST_DATES,
             "fractions": FRACTIONS,
             "repeats": REPEATS,
             "seed": SEED,
@@ -261,7 +219,6 @@ def main() -> None:
             "likelihood_semantics": "aggregate counts for convergence only",
             "update_semantics": "independent rows",
             "likelihood_calls_per_iteration": 2,
-            "forecast_samples_per_daily_model": 1000,
         },
         "summary": summaries,
         "paired_backend_comparison": {
@@ -276,12 +233,10 @@ def main() -> None:
             "same_iterations": sum(item["iteration_difference"] == 0 for item in paired),
             "lm_more_iterations": sum(item["iteration_difference"] > 0 for item in paired),
         },
-        "forecasts": forecasts,
         "records": records,
     }
 
     assert len(records) == len(FRACTIONS) * REPEATS * len(TRAIN_DATES) * len(backends)
-    assert len(forecasts) == REPEATS * len(TEST_DATES) * len(backends)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(OUTPUT)

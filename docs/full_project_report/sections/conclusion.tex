@@ -1,4 +1,4 @@
-\section{Concluding Position}
+\section{Conclusion}
 
 LM-IDNet now contains a complete supplied-window detector implementation and a
 substantial body of research evidence. The software processes device traffic,
@@ -16,7 +16,7 @@ fixed detection references improve pooled legacy-adaptive results and Chromecast
 score ranking while keeping the DM core; static and conservative decisions on
 Chromecast and Samsung are unchanged.
 Synthetic rejection and controlled promotion remain different evidence from
-those retrospective results. Temporal research retains its separate scope.
+those retrospective results. Temporal research retains its historical scope in the appendix.
 
 The 10/20/30/60-minute comparison shows why duration needs a detection objective
 beyond the reference paper's precedent. Thirty minutes improves static attack
@@ -25,10 +25,18 @@ delay, and longer-window threshold adaptation can increase false alerts.
 The default remains ten minutes; a move to thirty-minute static operation
 requires an explicit response-time tradeoff and further validation.
 
-The project is ready for substantive thesis writing. Before finalising the
-results, it still needs an independent final-evaluation protocol and one
-consistent, frozen evidence bundle covering the selected methods and policies.
-The thesis should describe the delivered software, preserve useful negative
-findings, and state exactly which claims belong to historical experiments,
-current tests, or the agreed simulation. No additional hardware is needed to
-write and evaluate that agreed scope.
+The completed final-partition evaluation gives 80.00\% pooled F1 across 1,008
+labelled windows, with 14 true positives, three false positives, and four missed
+attack windows. Static and conservative adaptive decisions coincide because no
+updates are promoted; eight of nine official attack intervals are detected.
+These results complete the selected detector’s evaluation. The small number
+of attack windows limits the precision of estimates across attack types
+and devices.
+
+The code, supported interfaces, tests, final evidence bundle, and full project
+report complete the agreed deliverable. The retained method is the four-count
+DM model with joint composition/volume/ARP scoring, fixed detection references,
+conservative adaptation, and ten-minute windows. Independent external testing,
+rolling-fold integration, physical gateway measurements, and dissertation
+submission are defined future work. They do not change the completed scope or
+turn historical unsuccessful experiments into successful results.

@@ -238,10 +238,6 @@ class OutputConfig(ArtifactPaths):
     reports_dir: Path
 
 
-class ForecastConfig(StrictModel):
-    horizon_hours: int = Field(default=24, gt=0)
-
-
 class DetectorConfig(StrictModel):
     """Detector settings independent of research capture partitions."""
 
@@ -288,7 +284,6 @@ class AppConfig(DetectorConfig):
     ingest: IngestConfig
     seeds: SeedConfig
     outputs: OutputConfig
-    forecast: ForecastConfig = Field(default_factory=ForecastConfig)
 
 
 class EdgeConfig(DetectorConfig):

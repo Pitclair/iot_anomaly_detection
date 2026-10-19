@@ -13,7 +13,6 @@ evaluate    Evaluate detector outputs
 adapt       Assess an adaptive-model candidate
 run         Read count windows from stdin and flush JSON events to stdout
 rollback    Restore the previous accepted detector version
-forecast    Forecast traffic using a verified model
 benchmark   Measure backend and pipeline performance
 ```
 
@@ -216,6 +215,18 @@ behavior.
 
 ## Stage isolation
 
-`train`, `diagnose`, `calibrate`, `forecast`, and later downstream commands
+`train`, `diagnose`, `calibrate`, and downstream commands
 consume existing processed artifacts. They do not silently invoke PCAP
 preprocessing. Preprocessing happens only through `lm-idnet preprocess`.
+
+## Final-partition research evaluation
+
+From the repository root, run `python scripts/evaluate_final.py` with the
+package installed. This dedicated runner evaluates both labelled devices with
+the selected ten-minute models, fixed calibration, and three conservative
+modes, retaining the complete evidence under `reports/final_evaluation/` and
+`artifacts/final_evaluation/`. It does not retrain, recalibrate, or overwrite
+reference artefacts. The ordinary batch CLI selects development captures.
+The saved protocol records normal-only fitting/calibration, fixed final-run
+settings, and label-based offline metrics. Optional extensions are listed in
+[future work](future-work.md).

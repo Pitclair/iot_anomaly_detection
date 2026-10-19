@@ -1,0 +1,468 @@
+{
+  "protocol": "protocol.json",
+  "results": [
+    {
+      "dataset": "UNSW-Chromecast",
+      "partition": "final_test",
+      "mode": "static",
+      "policy": "conservative",
+      "capture_ids": [
+        "2018-10-25",
+        "2018-10-26",
+        "2018-10-27"
+      ],
+      "missing_windows_excluded": 0,
+      "threshold_updates": 0,
+      "model_refits": 0,
+      "window_count": 432,
+      "alert_count": 7,
+      "true_positive": 4,
+      "false_positive": 3,
+      "false_negative": 2,
+      "true_negative": 423,
+      "precision": 0.5714285714285714,
+      "recall": 0.6666666666666666,
+      "false_positive_rate": 0.007042253521126761,
+      "f1_score": 0.6153846153846154,
+      "roc_auc": 0.9953051643192489,
+      "attack_intervals": 3,
+      "detected_attack_intervals": 2,
+      "interval_recall": 0.6666666666666666,
+      "alerts_before_attack_end": 2,
+      "median_delay_seconds": 414.5,
+      "partially_observed_intervals_excluded": 0,
+      "interval_results": [
+        {
+          "start_utc": "2018-10-25T07:45:25+00:00",
+          "end_utc": "2018-10-25T07:55:25+00:00",
+          "attack_type": "TcpSynReflection1W2D2W",
+          "detected": false,
+          "delay_seconds": null,
+          "alert_before_attack_end": false
+        },
+        {
+          "start_utc": "2018-10-25T07:25:23+00:00",
+          "end_utc": "2018-10-25T07:35:24+00:00",
+          "attack_type": "Ssdp1W2D2W",
+          "detected": true,
+          "delay_seconds": 277.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-10-25T10:20:48+00:00",
+          "end_utc": "2018-10-25T10:30:48+00:00",
+          "attack_type": "TcpSynReflection100W2D2W",
+          "detected": true,
+          "delay_seconds": 552.0,
+          "alert_before_attack_end": true
+        }
+      ]
+    },
+    {
+      "dataset": "UNSW-Chromecast",
+      "partition": "final_test",
+      "mode": "adaptive_threshold",
+      "policy": "conservative",
+      "capture_ids": [
+        "2018-10-25",
+        "2018-10-26",
+        "2018-10-27"
+      ],
+      "missing_windows_excluded": 0,
+      "threshold_updates": 0,
+      "model_refits": 0,
+      "window_count": 432,
+      "alert_count": 7,
+      "true_positive": 4,
+      "false_positive": 3,
+      "false_negative": 2,
+      "true_negative": 423,
+      "precision": 0.5714285714285714,
+      "recall": 0.6666666666666666,
+      "false_positive_rate": 0.007042253521126761,
+      "f1_score": 0.6153846153846154,
+      "roc_auc": 0.9953051643192489,
+      "attack_intervals": 3,
+      "detected_attack_intervals": 2,
+      "interval_recall": 0.6666666666666666,
+      "alerts_before_attack_end": 2,
+      "median_delay_seconds": 414.5,
+      "partially_observed_intervals_excluded": 0,
+      "interval_results": [
+        {
+          "start_utc": "2018-10-25T07:45:25+00:00",
+          "end_utc": "2018-10-25T07:55:25+00:00",
+          "attack_type": "TcpSynReflection1W2D2W",
+          "detected": false,
+          "delay_seconds": null,
+          "alert_before_attack_end": false
+        },
+        {
+          "start_utc": "2018-10-25T07:25:23+00:00",
+          "end_utc": "2018-10-25T07:35:24+00:00",
+          "attack_type": "Ssdp1W2D2W",
+          "detected": true,
+          "delay_seconds": 277.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-10-25T10:20:48+00:00",
+          "end_utc": "2018-10-25T10:30:48+00:00",
+          "attack_type": "TcpSynReflection100W2D2W",
+          "detected": true,
+          "delay_seconds": 552.0,
+          "alert_before_attack_end": true
+        }
+      ]
+    },
+    {
+      "dataset": "UNSW-Chromecast",
+      "partition": "final_test",
+      "mode": "periodic_refit",
+      "policy": "conservative",
+      "capture_ids": [
+        "2018-10-25",
+        "2018-10-26",
+        "2018-10-27"
+      ],
+      "missing_windows_excluded": 0,
+      "threshold_updates": 0,
+      "model_refits": 0,
+      "window_count": 432,
+      "alert_count": 7,
+      "true_positive": 4,
+      "false_positive": 3,
+      "false_negative": 2,
+      "true_negative": 423,
+      "precision": 0.5714285714285714,
+      "recall": 0.6666666666666666,
+      "false_positive_rate": 0.007042253521126761,
+      "f1_score": 0.6153846153846154,
+      "roc_auc": 0.9953051643192489,
+      "attack_intervals": 3,
+      "detected_attack_intervals": 2,
+      "interval_recall": 0.6666666666666666,
+      "alerts_before_attack_end": 2,
+      "median_delay_seconds": 414.5,
+      "partially_observed_intervals_excluded": 0,
+      "interval_results": [
+        {
+          "start_utc": "2018-10-25T07:45:25+00:00",
+          "end_utc": "2018-10-25T07:55:25+00:00",
+          "attack_type": "TcpSynReflection1W2D2W",
+          "detected": false,
+          "delay_seconds": null,
+          "alert_before_attack_end": false
+        },
+        {
+          "start_utc": "2018-10-25T07:25:23+00:00",
+          "end_utc": "2018-10-25T07:35:24+00:00",
+          "attack_type": "Ssdp1W2D2W",
+          "detected": true,
+          "delay_seconds": 277.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-10-25T10:20:48+00:00",
+          "end_utc": "2018-10-25T10:30:48+00:00",
+          "attack_type": "TcpSynReflection100W2D2W",
+          "detected": true,
+          "delay_seconds": 552.0,
+          "alert_before_attack_end": true
+        }
+      ]
+    },
+    {
+      "dataset": "UNSW-Samsung-Camera",
+      "partition": "final_test",
+      "mode": "static",
+      "policy": "conservative",
+      "capture_ids": [
+        "2018-06-05",
+        "2018-06-06",
+        "2018-06-07",
+        "2018-06-08"
+      ],
+      "missing_windows_excluded": 0,
+      "threshold_updates": 0,
+      "model_refits": 0,
+      "window_count": 576,
+      "alert_count": 10,
+      "true_positive": 10,
+      "false_positive": 0,
+      "false_negative": 2,
+      "true_negative": 564,
+      "precision": 1.0,
+      "recall": 0.8333333333333334,
+      "false_positive_rate": 0.0,
+      "f1_score": 0.9090909090909091,
+      "roc_auc": 0.9745862884160756,
+      "attack_intervals": 6,
+      "detected_attack_intervals": 6,
+      "interval_recall": 1.0,
+      "alerts_before_attack_end": 5,
+      "median_delay_seconds": 448.5,
+      "partially_observed_intervals_excluded": 0,
+      "interval_results": [
+        {
+          "start_utc": "2018-06-05T18:50:32+00:00",
+          "end_utc": "2018-06-05T19:00:33+00:00",
+          "attack_type": "TcpSynDevice1W2D",
+          "detected": true,
+          "delay_seconds": 568.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-05T19:17:13+00:00",
+          "end_utc": "2018-06-05T19:27:13+00:00",
+          "attack_type": "TcpSynDevice10W2D",
+          "detected": true,
+          "delay_seconds": 167.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-05T19:43:53+00:00",
+          "end_utc": "2018-06-05T19:53:53+00:00",
+          "attack_type": "TcpSynDevice100W2D",
+          "detected": true,
+          "delay_seconds": 367.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-06T11:21:10+00:00",
+          "end_utc": "2018-06-06T11:31:10+00:00",
+          "attack_type": "TcpSynReflection100W2D2W",
+          "detected": true,
+          "delay_seconds": 530.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-06T10:27:49+00:00",
+          "end_utc": "2018-06-06T10:37:50+00:00",
+          "attack_type": "TcpSynReflection1W2D2W",
+          "detected": true,
+          "delay_seconds": 731.0,
+          "alert_before_attack_end": false
+        },
+        {
+          "start_utc": "2018-06-06T10:54:30+00:00",
+          "end_utc": "2018-06-06T11:04:30+00:00",
+          "attack_type": "TcpSynReflection10W2D2W",
+          "detected": true,
+          "delay_seconds": 330.0,
+          "alert_before_attack_end": true
+        }
+      ]
+    },
+    {
+      "dataset": "UNSW-Samsung-Camera",
+      "partition": "final_test",
+      "mode": "adaptive_threshold",
+      "policy": "conservative",
+      "capture_ids": [
+        "2018-06-05",
+        "2018-06-06",
+        "2018-06-07",
+        "2018-06-08"
+      ],
+      "missing_windows_excluded": 0,
+      "threshold_updates": 0,
+      "model_refits": 0,
+      "window_count": 576,
+      "alert_count": 10,
+      "true_positive": 10,
+      "false_positive": 0,
+      "false_negative": 2,
+      "true_negative": 564,
+      "precision": 1.0,
+      "recall": 0.8333333333333334,
+      "false_positive_rate": 0.0,
+      "f1_score": 0.9090909090909091,
+      "roc_auc": 0.9745862884160756,
+      "attack_intervals": 6,
+      "detected_attack_intervals": 6,
+      "interval_recall": 1.0,
+      "alerts_before_attack_end": 5,
+      "median_delay_seconds": 448.5,
+      "partially_observed_intervals_excluded": 0,
+      "interval_results": [
+        {
+          "start_utc": "2018-06-05T18:50:32+00:00",
+          "end_utc": "2018-06-05T19:00:33+00:00",
+          "attack_type": "TcpSynDevice1W2D",
+          "detected": true,
+          "delay_seconds": 568.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-05T19:17:13+00:00",
+          "end_utc": "2018-06-05T19:27:13+00:00",
+          "attack_type": "TcpSynDevice10W2D",
+          "detected": true,
+          "delay_seconds": 167.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-05T19:43:53+00:00",
+          "end_utc": "2018-06-05T19:53:53+00:00",
+          "attack_type": "TcpSynDevice100W2D",
+          "detected": true,
+          "delay_seconds": 367.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-06T11:21:10+00:00",
+          "end_utc": "2018-06-06T11:31:10+00:00",
+          "attack_type": "TcpSynReflection100W2D2W",
+          "detected": true,
+          "delay_seconds": 530.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-06T10:27:49+00:00",
+          "end_utc": "2018-06-06T10:37:50+00:00",
+          "attack_type": "TcpSynReflection1W2D2W",
+          "detected": true,
+          "delay_seconds": 731.0,
+          "alert_before_attack_end": false
+        },
+        {
+          "start_utc": "2018-06-06T10:54:30+00:00",
+          "end_utc": "2018-06-06T11:04:30+00:00",
+          "attack_type": "TcpSynReflection10W2D2W",
+          "detected": true,
+          "delay_seconds": 330.0,
+          "alert_before_attack_end": true
+        }
+      ]
+    },
+    {
+      "dataset": "UNSW-Samsung-Camera",
+      "partition": "final_test",
+      "mode": "periodic_refit",
+      "policy": "conservative",
+      "capture_ids": [
+        "2018-06-05",
+        "2018-06-06",
+        "2018-06-07",
+        "2018-06-08"
+      ],
+      "missing_windows_excluded": 0,
+      "threshold_updates": 0,
+      "model_refits": 0,
+      "window_count": 576,
+      "alert_count": 10,
+      "true_positive": 10,
+      "false_positive": 0,
+      "false_negative": 2,
+      "true_negative": 564,
+      "precision": 1.0,
+      "recall": 0.8333333333333334,
+      "false_positive_rate": 0.0,
+      "f1_score": 0.9090909090909091,
+      "roc_auc": 0.9745862884160756,
+      "attack_intervals": 6,
+      "detected_attack_intervals": 6,
+      "interval_recall": 1.0,
+      "alerts_before_attack_end": 5,
+      "median_delay_seconds": 448.5,
+      "partially_observed_intervals_excluded": 0,
+      "interval_results": [
+        {
+          "start_utc": "2018-06-05T18:50:32+00:00",
+          "end_utc": "2018-06-05T19:00:33+00:00",
+          "attack_type": "TcpSynDevice1W2D",
+          "detected": true,
+          "delay_seconds": 568.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-05T19:17:13+00:00",
+          "end_utc": "2018-06-05T19:27:13+00:00",
+          "attack_type": "TcpSynDevice10W2D",
+          "detected": true,
+          "delay_seconds": 167.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-05T19:43:53+00:00",
+          "end_utc": "2018-06-05T19:53:53+00:00",
+          "attack_type": "TcpSynDevice100W2D",
+          "detected": true,
+          "delay_seconds": 367.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-06T11:21:10+00:00",
+          "end_utc": "2018-06-06T11:31:10+00:00",
+          "attack_type": "TcpSynReflection100W2D2W",
+          "detected": true,
+          "delay_seconds": 530.0,
+          "alert_before_attack_end": true
+        },
+        {
+          "start_utc": "2018-06-06T10:27:49+00:00",
+          "end_utc": "2018-06-06T10:37:50+00:00",
+          "attack_type": "TcpSynReflection1W2D2W",
+          "detected": true,
+          "delay_seconds": 731.0,
+          "alert_before_attack_end": false
+        },
+        {
+          "start_utc": "2018-06-06T10:54:30+00:00",
+          "end_utc": "2018-06-06T11:04:30+00:00",
+          "attack_type": "TcpSynReflection10W2D2W",
+          "detected": true,
+          "delay_seconds": 330.0,
+          "alert_before_attack_end": true
+        }
+      ]
+    }
+  ],
+  "pooled": [
+    {
+      "mode": "static",
+      "window_count": 1008,
+      "alert_count": 17,
+      "true_positive": 14,
+      "false_positive": 3,
+      "false_negative": 4,
+      "true_negative": 987,
+      "precision": 0.8235294117647058,
+      "recall": 0.7777777777777778,
+      "false_positive_rate": 0.0030303030303030303,
+      "f1_score": 0.8,
+      "roc_auc": 0.9655443322109989
+    },
+    {
+      "mode": "adaptive_threshold",
+      "window_count": 1008,
+      "alert_count": 17,
+      "true_positive": 14,
+      "false_positive": 3,
+      "false_negative": 4,
+      "true_negative": 987,
+      "precision": 0.8235294117647058,
+      "recall": 0.7777777777777778,
+      "false_positive_rate": 0.0030303030303030303,
+      "f1_score": 0.8,
+      "roc_auc": 0.9655443322109989
+    },
+    {
+      "mode": "periodic_refit",
+      "window_count": 1008,
+      "alert_count": 17,
+      "true_positive": 14,
+      "false_positive": 3,
+      "false_negative": 4,
+      "true_negative": 987,
+      "precision": 0.8235294117647058,
+      "recall": 0.7777777777777778,
+      "false_positive_rate": 0.0030303030303030303,
+      "f1_score": 0.8,
+      "roc_auc": 0.9655443322109989
+    }
+  ],
+  "rank_metric_boundary": "Per-device ROC AUC is reported; pooled ROC AUC combines device-calibrated margins and is descriptive only.",
+  "frozen_inputs_unchanged": true
+}

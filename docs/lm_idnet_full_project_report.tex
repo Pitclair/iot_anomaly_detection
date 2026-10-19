@@ -21,8 +21,6 @@
 \usepackage{hyperref}
 
 \definecolor{workinggreen}{HTML}{1B7F3A}
-\definecolor{wiporange}{HTML}{A85D00}
-\definecolor{pendingred}{HTML}{A32121}
 \definecolor{linkblue}{HTML}{1E5A96}
 
 \hypersetup{
@@ -42,14 +40,12 @@
 \renewcommand{\arraystretch}{1.2}
 
 \newcommand{\projectname}{LM-IDNet}
-\newcommand{\working}{\textcolor{workinggreen}{\textbf{Working in reference}}}
-\newcommand{\wip}{\textcolor{wiporange}{\textbf{Experimental/WIP}}}
-\newcommand{\notdone}{\textcolor{pendingred}{\textbf{Not completed}}}
+\newcommand{\working}{\textcolor{workinggreen}{\textbf{Implemented}}}
 
 \title{\textbf{LM-IDNet Full Project Report}\\
-\large Working System, Experimental Evidence, and Ongoing Research}
+\large Completed Detector, Experimental Results, and Future Work}
 \author{Prepared for supervisor review}
-\date{16 October 2026}
+\date{19 October 2026}
 
 \begin{document}
 \input{full_project_report/frontmatter}
@@ -65,14 +61,13 @@
 \input{full_project_report/sections/streaming_runtime}
 \input{full_project_report/sections/reference_results}
 \input{full_project_report/sections/multi_signal_research}
+\input{full_project_report/sections/final_evaluation}
 \input{full_project_report/sections/window_size_experiments}
 \input{full_project_report/sections/numerical_experiments}
 \input{full_project_report/sections/edge_deployment}
-\input{full_project_report/sections/temporal_research}
 \input{full_project_report/sections/testing_and_reproducibility}
-\input{full_project_report/sections/thesis_workspace}
 \input{full_project_report/sections/interpretation}
-\input{full_project_report/sections/remaining_work}
+\input{full_project_report/sections/future_work}
 \input{full_project_report/sections/conclusion}
 
 \appendix
@@ -81,5 +76,7 @@
 \input{full_project_report/appendices/component_inventory}
 \input{full_project_report/appendices/adaptation_configurations}
 \input{full_project_report/appendices/research_iterations}
+\input{full_project_report/appendices/temporal_research}
+\input{full_project_report/appendices/thesis_workspace}
 \input{full_project_report/bibliography}
 \end{document}

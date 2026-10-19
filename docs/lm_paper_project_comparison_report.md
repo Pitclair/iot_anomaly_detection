@@ -6,7 +6,7 @@ Date of investigation: 2026-09-03 (UTC)
 
 The results make sense once three different experiments are separated:
 
-1. The paper studies **traffic modeling and forecasting** and compares LM mainly
+1. The paper studies **traffic modeling** and compares LM mainly
    with Yu--Shaw (YS).
 2. The supplied `lm-algorithm` capsule defaults to a **different, later
    benchmark**: a five-category `IoT.csv` sample and C-wrapped LM versus
@@ -15,7 +15,7 @@ The results make sense once three different experiments are separated:
 3. LM-IDNet currently studies **anomaly scoring** and compares C-wrapped LM with
    SciPy on a pooled 846-by-4 training matrix. That is a useful backend
    equivalence/performance test, but it is not a reproduction of the paper's
-   forecast experiment.
+   experimental protocol.
 
 The strongest result in the current project is reassuring: LM and SciPy produce
 nearly identical fitted parameters, thresholds, scores, and all 270 anomaly
@@ -33,10 +33,6 @@ There are two concrete project issues:
 - All three versioned research configurations now select LM. Their models,
   thresholds, and development-test events were regenerated through the normal
   pipeline, with no decision changes relative to the previous SciPy artifacts.
-- The current `forecast` stage is a scaffold. It generates synthetic "actual"
-  observations from the same fitted probabilities, ignores the supplied dataset
-  argument, and does not evaluate held-out Camera 5 traffic. Its Brier Score and
-  JSD therefore cannot support or contradict the paper's forecasting claim.
 
 ## Sources examined
 
@@ -51,8 +47,6 @@ There are two concrete project issues:
   [`lm_backend_benchmark.json`](../reports/D-LinkDayCam5/lm_backend_benchmark.json)
 - LM-IDNet benchmark implementation:
   [`benchmark_stage.py`](../src/lm_idnet/evaluation/benchmark_stage.py)
-- LM-IDNet forecast implementation:
-  [`forecasting_stage.py`](../src/lm_idnet/models/forecasting_stage.py)
 - Likelihood definition used by LM-IDNet:
   [`likelihood-semantics.md`](likelihood-semantics.md)
 
@@ -63,7 +57,7 @@ below and in the native backend change record.
 
 ## 1. What LM is doing
 
-LM is not itself the anomaly detector or the forecast model. It is a numerical
+LM is not itself the anomaly detector. It is a numerical
 method for accurately evaluating paired log-gamma differences inside a
 Dirichlet--multinomial (DM) log-likelihood. Minka's fixed-point iteration uses
 likelihood differences to decide when the fitted Dirichlet parameter vector
@@ -74,12 +68,12 @@ This distinction matters:
 - **Estimator:** Minka fixed-point iteration updates `alpha`.
 - **Numerical backend:** LM, YS, `math.lgamma`, or SciPy evaluates the
   likelihood used in the convergence check.
-- **Application:** the paper turns fitted models into forecasts; LM-IDNet turns
+- **Application:** LM-IDNet turns
   a fitted model into calibrated anomaly scores.
 
 A numerical backend can affect convergence, runtime, and fitted values when
 ordinary subtraction loses precision. It does not, by itself, define a better
-forecast or anomaly detector.
+anomaly detector.
 
 ## 2. What the paper claims
 
@@ -89,7 +83,7 @@ The paper uses D-Link Camera 5 traffic aggregated into 10-minute vectors with
 four categories: TCP, UDP, SSDP, and ARP.
 
 - Modeling/training days: October 8, 9, 12, 13, 14, 15, and 16, 2020.
-- Forecast/testing days: October 19, 21, and 22, 2020.
+- Later testing days: October 19, 21, and 22, 2020.
 - Each training day is modeled separately using random 10%, 15%, 20%, and 25%
   samples.
 - Precision is six mantissa digits, `K = 4`, and the convergence tolerance is
@@ -128,37 +122,6 @@ The chi-squared and Z tests produce 14 test outcomes in Table IV; 13 pass and
 the October 8 chi-squared test fails. The table appears to label October 16
 twice, with one of those rows presumably intended to be October 15.
 
-### Forecast result
-
-The paper samples each of the seven fitted daily models 1,000 times and
-averages the samples into a forecast model. LM, YS, and standard
-`math.lgamma` (`lgam-std`) are then compared against the three held-out daily
-models.
-
-At the selected 25% training-sample size, Table V reports:
-
-| Technique | Modeling time (s) |
-|---|---:|
-| `lgam-std` | 10.923 |
-| LM | 11.083 |
-| YS | 264.075 |
-
-Thus LM is about 1.5% slower than `lgam-std`, not faster, but YS is about 23.8
-times slower than LM. The paper describes LM and `lgam-std` as having no
-significant speed difference because they are within 10%.
-
-Table VI reports:
-
-| Test day | LM BS | `lgam-std` BS | YS BS | LM JSD | `lgam-std` JSD | YS JSD |
-|---|---:|---:|---:|---:|---:|---:|
-| Oct 19 | 1.11e-5 | 1.36e-5 | 1.24e-5 | 1.65e-5 | 1.99e-5 | 1.78e-5 |
-| Oct 21 | 5.09e-5 | 5.31e-5 | **4.98e-5** | 6.70e-5 | 7.13e-5 | 1.97e-4 |
-| Oct 22 | 6.30e-5 | 6.72e-5 | 6.34e-5 | 9.09e-5 | 9.74e-5 | 1.48e-4 |
-
-LM has the best JSD on all three days and the best BS on two of three days.
-The absolute differences are small, and the paper does not report confidence
-intervals for these forecast-score differences. “LM is best” is therefore a
-result for this experiment, not a universal property of using LM.
 
 ## 3. What the supplied `lm-algorithm` folder actually runs
 
@@ -175,7 +138,7 @@ reproduce the paper's Camera 5 daily experiment:
 
 This differs from the paper's four-category, per-day Camera 5 data and its
 10--25% samples. It is a later LM benchmark capsule, not the paper's complete
-forecast reproduction package.
+complete reproduction package.
 
 There are also reproducibility limitations:
 
@@ -352,7 +315,7 @@ qualitative premise—this traffic is overdispersed—is reproduced.
 
 The split is intentionally different too:
 
-- The paper trains separate models on October 8, 9, and 12--16, then forecasts
+- The paper fits separate daily models on October 8, 9, and 12--16 and tests on
   October 19, 21, and 22.
 - LM-IDNet pools October 8--13, including weekend days October 10 and 11, into
   one fit; uses October 14--15 for threshold calibration; scores October 16 and
@@ -360,35 +323,7 @@ The split is intentionally different too:
 
 That split is defensible for anomaly-detector development because it separates
 fitting, calibration, development testing, and final testing. It is simply not
-the paper's forecast protocol.
-
-## 6. The current forecast output is not comparable to the paper
-
-Running the current forecast function prints:
-
-```text
-Forecasting: horizon=24h, BrierScore=0.007774, JSD=0.099738
-```
-
-Those values must not be put beside Table VI as if they measured the same
-thing. The implementation:
-
-1. reads the fitted `alpha`;
-2. derives its mean category probabilities;
-3. generates 24 synthetic multinomial observations from those same
-   probabilities using a fixed total of 100;
-4. compares those synthetic observations back to their generating mean;
-5. never reads the dataset path passed to the function.
-
-This is a deterministic smoke demonstration of metric plumbing, not held-out
-forecast validation. It is circular by construction and cannot demonstrate
-next-day forecasting.
-
-There is also a metric aggregation problem: `brier_score` averages across
-hours, while `js_divergence` sums relative entropy across the entire 24-by-4
-array without dividing by the number of hours. The comment says the metrics are
-averaged per hour, but JSD is not. Its scale therefore grows with the horizon
-and is not directly comparable with a per-distribution JSD.
+the paper's protocol.
 
 ## 7. Do the results add up?
 
@@ -405,20 +340,18 @@ and is not directly comparable with a per-distribution JSD.
 
 ### They do not measure the same claims
 
-- Paper: LM versus YS modeling and actual held-out traffic forecasting.
+- Paper: LM versus YS modelling.
 - Capsule default: C-LM versus `math.lgamma` and SciPy on random samples from
   generic datasets.
 - LM-IDNet benchmark: C-LM versus vectorized SciPy for pooled fitting,
   calibration, and anomaly scoring.
-- LM-IDNet forecast scaffold: synthetic self-comparison, not a held-out
-  forecast.
 
 Therefore, the current project does **not contradict** the paper when LM is
 slightly slower than SciPy for fitting. The paper's main speed claim is LM
 versus YS, and its Table V already shows LM slightly slower than standard
 `lgamma`.
 
-Likewise, the paper's better BS/JSD does not imply that LM-IDNet should find
+The paper's numerical results do not imply that LM-IDNet should find
 more anomalies than SciPy. On the current workload the backends make identical
 decisions, which is what should be expected when both accurately evaluate the
 same likelihood.
@@ -434,14 +367,12 @@ A defensible thesis statement based on the evidence is:
 > complete fitted workload in the optimized row-wise matrix adapter. All
 > versioned research configurations use LM and retain the previous SciPy
 > anomaly decisions. These results validate backend correctness; they do not
-> reproduce the forecasting
-> comparison in ALM_IoT-CR.
+> reproduce every experiment in ALM_IoT-CR.
 
 Avoid claiming any of the following from current evidence:
 
 - that the project reproduces the paper's 14x average speedup;
 - that LM improves anomaly-detection accuracy;
-- that the current Brier/JSD output validates three-day forecasting.
 
 ## 9. Minimum work needed for a true paper comparison
 
@@ -456,9 +387,6 @@ detector, the smallest valid experiment is:
    central values and variation.
 4. Enable a reviewed YS path and record delta-barrier failures rather than
    silently bypassing them.
-5. Build the seven-model, 1,000-sample forecast described in the paper.
-6. Evaluate against actual October 19, 21, and 22 traffic with clearly defined
-   per-day BS and JSD.
 7. Keep the anomaly-detector experiment separate: pooled fit, normal-only
    calibration, labeled held-out scoring, and detector metrics answer a
    different research question.

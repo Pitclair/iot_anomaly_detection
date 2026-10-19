@@ -1,5 +1,9 @@
 # Thesis workspace
 
+This is a separate academic writing workspace. The detector and full project
+report are complete; dissertation preparation is listed in
+[future work](../docs/future-work.md).
+
 Build from any directory using the path to `build.sh`:
 
 ```sh

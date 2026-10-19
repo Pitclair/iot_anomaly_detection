@@ -1,1 +1,1 @@
-"""Modeling and forecasting stages."""
+"""Normal-traffic modelling, calibration, scoring and adaptation."""

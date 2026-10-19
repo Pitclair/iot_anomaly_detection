@@ -28,6 +28,23 @@ The production default remains ten minutes. The saved
 [results](reports/window_size/results.json) cover static and both conservative
 adaptive modes with fresh fits and calibration at each duration.
 
+The completed final-partition evaluation covers 1,008 labelled windows: pooled
+precision 82.35%, recall 77.78%, and F1 80.00%. Static and both conservative
+adaptive modes agree, with no promoted updates. Fitting and calibration use
+normal traffic; final labels are used only for offline evaluation. Starting
+pairs, full events, update attempts, and input/code
+fingerprints are retained in the [final evidence bundle](reports/final_evaluation/results.json).
+From the repository root, reproduce it with the installed package:
+
+```sh
+python scripts/evaluate_final.py
+```
+
+The detector, evaluation, and full project report complete the agreed scope.
+Optional research, physical deployment, and dissertation preparation are listed
+in [future work](docs/future-work.md). Earlier plans and status reports are
+historical records, rather than an active implementation backlog.
+
 Structure:
 
 - `src/lm_idnet/`: installable Python package
@@ -137,7 +154,7 @@ lm-idnet adapt --config configs/d_link_day_cam5.json
 ```
 
 The stable command set is `preprocess`, `diagnose`, `train`, `calibrate`,
-`score`, `evaluate`, `adapt`, `run`, `rollback`, `forecast`, and `benchmark`. Use
+`score`, `evaluate`, `adapt`, `run`, `rollback`, and `benchmark`. Use
 `lm-idnet <command> --help` for command-specific options. Every command supports
 `--dry-run` to validate its configuration and CLI wiring without executing the
 stage.

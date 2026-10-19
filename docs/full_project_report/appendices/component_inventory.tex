@@ -29,7 +29,6 @@ import namespaces; they are not additional detector algorithms.
 \path{models/calibration_stage.py} & Benign calibration windows, score quantile/IQR, and fixed packet-count limit. \\
 \path{models/scoring_stage.py} & Events, shared one-window detector, both update policies, and batch reports. \\
 \path{models/schemas.py} & Models, thresholds, events, accepted snapshots, pointer, and bounded history schemas. \\
-\path{models/forecasting_stage.py} & Synthetic forecast scaffold; not held-out future-traffic validation. \\
 \path{processing/categories.py} & Canonical taxonomy and exclusive packet classification. \\
 \path{processing/inventory.py} & Configured sources, checksums, complete classic-PCAP counts, and duplicate explanations. \\
 \path{processing/pcap_validation.py} & Structural EOF validation, bounded warning examples, and corruption reports. \\
@@ -80,7 +79,7 @@ contracts, rather than silently importing every capsule helper.
 \path{scripts/run-edge.sh} & Prebuilt offline constrained streaming/rollback launcher. \\
 \path{scripts/docker-entrypoint.sh} & Direct installed-command execution; no startup compilation. \\
 \path{scripts/benchmark_edge.py} & Finite synthetic replay instrumenting the real runtime, fitting, resources, and hashes. \\
-\path{scripts/lm_professor_experiment.py} & Paired paper-shaped aggregate likelihood and forecast comparison. \\
+\path{scripts/lm_professor_experiment.py} & Paired paper-shaped aggregate likelihood comparison. \\
 \path{scripts/evaluate_window_sizes.py} & Matched labelled duration study with fresh models, time-scaled adaptation, annotation coverage, delay, and saved decisions. \\
 \path{scripts/latex.sh} & Build technical LaTeX reports through the existing Compose service. \\
 \path{scripts/run_adaptation_experiments.sh} & Select six conservative or six legacy configurations, adapt, then evaluate. \\
@@ -138,10 +137,11 @@ prepared edge pointer/snapshot. Mutable local edge state is ignored. Retained
 reports include capture checks/statistics, fingerprints, smoke evidence,
 production and paper-shaped numerical benchmarks, static metrics, historical
 and explicit legacy adaptations/evaluations, legacy reproduction evidence,
-and the four edge measurement/provenance files. Not every possible configured
-output exists: the six schedule-specific conservative comparison directories
-remain incomplete. The central detection records retain cross-device static,
-conservative, and legacy replays and later audits.
+and the four edge measurement/provenance files. Additional schedule-specific conservative comparisons are future research;
+they are not part of the selected final evaluation. The central detection records retain cross-device static,
+conservative, and legacy replays and later audits. The completed closing
+bundle under \path{reports/final_evaluation/} and
+\path{artifacts/final_evaluation/} retains all selected modes and full outputs.
 
 \subsection{Root build and collaboration files}
 

@@ -40,6 +40,17 @@
 \begin{document}
 
 \maketitle
+
+\begin{quote}
+\textbf{Archived design/experiment record.} This document retains its original
+implementation boundary. The agreed detector and final-partition evaluation
+are complete; current results and supported interfaces are documented in
+\path{docs/lm_idnet_full_project_report.tex} and
+\path{reports/final_evaluation/results.json}. Unselected proposals are future
+work, as collected in \path{docs/future-work.md}, rather than an active software
+backlog. Historical timings and findings below retain their original meaning.
+\end{quote}
+
 \tableofcontents
 \newpage
 
@@ -138,7 +149,7 @@ The system should:
   \item Adapt the normal model over time while reducing poisoning risk.
   \item Support lightweight edge deployment.
   \item Produce interpretable evidence about which traffic categories contributed to the anomaly.
-  \item Evaluate accuracy, false positive rate, true positive rate, likelihood distributions, runtime, and forecasting quality.
+  \item Evaluate accuracy, false positive rate, true positive rate, likelihood distributions, and runtime.
 \end{itemize}
 
 \subsection{Research Questions}
@@ -684,11 +695,11 @@ For this thesis, the TPAMI paper provides evidence that:
   \item IoT camera traffic is a legitimate application domain for this modeling approach.
 \end{itemize}
 
-\subsection{ALM IoT-CR: Modeling and Forecasting Overdispersed IoT Data}
+\subsection{ALM IoT-CR: Overdispersed IoT Count Modelling}
 
-The \path{ALM_IoT-CR.pdf} paper is the closest source to the proposed thesis system. It applies Dirichlet-Multinomial modeling to IoT smart-camera traffic.
+The \href{https://doi.org/10.1109/ICNC64010.2025.10993688}{ICNC 2025 study} paper is the closest source to the proposed thesis system. It applies Dirichlet-Multinomial modeling to IoT smart-camera traffic.
 
-The paper argues that IoT security remains an arms race between attackers and defenders. Even if systems are hardened by design, defenders still need traffic models that can identify suspicious behavior and provide early warnings. Traffic forecasting is presented as useful because a reliable prediction of future traffic gives defenders a baseline; deviations from that baseline can trigger proactive countermeasures.
+The paper argues that IoT security remains an arms race between attackers and defenders. Even if systems are hardened by design, defenders still need traffic models that can identify suspicious behavior and provide early warnings. A learned normal traffic profile provides a baseline for detecting unusual activity.
 
 The dataset is the D-Link IoT device dataset. The paper focuses on \texttt{Camera5}. Packet traces are aggregated into 10-minute count vectors. Each vector contains counts for:
 
@@ -714,8 +725,6 @@ For goodness of fit, the paper uses:
   \item Z-test.
 \end{itemize}
 
-For forecasting, the paper samples from the models built during the first stage, averages the samples, and compares the prediction to the next-day traffic model. It uses Brier Score and Jensen-Shannon divergence. The results show that LM produced the best or near-best forecast accuracy and much better speed than YS. It also compares with Python's standard log-gamma implementation, called \texttt{lgam-std}, and notes that LM is implemented in pure Python in those experiments while standard math functions are C-optimized, meaning LM has additional speed potential if moved to C.
-
 For this thesis, ALM IoT-CR provides a concrete experimental template:
 
 \begin{itemize}
@@ -723,14 +732,14 @@ For this thesis, ALM IoT-CR provides a concrete experimental template:
   \item Aggregate to 10-minute protocol count windows.
   \item Use Minka fixed-point estimation.
   \item Compare LM, YS, and standard log-gamma.
-  \item Evaluate speed, fit, and forecasting metrics.
+  \item Evaluate speed and fit metrics.
 \end{itemize}
 
-The thesis extends this from modeling and forecasting to anomaly detection, adaptive retraining, and deployment architecture.
+The thesis extends this from modelling to anomaly detection, adaptive retraining, and deployment architecture.
 
 \subsection{ALM2: Fast and Accurate Implementation of the Dirichlet-Multinomial Log-Likelihood}
 
-The \path{ALM2_new.pdf} paper focuses on implementation. It compares three variants of Minka's procedure:
+The \href{https://doi.org/10.1109/ACDSA65407.2025.11166588}{ACDSA 2025 implementation study} paper focuses on implementation. It compares three variants of Minka's procedure:
 
 \begin{itemize}
   \item \texttt{MP-scipy}, using SciPy's \texttt{gammaln}.
@@ -818,7 +827,7 @@ Taken together, the sources establish the following chain:
   \item Yu and Shaw identify and partially solve the Dirichlet-Multinomial likelihood instability problem.
   \item Languasco and Migliardi improve the likelihood computation with explicit error control and better practical reliability.
   \item The TPAMI paper shows that LM outperforms YS across several overdispersed count datasets, including IoT traffic.
-  \item The ALM IoT paper shows that smart-camera traffic can be modeled and forecast using this approach.
+  \item The ALM IoT paper shows that smart-camera traffic can be modelled using this approach.
   \item The ALM2 paper shows how to implement the LM method efficiently through a C/Python bridge.
   \item The cyber-reaction survey shows that anomaly scores should feed a broader defense process.
 \end{itemize}
@@ -826,7 +835,7 @@ Taken together, the sources establish the following chain:
 The research gap for this Master's thesis is:
 
 \begin{quote}
-The existing papers demonstrate accurate modeling and forecasting of overdispersed IoT count data, but they do not deliver a complete adaptive anomaly detection system architecture with threshold calibration, online retraining, poisoning safeguards, interpretability, edge deployment considerations, and cybersecurity response integration.
+The existing papers demonstrate accurate modelling of overdispersed IoT count data, but they do not deliver a complete adaptive anomaly detection system architecture with threshold calibration, online retraining, poisoning safeguards, interpretability, edge deployment considerations, and cybersecurity response integration.
 \end{quote}
 
 This thesis should fill that gap.
@@ -856,7 +865,6 @@ Raw PCAP or NetFlow
     -> online scoring
     -> anomaly decision and explanation
     -> adaptive retraining
-    -> forecasting and response support
     -> evaluation and reporting
 \end{lstlisting}
 
@@ -1214,42 +1222,6 @@ A more advanced policy is to maintain a sliding window of safe data and use expo
 
 where \(\rho\) is a small adaptation rate.
 
-\subsection{Stage 10: Forecasting}
-
-The ALM IoT paper includes forecasting. The thesis can include forecasting as a secondary stage because it supports both evaluation and detection.
-
-The simplest forecast uses the learned Dirichlet mean:
-
-\[
-\mathrm{expected\_probability}_k
-=
-\frac{\alpha_k}{\alpha_0},
-\]
-
-\[
-\mathrm{expected\_count}_{t+1,k}
-=
-\mathrm{predicted\_total}_{t+1}
-\mathrm{expected\_probability}_k.
-\]
-
-The category composition model does not by itself predict total packet volume. Therefore, total-count forecasting should be separated:
-
-\begin{itemize}
-  \item Use recent moving average of total counts.
-  \item Use seasonal time-of-day average.
-  \item Use a lightweight count model.
-  \item Or evaluate only composition forecasts.
-\end{itemize}
-
-Forecast quality can be measured with:
-
-\begin{itemize}
-  \item Brier Score for probabilistic category forecasts.
-  \item Jensen-Shannon divergence between predicted and observed distributions.
-  \item Mean absolute error for total packet count if total forecasting is included.
-\end{itemize}
-
 \subsection{Stage 11: Reaction Support}
 
 The Nespoli survey shows that detection should feed reaction. The thesis system should support at least basic response recommendations:
@@ -1302,7 +1274,6 @@ Important gaps remain:
   \item The native C-wrapped LM backend is implemented; YS remains absent.
   \item No threshold calibration exists yet.
   \item No anomaly scoring stage exists yet.
-  \item Forecasting currently uses synthetic actual data and must be connected to real testing windows.
   \item No adaptive retraining policy exists yet.
   \item No structured anomaly event output exists yet.
 \end{itemize}
@@ -1343,14 +1314,6 @@ The system should be evaluated along five axes.
   \item Distribution of anomalous log-likelihoods.
   \item Separation between distributions.
   \item Stability of thresholds over time.
-\end{itemize}
-
-\textbf{Forecasting:}
-
-\begin{itemize}
-  \item Brier Score.
-  \item Jensen-Shannon divergence.
-  \item Total-count forecast error if total forecasting is included.
 \end{itemize}
 
 \textbf{Efficiency and edge readiness:}
@@ -1589,32 +1552,6 @@ Deliverables:
   \item Poisoning-risk discussion.
 \end{itemize}
 
-\subsection{Phase 7: Forecasting and Response Support}
-
-Goals:
-
-\begin{itemize}
-  \item Connect the detector to forecasting and response workflows.
-\end{itemize}
-
-Tasks:
-
-\begin{itemize}
-  \item Replace synthetic actuals in forecasting with real testing windows.
-  \item Evaluate Brier Score and JSD.
-  \item Add total-count forecast baseline.
-  \item Generate response recommendations from anomaly severity and category pattern.
-  \item Keep responses advisory, not automatically enforced.
-\end{itemize}
-
-Deliverables:
-
-\begin{itemize}
-  \item Forecasting evaluation.
-  \item Structured response recommendation output.
-  \item Discussion of integration with dynamic countermeasure frameworks.
-\end{itemize}
-
 \subsection{Phase 8: Edge Deployment Study}
 
 Goals:
@@ -1700,8 +1637,8 @@ The document integrates the provided materials as follows:
   \item \path{bioinformatics_30_11_1547.pdf}: explains why naive Dirichlet-Multinomial log-likelihood computation is unstable near low-overdispersion regimes and why product-form alternatives can become too slow for high-count data. Its Bernoulli-polynomial mesh method is the historical predecessor to the LM approach.
   \item \path{180_2022_1311_OnlinePDF.pdf}: contains the original Languasco-Migliardi contribution for fast paired log-gamma difference computation using an Euler-Maclaurin style expansion, explicit error control, and reliability checks for requested precision.
   \item \path{Efficient_Analysis_of_Overdispersed_Data_Using_an_Accurate_Computation_of_the_Dirichlet_Multinomial_Distribution.pdf}: shows how Minka fixed-point estimation and LM likelihood computation perform across multiple overdispersed count datasets, including IoT camera traffic, and reports LM's accuracy and speed advantages over Yu-Shaw.
-  \item \path{ALM_IoT-CR.pdf}: supplies the closest experimental template for this thesis: D-Link smart-camera traffic, 10-minute protocol count windows, training/testing day splits, LM-vs-YS modeling comparisons, and forecasting metrics such as Brier Score and Jensen-Shannon divergence.
-  \item \path{ALM2_new.pdf}: translates the LM method into implementation guidance by comparing Python math, SciPy, and C-wrapped LM variants inside Minka's procedure, and by explaining performance-oriented choices such as precomputed Bernoulli constants and \texttt{ctypes} wrapping.
+  \item \href{https://doi.org/10.1109/ICNC64010.2025.10993688}{ICNC 2025 study}: supplies the closest experimental template for this thesis: D-Link smart-camera traffic, 10-minute protocol count windows, training/testing day splits, LM-vs-YS modelling comparisons.
+  \item \href{https://doi.org/10.1109/ACDSA65407.2025.11166588}{ACDSA 2025 implementation study}: translates the LM method into implementation guidance by comparing Python math, SciPy, and C-wrapped LM variants inside Minka's procedure, and by explaining performance-oriented choices such as precomputed Bernoulli constants and \texttt{ctypes} wrapping.
   \item \path{Optimal_Countermeasures_Selection_Against_Cyber_Attacks_A_Comprehensive_Survey_on_Reaction_Frameworks.pdf}: motivates the response-support layer by explaining the cyber-defense cycle and the need to balance cost, effectiveness, confidence, and service impact when selecting countermeasures.
   \item \path{Why ALM is important - Sherenaz Al-Haj Baddar, [02102025 1.txt}: provides broader motivation for why accurate and fast Dirichlet-Multinomial likelihood computation matters beyond this particular IoT application, including topic modeling, uncertainty estimation, and hybrid probabilistic machine learning.
 \end{itemize}

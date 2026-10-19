@@ -1,4 +1,9 @@
-# LM-IDNet edge implementation guideline
+# Archived deployment design: LM-IDNet edge implementation guideline
+
+This is the original implementation guideline. The supplied-window Linux/amd64
+Docker simulation is complete; see [deployment results](edge-deployment.md).
+Physical hardware, a live collector, and other extensions are
+[future work](future-work.md). Historical requirements below are not an active backlog.
 
 The smallest defensible deployment claim for LM-IDNet is “validated for local anomaly inference on a Linux edge gateway.” The claim should name the hardware, operating system, and workload on which it was verified. The project already contains the essential scoring logic. The remaining work is mainly packaging, controlling resource use, and demonstrating that the application runs within the target device’s limits. This guideline describes that minimum implementation; it does not imply that edge deployment has already been validated.
 
@@ -26,7 +31,7 @@ The project has progressed far enough to justify a controlled static edge pilot.
 
 The separation should remain simple: research produces a model and threshold, and the edge application loads them and calls the same `score_window()` used by the research pipeline. Improvements to parameter fitting or calibration would then produce new artifacts without requiring changes to the deployment runner, provided the input and scoring contract remains compatible. Keep this within the existing package. A separate implementation of the detector would create two versions to maintain. Some detector changes will still require runtime changes, so this separation reduces rework without promising that every future feature can be deployed without modifying code.
 
-Before building a live packet collector, decide which detector will be deployed. The current branch consumes four protocol counts, while `feature/volume-anomaly` introduces packet behaviour measurements, direction parameters, and different threshold and event formats. A collector written around today's four-count input would need changes if those additions are adopted. Packaging and hardware experiments can start now, but settling the selected feature format first will reduce rework in ingestion and scoring. Unfinished work on unrelated research outputs, such as forecasting, need not block a static inference pilot.
+Before building a live packet collector, decide which detector will be deployed. The current branch consumes four protocol counts, while `feature/volume-anomaly` introduces packet behaviour measurements, direction parameters, and different threshold and event formats. A collector written around today's four-count input would need changes if those additions are adopted. Packaging and hardware experiments can start now, but settling the selected feature format first will reduce rework in ingestion and scoring. Optional research extensions are listed in [future work](future-work.md).
 
 The nearest concrete compatibility fix is to bind the model to its input semantics. During this assessment, a synthetic model saved under a ten-minute configuration was accepted under a five-minute configuration with the same fingerprint. [`ModelArtifact`](../src/lm_idnet/models/schemas.py) does not record window duration, and the loader cannot check it. Store the trained window duration and relevant packet-filtering semantics with the model, include the input contract in compatibility checks, and reject incompatible input windows. Once artifacts will move between deployed software revisions, an explicit format version is sufficient; a migration framework can wait.
 

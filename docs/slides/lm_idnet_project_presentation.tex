@@ -110,7 +110,7 @@
 \subtitle{Adaptive Dirichlet--Multinomial Anomaly Detection for IoT Traffic}
 \author{Fatemeh Mahvari}
 \institute{Supervisor: Professor Mauro Migliardi}
-\date{9 September 2026}
+\date{19 October 2026}
 
 \begin{document}
 
@@ -145,13 +145,13 @@
     {\color{white!82}\ttfamily\small [ COUNT / MODEL / DETECT / ADAPT ]};
   \node[anchor=west,text width=.50\paperwidth]
     at ([xshift=.72cm,yshift=-2.35cm]current page.west)
-    {\color{palerose!90}\small Working system, experimental evidence,\\
-     and the route to a defensible final evaluation};
+    {\color{palerose!90}\small Completed detector, experimental results,\\
+     and defined future work};
   \node[anchor=south west,text width=.53\paperwidth]
     at ([xshift=.72cm,yshift=.40cm]current page.south west)
     {\color{white}\small\bfseries Fatemeh Mahvari\\[-0.02cm]
      \color{palerose!90}\scriptsize Supervisor: Professor Mauro Migliardi
-     \quad // \quad 9 September 2026};
+     \quad // \quad 19 October 2026};
   \node[anchor=south east,fill=ink,fill opacity=.82,text opacity=1,
         inner xsep=3pt,inner ysep=2pt]
     at ([xshift=-.06cm,yshift=.06cm]detector.south east)
@@ -227,21 +227,21 @@ using attack examples during training.
 \begin{exampleblock}{\workingbadge\ Reference system}
 \small
 Validated capture processing, model fitting, calibration, static scoring,
-labelled development evaluation, explanations, and two adaptive modes.
+labelled development/final evaluation, explanations, and guarded adaptive modes.
 \end{exampleblock}
 
 \column{0.32\textwidth}
 \begin{block}{\experimentalbadge\ Additional evidence}
 \small
-Actual-timestamp validation, expanding temporal folds, episode metrics, and a
-six-signal detector study across additional data.
+Historical temporal folds and feature studies explain rejected alternatives.
+The selected detector retains four counts and compact scoring checks.
 \end{block}
 
 \column{0.32\textwidth}
-\begin{alertblock}{\openbadge\ Final claims}
+\begin{alertblock}{\openbadge\ Future work}
 \small
-Integrated temporal validation, stronger adaptation guards, a frozen detector,
-an untouched test, and measurement on intended edge hardware.
+Independent external traffic, integrated rolling folds, drift validation,
+and physical gateway measurements.
 \end{alertblock}
 \end{columns}
 
@@ -1168,8 +1168,8 @@ six-signal endpoint is separate from the retained four-count detector.
 
 \column{0.48\textwidth}
 \begin{alertblock}{Evaluation limit}
-The opened Chromecast final data cannot validate later direction or
-score-ranking changes as an independent test.
+These historical feature-study results use a different detector contract;
+the selected four-count final results are reported separately.
 \end{alertblock}
 \end{columns}
 \end{frame}
@@ -1191,10 +1191,10 @@ score-ranking changes as an independent test.
 \begin{exampleblock}{Carry forward selectively}
 \small
 \begin{itemize}
-  \item Packet, byte, TCP SYN, and ARP counts
-  \item Direction model
-  \item Episode metrics and detector-health report
-  \item Score normalisation only if one cross-feature ranking is required
+  \item Retain the four-category DM model
+  \item Joint composition, packet-volume and ARP calibration
+  \item Fixed reference evidence during guarded updates
+  \item Extra packet features remain optional future research
 \end{itemize}
 \end{exampleblock}
 \end{columns}
@@ -1224,37 +1224,32 @@ score-ranking changes as an independent test.
   \item Cross-device generality from the current sample
   \item Safe adaptation under poisoning
   \item Stability across time and window lengths
-  \item Final performance of the refined detector
-  \item Empirical forecasting from the current synthetic scaffold
+  \item Independently unseen external performance
 \end{itemize}
 \end{alertblock}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Completion Plan: Four Priorities}
-\begin{columns}[T,onlytextwidth]
-\column{0.48\textwidth}
-\begin{block}{1 // Enforce temporal integrity}
-Order actual timestamps, reject unexplained overlaps, preserve complete captures,
-and report capture and episode metrics.
+\begin{frame}{Completed Final Evaluation and Future Work}
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Device} & \textbf{Precision} & \textbf{Recall} & \textbf{F1}\\
+\midrule
+Chromecast & 57.14\% & 66.67\% & 61.54\%\\
+Samsung camera & 100.00\% & 83.33\% & 90.91\%\\
+Pooled (1,008 windows) & 82.35\% & 77.78\% & 80.00\%\\
+\bottomrule
+\end{tabular}
+\begin{block}{Completed scope}
+Frozen ten-minute model/threshold pairs; all three conservative modes agree.
+14 TP, 3 FP, 4 FN; no updates promoted. Full events and update attempts retained.
+Normal-only fitting/calibration; final labels supply offline metrics.
 \end{block}
-
-\begin{block}{2 // Compare detector versions}
-Keep composition-only as the named control; compare the smallest supported
-multi-signal detector and several window lengths.
-\end{block}
-
-\column{0.48\textwidth}
-\begin{block}{3 // Make adaptation safer}
-Use safe-only threshold buffers, compare fixed-threshold refits, bound alpha
-movement, add a volume gate, and test candidates on unseen promotion data.
-\end{block}
-
-\begin{exampleblock}{4 // Freeze and test}
-Freeze architecture, settings, data fingerprints, and evaluation rules; then run
-one genuinely untouched labelled test and measure the intended edge hardware.
+\begin{exampleblock}{Future work}
+New external test traffic, rolling-fold integration, legitimate-drift studies,
+physical gateway measurements, and dissertation submission.
 \end{exampleblock}
-\end{columns}
 \end{frame}
 
 \begin{frame}[fragile]{Conclusion: Current Position}
@@ -1266,9 +1261,10 @@ one genuinely untouched labelled test and measure the intended edge hardware.
   state, explains alerts, and writes auditable evaluations.
   \item \textbf{The evidence identifies both value and failure modes.} Static
   detection is precise; selected adaptation improves one stream; temporal and
-  multi-signal studies explain why the result is not yet final.
-  \item \textbf{The next experiment is now narrow.} Combine the proven controls,
-  freeze one common system, and evaluate it on untouched data.
+  scoring studies explain the selected detector; final-partition results are
+  retained in the completed project report.
+  \item \textbf{The agreed deliverable is complete.} Code, final-partition outputs,
+  verification, and the full report are retained; external validation is future work.
 \end{enumerate}
 
 \column{0.39\textwidth}
@@ -1278,7 +1274,7 @@ one genuinely untouched labelled test and measure the intended edge hardware.
       |  LM-IDNET  |
       | SIGNAL: ON |
       | MODEL : OK |
-      | TEST  : -- |
+      | TEST  : OK |
       +------------+
          \  |  /
           \ | /

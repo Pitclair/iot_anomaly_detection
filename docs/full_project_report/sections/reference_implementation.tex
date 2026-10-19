@@ -88,8 +88,8 @@ loaded during training, calibration, or adaptive updates.
 
 The ordinary scoring/evaluation commands select the development partition.
 The experiment runner also replays declared later partitions through the shared
-detector. Those results are retrospective audits; they do not constitute an
-independent locked final test.
+detector. The dedicated final runner retains the complete selected-method
+protocol, starting pairs, events, update attempts, and metrics separately.
 
 Recall is TPR, while FPR uses only the benign-label denominator:
 \[
@@ -230,8 +230,6 @@ metrics. \\
 \texttt{rollback} & Restore the previous complete accepted model--threshold pair. \\
 \texttt{benchmark} & Compare LM and SciPy using the same fit, calibration, and
 scoring workload. \\
-\texttt{forecast} & Run the current synthetic metric scaffold; this is not an
-empirical forecasting result. \\
 \path{artifacts/} & Models, thresholds, scored events, and experiment-specific
 adaptive outputs. \\
 \path{reports/} & Evaluation, adaptation, capture, fingerprint, and benchmark

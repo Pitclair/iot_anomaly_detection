@@ -65,8 +65,5 @@
     "threshold_path": "artifacts/UNSW-Samsung-Camera/threshold.json",
     "events_path": "artifacts/experiments/legacy/UNSW-Samsung-Camera/periodic_refit/events.json",
     "reports_dir": "reports/experiments/legacy/UNSW-Samsung-Camera/periodic_refit"
-  },
-  "forecast": {
-    "horizon_hours": 24
   }
 }

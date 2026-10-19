@@ -10,37 +10,36 @@ backend, guarded adaptation, and traceable alert records form a reproducible
 pipeline without attack signatures or neural models. This report describes
 its statistical basis, data preparation, static and adaptive detectors,
 input safeguards, saved state, streaming runtime, simulated edge deployment,
-tests, research branches, and thesis-writing workspace.
+tests, development/final evaluations, and bounded future research.
 It retains the earlier experiments, including unsuccessful ones, while
 identifying which implementation and adaptation policy produced each result.
 The reference software now supports conservative updates, restoration and
 rollback, and bounded supplied-window operation in a local Docker simulation.
-The scientific evidence remains more limited than the implementation: historical
-development results and retrospective cross-device comparisons do not establish
-performance on an untouched final test. The detector retains its DM foundation
-with compact count-based scoring and fixed detection references during updates.
-The report is intended
-as a technical and experimental reference for writing the thesis, rather than
-as a substitute for the thesis or a claim of production deployment.
+The completed final-partition evaluation covers 1,008 labelled Chromecast and
+Samsung camera windows, with 82.35\% precision, 77.78\% recall, and 80.00\%
+pooled F1 under static and both conservative adaptive modes. No conservative
+update is promoted on those sequences. The detector retains its DM foundation
+with compact count-based scoring and fixed references during updates.
+The report is the completed technical and experimental record; independently
+unseen external traffic and physical gateway validation remain future work.
 \end{abstract}
 
 \vfill
 \begin{center}
 \begin{minipage}{0.92\textwidth}
 \small
-\textbf{Evidence boundary, 16 October 2026.}
-The detector and scoring reference is \texttt{99bc189} on
-\texttt{feature/volume-anomaly}. Historical adaptation and edge measurements
-retain their recorded implementation boundaries; temporal research is read
-from \texttt{b0aa35d}. Current configurations, compatible model--threshold pairs,
-processed windows, and retained cross-device comparisons identify the evaluated
-system. The retained scoring test record is 582 passes and two skipped Docker
-checks; the duration-study extension records 595 passes with the same skips.
-The earlier image-specific verification and long resource trials are separate
-records. Final-partition replays are retrospective audits, not an independent
-locked test. The four-duration study has its own fitted models, calibration,
-input hashes, decisions, and saved figure; other measurements retain their
-recorded boundaries.
+\textbf{Evidence boundary, 19 October 2026.}
+The selected detector/scoring method is recorded at \texttt{99bc189} on
+\texttt{feature/volume-anomaly}; the closing protocol records the current
+source and input SHA-256 fingerprints. Historical adaptation, numerical, edge,
+and temporal measurements retain their recorded implementation boundaries.
+The selected ten-minute models and thresholds are frozen before final replay;
+full events, update attempts, metrics, and verification are retained.
+Fitting and calibration use normal traffic; final labels are used only for
+offline metrics, with detector settings fixed throughout the final run.
+The duration study retains its own fitted models, decisions, hashes, and saved
+figure. The completed software, final evaluation, and report close the agreed
+supplied-window simulation scope.
 \end{minipage}
 \end{center}
 

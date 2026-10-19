@@ -1,0 +1,56 @@
+\section{Final-Partition Evaluation}
+\label{sec:final-evaluation}
+
+The selected ten-minute detector is evaluated on all labelled final captures:
+Chromecast October 25--27 and Samsung camera June 5--8. Its saved normal-only
+model and threshold are copied into an isolated bundle before replay; neither
+is retrained or recalibrated. Static detection, conservative threshold adaptation,
+and conservative periodic refitting each start independently from that same
+pair. Runtime decisions precede learning, and labels enter only the offline
+metrics. No settings are selected from these results.
+
+The protocol and input/source SHA-256 fingerprints are saved before scoring in
+\path{reports/final_evaluation/protocol.json}. The result record, full event
+files, and accepted/rejected update attempts are retained alongside the copied
+starting pairs under \path{artifacts/final_evaluation/}. Exact label coverage,
+original annotation fingerprints, device identity, duration, and actual window
+chronology are checked. All 1,008 windows are observed and matched; none is
+silently dropped. The original reference artefacts remain unchanged.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Device} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{TN}
+& \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+Chromecast & 4 & 3 & 2 & 423 & 57.14\% & 66.67\% & 61.54\% \\
+Samsung camera & 10 & 0 & 2 & 564 & 100.00\% & 83.33\% & 90.91\% \\
+Pooled & 14 & 3 & 4 & 987 & 82.35\% & 77.78\% & 80.00\% \\
+\bottomrule
+\end{tabular}
+\caption{Completed final-partition results. All three selected modes produce
+these same decisions; pooled values use summed confusion counts.}
+\label{tab:final-evaluation}
+\end{table}
+
+The final sets contain only 18 attack-labelled windows, so per-device rates
+must be read with their small denominators. The pooled false-positive rate is
+0.30\% (3/990 benign windows). Using fully observed official attack intervals,
+Chromecast detects two of three attacks and Samsung detects all six. Median
+onset-to-window-close delay among detected attacks is 414.5 and 448.5 seconds,
+respectively. Seven of the nine attacks receive an alert by attack end; the
+eighth detected attack is alerted after its annotated end. This distinction
+keeps window overlap, incident coverage, and response time separate.
+
+Conservative threshold candidates exceed their movement limit; periodic-refit
+candidates either lack accepted windows or exceed the concentration limit.
+No update is promoted. Matching static decisions therefore support preservation
+of the selected detector under these guards, rather than an empirical learning
+gain. The retained choice is ten-minute joint DM/volume/ARP scoring with fixed
+references and conservative updates; legacy policies remain comparison methods.
+
+This completes evaluation on the configured final partitions using saved
+normal-only starting pairs and fixed settings. Full events, update attempts,
+and metric inputs make each reported result reproducible. Validation on more
+devices and longer operating periods is future work.

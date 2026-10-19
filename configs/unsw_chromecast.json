@@ -67,8 +67,5 @@
     "threshold_path": "artifacts/UNSW-Chromecast/threshold.json",
     "events_path": "artifacts/UNSW-Chromecast/events.json",
     "reports_dir": "reports/UNSW-Chromecast"
-  },
-  "forecast": {
-    "horizon_hours": 24
   }
 }

@@ -85,13 +85,13 @@ use only windows for which both a score and label exist.
 - [x] Add focused MAC-filtering tests, including ARP hardware-address matching.
 - [x] Create the `UNSW-Chromecast` prepared raw-data view without duplicating PCAP data.
 - [x] Add an isolated `configs/unsw_chromecast.json` configuration and namespaced outputs.
-- [ ] Validate and fingerprint all configured source captures.
-- [ ] Preprocess the retained captures and review per-capture coverage and counts.
+- [x] Retain the capture validation/fingerprint records and processed-input provenance.
+- [x] Preprocess the retained captures and review per-capture coverage and counts.
 - [x] Normalize the Chromecast attack annotations into separate window-label JSON files.
-- [ ] Train on the fit partition and calibrate on the calibration partition.
-- [ ] Score and evaluate the development-test partition.
-- [ ] Record any development-driven decisions and freeze the experiment.
-- [ ] Score and evaluate the locked final-test partition.
+- [x] Train on the fit partition and calibrate on the calibration partition.
+- [x] Score and evaluate the development-test partition.
+- [x] Retain method-selection decisions and the frozen final-evaluation protocol.
+- [x] Evaluate the final partition with fixed starting pairs, full events, update attempts, and offline label-based metrics.
 
 ## Preparation log
 
@@ -104,3 +104,7 @@ use only windows for which both a score and label exist.
 | 2026-08-13 | Preserved the official Chromecast CSV and generated 17 separate label files plus a provenance manifest: 2,349 windows, 38 positive, 21/27 intervals retained. |
 | 2026-08-13 | Retained human-readable device names and removed IP selectors; device traffic is now selected only by its stable MAC address. |
 | 2026-08-13 | Restored the `device_id` configuration name for backward compatibility. |
+
+The completed final evaluation is recorded in
+[`reports/final_evaluation/results.json`](../reports/final_evaluation/results.json).
+Further independent validation belongs to [future work](future-work.md).

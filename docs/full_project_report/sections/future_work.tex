@@ -1,0 +1,53 @@
+\section{Future Work}
+\label{sec:future-work}
+
+The delivered scope is complete: the four-count DM detector, calibrated scoring,
+guarded adaptation, state recovery, streaming interface, local edge simulation,
+and labelled development/final evaluations have retained code and evidence.
+The following extensions are separate research or deployment work, rather than
+unfinished requirements of that deliverable. Earlier proposals and plans are
+historical design records; this section defines the remaining optional scope.
+
+\subsection{Broader external validation and temporal stability}
+
+New labelled device traffic, longer benign operating periods, additional attack
+intervals, and capture-block confidence intervals would test generalisation
+beyond the two labelled references and their small final attack sets. Labels
+must remain outside fitting, calibration, and runtime learning.
+
+The separate temporal branch already contains expanding folds, capture/episode
+reports, and source-timestamp validation. Its historical findings are retained
+in Appendix~\ref{sec:temporal-research}. Integrating those tools with the selected
+scoring and both adaptive policies would measure stability across training
+boundaries. Any new numerical study using D-Link fitting data should resolve
+the known October 8/9 overlap; D-Link supplies no labelled detection claim here.
+The completed final runner validates actual chronology of the labelled final
+captures, without claiming a merged repository-wide temporal implementation.
+
+\subsection{Adaptation and window duration}
+
+Further drift experiments should test whether conservative updates can improve
+legitimate behaviour changes while retaining attack evidence. Rejected candidates
+are useful outcomes; weakening guards just to obtain promotions is not a valid
+objective. Extra buffer/cadence comparisons, broader baselines, and packet-level
+features require a common protocol and compatible evidence across devices.
+
+Thirty-minute static operation merits further study when slower response is
+acceptable. The present 10/20/30/60-minute results do not justify replacing the
+default across all modes: coarse-window threshold updates increase Samsung false
+alerts, and hourly calibration has fewer observations. Temporal false-alert
+stability and response-time objectives should guide any future change.
+
+\subsection{Physical deployment and academic submission}
+
+Physical/ARM gateway measurements, a live packet collector, durable event
+transport, and downstream response integration extend the supplied-window
+Linux/amd64 simulation. They are not measured deployment capabilities of this
+release. The existing service and prepared image provide their starting point.
+
+The separate \path{thesis/} workspace supports subsequent dissertation writing.
+Completing its chapters, personal metadata, and final PDF/A validation is an
+academic submission task; the full project report is the completed technical
+and experimental record. Appendix~\ref{sec:thesis-workspace} documents that
+workspace and its template attribution without presenting a skeleton as a
+finished dissertation.

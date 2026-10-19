@@ -16,12 +16,23 @@
 \Urlmuskip=0mu plus 2mu
 
 \title{\textbf{LM-IDNet: Bare Minimum Detector Software}\\[0.4em]
-\large The remaining software work, in implementation order}
+\large Archived requirements and completed deliverable}
 \author{}
 \date{15 October 2026}
 
 \begin{document}
 \maketitle
+
+\begin{quote}
+\textbf{Archived design/experiment record.} This document retains its original
+implementation boundary. The agreed detector and final-partition evaluation
+are complete; current results and supported interfaces are documented in
+\path{docs/lm_idnet_full_project_report.tex} and
+\path{reports/final_evaluation/results.json}. Unselected proposals are future
+work, as collected in \path{docs/future-work.md}, rather than an active software
+backlog. Historical timings and findings below retain their original meaning.
+\end{quote}
+
 
 \section{What the delivered detector must do}
 
@@ -68,7 +79,7 @@ artefacts, and Docker setup. The following functionality is already present:
 Those components provide the detector's core. The four tasks below complete
 their validation, update safety, saved state, and deployable execution.
 
-\section{The implementation order}
+\section{Original implementation requirements (completed)}
 
 \subsection{1. Make the existing detector reject incompatible inputs}
 

@@ -3,8 +3,9 @@
 \subsection{Research pipeline}
 
 Run from the repository root after preparing the configured source data.
-These commands are examples of the supported interfaces; they were not all
-rerun for this documentation update. Training and calibration overwrite their
+The final evaluation, duration comparison, full suite, and report build have
+closing verification records. Raw preprocessing and historical timing commands
+are reproduction instructions, rather than freshly repeated measurements. Training and calibration overwrite their
 configured starting artefacts, so preserve the frozen evidence bundle before
 deliberately regenerating it.
 
@@ -63,10 +64,25 @@ python scripts/evaluate_detection.py --partition final_test \
 \end{verbatim}
 
 The first command compares development scoring and policies on the three
-configured reference datasets. The second generates the retrospective later
-audit; it is not an independent final test. Existing saved
+configured reference datasets. The second generates the later-partition
+scoring/policy comparison. Existing saved
 states keep their embedded calibration; prepare a new state deliberately when
 selecting a different scoring contract.
+
+\subsection{Completed final evaluation}
+
+\begin{verbatim}
+python scripts/evaluate_final.py
+\end{verbatim}
+
+This evaluates only the two labelled final partitions with the selected
+ten-minute starting pairs. It writes the protocol before scoring and retains
+full events and update attempts for all three conservative modes, metrics,
+original annotation checks, and unchanged-input verification. Outputs are
+isolated under \path{reports/final_evaluation/} and
+\path{artifacts/final_evaluation/}; reference pairs are not overwritten.
+The protocol records normal-only starting pairs, fixed final-run settings,
+and labels used only for offline evaluation.
 
 \subsection{Window-duration comparison}
 
@@ -166,5 +182,5 @@ python -m lm_idnet.evaluation.fold_selection \
 \end{verbatim}
 
 The number two is an example operational budget, not a threshold selected or
-validated by this report. The final-test accessor is not a supported reference
-CLI evaluation path yet.
+validated by this report. The selected final-partition method uses the dedicated runner above; these
+branch-specific commands are optional temporal research interfaces.

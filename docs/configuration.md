@@ -46,7 +46,7 @@ in [`src/lm_idnet/config.py`](../src/lm_idnet/config.py).
   Both adaptive modes derive thresholds exclusively from accepted windows.
   Rejected refits keep the entire active model/threshold/IQR pair unchanged.
 - `outputs`: paths for model, threshold, event, and report artifacts.
-- `forecast`: positive forecast horizon.
+
 
 ### Conservative update limits
 

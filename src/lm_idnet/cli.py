@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import os
 import sys
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 from lm_idnet.config import AppConfig, load_config, load_detector_config, load_edge_config
@@ -45,7 +45,6 @@ COMMANDS = (
     "adapt",
     "run",
     "rollback",
-    "forecast",
     "benchmark",
 )
 
@@ -59,7 +58,6 @@ COMMAND_HELP = {
     "adapt": "run the configured static or adaptive detector",
     "run": "score count windows from JSON lines on standard input",
     "rollback": "restore the previous accepted detector version",
-    "forecast": "forecast held-out traffic from a verified model",
     "benchmark": "measure configured backend and pipeline performance",
 }
 
@@ -215,18 +213,6 @@ def _diagnose(config: AppConfig, output_path: Path) -> None:
         estimator=create_estimator(config.estimator, config.precision_digits),
         dates=list(all_capture_ids(config)),
     ).write_report(output_path)
-
-
-def _forecast(config: AppConfig) -> None:
-    from lm_idnet.models.forecasting_stage import run_forecasting
-
-    run_forecasting(config)
-
-
-HANDLERS: dict[str, Callable[[AppConfig], None]] = {
-    "preprocess": _preprocess,
-    "forecast": _forecast,
-}
 
 
 def run_command(argv: Sequence[str] | None = None) -> None:
@@ -450,7 +436,7 @@ def run_command(argv: Sequence[str] | None = None) -> None:
         )
         return
 
-    HANDLERS[args.command](config)
+    _preprocess(config)
     print(json.dumps({"command": args.command, "status": "completed"}))
 
 

@@ -1,0 +1,43 @@
+{
+  "full_suite": {
+    "command": "LM_IDNET_EDGE_IMAGE=lm-idnet:final .venv/bin/python -m pytest -q -m \"\"",
+    "passed": 601,
+    "skipped": 0,
+    "duration_seconds": 41.2
+  },
+  "final_input_tests": 8,
+  "duration_unit_tests": 13,
+  "final_replays": 6,
+  "final_windows_per_mode": 1008,
+  "saved_final_events": 3024,
+  "checked": "Exact final event/label coverage, validated event schemas, score decisions and severity, independent confusion-count sums, static/adaptive agreement, rejected attempts, unchanged original starting pairs and all frozen input/code hashes. All 48 duration summaries and common-grid counts match 12,204 saved decisions and original annotations; equal exposure/attack denominators, calibration guards and plot values checked.",
+  "docker": {
+    "verified_image": "sha256:8b32be0c1aaabb25e2c2eead62792f1c818d15d930af28e3d6691586561d2772",
+    "method": "Current package source and configs copied over the retained offline edge runtime; unchanged compiled native library and dependencies. Both opt-in container tests pass.",
+    "clean_build_limit": "Clean Dockerfile build attempted; Docker Hub DNS resolution failed. Offline source refresh is distinct from a fresh registry installation.",
+    "native_source_check": "Retained compiled runtime library C/header hashes match current native sources."
+  },
+  "package_install": "Editable package rebuilt and installed offline with --no-index --no-deps --no-build-isolation.",
+  "evidence_boundary": "Evaluation covers the configured labelled final partitions for Chromecast and Samsung camera. Starting models and thresholds use normal fitting/calibration partitions; final labels are used only for offline metrics, with no parameter selection during the final run.",
+  "test_source_sha256": {
+    "tests/test_final_evaluation.py": "dc4d306b44ab1237014cc7e24df8b5fc7d6bda4c266b33ba4f100a0efe31c046",
+    "tests/test_window_size_experiments.py": "557f641ade4095f6a6163ec0b920be4a7c402fd128e8fd82299ec4b27cae2f63"
+  },
+  "report": {
+    "source": "docs/lm_idnet_full_project_report.tex",
+    "output": "out/lm_idnet_full_project_report.pdf",
+    "pages": 61,
+    "sha256": "239e5719d0523973613f79c042ad0a02be69debd99e9e86fa57de37e1574f639",
+    "build": "Passed with no undefined references or overfull boxes; final-results table retained and protocol wording checked in the compiled PDF."
+  },
+  "content_cleanup": "No removed-stage term in current project text or PDF content/metadata; generated stale metadata/caches cleaned. Original reference papers and extracts preserved outside the project; publication attribution retained through authors, venues and DOI.",
+  "local_reference_archive": "/home/usrtima/projects/iot_anomaly_detection_reference_archive/2026-10-19",
+  "protocol_wording_verification": {
+    "focused_tests_passed": 8,
+    "focused_tests_seconds": 0.42,
+    "all_final_result_summaries_unchanged": true,
+    "all_final_artifact_bytes_unchanged": true,
+    "frozen_input_and_code_hashes_verified": true,
+    "full_suite_repeated": false
+  }
+}

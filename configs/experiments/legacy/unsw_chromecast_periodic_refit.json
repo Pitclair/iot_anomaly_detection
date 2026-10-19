@@ -70,8 +70,5 @@
     "threshold_path": "artifacts/UNSW-Chromecast/threshold.json",
     "events_path": "artifacts/experiments/legacy/UNSW-Chromecast/periodic_refit/events.json",
     "reports_dir": "reports/experiments/legacy/UNSW-Chromecast/periodic_refit"
-  },
-  "forecast": {
-    "horizon_hours": 24
   }
 }

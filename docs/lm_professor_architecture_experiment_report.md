@@ -13,8 +13,6 @@ than SciPy on this machine, without worsening the fitted model:
   versus 9.72 us for SciPy, and a literal professor-style fit was 3.1% faster;
 - LM and SciPy differed by at most 1.45e-7 relatively in fitted alpha, while
   goodness-of-fit differences were at most 6.86e-11;
-- forecast differences were at most 2.84e-13, roughly nine orders of magnitude
-  smaller than the variation between the three fixed data samples.
 
 So LM holds up on runtime under that workload, but not as a meaningfully more
 accurate estimator. The apparent accuracy advantage is numerical dust caused by
@@ -95,29 +93,6 @@ At the paper's selected 25% sample size, mean fit quality was:
 LM's averages happen to be lower, but the differences are too small to support
 an accuracy claim. Individual fits also do not consistently favor LM: depending
 on the metric, LM was lower in 33--35 pairs, equal in 24, and higher in 25--27.
-
-## Forecast results
-
-The same random stream was reset for LM and SciPy so this test measures backend
-effects rather than Monte Carlo noise.
-
-| Test day | Mean Brier, SciPy | Mean Brier, LM | Mean JSD, SciPy | Mean JSD, LM |
-|---|---:|---:|---:|---:|
-| Oct 19 | 5.556197909e-5 | 5.556197902e-5 | 3.324157281e-5 | 3.324157276e-5 |
-| Oct 21 | 1.686972823e-4 | 1.686972822e-4 | 1.060210323e-4 | 1.060210322e-4 |
-| Oct 22 | 2.309953807e-4 | 2.309953805e-4 | 1.489322600e-4 | 1.489322598e-4 |
-
-LM was numerically lower in all nine paired day/repeat comparisons, but its
-largest advantage was only 2.84e-13 for Brier and 1.91e-13 for JSD. By contrast,
-changing the deterministic training sample changed Brier by 1.08e-4 to 2.26e-4
-depending on the test day. The sample choice matters about a billion times more
-than the backend here.
-
-These values cannot be used as an exact reproduction of the paper because the
-window counts differ and the paper does not specify enough sampling detail to
-reconstruct its exact random realizations. They do establish that the LM-versus-
-SciPy forecast ranking is not practically meaningful when inputs and randomness
-are controlled.
 
 ## Direct architecture comparison on the 846-row fit
 
@@ -226,6 +201,4 @@ windows retained their anomaly decisions (3 D-Link, 17 Chromecast, and 52
 Samsung-camera anomalies). Each new threshold fingerprint matches its LM
 model.
 
-Separately, replace the synthetic forecast scaffold with held-out daily data if
-forecasting is meant to support a thesis claim. That change evaluates the model;
-switching likelihood backends does not.
+Further model comparisons are optional research; see [future work](future-work.md).

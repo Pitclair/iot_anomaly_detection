@@ -70,13 +70,13 @@ publication. Search-result dates were not treated as publication dates.
 \subsection{Corrections to existing project references}
 
 \begin{itemize}
-\item The IoT forecasting study called a ``reference manuscript'' in
+\item The IoT modelling study called a ``reference manuscript'' in
   \path{docs/full_project_report/bibliography.tex} is published at
   \textbf{ICNC 2025, pp.~28--32}
   (\href{https://doi.org/10.1109/ICNC64010.2025.10993688}{published record}, R06).
   Use that publication when attributing the four-category,
   ten-minute Camera~5 precedent.
-\item \path{resouces/ALM2_new.pdf} is a 15-page preprint. The matching title and
+\item \href{https://doi.org/10.1109/ACDSA65407.2025.11166588}{ACDSA 2025 implementation study} is a 15-page preprint. The matching title and
   authors have a published \textbf{ACDSA 2025, pp.~1--6} record (R07).
   The final article and long preprint must not be assumed identical.
 \item The LM article belongs to the \textbf{2023} volume of
@@ -110,7 +110,7 @@ Background: categorical counts and extra-multinomial variation &
 R01 (history), R02--R03 (accessible technical foundations), R05. \\
 Methodology: estimator versus numerical likelihood backend &
 R02 (update), R03--R05 (numerical methods), R07 and R26--R27 (implementation context). \\
-Methodology: inherited IoT representation and forecasting precedent &
+Methodology: inherited IoT representation and numerical precedent &
 R06; use D1 separately for the original D-Link data. \\
 Related work: device profiles, shallow and neural detectors &
 R11--R17. R13 is also the attack-dataset paper. \\
@@ -169,8 +169,7 @@ can be dropped for fitting and still be necessary for cross-window scoring.}
 \field{Use and placement}{Background: the numerical problem near the
 multinomial limit and the Yu--Shaw approach to evaluating the DM likelihood.
 This is a mathematical predecessor even though its application is genomics.}
-\field{Verification and reading}{\textbf{Full text.} Local
-\path{resouces/bioinformatics_30_11_1547.pdf}, especially the introduction
+\field{Verification and reading}{\textbf{Full text reviewed.} \path{resouces/bioinformatics_30_11_1547.pdf}, especially the introduction
 on printed p.~1547 and the methods that follow. PubMed corroborates the
 authors, journal, pp.~1547--1554, and DOI.}
 \field{Boundary}{Its speed and accuracy results concern its own numerical
@@ -184,8 +183,7 @@ discussion in \path{docs/lm_paper_project_comparison_report.md}.}
 \field{Use and placement}{Background and methodology: the LM evaluation of
 nearby log-Gamma differences, error control, and computational complexity.
 This is the principal attribution for the native numerical kernel.}
-\field{Verification and reading}{\textbf{Full text.} Local
-\path{resouces/180_2022_1311_OnlinePDF.pdf} is a revised proof, not the
+\field{Verification and reading}{\textbf{Full text reviewed.} \path{resouces/180_2022_1311_OnlinePDF.pdf} is a revised proof, not the
 paginated final issue. Read its introduction, Section~3 (Theorem~1), and
 Sections~4--5 (complexity and experiments). Padua's record and author
 publication list confirm the final 2023 citation, pp.~1995--2013.}
@@ -212,14 +210,13 @@ and \path{src/lm_idnet/evaluation/metrics.py}.}
 \referenceentry{R06}{The direct four-category IoT precursor}{alhajbaddar2025iot}
 \field{Use and placement}{Background and methodology: attribution for D-Link
 Camera~5 counts, TCP/UDP/SSDP/ARP categories, ten-minute aggregation,
-DM fitting, and traffic-profile forecasting. This is the closest source for
+and DM fitting. This is the closest source for
 the inherited representation.}
-\field{Verification and reading}{\textbf{Full text.} Local
-\path{resouces/ALM_IoT-CR.pdf}, Section~III beginning on PDF p.~2;
-modelling and forecast tables on later pages. Padua's publication record,
+\field{Verification and reading}{\textbf{Full text reviewed.} \href{https://doi.org/10.1109/ICNC64010.2025.10993688}{ICNC 2025 study}, Section~III beginning on PDF p.~2;
+modelling and numerical tables on later pages. Padua's publication record,
 the author's publication list, and DOI metadata confirm ICNC 2025,
-pp.~28--32. The local copy supplies the reading pagination.}
-\field{Boundary}{This study forecasts traffic; it does not establish the
+pp.~28--32. Reading pagination refers to the reviewed manuscript.}
+\field{Boundary}{This modelling study does not establish the
 project's calibrated attack detection, guarded updates, or precision/recall.
 Ten minutes is a precedent, not proof of an optimal window duration.}
 \field{Project connection}{\path{docs/lm_paper_project_comparison_report.md}
@@ -231,7 +228,7 @@ Python-accessible C implementation of LM and comparison with standard
 Python/SciPy likelihood evaluation. It helps attribute the supplied code's
 implementation lineage.}
 \field{Verification and reading}{\textbf{Full text of the supplied preprint.}
-\path{resouces/ALM2_new.pdf}: Section~3 discusses the C wrapper and Section~4
+\href{https://doi.org/10.1109/ACDSA65407.2025.11166588}{ACDSA 2025 implementation study}: Section~3 discusses the C wrapper and Section~4
 the experiments. The 15-page preprint is dated 11 April 2025. Padua's
 record, the author list, and DOI metadata identify the later six-page ACDSA
 2025 publication. Final-text equivalence was not checked.}
@@ -659,8 +656,8 @@ was not independently reconfirmed from a live release page.}
   statistical deviation, not causal attack attribution.
 \item \textbf{Unlabelled learning versus unlabelled research:} attack labels
   are absent from fitting and runtime update admission. They are present
-  in offline evaluation and have informed development comparisons. A later
-  evaluation partition with prior label exposure is not an untouched final test.
+  in offline evaluation and development comparisons. The final runner uses
+  saved normal-only starting pairs and fixed settings; labels supply metrics.
 \item \textbf{Measured outcomes:} precision, recall, alert delay, adaptation
   improvements, numerical error, and resource usage require this project's
   own versioned evidence. None can be borrowed from these publications.

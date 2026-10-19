@@ -2,22 +2,21 @@
 
 \subsection{Recorded verification coverage}
 
-At the retained detector revision, the full suite with every marker group
-enabled records \textbf{582 passes and two skipped Docker checks}. This includes
-the ten tests normally excluded by the default slow/PCAP/benchmark selection.
-The earlier production-image record contains 560 passes in 39.56 seconds,
-including its two opt-in container checks. That image-specific result belongs
-to its recorded boundary; the retained scoring verification must not be
-described as a fresh container test.
+The closing full-suite run records \textbf{601 passes, with no skipped tests},
+including slow, PCAP, and benchmark markers. Both opt-in Docker checks run. Eight
+final-evaluation cases protect final-only input access, exact labels and original
+annotation provenance, device/partition identity, duration, and actual timestamp
+overlap across captures. Thirteen duration cases cover count conservation,
+epoch grouping, gaps, missingness, normal holdout expansion, and window-close
+attack delay. Full event/label confusion counts and immutable input fingerprints
+are independently checked for the six final replays and 48 duration summaries.
 
-With the duration-experiment checks included, the full suite records
-\textbf{595 passes and two skipped Docker checks}. The thirteen added cases cover
-epoch grouping, count conservation, incomplete boundaries, gaps, silence,
-missingness, invalid source alignment, thirty/hourly aggregation, chronological
-normal holdout expansion, and window-close attack-delay semantics.
-All 48 duration/mode/partition summaries are also checked against the saved
-decisions, equal traffic exposure, original annotation hashes, and unchanged
-reference detector artifacts.
+The image check uses current Python source and configurations over the retained
+offline runtime image, including its unchanged native library and dependencies.
+The clean Dockerfile build could not reach Docker Hub because registry DNS
+resolution failed; the source-refreshed image checks are not a claim that a fresh
+registry-based installation succeeded. Historical long resource measurements
+retain their original image boundary.
 
 Tests include small unit inputs, numerical comparisons, real CLI subprocesses,
 temporary state directories, synthetic packet/PCAP fixtures, and isolated
@@ -113,21 +112,24 @@ randomised algorithms. The named-generator helper currently exposes independent
 simulation and model-fitting generators without modifying NumPy's global RNG.
 Production Minka initialisation is deterministic from counts; the presence of a
 model-fitting seed does not imply random fitting or multiple sampled runs.
-The forecast scaffold has its own fixed local seed. No capture-block confidence
+No capture-block confidence
 interval is claimed merely because a bootstrap seed exists.
 
 Experiment-manifest schemas can record a code commit, configuration hash,
 dataset hash, command, and seed. Not every older report automatically contains
 every manifest field. Retained configurations, fingerprints, source revisions,
-and environment records must therefore be assembled into one final evidence
-bundle rather than inferred from filenames.
+and environment records identify historical boundaries. The closing final
+bundle explicitly retains its selected configurations, complete outputs, input
+and code hashes, and verification rather than inferring provenance from filenames.
 
 \subsection{Limits of this verification}
 
 All configured starting model/threshold pairs validate, and processed-window
 totals were checked directly. Historical and research-branch reports retain
 their recorded revisions; scoring comparisons use their per-device JSON and
-decision records. No production code or experiment policy was changed while
-editing the report. Full raw-data preprocessing,
+decision records. The closing cleanup removes an unused CLI stage and its
+configuration/metric scaffolding without changing the selected scoring policy.
+The original Samsung annotation bytes and explicit CSV line endings preserve
+saved fingerprints across checkouts. Full raw-data preprocessing,
 all historical fitting runs, long resource trials, physical hardware, and final
 PDF/A certification were not repeated.

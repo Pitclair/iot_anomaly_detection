@@ -79,10 +79,9 @@ boundaries, and attack episodes. The detector experiments test traffic volume,
 connection behaviour, ARP activity, and direction because protocol composition
 alone misses some attacks.
 
-The final claims remain open. The combined detector still needs stronger
-adaptation safeguards, one frozen configuration, an untouched labelled
-evaluation, and measurement on the intended edge hardware. Throughout the
-presentation I will distinguish existing evidence from those remaining claims.
+The agreed detector and final evaluation are complete. Historical experiments
+explain the selected scoring and adaptation guards. More devices, temporal-fold
+integration, and physical hardware measurements are defined future work.
 
 Transition: The need for those safeguards comes directly from the behaviour of
 real IoT traffic.
@@ -598,9 +597,9 @@ The historical six-signal experimental detector reaches 92.54 percent F1 and
 separate from the retained four-count detector.
 
 An earlier frozen six-signal detector was evaluated once on Chromecast final
-data and achieved 66.67 percent F1. That dataset cannot provide unbiased
-evidence for later direction and score-ranking refinements because its labels
-have already been examined.
+data and achieved 66.67 percent F1. That historical detector has a different
+feature contract from the selected four-count system. Its results are kept
+separate from the selected-method final evaluation.
 
 Transition: Failed ideas are also recorded, so the proposed combined detector
 does not accumulate features without evidence.
@@ -637,36 +636,27 @@ signals show a clear path to recovering composition-preserving attacks. The
 temporal and adaptation audits expose failure modes that a single pooled F1
 score would hide.
 
-The evidence does not yet support calling the system a finished edge-security
+The delivered scope is a completed supplied-window detector, rather than a production edge-security
 product. Generality across devices, poisoning resistance, stability across
-time and window length, final refined-system performance, and target-hardware
-cost all remain open. The current forecasting command is also synthetic metric
-scaffolding, not empirical forecasting evidence.
+time and window length, independent external performance, and target-hardware
+cost all remain open. Optional extensions are collected in the project
+report’s Future Work section.
 
-Transition: Those limits lead to four concrete completion priorities.
+Transition: The completed final-partition result separates the delivered scope
+from optional extensions.
 
-## Slide 34 — Completion Plan: Four Priorities
+## Slide 34 — Completed Final Evaluation and Future Work
 
-First, enforce temporal integrity in the common system: order actual timestamps,
-reject unexplained overlap, preserve complete captures, and report capture and
-episode metrics.
+The selected detector gives 80.00 percent pooled F1 on 1,008 final windows:
+82.35 percent precision and 77.78 percent recall. Chromecast F1 is 61.54 percent;
+Samsung camera F1 is 90.91 percent. Static and both conservative adaptive modes
+agree because no update is promoted. This is evidence of stable detection under
+the guards, rather than improved learning. Fitting and calibration use normal
+traffic; final labels are used to calculate offline metrics.
 
-Second, compare detector versions without replacing the control. The
-composition-only static detector remains the named baseline. A separate hybrid
-configuration can add the smallest supported signals. The same temporal
-development protocol should compare several window lengths.
-
-Third, strengthen adaptation one safeguard at a time: use only gate-accepted
-scores for threshold updates, compare refitting with a fixed threshold, limit
-alpha movement, add an independent volume gate, and judge promotion on data the
-candidate did not fit.
-
-Fourth, freeze the architecture, settings, data identity, and evaluation rules.
-Then run one genuinely untouched labelled evaluation and benchmark the selected
-system on the intended edge hardware.
-
-Transition: I will finish by stating the project’s current position in three
-sentences.
+The code, complete predictions/update records, verification, and full project
+report close the agreed scope. New external traffic, rolling-fold integration,
+drift validation, physical hardware, and dissertation submission are future work.
 
 ## Slide 35 — Conclusion: Current Position
 
@@ -678,16 +668,16 @@ auditable evidence.
 Second, the results identify both value and failure modes. Static detection is
 precise but incomplete. The selected adaptive configuration strongly improves
 one development stream, but the contamination and concentration audits show why
-it is not final. Temporal and multi-signal experiments address different,
-measured limitations.
+the conservative gates and fixed references are retained. Historical temporal
+and feature experiments address separate measured limitations.
 
-Third, the remaining experiment is now focused: combine only the supported
-controls and signals, freeze one common detector, and evaluate it on untouched
-data. The contribution so far is not only the best score; it is the transparent
-record of what was built, what improved, and what failed.
+Third, the agreed deliverable is complete. The four-count DM model, joint
+composition/volume/ARP scoring, conservative updates, and ten-minute default
+have code, final outputs, and a cohesive technical report. Independent external
+validation is future work. The contribution includes both measured performance
+and the transparent record of what worked and failed.
 
-Transition: I am ready for questions on the model, implementation, experiments,
-or remaining evaluation.
+Transition: I am ready for questions about the delivered model and evidence.
 
 ## Slide 36 — Questions and Discussion
 
@@ -698,8 +688,8 @@ If the question concerns exact adaptive confusion matrices, use slides 37 and
 concerns where the evidence is stored, use slide 42.
 
 Do not introduce a new claim during discussion. Distinguish clearly between the
-working reference system, additional experimental evidence, and the evaluation
-that remains open.
+working reference system, additional experimental evidence, and the optional independent external
+validation defined under future work.
 
 ---
 

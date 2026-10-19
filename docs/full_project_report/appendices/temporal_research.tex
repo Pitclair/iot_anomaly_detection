@@ -1,9 +1,9 @@
-\section{Temporal Evaluation Research on a Separate Branch}
-\label{sec:temporal-wip}
+\section{Historical Temporal Research}
+\label{sec:temporal-research}
 
 \subsection{Why chronological capture splits were not enough}
 
-The master split already moves forward in time and keeps each capture intact.
+The historical reference split moves forward in time and keeps each capture intact.
 This is much safer than randomly mixing ten-minute windows, but it gives only one
 answer for one choice of fitting, calibration, and development dates. Device
 behaviour can change with its operating state, daily routine, or traffic volume,
@@ -34,18 +34,11 @@ The improved architecture therefore keeps complete captures together and repeats
 the evaluation at several points in time. Each fold uses earlier normal captures
 to fit the model, later normal captures to calibrate its threshold, and a
 still-later capture to measure performance. The fitting history expands in the
-next fold, while the final-test captures remain untouched.
+next fold, with final-test captures outside that branch’s fold selection.
 
-Before these folds are used to select final settings, the temporal branch must be
-combined with the current detector. The master branch should check the actual
-time ranges inside every capture and record how overlapping or complementary
-fragments were handled. Each fold should keep its own model, threshold, events,
-and report, and results should be shown by capture and attack episode. If the
-thesis reports confidence intervals, it should resample complete captures rather
-than individual windows.
-
-One D-Link data issue also remains: the October 8 and 9 fitting captures overlap
-and must be resolved before the final model is fitted.
+Integration with the selected detector, capture-block uncertainty, and
+further temporal comparisons belong to Section~\ref{sec:future-work}. The
+known D-Link overlap does not enter the labelled final evaluation.
 
 \subsection{Changes implemented on the temporal branch}
 
@@ -126,5 +119,6 @@ fold study in the current reference.
 
 The reference branch and temporal branch also have different episode
 capabilities. Episode counts, false-alert episodes/day, and detection delay
-must not be attributed to the current reference evaluator, which still reports
-window-level metrics only.
+must not be attributed to the ordinary reference evaluator, which reports
+window-level metrics. The final-evaluation runner separately adds official
+attack-interval coverage and window-close delay.

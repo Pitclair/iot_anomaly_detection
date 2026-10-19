@@ -10,8 +10,8 @@ The frozen configuration is:
 |---|---|---|
 | `fit` | 2020-10-08 through 2020-10-13 | Estimate normal-model parameters |
 | `calibration` | 2020-10-14 through 2020-10-15 | Select anomaly-score thresholds |
-| `development_test` | 2020-10-16 and 2020-10-19 | Debug and evaluate before the locked result |
-| `final_test` | 2020-10-21 through 2020-10-22 | One locked final evaluation only |
+| `development_test` | 2020-10-16 and 2020-10-19 | Development comparison |
+| `final_test` | 2020-10-21 through 2020-10-22 | Final-partition evaluation (D-Link has no attack labels) |
 
 This uses all 12 currently configured and validated D-Link captures: 6 fit, 2
 calibration, 2 development-test, and 2 final-test captures.
@@ -71,3 +71,18 @@ begins, the lists must not be adjusted to improve reported results.
 This split does not by itself prove that every fit or calibration interval is
 benign. Dataset provenance and benign-interval assumptions require their own
 review. It only establishes chronological, disjoint usage boundaries.
+
+## Completed labelled final evaluation
+
+The table above describes the D-Link numerical workload. The labelled
+Chromecast and Samsung camera configurations have their own chronological
+partitions. Run `python scripts/evaluate_final.py` from the repository root to
+replay those final captures under static and both conservative adaptive modes.
+The runner validates actual final-window chronology, exact annotation matching,
+and immutable input hashes, and retains copied starting pairs, events, update
+attempts, and metrics. Ordinary `score`, `adapt`, and `evaluate` commands still
+select development data.
+
+The completed final evaluation uses the saved normal-only starting models
+and thresholds. Final labels are used for offline metrics; the final runner
+does not train, recalibrate, or select detector settings.

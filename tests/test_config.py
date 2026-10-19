@@ -224,7 +224,7 @@ def test_legacy_experiment_configs_keep_distinct_outputs(device, variant):
     legacy = load_config(path.parent / "legacy" / path.name)
 
     assert legacy.adaptation.policy == "legacy"
-    for field in ("ingest", "seeds", "estimator", "calibration", "forecast"):
+    for field in ("ingest", "seeds", "estimator", "calibration"):
         assert getattr(legacy, field) == getattr(conservative, field)
     for field in ("mode", "buffer_size", "update_every", "minimum_refit_windows", "safe_margin"):
         assert getattr(legacy.adaptation, field) == getattr(conservative.adaptation, field)

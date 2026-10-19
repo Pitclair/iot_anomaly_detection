@@ -57,6 +57,6 @@
     "max_iterations": 100000,
     "initial_log_likelihood": -134414.1177485779,
     "final_log_likelihood": -134056.91138240957,
-    "duration_seconds": 0.023009935161098838
+    "duration_seconds": 0.023215322056785226
   }
 }

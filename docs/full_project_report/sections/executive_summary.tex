@@ -30,14 +30,14 @@ $\longrightarrow$ events, accepted state, and offline evaluation
 \end{minipage}}
 \end{center}
 
-\subsection{What is complete and what still needs evidence}
+\subsection{The completed deliverable}
 
 The agreed minimum supplied-window software is implemented, including input
 compatibility, conservative learning gates, atomic state activation, restart,
 rollback, bounded streaming, offline packaging, service operation, and a local
 one-CPU/512-MiB Docker simulation. This is a usable software deliverable.
-It does not follow that every research question has a positive answer or that
-the final experimental protocol is complete.
+The final-partition evaluation is complete with frozen starting pairs, full
+traceable outputs, normal-only fitting/calibration, and label-based offline metrics.
 
 \begin{longtable}{>{\raggedright\arraybackslash}p{0.24\textwidth}
 >{\raggedright\arraybackslash}p{0.23\textwidth}
@@ -61,19 +61,15 @@ Persistence and rollback & \working & Versioned complete pairs, a writer lock,
 atomic activation, bounded history, recovery, rollback, and failure tests. \\
 Edge simulation & \working & Offline Linux/amd64 image, bounded service,
 restart/stop checks, and 2,000/20,000-input-window resource trials. \\
-Temporal research & \wip & Separate branch with actual-timestamp validation,
-five rolling folds, and capture/episode metrics. \\
 Detection and scoring & \working & DM composition with jointly calibrated
 packet/ARP counts and fixed update references; broader features rejected or
 excluded where common input evidence is unavailable. \\
-Independent final evaluation & \notdone & Later partitions have retrospective
-audits; ordinary scoring/evaluation commands select development data. \\
-Empirical forecasting & \notdone & The CLI is synthetic scaffolding; a separate
-paper-style experiment has a narrower forecast comparison. \\
+Final-partition evaluation & Complete & Two labelled devices, three selected
+modes, 1,008 windows, full events/update records, and frozen input fingerprints. \\
 Physical gateway validation & Outside agreed simulation & No physical/ARM
 performance, packet collector, or durable event-delivery claim. \\
-Thesis workspace & Working skeleton & Modular English LaTeX sources and a
-tested Docker build; research prose and final evidence remain to be written. \\
+Dissertation writing & Future academic work & Separate LaTeX workspace;
+the completed project record is this report. \\
 \bottomrule
 \end{longtable}
 
@@ -101,6 +97,12 @@ lacked enough accepted windows and 110 actual fits did not converge. Successful
 promotion is checked separately with controlled candidates. These two kinds of
 evidence answer different questions and must remain separate in the thesis.
 
+The completed final evaluation gives 82.35\% pooled precision, 77.78\% recall,
+and 80.00\% F1. Chromecast F1 is 61.54\%; Samsung camera F1 is 90.91\%.
+The three selected modes agree because no conservative updates are promoted.
+Section~\ref{sec:final-evaluation} records the final protocol, confusion
+counts, attack-interval coverage, and detection delay.
+
 The native LM backend preserves the intended row-wise likelihood and agrees
 closely with SciPy. Its speed advantage depends on the workload; fitting and
 single-window scoring do not have the same result. The resource simulation
@@ -120,6 +122,6 @@ Read the scientific and implementation sections to understand the delivered
 system, the result sections to identify supported claims, and the appendices to
 locate code, records, and reproduction commands. Historical branch evidence is
 included because it explains decisions and failed alternatives; the retained
-scoring contract and its comparisons are identified separately. The immediate
-next work is a frozen, reproducible final evaluation and thesis writing; broader
-feature research is optional unless the thesis scope explicitly requires it.
+scoring contract and its comparisons are identified separately. The final protocol, events, update attempts, metrics, and verification form
+the closing evidence bundle. Optional research and dissertation preparation are
+collected under Future Work.

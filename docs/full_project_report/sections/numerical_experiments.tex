@@ -1,4 +1,4 @@
-\section{Numerical Experiments and Forecasting Boundaries}
+\section{Numerical Experiments}
 
 \subsection{The retained production benchmark}
 
@@ -78,29 +78,9 @@ state. Non-finite precision failures return typed Python errors. Sparse, zero,
 large-concentration, repeated-call, and backend agreement tests exercise this
 boundary. The original mathematical approximation and licence are retained.
 
-\subsection{Two different forecasting paths}
-
-The installed \texttt{forecast} command is a scaffold. It draws synthetic
-multinomial outcomes from the same fitted mean that supplies its expected-count
-forecast, using a fixed local seed and a total of 100 per hour. Its Brier and
-Jensen--Shannon outputs exercise helper code; they are not accuracy measurements
-against independently observed future traffic.
-
-The paper-shaped script does perform a narrower real-count comparison:
-1,000 Dirichlet samples from each 25-percent daily model are averaged and
-compared with observed proportions on October 19, 21, and 22.
-Identical random streams make the backend comparison fair. The largest
-recorded Brier difference is $2.84\times10^{-13}$, far smaller than the
-roughly $10^{-4}$ changes caused by choosing another fixed training sample.
-This experiment does not make the installed forecast scaffold an empirical
-forecasting service.
-
 \subsection{Small metric utilities}
 
 The evaluation package also contains total variation distance, KL divergence,
-mean squared error, Brier score, and Jensen--Shannon divergence.
-Their inputs and reduction rules matter: the Brier helper averages the
-per-row squared probability error, while the current Jensen--Shannon helper
-uses the summed KL terms supplied to it. These utilities support modelling
+and mean squared error. These utilities support modelling
 experiments; their existence is not evidence that the detector has been
 benchmarked against Poisson, neural, or countermeasure-selection alternatives.

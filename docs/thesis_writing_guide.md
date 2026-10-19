@@ -119,7 +119,7 @@ For each research question, decide the exact evidence required:
 | LM backend | Numerical agreement, decision agreement, and runtime comparison against SciPy |
 | Adaptation | Static versus selected adaptive policy, plus buffer-contamination and parameter-movement checks |
 
-Anything not needed for one of those rows is optional. Forecasting, automated reaction, neural extensions, and production edge deployment should not delay the thesis.
+Anything not needed for one of those rows is optional. Automated reaction, neural extensions, and production edge deployment should not delay the thesis.
 
 ### 3. Resolve the experimental protocol
 
@@ -176,7 +176,7 @@ Possible research questions:
 - **RQ2:** How does the native Languasco–Migliardi backend compare with SciPy in numerical agreement and runtime?
 - **RQ3:** Can guarded adaptation improve detection without learning from attack traffic?
 
-Do not expand the central thesis to forecasting, reaction selection, theoretical topic models, and full edge deployment unless the supervisor explicitly requires them. The current evidence does not yet support all those claims.
+Do not expand the central thesis to reaction selection, theoretical topic models, and physical gateway deployment unless the supervisor explicitly requires them. The current evidence does not yet support all those claims.
 
 ## Suggested structure
 

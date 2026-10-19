@@ -1,0 +1,127 @@
+{
+  "threshold_attempts": [
+    {
+      "after_window": 144,
+      "buffer_window_count": 139,
+      "capture_id": "2018-06-05",
+      "window_end_utc": "2018-06-06T00:00:00Z",
+      "source": "periodic_refit",
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_score_iqr": 0.24150714848036614,
+      "old_threshold": -16.92209375738571,
+      "promoted": false,
+      "reason": "not enough accepted windows"
+    },
+    {
+      "after_window": 288,
+      "buffer_window_count": 277,
+      "capture_id": "2018-06-06",
+      "window_end_utc": "2018-06-07T00:00:00Z",
+      "source": "periodic_refit",
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_score_iqr": 0.24150714848036614,
+      "old_threshold": -16.92209375738571,
+      "promoted": false,
+      "reason": "candidate concentration change exceeds configured limit"
+    },
+    {
+      "after_window": 432,
+      "buffer_window_count": 288,
+      "capture_id": "2018-06-07",
+      "window_end_utc": "2018-06-08T00:00:00Z",
+      "source": "periodic_refit",
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_score_iqr": 0.24150714848036614,
+      "old_threshold": -16.92209375738571,
+      "promoted": false,
+      "reason": "candidate concentration change exceeds configured limit"
+    },
+    {
+      "after_window": 576,
+      "buffer_window_count": 288,
+      "capture_id": "2018-06-08",
+      "window_end_utc": "2018-06-09T00:00:00Z",
+      "source": "periodic_refit",
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_score_iqr": 0.24150714848036614,
+      "old_threshold": -16.92209375738571,
+      "promoted": false,
+      "reason": "candidate concentration change exceeds configured limit"
+    }
+  ],
+  "refit_attempts": [
+    {
+      "after_window": 144,
+      "buffer_window_count": 139,
+      "capture_id": "2018-06-05",
+      "window_end_utc": "2018-06-06T00:00:00Z",
+      "safe_window_count": 139,
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_alpha": [
+        6.360268651586078,
+        0.029417417993090944,
+        8.87169227224765,
+        2.132713959701217
+      ],
+      "promoted": false,
+      "reason": "not enough accepted windows"
+    },
+    {
+      "after_window": 288,
+      "buffer_window_count": 277,
+      "capture_id": "2018-06-06",
+      "window_end_utc": "2018-06-07T00:00:00Z",
+      "safe_window_count": 277,
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_alpha": [
+        6.360268651586078,
+        0.029417417993090944,
+        8.87169227224765,
+        2.132713959701217
+      ],
+      "promoted": false,
+      "smoothing_window_count": 4,
+      "candidate_iterations": 17388,
+      "candidate_converged": true,
+      "reason": "candidate concentration change exceeds configured limit"
+    },
+    {
+      "after_window": 432,
+      "buffer_window_count": 288,
+      "capture_id": "2018-06-07",
+      "window_end_utc": "2018-06-08T00:00:00Z",
+      "safe_window_count": 288,
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_alpha": [
+        6.360268651586078,
+        0.029417417993090944,
+        8.87169227224765,
+        2.132713959701217
+      ],
+      "promoted": false,
+      "smoothing_window_count": 4,
+      "candidate_iterations": 6983,
+      "candidate_converged": true,
+      "reason": "candidate concentration change exceeds configured limit"
+    },
+    {
+      "after_window": 576,
+      "buffer_window_count": 288,
+      "capture_id": "2018-06-08",
+      "window_end_utc": "2018-06-09T00:00:00Z",
+      "safe_window_count": 288,
+      "old_model_fingerprint": "6266f4c2a22a443572effec74cd119d0a7dfc22cdbf380b48c9ce95bdc03a83f",
+      "old_alpha": [
+        6.360268651586078,
+        0.029417417993090944,
+        8.87169227224765,
+        2.132713959701217
+      ],
+      "promoted": false,
+      "smoothing_window_count": 4,
+      "candidate_iterations": 2563,
+      "candidate_converged": true,
+      "reason": "candidate concentration change exceeds configured limit"
+    }
+  ]
+}

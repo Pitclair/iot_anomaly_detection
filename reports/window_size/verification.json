@@ -1,17 +1,9 @@
 {
   "full_suite": {
-    "command": [
-      ".venv/bin/python",
-      "-m",
-      "pytest",
-      "-q",
-      "-m",
-      ""
-    ],
-    "passed": 595,
-    "skipped": 2,
-    "duration_seconds": 28.22,
-    "skip_reason": "Two opt-in Docker deployment checks require LM_IDNET_EDGE_IMAGE"
+    "command": "LM_IDNET_EDGE_IMAGE=lm-idnet:final .venv/bin/python -m pytest -q -m \"\"",
+    "passed": 601,
+    "skipped": 0,
+    "duration_seconds": 41.2
   },
   "duration_unit_tests": 13,
   "experiment_runs": 48,
@@ -39,6 +31,7 @@
   ],
   "test_source_sha256": "557f641ade4095f6a6163ec0b920be4a7c402fd128e8fd82299ec4b27cae2f63",
   "figure_sha256": "d84057aedd53cb483808b66d164f9a619705369af65fb927f8f23cdaf0fa2ccc",
-  "figure_data_sha256": "8ff6f973dccb010619aa95acf5d6916bfc5f5ba5e7dde8fe2b5d91ed8e0f4b49",
-  "figure_saved_before_report": true
+  "figure_data_sha256": "abea2a799bc24f42e57b9d65f083c56e3656bbb76140ff80871bab779da64312",
+  "figure_saved_before_report": true,
+  "closing_verification": "Rerun after configuration cleanup; exact source/code/baseline hashes and all 48 decision summaries checked alongside completed final evaluation. Explicit LF CSV output preserves provenance across Git checkouts."
 }

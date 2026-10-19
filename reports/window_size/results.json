@@ -2,9 +2,9 @@
   "protocol": "10/20/30/60-minute sensitivity study on identical capture-local, epoch-aligned observed coverage. Latest whole normal fit captures extend calibration where needed to meet the unchanged 30-sample guard at 60 minutes; the same resulting normal split is used at all four durations. Fresh fit/calibration at every duration; unchanged detector and conservative policy. Development comparison and retrospective later audit are separate; no locked-test claim.",
   "metrics": "Any attack overlap labels a window positive. Common-10m metrics project each decision onto its constituent reference bins for comparable localisation. Fully observed official attack intervals define attack coverage; delay runs from attack onset to first overlapping alert's window end, including alerts after attack end. False alerts are per 24 observed hours.",
   "adaptation": "48 observed hours of buffer, 24 observed hours between attempts, and nominal 24 accepted hours before refitting. The unchanged conservative 30-sample guard raises the effective accepted-data minimum to 30 hours at 60-minute duration. Each partition/mode starts independently.",
-  "code_commit": "89c675cb8a4563230c1bac512127fb7ea91d073d",
+  "code_commit": "99072f0924a13e880580ceeee04741b341be7a99",
   "source_sha256": {
-    "configs/unsw_chromecast.json": "d59f7bfd3924f2702a7beb16f78657b5c6078bdbcd762a67a8244535cf0f68e7",
+    "configs/unsw_chromecast.json": "fce7883f0b2f58c03ff3e5a910d85b8fae184e1b0210debb356663c580d18dab",
     "/home/usrtima/projects/iot_anomaly_detection/unsw_iot_attack_pcaps/annotations/f4f5d88f0a3c.csv": "e9b4d9d5374b8c6dcad2ac8e5947cfa44079d0cc35bda8e46bd1be16822d8655",
     "data/processed/UNSW-Chromecast/2018-10-10.json": "99ea2454e6d0994424dc821e12fbc8ba324758b2cef338113ec7dd593b868fb1",
     "data/labels/UNSW-Chromecast/2018-10-10.json": "18c6ffcd15c35a7da0c6884a4c0979ba86e8172cb9c2aca840d7007a3977b5c6",
@@ -40,7 +40,7 @@
     "data/labels/UNSW-Chromecast/2018-10-26.json": "3d193cc3c88dc806f5f6db26f292248bde62e2b8050c89dbfdc6e973ea58a9d8",
     "data/processed/UNSW-Chromecast/2018-10-27.json": "2b9c01fd7088ff90eb4a1eb3c6a495dae06c272824c3fd0ffff13ad179dd60cc",
     "data/labels/UNSW-Chromecast/2018-10-27.json": "0cc2590b8f8dab24bba2dca4f8622e13df722b08d49f68d75b2778ba0ed09b76",
-    "configs/unsw_samsung_camera.json": "fe585c05d765853aeb6fef98e4f3393721b6d0fbf745bbccffa1a0de2b06f4fb",
+    "configs/unsw_samsung_camera.json": "13ef6c918ac24390ca26659f0b7a1d0f2904bdcd58518296150a580b80ec5153",
     "/home/usrtima/projects/iot_anomaly_detection/unsw_iot_attack_pcaps/annotations/00166cab6b88.csv": "618bb6637c8d388aacc7091d336343a7ac3b2d6af2d07b311c0686bbcb6a450e",
     "data/processed/UNSW-Samsung-Camera/2018-05-28.json": "252cfe2fed81a2374f535c17540588e8ad8e4a75afd2cf44e12fe759eda795bf",
     "data/labels/UNSW-Samsung-Camera/2018-05-28.json": "c57d91c5372a1e6355360710baa46191ae31cd4afc7a3bdce2da793b57151bdb",
@@ -68,7 +68,7 @@
     "data/labels/UNSW-Samsung-Camera/2018-06-08.json": "36d955ae0bdeb950a7584b29d93264d5f793896c86ccbb3ce71f2c749a9c102e"
   },
   "code_sha256": {
-    "scripts/evaluate_window_sizes.py": "e5d04befa056baf07a53eea16588e024f49855cdd152e9f6b7464562cac41ee5",
+    "scripts/evaluate_window_sizes.py": "e32414ad22946ed970c894b4418eced96eefa4f1665c2b2c92b92cee5a8b347f",
     "scripts/evaluate_detection.py": "0dd74f2cfb71632ce9824f498107e279a85d1eac16ef00c52782559f637916df",
     "unsw_iot_attack_pcaps/prepare_labels.py": "ef97e6be35d0c51f989d00367d326c0f75ff9eeaf077d3be7cafb6aa70d884d2",
     "src/lm_idnet/models/modeling_stage.py": "4b2f771cf6c12639d6185b25730ed295de89358505e3f792ffb3c490e01c4c87",

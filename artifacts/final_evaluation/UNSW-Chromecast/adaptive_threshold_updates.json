@@ -1,0 +1,41 @@
+{
+  "threshold_attempts": [
+    {
+      "after_window": 144,
+      "buffer_window_count": 138,
+      "capture_id": "2018-10-25",
+      "window_end_utc": "2018-10-25T13:00:00Z",
+      "source": "accepted_windows",
+      "old_model_fingerprint": "3db4972c3c1823a585f066ca39f4e42deb3e4da2d049f841743d857b62f72c18",
+      "old_score_iqr": 0.9602401547832642,
+      "old_threshold": -25.61083010635366,
+      "promoted": false,
+      "reason": "candidate threshold change exceeds configured limit"
+    },
+    {
+      "after_window": 288,
+      "buffer_window_count": 281,
+      "capture_id": "2018-10-26",
+      "window_end_utc": "2018-10-26T13:00:00Z",
+      "source": "accepted_windows",
+      "old_model_fingerprint": "3db4972c3c1823a585f066ca39f4e42deb3e4da2d049f841743d857b62f72c18",
+      "old_score_iqr": 0.9602401547832642,
+      "old_threshold": -25.61083010635366,
+      "promoted": false,
+      "reason": "candidate threshold change exceeds configured limit"
+    },
+    {
+      "after_window": 432,
+      "buffer_window_count": 288,
+      "capture_id": "2018-10-27",
+      "window_end_utc": "2018-10-27T13:00:00Z",
+      "source": "accepted_windows",
+      "old_model_fingerprint": "3db4972c3c1823a585f066ca39f4e42deb3e4da2d049f841743d857b62f72c18",
+      "old_score_iqr": 0.9602401547832642,
+      "old_threshold": -25.61083010635366,
+      "promoted": false,
+      "reason": "candidate threshold change exceeds configured limit"
+    }
+  ],
+  "refit_attempts": []
+}
