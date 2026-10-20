@@ -41,7 +41,7 @@
   {\color{burgundy}\rule{\textwidth}{.6pt}}%
 }
 \newcommand{\slideprefix}{}
-\newcommand{\slidetotal}{/12}
+\newcommand{\slidetotal}{/10}
 \setbeamertemplate{footline}{%
   \hbox{%
     \begin{beamercolorbox}[wd=.83\paperwidth,ht=2.8ex,dp=1.1ex,leftskip=1em]{author in head/foot}%
@@ -77,10 +77,10 @@
     /pgf/number format/fixed,/pgf/number format/precision=1}}}
 
 \title{LM-IDNet}
-\subtitle{Learning normal traffic. Detecting meaningful change.}
+\subtitle{Dirichlet--Multinomial Anomaly Detection for IoT Traffic}
 \author{Fatemeh Mahvari}
-\institute{Supervisor: Professor Mauro Migliardi}
-\date{19 October 2026}
+\institute{Supervisor: Professor Mauro Migliardi\\Co-supervisor: Professor Alessandro Languasco}
+\date{20 October 2026}
 \hypersetup{pdftitle={LM-IDNet — Discussion Presentation},
   pdfauthor={Fatemeh Mahvari},pdfsubject={12-minute presentation with reference slides}}
 \pdfstringdefDisableCommands{\def\translate#1{#1}}
@@ -106,15 +106,16 @@
     {\color{white}\fontsize{30}{33}\selectfont\bfseries LM-IDNet};
   \node[anchor=west,text width=.51\paperwidth]
     at ([xshift=.72cm,yshift=.25cm]current page.west)
-    {\color{palerose}\Large Learning normal traffic.\\Detecting meaningful change.};
+    {\color{palerose}\Large Dirichlet--Multinomial\\Anomaly Detection for IoT Traffic};
   \node[anchor=west,text width=.50\paperwidth]
     at ([xshift=.72cm,yshift=-1.15cm]current page.west)
-    {\color{white}\normalsize A compact, explainable anomaly detector\\for IoT network traffic};
+    {\color{white}\normalsize Languasco--Migliardi (LM) method};
   \node[anchor=south west,text width=.53\paperwidth]
     at ([xshift=.72cm,yshift=.42cm]current page.south west)
     {\color{white}\normalsize\bfseries Fatemeh Mahvari\\[.08cm]
      \color{palerose}\small Supervisor: Professor Mauro Migliardi\\
-     Discussion presentation\quad\textbullet\quad19 October 2026};
+     Co-supervisor: Professor Alessandro Languasco\\
+     Discussion presentation\quad\textbullet\quad\insertdate};
   \node[anchor=south east,fill=ink,inner sep=2pt]
     at ([xshift=-.06cm,yshift=.06cm]detector.south east)
     {\color{palerose}\fontsize{6}{7}\selectfont REFERENCE IMAGE / PRYPIAT DETECTOR};
@@ -124,7 +125,7 @@
 \section{System}
 
 % 02 | 00:30–01:25 | 55 seconds
-\begin{frame}{A small traffic profile for each IoT device}
+\begin{frame}{Device traffic profiles}
 \begin{columns}[c,onlytextwidth]
 \column{.62\textwidth}
 \begin{tikzpicture}
@@ -139,8 +140,8 @@
 \end{axis}
 \end{tikzpicture}
 \column{.34\textwidth}
-{\large\bfseries The question}\par\medskip
-Can a device's own normal traffic reveal suspicious change?\par\bigskip
+{\large\bfseries Device-specific models}\par\medskip
+Normal protocol proportions differ between devices.\par\bigskip
 \textbf{4 exclusive counts}\\per ten-minute window\par\medskip
 Learn from a trusted benign period; flag unusual later behaviour.
 \end{columns}
@@ -148,8 +149,8 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \evidence{Fitted means from saved normal-only models. UDP excludes SSDP; bars are model expectations.}
 \end{frame}
 
-% 03 | 01:25–02:40 | 75 seconds
-\begin{frame}{One normal model, three complementary signals}
+% 03 | 01:25–03:00 | 95 seconds
+\begin{frame}{Detection model and conservative adaptation}
 \centering
 \begin{tikzpicture}[node distance=.45cm]
   \node[lightbox,text width=3cm] (input) at (-4.25,0)
@@ -176,43 +177,14 @@ Learn from a trusted benign period; flag unusual later behaviour.
   \draw[flowarrow] (arp.south) -- (arp.south |- cal.north);
   \draw[flowarrow] (cal.east) -- ++(.7,0) |- (output.east);
 \end{tikzpicture}
-\takeaway{The DM model represents ordinary variation; count tails add complementary evidence.}
+\takeaway{Conservative periodic refitting: admit only sufficiently safe windows; check candidate changes before activation.}
 \evidence{Normal-only fitting and calibration. The native LM backend evaluates the DM likelihood.}
-\end{frame}
-
-% 04 | 02:40–03:30 | 50 seconds
-\begin{frame}{From a numerical method to a usable detector}
-\centering
-\begin{tikzpicture}
-  \node[lightbox,text width=3.2cm] (input) at (-4.8,0)
-    {\textbf{Validated inputs}\\PCAP batches or supplied windows};
-  \node[flowbox,text width=3.2cm] (runtime) at (0,0)
-    {\textbf{Shared detector}\\Static + adaptive modes};
-  \node[lightbox,text width=3.2cm] (event) at (4.8,0)
-    {\textbf{Traceable events}\\Decision, margins,\\source fingerprints};
-  \draw[flowarrow] (input) -- (runtime);
-  \draw[flowarrow] (runtime) -- (event);
-  \node[flowbox,text width=3.9cm] (native) at (-3,-2)
-    {\textbf{Native LM integration}\\One likelihood contribution\\per window};
-  \node[flowbox,text width=4.1cm] (state) at (3,-2)
-    {\textbf{Model + threshold}\\Guarded activation,\\restart and rollback};
-  \draw[flowarrow] (native.north) -- ++(0,.35) -| (runtime.south west);
-  \draw[flowarrow] (runtime.south east) |- (state.north);
-\end{tikzpicture}
-\vspace{.28cm}
-\begin{columns}[c,onlytextwidth]
-\column{.24\textwidth}\centering\bigvalue{0 / 270}
-\column{.72\textwidth}LM versus SciPy decision mismatches in the retained D-Link benchmark.\\
-\small Maximum absolute score difference: $1.09\times10^{-5}$.
-\end{columns}
-\takeaway{The contribution spans numerical integration, detection, and reliable operation.}
-\evidence{Retained backend benchmark and runtime/state contracts; timings are in reference slide R2.}
 \end{frame}
 
 \section{Evaluation}
 
-% 05 | 03:30–04:35 | 65 seconds
-\begin{frame}{Normal learning first; labelled evaluation later}
+% 04 | 03:00–04:05 | 65 seconds
+\begin{frame}{Datasets and chronological partitions}
 \centering
 \begin{tikzpicture}[x=.94cm]
   \fill[palerose!55!paper] (8.55,.95) rectangle (11.5,-2.65);
@@ -241,15 +213,15 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \evidence{Original reference partitions. Timeline shows role order, not elapsed time. D-Link is a numerical workload without attack labels.}
 \end{frame}
 
-% 06 | 04:35–06:00 | 85 seconds
-\begin{frame}{80\% pooled F1 on the final partitions}
+% 05 | 04:05–06:05 | 120 seconds
+\begin{frame}{Final detection results by device}
 \centering
-\normalsize Two labelled devices\quad\textbullet\quad1,008 windows\quad\textbullet\quad18 attack windows
+\normalsize\textbf{Static mode}\quad\textbullet\quad Ten-minute windows
 \vspace{.12cm}
 \begin{tikzpicture}
-\begin{axis}[discussion,width=14.2cm,height=4.8cm,ybar,bar width=20pt,
+\begin{axis}[discussion,width=14.2cm,height=4.8cm,ybar,bar width=26pt,
   ymin=0,ymax=117,ytick={0,25,50,75,100},ylabel={Score (\%)},
-  xmin=.5,xmax=3.5,xtick={1,2,3},xticklabels={Chromecast,Samsung camera,Pooled},
+  xmin=.5,xmax=2.5,xtick={1,2},xticklabels={Chromecast,Samsung camera},
   legend style={at={(.5,1)},anchor=south},legend columns=3]
   \addplot[fill=charcoal,draw=charcoal,values] coordinates {\FinalPrecision};
   \addplot[fill=dustyrose,draw=dustyrose,values] coordinates {\FinalRecall};
@@ -257,12 +229,12 @@ Learn from a trusted benign period; flag unusual later behaviour.
   \legend{Precision,Recall,F1}
 \end{axis}
 \end{tikzpicture}
-\takeaway{14/18 attack windows flagged; 3/990 benign windows flagged (0.30\% FPR).}
-\evidence{Final results. Pooled metrics use summed confusion counts. All three selected modes make the same decisions.}
+\takeaway{Chromecast: 4/6 attack windows flagged. Samsung camera: 10/12 flagged.}
+\evidence{Static results. Conservative adaptive-threshold and periodic-refit modes give identical decisions; no updates were activated.}
 \end{frame}
 
-% 07 | 06:00–07:05 | 65 seconds
-\begin{frame}{Eight of nine attacks detected; seven by attack end}
+% 06 | 06:05–07:40 | 95 seconds
+\begin{frame}{Attack coverage and detection delay}
 \begin{columns}[c,onlytextwidth]
 \column{.66\textwidth}
 \begin{tikzpicture}
@@ -279,68 +251,44 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \column{.30\textwidth}
 \textcolor{burgundy}{$\blacklozenge$}\ \textbf{First alert}\\
 \textcolor{palerose}{\rule{.5cm}{4pt}}\ Annotated attack\par\bigskip
-\textbf{Median delay}\\among detected attacks\par\medskip
-\bigvalue{6.9}\ min\\Chromecast\par\medskip
-\bigvalue{7.5}\ min\\Samsung camera
+\textbf{Chromecast}\\2/3 detected; 2/3 by end\\
+\bigvalue{6.9}\ min median\par\medskip
+\textbf{Samsung camera}\\6/6 detected; 5/6 by end\\
+\bigvalue{7.5}\ min median
 \end{columns}
 \takeaway{The ten-minute collection interval is part of the detection delay.}
-\evidence{Final official attack intervals, aligned to onset; C = Chromecast, S = Samsung. Alerts occur at window close.}
+\evidence{Static mode, final official intervals; C = Chromecast, S = Samsung. Median delay is among detected attacks; alerts occur at window close.}
 \end{frame}
 
-% 08 | 07:05–08:05 | 60 seconds
-\begin{frame}{Conservative updates preserved the starting detector}
+% 07 | 07:40–09:10 | 90 seconds
+\begin{frame}{Conservative adaptation results}
 \begin{columns}[c,onlytextwidth]
 \column{.64\textwidth}
 \begin{tikzpicture}
-\begin{axis}[discussion,width=9.3cm,height=4.6cm,ybar,bar width=36pt,
-  ymin=0,ymax=8.5,ytick={0,2,4,6,8},xmin=.5,xmax=3.5,
+\begin{axis}[discussion,width=9.3cm,height=4.6cm,ybar,bar width=18pt,
+  ymin=0,ymax=5,ytick={0,1,2,3,4},xmin=.5,xmax=3.5,
   xtick={1,2,3},xticklabels={Threshold move,Concentration,Too few samples},
-  ylabel={Rejected update attempts},x tick label style={font=\small,align=center}]
-  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\Rejections};
+  ylabel={Rejected update attempts},x tick label style={font=\small,align=center},
+  legend style={at={(.5,1.02)},anchor=south},legend columns=2]
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\RejectionsChromecast};
+  \addplot[fill=charcoal,draw=charcoal,values] coordinates {\RejectionsSamsung};
+  \legend{Chromecast,Samsung camera}
 \end{axis}
 \end{tikzpicture}
 \column{.32\textwidth}
-\bigvalue{0 / 14}\\updates activated\par\bigskip
-Score before learning.\par\medskip
-Keep original detection references.\par\medskip
-Activate only a complete validated model--threshold pair.
+\textbf{Activated in each mode}\par\medskip
+\bigvalue{0 / 3}\\Chromecast\par\bigskip
+\bigvalue{0 / 4}\\Samsung camera\par\medskip
+Threshold-adaptive and periodic-refit modes.
 \end{columns}
 \takeaway{No adaptive gain is established on this final replay.}
-\evidence{Seven threshold attempts and seven refit attempts across both devices; paired threshold/refit records counted once.}
-\end{frame}
-
-% 09 | 08:05–09:20 | 75 seconds
-\begin{frame}{Window size trades coverage for response time}
-\begin{columns}[c,onlytextwidth]
-\column{.66\textwidth}
-\begin{tikzpicture}
-\begin{axis}[discussion,width=9.7cm,height=4.9cm,
-  xmin=5,xmax=65,ymin=0,ymax=56,ytick={0,18,36,54},
-  xtick={10,20,30,60},xlabel={Window duration (minutes)},
-  ylabel={Attacks out of 54},
-  legend style={at={(.5,1.04)},anchor=south},legend columns=1]
-  \addplot[color=burgundy,mark=*,mark size=2.5pt,values]
-    coordinates {\WindowDetected};
-  \addplot[color=charcoal,dashed,mark=square*,mark size=2.5pt,values,
-    every node near coord/.append style={anchor=west,xshift=3pt,
-      fill=paper,inner sep=1pt}]
-    coordinates {\WindowTimely};
-  \legend{Eventually detected,Alerted by attack end}
-\end{axis}
-\end{tikzpicture}
-\column{.30\textwidth}
-\textbf{Delivered default}\par\smallskip\bigvalue{10}\ minutes\par\bigskip
-\textbf{Static coverage candidate}\\30 minutes\par\medskip
-45/54 attacks detected, but only 12/54 alerted by attack end.
-\end{columns}
-\takeaway{Retain ten minutes for earlier response; validate longer windows against the use case.}
-\evidence{Separate static development study on matched traffic and 54 attacks; fresh fits with a common normal split across durations.}
+\evidence{Final replay. Per device: threshold attempts reject threshold movement; refits reject concentration movement or too few samples.}
 \end{frame}
 
 \section{Achievements and limits}
 
-% 10 | 09:20–10:25 | 65 seconds
-\begin{frame}{A measured path towards edge operation}
+% 08 | 09:10–10:25 | 75 seconds
+\begin{frame}{Edge simulation: adaptive periodic refitting}
 \begin{columns}[c,onlytextwidth]
 \column{.65\textwidth}
 \begin{tikzpicture}
@@ -354,33 +302,33 @@ Activate only a complete validated model--threshold pair.
 \end{axis}
 \end{tikzpicture}
 \column{.31\textwidth}
-\textbf{Local Docker simulation}\\1 CPU / 512 MiB\par\bigskip
+\textbf{D-Link Camera 5 reference}\\Conservative policy\\1 CPU / 512 MiB\par\bigskip
 \bigvalue{\EdgeWorst\ s}\\worst observed processing\\\small including a rejected refit\par\bigskip
 \normalsize 20,000 supplied windows\\16,000 scored; 4,000 missing
 \end{columns}
 \takeaway{Processing has observed headroom; physical gateway performance remains unmeasured.}
-\evidence{Retained x86\_64 synthetic replay; no update promoted. Processing starts after input arrival; collection delay is separate.}
+\evidence{Recorded raw-DM runtime, synthetic windows, x86\_64 Docker. No update promoted; processing time excludes collection delay.}
 \end{frame}
 
-% 11 | 10:25–11:45 | 80 seconds
-\begin{frame}{A complete detector with a clear operating tradeoff}
+% 09 | 10:25–11:45 | 80 seconds
+\begin{frame}{Achievements, limitations and future work}
 \begin{columns}[T,onlytextwidth]
 \column{.31\textwidth}
 \bigvalue{4 counts}\par\medskip
 \textbf{Compact statistical core}\par\smallskip
 Normal-only DM learning, native likelihood, explainable count signals.
 \column{.31\textwidth}
-\bigvalue{80\% F1}\par\medskip
-\textbf{Traceable final evidence}\par\smallskip
-Two labelled devices, 1,008 windows, full decisions and update records.
+\bigvalue{2 devices}\par\medskip
+\textbf{Final static F1}\par\smallskip
+Chromecast: 61.54\%\\Samsung camera: 90.91\%\\Full decisions and update records.
 \column{.31\textwidth}
 \bigvalue{$\sim$69 MiB}\par\medskip
 \textbf{Operational software}\par\smallskip
 Shared batch/streaming detection, guarded state, restart and rollback.
 \end{columns}
 \vspace{.45cm}
-\textbf{Evidence limits}\quad18 final attack windows; count-preserving attacks can be missed;
-useful conservative learning remains unproven.
+\textbf{Evidence limits}\quad Only 6 final attack windows for Chromecast and 12 for Samsung;
+count-preserving attacks can be missed; useful conservative learning remains unproven.
 \par\vspace{.25cm}
 \begin{tikzpicture}
   \node[lightbox,text width=3.65cm,minimum height=.75cm] (a) {More devices and attacks};
@@ -388,10 +336,10 @@ useful conservative learning remains unproven.
   \node[lightbox,text width=3.65cm,minimum height=.75cm,right=.7cm of b] (c) {Physical gateway\\validation};
   \draw[flowarrow] (a) -- (b);\draw[flowarrow] (b) -- (c);
 \end{tikzpicture}
-\takeaway{LM-IDNet turns a compact traffic model into a measured, reproducible detection system.}
+\takeaway{Device-specific detection, explainable events, guarded adaptation, restart and rollback.}
 \end{frame}
 
-% 12 | 11:45–12:00 | 15 seconds
+% 10 | 11:45–12:00 | 15 seconds
 \begin{frame}[plain,label=thanks]
 \begin{tikzpicture}[remember picture,overlay]
   \fill[darkburgundy] (current page.south west) rectangle (current page.north east);
@@ -402,7 +350,7 @@ useful conservative learning remains unproven.
     {\color{palerose}\Large Questions and discussion};
   \node[anchor=south west,text width=12cm] at ([xshift=1cm,yshift=.7cm]current page.south west)
     {\color{white}\normalsize LM-IDNet\quad\textbullet\quad Fatemeh Mahvari\\[.18cm]
-     \color{palerose}\small Reference slides follow: model, backend, counts, guards, duration, sources.};
+     \color{palerose}\small Reference slides follow: model, native method, counts, guards, window study, sources.};
 \end{tikzpicture}
 \end{frame}
 
@@ -412,7 +360,7 @@ useful conservative learning remains unproven.
 \renewcommand{\slidetotal}{}
 \section{Reference / questions only}
 
-\begin{frame}[label=reference-model]{R1 / What is fitted, and what triggers an alert?}
+\begin{frame}[label=reference-model]{R1 / Model and decision rule}
 \normalsize
 \textbf{DM composition model}\quad$\alpha_k>0$, $\alpha_0=\sum_k\alpha_k$, $N=\sum_kx_k$
 \[
@@ -434,33 +382,32 @@ s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
 \evidence{Constant fit features use unit scale. A count-tail breach can decide early. Severity is not an attack probability.}
 \end{frame}
 
-\begin{frame}[label=reference-backend]{R2 / Native accuracy and speed are separate claims}
+\begin{frame}[label=reference-backend]{R2 / Native Languasco--Migliardi implementation}
 \begin{columns}[c,onlytextwidth]
-\column{.65\textwidth}
+\column{.49\textwidth}
 \begin{tikzpicture}
-\begin{axis}[discussion,width=9.5cm,height=4.8cm,ybar,bar width=33pt,
-  xmin=.5,xmax=3.5,ymin=0,ymax=1.4,ytick={0,.5,1,1.25},
-  xtick={1,2,3},xticklabels={Complete fit,Matrix kernel,Window score},
-  ylabel={LM time / SciPy time},
-  every node near coord/.append style={/pgf/number format/precision=3}]
-  \draw[charcoal,dashed,thick] (axis cs:.5,1) -- (axis cs:3.5,1);
-  \addplot[fill=burgundy,draw=burgundy,values,
-    every node near coord/.append style={/pgf/number format/precision=3,
-      fill=paper,inner sep=1pt}]
-    coordinates {\BackendRatios};
+\begin{axis}[discussion,width=7cm,height=4.5cm,ybar,bar width=32pt,
+  title={Complete fitting},xmin=.5,xmax=1.5,ymin=0,ymax=240,
+  ytick={0,50,100,150,200},xtick={1},xticklabels={846 $\times$ 4 fit matrix},
+  ylabel={Time (milliseconds)}]
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {(1,\LmFit)};
 \end{axis}
 \end{tikzpicture}
-\column{.31\textwidth}
-\textbf{D-Link workload}\\846 $\times$ 4 fit matrix\\270 scored windows\par\medskip
-\textbf{Numerical agreement}\\$3.86\times10^{-7}$ max. relative $\alpha$ difference\\[.12cm]
-$1.09\times10^{-5}$ max. absolute score difference\\[.12cm]
-0/270 decision mismatches
+\column{.49\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=7cm,height=4.5cm,ybar,bar width=27pt,
+  title={Likelihood evaluation},xmin=.5,xmax=2.5,ymin=0,ymax=70,
+  ytick={0,20,40,60},xtick={1,2},xticklabels={Matrix kernel,Window score},
+  ylabel={Time (microseconds)}]
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\LmKernelTimes};
+\end{axis}
+\end{tikzpicture}
 \end{columns}
-\takeaway{LM is slightly faster for single-window scoring on this workload; fitting is slower.}
-\evidence{Retained D-Link benchmark, five timing batches. Ratio 1 = equal time; smaller = faster. No fresh performance run.}
+\takeaway{Native integration preserves the sum of independent window likelihoods.}
+\evidence{Retained D-Link native-method timings, five batches and warm-up. Fitting excludes input/output. These are recorded measurements.}
 \end{frame}
 
-\begin{frame}[label=reference-counts]{R3 / What sits behind the final percentages?}
+\begin{frame}[label=reference-counts]{R3 / Final confusion counts by device}
 \begin{columns}[c,onlytextwidth]
 \column{.63\textwidth}
 \begin{tikzpicture}
@@ -475,17 +422,14 @@ $1.09\times10^{-5}$ max. absolute score difference\\[.12cm]
 \end{axis}
 \end{tikzpicture}
 \column{.33\textwidth}
-\textbf{Pooled confusion counts}\\TP = 14\quad FP = 3\\FN = 4\quad TN = 987\par\medskip
-Precision $=14/17=82.35\%$\par\smallskip
-Recall $=14/18=77.78\%$\par\smallskip
-F1 $=28/35=80.00\%$\par\smallskip
-FPR $=3/990=0.30\%$
+\textbf{Chromecast}\\432 windows; 6 attack\\TP = 4\quad FP = 3\\FN = 2\quad TN = 423\\FPR = 3/426 = 0.70\%\par\medskip
+\textbf{Samsung camera}\\576 windows; 12 attack\\TP = 10\quad FP = 0\\FN = 2\quad TN = 564\\FPR = 0/564 = 0\%
 \end{columns}
 \takeaway{Window recall and attack-interval coverage answer different questions.}
-\evidence{True negatives: Chromecast 423, Samsung 564. Any attack overlap labels a window positive; all 1,008 windows match labels.}
+\evidence{Static mode, final partitions. A window is attack-labelled if it overlaps an official attack interval.}
 \end{frame}
 
-\begin{frame}[label=reference-guards]{R4 / What does conservative learning permit?}
+\begin{frame}[label=reference-guards]{R4 / Conservative learning guards}
 \centering
 \begin{tikzpicture}
   \node[lightbox,text width=3.3cm] (score) {\textbf{Score first}\\Emit current decision};
@@ -510,15 +454,53 @@ FPR $=3/990=0.30\%$
 \evidence{Per-update guards do not establish immunity to stealthy attacks or unlimited cumulative drift. Final replay promoted no candidates.}
 \end{frame}
 
-\begin{frame}[label=reference-duration]{R5 / Duration sensitivity beyond the headline}
+\begin{frame}[label=reference-coverage]{R5 / Window duration: attack coverage}
+\begin{columns}[c,onlytextwidth]
+\column{.49\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=7cm,height=4.6cm,
+  title={Chromecast},xmin=5,xmax=65,ymin=0,ymax=21,
+  xtick={10,20,30,60},ytick={0,6,12,18},
+  xlabel={Window duration (min)},ylabel={Attacks out of 18}]
+  \addplot[color=burgundy,mark=*,values] coordinates {\WindowDetectedChromecast};
+  \addplot[color=charcoal,dashed,mark=square*,values,
+    every node near coord/.append style={anchor=west,xshift=3pt,yshift=1pt,
+      fill=paper,inner sep=1pt}] coordinates {\WindowTimelyChromecast};
+\end{axis}
+\end{tikzpicture}
+\column{.49\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=7cm,height=4.6cm,
+  title={Samsung camera},xmin=5,xmax=65,ymin=0,ymax=41,
+  xtick={10,20,30,60},ytick={0,12,24,36},
+  xlabel={Window duration (min)},ylabel={Attacks out of 36}]
+  \addplot[color=burgundy,mark=*,values] coordinates {\WindowDetectedSamsung};
+  \addplot[color=charcoal,dashed,mark=square*,values,
+    every node near coord/.append style={anchor=west,xshift=3pt,yshift=1pt,
+      fill=paper,inner sep=1pt}] coordinates {\WindowTimelySamsung};
+\end{axis}
+\end{tikzpicture}
+\end{columns}
+\centering\small\textcolor{burgundy}{$\bullet$}\ Detected\qquad
+\textcolor{charcoal}{$\blacksquare$}\ Alerted by attack end
+\takeaway{Delivered reference: ten minutes. Longer windows increase response delay.}
+\evidence{Static development study; matched traffic within each device; fresh fitting and calibration at every duration.}
+\end{frame}
+
+\begin{frame}[label=reference-duration]{R6 / Window duration: F1 and detection delay}
 \begin{columns}[c,onlytextwidth]
 \column{.49\textwidth}
 \begin{tikzpicture}
 \begin{axis}[discussion,width=7.0cm,height=4.6cm,
-  title={Pooled window F1},xmin=5,xmax=65,ymin=0,ymax=100,
+  title={Static window F1},xmin=5,xmax=65,ymin=0,ymax=105,
   xtick={10,20,30,60},ytick={0,25,50,75,100},
-  xlabel={Window duration (min)},ylabel={F1 (\%)}]
-  \addplot[color=burgundy,mark=*,values] coordinates {\WindowFone};
+  xlabel={Window duration (min)},ylabel={F1 (\%)},
+  legend style={at={(.03,.03)},anchor=south west,font=\small}]
+  \addplot[color=burgundy,mark=*,values,
+    every node near coord/.append style={anchor=north,yshift=-3pt}]
+    coordinates {\WindowFoneChromecast};
+  \addplot[color=charcoal,dashed,mark=square*,values] coordinates {\WindowFoneSamsung};
+  \legend{Chromecast,Samsung}
 \end{axis}
 \end{tikzpicture}
 \column{.49\textwidth}
@@ -538,7 +520,7 @@ FPR $=3/990=0.30\%$
 \evidence{Static development study. Samsung uses May 28--29 to fit and May 30--31 to calibrate at every duration. Lines join measured settings.}
 \end{frame}
 
-\begin{frame}[label=reference-sources]{R6 / Scientific basis and evidence trail}
+\begin{frame}[label=reference-sources]{R7 / References and project evidence}
 \normalsize
 \textbf{Statistical learning}\par\smallskip
 Minka, \emph{Estimating a Dirichlet distribution}, 2000 / revised 2012.\\

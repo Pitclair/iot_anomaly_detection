@@ -22,25 +22,20 @@ def main():
     devices = ["UNSW-Chromecast", "UNSW-Samsung-Camera"]
     static = [next(r for r in final["results"] if r["dataset"] == d
                    and r["mode"] == "static") for d in devices]
-    pooled = next(r for r in final["pooled"] if r["mode"] == "static")
     counts = ["true_positive", "false_positive", "false_negative", "true_negative"]
-    for key in [*counts, "window_count"]:
-        assert sum(r[key] for r in static) == pooled[key]
+    for row, windows, attacks in zip(static, [432, 576], [6, 12]):
+        assert sum(row[k] for k in counts) == row["window_count"] == windows
+        assert row["true_positive"] + row["false_negative"] == attacks
     for result in final["results"]:
         original = static[devices.index(result["dataset"])]
         assert all(result[k] == original[k] for k in counts)
         assert result["threshold_updates"] == result["model_refits"] == 0
-    assert pooled["window_count"] == 1008
-    assert sum(pooled[k] for k in counts) == 1008
-    assert sum(r["attack_intervals"] for r in static) == 9
-    assert sum(r["detected_attack_intervals"] for r in static) == 8
-    assert sum(r["alerts_before_attack_end"] for r in static) == 7
 
     macros = {}
     for key, metric in [("Precision", "precision"), ("Recall", "recall"),
                         ("Fone", "f1_score")]:
         macros[f"Final{key}"] = coordinates(
-            (i, 100 * r[metric]) for i, r in enumerate([*static, pooled], 1))
+            (i, 100 * r[metric]) for i, r in enumerate(static, 1))
     for key, metric in [("TP", "true_positive"), ("FP", "false_positive"),
                         ("FN", "false_negative")]:
         macros[f"Final{key}"] = coordinates(
@@ -51,49 +46,48 @@ def main():
             (i, 100 * value / sum(alpha)) for i, value in enumerate(alpha, 1))
 
     study = read("reports/window_size/results.json")["results"]
-    detected, timely, fone = [], [], []
-    for minutes in [10, 20, 30, 60]:
-        rows = [r for r in study if r["minutes"] == minutes
-                and r["partition"] == "development_test" and r["mode"] == "static"]
-        assert len(rows) == 2 and sum(r["attack_intervals"] for r in rows) == 54
-        tp, fp, fn = (sum(r[k] for r in rows) for k in counts[:3])
-        detected.append((minutes, sum(r["detected_attack_intervals"] for r in rows)))
-        timely.append((minutes, sum(r["alerts_before_attack_end"] for r in rows)))
-        fone.append((minutes, 100 * 2 * tp / (2 * tp + fp + fn)))
-    macros["WindowDetected"] = coordinates(detected)
-    macros["WindowTimely"] = coordinates(timely)
-    macros["WindowFone"] = coordinates(fone)
-    for short, device in zip(["Chromecast", "Samsung"], devices):
+    for short, device, attacks in zip(["Chromecast", "Samsung"], devices, [18, 36]):
         rows = sorted((r for r in study if r["dataset"] == device
                        and r["partition"] == "development_test"
                        and r["mode"] == "static"), key=lambda r: r["minutes"])
+        assert [r["minutes"] for r in rows] == [10, 20, 30, 60]
+        assert all(r["attack_intervals"] == attacks for r in rows)
+        for key, metric, factor in [
+            ("WindowDetected", "detected_attack_intervals", 1),
+            ("WindowTimely", "alerts_before_attack_end", 1),
+            ("WindowFone", "f1_score", 100),
+        ]:
+            macros[f"{key}{short}"] = coordinates(
+                (r["minutes"], factor * r[metric]) for r in rows)
         macros[f"Delay{short}"] = coordinates(
             (r["minutes"], r["median_delay_seconds"] / 60) for r in rows)
 
-    rejected = Counter()
-    for device in devices:
+    for short, device, expected_attempts in zip(["Chromecast", "Samsung"], devices, [3, 4]):
+        rejected = Counter()
         for mode in ["adaptive_threshold", "periodic_refit"]:
             updates = read(f"artifacts/final_evaluation/{device}/{mode}_updates.json")
             # A refit also has a paired threshold record; count each attempt once.
             attempts = updates["threshold_attempts" if mode == "adaptive_threshold"
                                else "refit_attempts"]
+            assert len(attempts) == expected_attempts
             assert not any(a["promoted"] for a in attempts)
             rejected.update(a["reason"] for a in attempts)
-    assert sum(rejected.values()) == 14
-    macros["Rejections"] = coordinates(enumerate([
-        rejected["candidate threshold change exceeds configured limit"],
-        rejected["candidate concentration change exceeds configured limit"],
-        rejected["not enough accepted windows"],
-    ], 1))
+        macros[f"Rejections{short}"] = coordinates(enumerate([
+            rejected["candidate threshold change exceeds configured limit"],
+            rejected["candidate concentration change exceeds configured limit"],
+            rejected["not enough accepted windows"],
+        ], 1))
 
-    benchmark = read("reports/D-LinkDayCam5/lm_backend_benchmark.json")
-    assert benchmark["comparisons"]["decision_mismatch_count"] == 0
-    metrics = ["model_fit_median_seconds", "likelihood_matrix_median_seconds",
-               "single_window_score_median_seconds"]
-    macros["BackendRatios"] = coordinates(
-        (i, benchmark["backends"]["lm"][m] / benchmark["backends"]["scipy"][m])
-        for i, m in enumerate(metrics, 1))
+    native = read("reports/D-LinkDayCam5/lm_backend_benchmark.json")["backends"]["lm"]
+    macros["LmFit"] = f"{1000 * native['model_fit_median_seconds']:.6g}"
+    macros["LmKernelTimes"] = coordinates([
+        (1, 1e6 * native["likelihood_matrix_median_seconds"]),
+        (2, 1e6 * native["single_window_score_median_seconds"]),
+    ])
     edge = read("reports/edge/simulation-20000.json")
+    assert edge["config"]["adaptation"]["mode"] == "periodic_refit"
+    assert edge["config"]["adaptation"]["policy"] == "conservative"
+    assert edge["config"]["ingest"]["device_id"] == "D-LinkDayCam5"
     assert edge["input_windows"] == 20000
     assert edge["measurements"]["scored_windows"] == 16000
     assert edge["measurements"]["promoted_updates"] == 0
