@@ -1,7 +1,6 @@
 """Regenerate slide values from retained results; run from any directory."""
 
 import json
-from collections import Counter
 from pathlib import Path
 
 
@@ -32,10 +31,13 @@ def main():
         assert result["threshold_updates"] == result["model_refits"] == 0
 
     macros = {}
-    for key, metric in [("Precision", "precision"), ("Recall", "recall"),
-                        ("Fone", "f1_score")]:
-        macros[f"Final{key}"] = coordinates(
-            (i, 100 * r[metric]) for i, r in enumerate(static, 1))
+    for short, device in zip(["Chromecast", "Samsung"], devices):
+        for name, mode in [("Static", "static"), ("Periodic", "periodic_refit")]:
+            row = next(r for r in final["results"]
+                       if r["dataset"] == device and r["mode"] == mode)
+            macros[f"Final{name}{short}"] = coordinates(
+                (i, 100 * row[metric]) for i, metric in enumerate(
+                    ["precision", "recall", "f1_score"], 1))
     for key, metric in [("TP", "true_positive"), ("FP", "false_positive"),
                         ("FN", "false_negative")]:
         macros[f"Final{key}"] = coordinates(
@@ -61,22 +63,6 @@ def main():
                 (r["minutes"], factor * r[metric]) for r in rows)
         macros[f"Delay{short}"] = coordinates(
             (r["minutes"], r["median_delay_seconds"] / 60) for r in rows)
-
-    for short, device, expected_attempts in zip(["Chromecast", "Samsung"], devices, [3, 4]):
-        rejected = Counter()
-        for mode in ["adaptive_threshold", "periodic_refit"]:
-            updates = read(f"artifacts/final_evaluation/{device}/{mode}_updates.json")
-            # A refit also has a paired threshold record; count each attempt once.
-            attempts = updates["threshold_attempts" if mode == "adaptive_threshold"
-                               else "refit_attempts"]
-            assert len(attempts) == expected_attempts
-            assert not any(a["promoted"] for a in attempts)
-            rejected.update(a["reason"] for a in attempts)
-        macros[f"Rejections{short}"] = coordinates(enumerate([
-            rejected["candidate threshold change exceeds configured limit"],
-            rejected["candidate concentration change exceeds configured limit"],
-            rejected["not enough accepted windows"],
-        ], 1))
 
     native = read("reports/D-LinkDayCam5/lm_backend_benchmark.json")["backends"]["lm"]
     macros["LmFit"] = f"{1000 * native['model_fit_median_seconds']:.6g}"
@@ -124,7 +110,7 @@ def main():
     output += "\n".join("\\newcommand{\\" + key + "}{" + value + "}"
                          for key, value in macros.items()) + "\n"
     (HERE / "evidence.tex").write_text(output)
-    print("Verified final counts, mode agreement, update attempts, and study coverage.")
+    print("Verified final counts, mode agreement, inactive updates, and study coverage.")
     print("Wrote", HERE / "evidence.tex")
 
 

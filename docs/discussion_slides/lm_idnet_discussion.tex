@@ -41,7 +41,7 @@
   {\color{burgundy}\rule{\textwidth}{.6pt}}%
 }
 \newcommand{\slideprefix}{}
-\newcommand{\slidetotal}{/10}
+\newcommand{\slidetotal}{/9}
 \setbeamertemplate{footline}{%
   \hbox{%
     \begin{beamercolorbox}[wd=.83\paperwidth,ht=2.8ex,dp=1.1ex,leftskip=1em]{author in head/foot}%
@@ -216,21 +216,34 @@ Learn from a trusted benign period; flag unusual later behaviour.
 % 05 | 04:05–06:05 | 120 seconds
 \begin{frame}{Final detection results by device}
 \centering
-\normalsize\textbf{Static mode}\quad\textbullet\quad Ten-minute windows
-\vspace{.12cm}
+\normalsize Ten-minute windows\quad\textbullet\quad Final partitions
+\vspace{.15cm}
+\begin{columns}[c,onlytextwidth]
+\column{.49\textwidth}
 \begin{tikzpicture}
-\begin{axis}[discussion,width=14.2cm,height=4.8cm,ybar,bar width=26pt,
+\begin{axis}[discussion,width=7cm,height=4.5cm,ybar,bar width=18pt,
+  title={Chromecast},
   ymin=0,ymax=117,ytick={0,25,50,75,100},ylabel={Score (\%)},
-  xmin=.5,xmax=2.5,xtick={1,2},xticklabels={Chromecast,Samsung camera},
-  legend style={at={(.5,1)},anchor=south},legend columns=3]
-  \addplot[fill=charcoal,draw=charcoal,values] coordinates {\FinalPrecision};
-  \addplot[fill=dustyrose,draw=dustyrose,values] coordinates {\FinalRecall};
-  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\FinalFone};
-  \legend{Precision,Recall,F1}
+  xmin=.5,xmax=3.5,xtick={1,2,3},xticklabels={Precision,Recall,F1}]
+  \addplot[fill=charcoal,draw=charcoal,values] coordinates {\FinalStaticChromecast};
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\FinalPeriodicChromecast};
 \end{axis}
 \end{tikzpicture}
+\column{.49\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=7cm,height=4.5cm,ybar,bar width=18pt,
+  title={Samsung camera},
+  ymin=0,ymax=117,ytick={0,25,50,75,100},ylabel={Score (\%)},
+  xmin=.5,xmax=3.5,xtick={1,2,3},xticklabels={Precision,Recall,F1}]
+  \addplot[fill=charcoal,draw=charcoal,values] coordinates {\FinalStaticSamsung};
+  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\FinalPeriodicSamsung};
+\end{axis}
+\end{tikzpicture}
+\end{columns}
+\small\textcolor{charcoal}{\rule{.35cm}{.16cm}}\ Static\qquad
+\textcolor{burgundy}{\rule{.35cm}{.16cm}}\ Conservative periodic refit
 \takeaway{Chromecast: 4/6 attack windows flagged. Samsung camera: 10/12 flagged.}
-\evidence{Static results. Conservative adaptive-threshold and periodic-refit modes give identical decisions; no updates were activated.}
+\evidence{Periodic-refit results match static results for each device; no candidate update was activated.}
 \end{frame}
 
 % 06 | 06:05–07:40 | 95 seconds
@@ -260,34 +273,9 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \evidence{Static mode, final official intervals; C = Chromecast, S = Samsung. Median delay is among detected attacks; alerts occur at window close.}
 \end{frame}
 
-% 07 | 07:40–09:10 | 90 seconds
-\begin{frame}{Conservative adaptation results}
-\begin{columns}[c,onlytextwidth]
-\column{.64\textwidth}
-\begin{tikzpicture}
-\begin{axis}[discussion,width=9.3cm,height=4.6cm,ybar,bar width=18pt,
-  ymin=0,ymax=5,ytick={0,1,2,3,4},xmin=.5,xmax=3.5,
-  xtick={1,2,3},xticklabels={Threshold move,Concentration,Too few samples},
-  ylabel={Rejected update attempts},x tick label style={font=\small,align=center},
-  legend style={at={(.5,1.02)},anchor=south},legend columns=2]
-  \addplot[fill=burgundy,draw=burgundy,values] coordinates {\RejectionsChromecast};
-  \addplot[fill=charcoal,draw=charcoal,values] coordinates {\RejectionsSamsung};
-  \legend{Chromecast,Samsung camera}
-\end{axis}
-\end{tikzpicture}
-\column{.32\textwidth}
-\textbf{Activated in each mode}\par\medskip
-\bigvalue{0 / 3}\\Chromecast\par\bigskip
-\bigvalue{0 / 4}\\Samsung camera\par\medskip
-Threshold-adaptive and periodic-refit modes.
-\end{columns}
-\takeaway{No adaptive gain is established on this final replay.}
-\evidence{Final replay. Per device: threshold attempts reject threshold movement; refits reject concentration movement or too few samples.}
-\end{frame}
-
 \section{Achievements and limits}
 
-% 08 | 09:10–10:25 | 75 seconds
+% 07 | 07:40–08:55 | 75 seconds
 \begin{frame}{Edge simulation: adaptive periodic refitting}
 \begin{columns}[c,onlytextwidth]
 \column{.65\textwidth}
@@ -310,7 +298,7 @@ Threshold-adaptive and periodic-refit modes.
 \evidence{Recorded raw-DM runtime, synthetic windows, x86\_64 Docker. No update promoted; processing time excludes collection delay.}
 \end{frame}
 
-% 09 | 10:25–11:45 | 80 seconds
+% 08 | 08:55–10:15 | 80 seconds
 \begin{frame}{Achievements, limitations and future work}
 \begin{columns}[T,onlytextwidth]
 \column{.31\textwidth}
@@ -339,7 +327,7 @@ count-preserving attacks can be missed; useful conservative learning remains unp
 \takeaway{Device-specific detection, explainable events, guarded adaptation, restart and rollback.}
 \end{frame}
 
-% 10 | 11:45–12:00 | 15 seconds
+% 09 | 10:15–10:30 | 15 seconds
 \begin{frame}[plain,label=thanks]
 \begin{tikzpicture}[remember picture,overlay]
   \fill[darkburgundy] (current page.south west) rectangle (current page.north east);

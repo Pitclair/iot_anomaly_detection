@@ -1,13 +1,15 @@
 # LM-IDNet discussion presentation
 
 Presentation date: **20 October 2026**. Present `lm_idnet_discussion.pdf`.
-Slides 1–10 are the **12-minute talk**; R1–R7 follow “Thank you” and are for
+Slides 1–9 are the main talk within the **12-minute presentation slot**;
+R1–R7 follow “Thank you” and are for
 questions only. The window-duration study is in R5–R6. The visual format reuses
 the existing 16:9 burgundy Beamer deck in `docs/slides/`. All numerical
 comparisons use vector graphs; there are no slide tables or animated reveals.
 
-The time allocations below total 720 seconds. Practise against the cumulative
-times and leave time for pointing at the graphs. The script is a speaking
+The speaking allocations below total 10 minutes 30 seconds, leaving 90 seconds
+for pointing at graphs, pauses and transitions. Practise against the cumulative
+times. The script is a speaking
 guide; the clock, rather than a fixed reading speed, determines the pace.
 There is no dependency on a completed dissertation document.
 
@@ -17,7 +19,7 @@ Good morning, everyone. I am Fatemeh Mahvari. This work was supervised by
 Professor Mauro Migliardi and co-supervised by Professor Alessandro Languasco.
 
 LM-IDNet is a study about an IoT anomaly-detection system using the
-Languasco–Migliardi (LM) method. I developed the complete path from packet
+Languasco–Migliardi loglikelihood (LM) method. I developed the complete path from packet
 captures to detection events, evaluated each device on labelled attacks, and
 measured the adaptive periodic-refit runtime in a deployment simulation.
 
@@ -29,7 +31,7 @@ Chromecast is dominated by ordinary UDP, while the Samsung camera has a much
 larger SSDP component. These are fitted normal means, not attack measurements.
 
 Each device therefore receives its own model. Every ten minutes, we keep just
-four mutually exclusive counts: TCP, ordinary UDP, SSDP (separately) and ARP.
+four mutually exclusive counts: TCP, ordinary UDP, SSDP and ARP.
 
 The model, following unsupervised learning, learns from a trusted benign
 period. This keeps the representation compact and makes an alert
@@ -66,7 +68,8 @@ devices have earlier normal captures for fitting, a separate normal calibration 
 The arrows show that order. The widths do not represent elapsed time. The
 development data supports comparisons, while the final replay uses saved
 normal-only starting models and thresholds with fixed settings. Static
-detection, threshold adaptation and periodic refitting each start independently from the same pair for their device.
+detection and conservative periodic refitting each start independently from
+the same pair for their device.
 
 Labels enter only the offline metrics. A window is scored before it can
 influence learning.
@@ -76,8 +79,10 @@ its alerts cannot establish detection accuracy.
 
 ## 5 — Final detection results by device · 04:05–06:05 · 120 seconds
 
-These graphs show the final results for static mode, using ten-minute windows.
-Each device is evaluated separately with its own fitted model and calibration.
+Each graph compares static detection with conservative adaptive periodic
+refitting, using ten-minute windows on the final partitions. Grey bars show
+static results and burgundy bars show periodic-refit results. The left panel
+is Chromecast and the right panel is Samsung; the devices remain separate.
 
 For Chromecast, precision is 57.14 percent, recall is 66.67 percent and F1 is
 61.54 percent. Its 432 final windows contain six attack-labelled windows. Four
@@ -89,9 +94,9 @@ F1 is 90.91 percent. Its 576 final windows contain twelve attack-labelled
 windows. Ten are detected and two are missed. None of its 564 benign windows
 produces a false alert in this recording.
 
-The conservative adaptive-threshold and periodic-refit modes make the same
-decisions for each device because no update is activated in these final runs.
-Slide 7 shows those update outcomes.
+For each device, the paired bars have the same values. Conservative periodic
+refitting makes the same decisions as static detection because no candidate
+update is activated in these final runs.
 
 *Point to the two groups separately. The attack-window denominators are six
 for Chromecast and twelve for Samsung; keep conclusions device-specific.*
@@ -113,32 +118,7 @@ Among detected attacks, median delay is about 6.9 minutes for Chromecast and
 ten-minute collection interval is part of response time, even when computation
 after the window arrives is fast.
 
-## 7 — Conservative adaptation results · 07:40–09:10 · 90 seconds
-
-The equal static and adaptive results have a concrete explanation: no
-conservative candidate update is activated for either device.
-
-Chromecast has three adaptive-threshold attempts; all exceed the permitted
-threshold movement. Its periodic-refit run has three attempts: two exceed the
-concentration-change limit and one has too few accepted windows.
-
-Samsung has four adaptive-threshold attempts; all exceed the threshold limit.
-Its four periodic-refit attempts include three rejected for concentration
-movement and one for too few accepted windows.
-
-A refit also has a matching threshold record; the graph counts each scheduled
-attempt once and keeps the devices separate.
-
-The policy scores before learning, keeps original detection references and
-activates only a valid complete pair. Those mechanisms preserve the starting
-detector in this replay.
-
-This is evidence of the guards' behaviour. It does not establish a useful
-conservative learning gain on these traces. Controlled tests exercise
-successful activation separately; a benefit under real benign drift still
-needs evidence.
-
-## 8 — Edge simulation: adaptive periodic refitting · 09:10–10:25 · 75 seconds
+## 7 — Edge simulation: adaptive periodic refitting · 07:40–08:55 · 75 seconds
 
 These measurements use adaptive periodic-refit mode with the conservative
 policy and the D-Link Camera 5 starting model and threshold. They come from
@@ -157,7 +137,7 @@ memory behaviour or establish physical gateway performance. The completed
 software supports bounded operation, restart and rollback; physical hardware
 and ARM measurements remain the next deployment validation step.
 
-## 9 — Achievements, limitations and future work · 10:25–11:45 · 80 seconds
+## 8 — Achievements, limitations and future work · 08:55–10:15 · 80 seconds
 
 The work delivers three connected achievements.
 
@@ -181,7 +161,7 @@ traces.
 The next steps are broader device and attack coverage, longer evaluation under benign drift, and physical gateway validation. The central outcome is a
 complete, reproducible system whose measured tradeoffs can guide that work.
 
-## 10 — Thank you · 11:45–12:00 · 15 seconds
+## 9 — Thank you · 10:15–10:30 · 15 seconds
 
 Thank you. I welcome your questions.
 
@@ -240,7 +220,7 @@ Thank you. I welcome your questions.
   Plot values are `100 * alpha[k] / sum(alpha)`, not observed attack proportions.
 - **Slides 3 / R1:** [scoring description](../full_project_report/sections/multi_signal_research.tex)
   and [scientific basis](../full_project_report/sections/scientific_basis.tex).
-- **Slides 3 / 9:** [conservative adaptation](../full_project_report/sections/conservative_adaptation.tex),
+- **Slides 3 / 8:** [conservative adaptation](../full_project_report/sections/conservative_adaptation.tex),
   [streaming runtime](../full_project_report/sections/streaming_runtime.tex),
   and [persistent state](../full_project_report/sections/persistent_state.tex).
 - **R2:** [retained D-Link timings](../../reports/D-LinkDayCam5/lm_backend_benchmark.json).
@@ -257,9 +237,7 @@ Thank you. I welcome your questions.
   Delays use the first overlapping alert's window end. The plotted C1–C3 and
   S1–S6 identifiers are chronological within device; their original attack
   names and timestamps are in `interval_results` in the results JSON.
-- **Slide 7 / R4:** [Chromecast threshold attempts](../../artifacts/final_evaluation/UNSW-Chromecast/adaptive_threshold_updates.json),
-  [Chromecast refit attempts](../../artifacts/final_evaluation/UNSW-Chromecast/periodic_refit_updates.json),
-  [Samsung threshold attempts](../../artifacts/final_evaluation/UNSW-Samsung-Camera/adaptive_threshold_updates.json),
+- **Slide 5 / R4:** [Chromecast refit attempts](../../artifacts/final_evaluation/UNSW-Chromecast/periodic_refit_updates.json),
   [Samsung refit attempts](../../artifacts/final_evaluation/UNSW-Samsung-Camera/periodic_refit_updates.json),
   and [guard definitions](../full_project_report/sections/conservative_adaptation.tex).
 - **R5–R6:** [duration study results](../../reports/window_size/results.json)
@@ -267,7 +245,7 @@ Thank you. I welcome your questions.
   Only static development rows supply the plotted duration comparisons. Fresh
   study fits and matched coverage make these distinct from the saved reference
   detector's original development or final metrics.
-- **Slides 8–9:** [20,000-input simulation](../../reports/edge/simulation-20000.json)
+- **Slides 7–8:** [20,000-input simulation](../../reports/edge/simulation-20000.json)
   and [measurement scope](../../reports/edge/simulation.md). The plotted `/proc`
   sampled maximum is 68.92 MiB; the separately recorded `getrusage` process
   maximum is 68.62 MiB. The measured simulation predates the final evaluation
