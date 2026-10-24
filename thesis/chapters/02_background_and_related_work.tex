@@ -1,9 +1,598 @@
 \chapter{Background and Related Work}
 \label{ch:background}
-% Add primary citations while drafting; define notation before using it.
+% First prose draft, 2026-10-24. Mathematical foundations are attributed inline.
+
+The statistical model, numerical method, and security decision in LM-IDNet
+address different parts of the monitoring problem. A count distribution
+describes the observations, an estimator fits its parameters, a numerical
+backend evaluates the required functions, and a calibrated rule turns a
+score into a decision. This chapter develops those distinctions before
+comparing the system with related IoT detectors.
+
 \section{IoT network anomaly detection}
+\label{sec:background-detection}
+
+An anomaly is an observation that departs from an expected pattern.
+Chandola et al. organise anomaly-detection methods by their assumptions,
+available labels, and means of distinguishing normal from unusual
+observations \cite{chandola2009}. Statistical methods express expected
+behaviour through a distribution and assess how compatible a new
+observation is with that distribution. Their interpretation depends on
+the adequacy of both the model and the observation supplied to it.
+
+For a network detector, an observation may be a packet, a flow, or an
+aggregate over a time interval. These are different units of analysis.
+Packet-level observations can preserve ordering and short changes;
+aggregate counts deliberately discard such detail. The choice determines
+which deviations the model can represent. Two packet sequences that
+produce the same count vector are indistinguishable to a detector whose
+input is that vector alone.
+
+Normal-reference learning estimates expected behaviour from traffic
+assumed to be benign. Its practical advantage is that attack examples are
+not required to fit the model. Its limitation is the need to justify the
+reference data and its continuing relevance. Training contamination is
+therefore a central issue: an anomaly sensor may learn activity that should
+remain detectable. Cretu et al. address this problem through training-data
+sanitisation \cite{cretu2008}. LM-IDNet instead assumes a trusted initial
+reference and applies admission restrictions when considering later
+learning data; the mechanisms should not be conflated.
+
+A deviation also needs an operational interpretation. An unusual score
+does not identify its cause or establish malicious intent. Unfamiliar
+benign behaviour can generate false positives, and a malicious action may
+preserve the features monitored by the detector. These limitations are
+particularly relevant to the operational gap described by Sommer and
+Paxson \cite{sommer2010}. In this thesis an alert reports statistical
+evidence for investigation. It does not constitute an attack-family label
+or an automatic decision to block traffic.
+
+The evaluation must preserve that distinction. Precision measures how many
+positive decisions correspond to labelled attacks, whereas recall measures
+how many labelled positives are detected. Their denominators differ, and
+both matter when attacks are sparse. Saito and Rehmsmeier explain how
+precision--recall analysis exposes effects of class imbalance that can be
+obscured by other summaries \cite{saito2015}. A further distinction concerns
+time: attacks can occupy intervals rather than isolated observations.
+Tatbul et al. develop range-based precision and recall for this setting
+\cite{tatbul2018}. The present work reports its implemented window and
+attack-interval measures explicitly rather than treating them as
+interchangeable.
+
 \section{Categorical traffic counts and overdispersion}
+\label{sec:background-counts}
+
+\subsection{From packets to a count vector}
+
+For a device and a completed observation window, let
+\[
+  \boldsymbol{x}=(x_1,\ldots,x_K),\qquad
+  x_k\in\{0,1,2,\ldots\},\qquad
+  N=\sum_{k=1}^{K}x_k.
+\]
+Here $K$ is the number of categories, $x_k$ the observed count in category
+$k$, and $N$ the total number of counted packets. LM-IDNet uses $K=4$,
+ordered as TCP, ordinary UDP, SSDP, and ARP. SSDP is separated from the
+remaining UDP traffic, so a counted packet belongs to one category. Packets
+outside the selected categories do not contribute to $N$. Consequently,
+``total count'' refers to the total represented by this feature vector,
+rather than every frame present in the source capture.
+
+The four-category representation and ten-minute precedent come from the
+IoT modelling study of Al-Haj Baddar et al. \cite{alhajbaddar2025iot}.
+They constitute an application-specific representation, not a general
+property of the DM distribution. Other IoT studies use richer traffic
+attributes: Sivanathan et al. investigate device characteristics, while
+Doshi et al. select features using the communication properties of consumer
+IoT devices \cite{sivanathan2019,doshi2018}. Their work motivates examining
+device behaviour, but does not establish that these four counts retain all
+security-relevant information.
+
+Aggregation reduces the amount of data presented to the model and gives
+each feature a direct interpretation. It also removes packet order,
+inter-arrival structure within the window, endpoints, payload content, and
+other information not encoded in the categories. The same protocol mixture
+may therefore arise from different underlying activities. Window duration
+adds another choice: a longer interval pools more observations but can
+merge benign and attack traffic and postpone a decision until the window
+closes. Duration must be evaluated against the intended detection and
+response objective.
+
+\subsection{The multinomial reference model}
+
+Let $\boldsymbol{p}=(p_1,\ldots,p_K)$ be category probabilities, with
+$p_k\geq 0$ and $\sum_k p_k=1$. Conditional on the total $N$, a multinomial
+model assigns count vector $\boldsymbol{x}$ probability
+\[
+  P(\boldsymbol{X}=\boldsymbol{x}\mid N,\boldsymbol{p})
+  =\frac{N!}{\prod_{k=1}^{K}x_k!}
+   \prod_{k=1}^{K}p_k^{x_k}.
+\]
+For category $k$, its conditional mean and variance are
+\[
+  \operatorname{E}[X_k\mid N]=Np_k,
+  \qquad
+  \operatorname{Var}(X_k\mid N)=Np_k(1-p_k).
+\]
+The DM literature uses this fixed-probability model as the reference for
+extra-multinomial variation \cite{yu2014,alhajbaddar2025analysis}.
+
+A shared $\boldsymbol{p}$ permits random variation in the counts, but does
+not allow the underlying category probabilities themselves to change
+between windows. Ordinary device activity can introduce more variation
+than this conditional model permits. In that case, overdispersion means
+variation beyond the multinomial expectation at a comparable total and
+mean profile. It does not generally mean that a category's variance must
+exceed its mean. The latter criterion belongs to an equidispersed Poisson
+reference and cannot be transferred without qualification to categorical
+counts.
+
+The conditioning on $N$ also matters when examining data. Raw counts from
+windows with very different totals can have different variances even if
+their category probabilities are unchanged. Descriptive variability alone
+does not determine whether extra-multinomial variation is present. The
+statistical comparison must retain the role of the observed totals.
+
 \section{The Dirichlet--multinomial model}
+\label{sec:background-dm}
+
+\subsection{Compounding a multinomial with a Dirichlet distribution}
+
+The DM model introduces a random category-probability vector
+$\boldsymbol{\theta}$ drawn from a Dirichlet distribution. Let
+$\boldsymbol{\alpha}=(\alpha_1,\ldots,\alpha_K)$, where every
+$\alpha_k>0$, and define the total concentration
+$\alpha_0=\sum_{k=1}^{K}\alpha_k$. On the probability simplex, the
+Dirichlet density is
+\[
+  f(\boldsymbol{\theta}\mid\boldsymbol{\alpha})
+  =\frac{\Gamma(\alpha_0)}{\prod_{k=1}^{K}\Gamma(\alpha_k)}
+    \prod_{k=1}^{K}\theta_k^{\alpha_k-1},
+\]
+where $\Gamma$ denotes Euler's Gamma function. A count window is modelled
+hierarchically as
+\[
+  \boldsymbol{\theta}\sim\operatorname{Dirichlet}(\boldsymbol{\alpha}),
+  \qquad
+  \boldsymbol{X}\mid N,\boldsymbol{\theta}
+    \sim\operatorname{Multinomial}(N,\boldsymbol{\theta}).
+\]
+Minka describes this compounding and its parameter estimation; Yu and
+Shaw discuss the resulting count distribution and its numerical
+evaluation \cite{minka2000,yu2014}.
+
+Integrating out $\boldsymbol{\theta}$ gives the probability mass function
+\begin{equation}
+\begin{split}
+  P(\boldsymbol{X}=\boldsymbol{x}\mid N,\boldsymbol{\alpha})
+  ={}&\frac{N!}{\prod_{k=1}^{K}x_k!}
+      \frac{\Gamma(\alpha_0)}{\Gamma(N+\alpha_0)}
+      \prod_{k=1}^{K}
+      \frac{\Gamma(x_k+\alpha_k)}{\Gamma(\alpha_k)}.
+\end{split}
+\label{eq:dm-pmf}
+\end{equation}
+The count support is defined by $\sum_k x_k=N$. The multinomial
+coefficient in Eq.~\eqref{eq:dm-pmf} counts the orderings represented by a
+count vector. It is needed when assigning probability to that vector,
+even though it does not affect maximisation over
+$\boldsymbol{\alpha}$ for fixed observed data.
+
+\subsection{Mean profile, concentration, and conditional variation}
+
+The mean category profile is
+$p_k=\operatorname{E}[\theta_k]=\alpha_k/\alpha_0$. Thus
+$\boldsymbol{\alpha}=\alpha_0\boldsymbol{p}$ separates the mean mixture
+from its concentration. The conditional first and second moments are
+\begin{equation}
+  \operatorname{E}[X_k\mid N]=Np_k,
+  \qquad
+  \operatorname{Var}(X_k\mid N)
+    =Np_k(1-p_k)\frac{N+\alpha_0}{1+\alpha_0}.
+\label{eq:dm-variance}
+\end{equation}
+These expressions follow by applying total expectation and total variance
+to the Dirichlet--multinomial hierarchy
+\cite{yu2014,alhajbaddar2025analysis}. For example, the variance combines
+$\operatorname{E}[N\theta_k(1-\theta_k)]$ with
+$\operatorname{Var}(N\theta_k)$; the Dirichlet variance
+$p_k(1-p_k)/(1+\alpha_0)$ produces the factor in
+Eq.~\eqref{eq:dm-variance}.
+
+For fixed $\boldsymbol{p}$ and $N>1$, a smaller concentration permits
+greater variation than the multinomial reference. For illustration,
+$N=100$, $p_k=0.5$, and $\alpha_0=9$ give conditional variance $272.5$,
+compared with $25$ for the multinomial. This is an algebraic example,
+not a measurement from the traffic datasets. As $\alpha_0$ tends to
+infinity at fixed $\boldsymbol{p}$, the inflation factor tends to one and
+the DM approaches the multinomial model.
+
+LM-IDNet reports the inverse concentration $\psi=1/\alpha_0$ as a
+dispersion indicator. An alternative parameter is
+$\rho=1/(1+\alpha_0)=\psi/(1+\psi)$, for which the inflation factor is
+$1+(N-1)\rho$. Specifying the parameterisation is essential when comparing
+reported dispersion values. Neither $\psi$ nor $\rho$ is an anomaly
+threshold or a probability of malicious activity.
+
+The categories are dependent because they share a total. For $j\ne k$,
+\[
+  \operatorname{Cov}(X_j,X_k\mid N)
+  =-Np_jp_k\frac{N+\alpha_0}{1+\alpha_0}.
+\]
+This dependence is part of the count model. It should not be interpreted
+as a learned causal relationship between protocols or as an arbitrary
+model of positive correlation between their raw traffic volumes.
+
+\subsection{What the model leaves unspecified}
+
+The hierarchy models category composition conditional on the total. It
+does not provide a separate probability distribution for $N$. The
+conditional mass still changes with $N$, because a different total changes
+the count support; it is therefore misleading to call the raw score
+volume-invariant. Nevertheless, an explicit upper-tail count check can
+provide evidence about large totals that is distinct from the conditional
+composition model. This distinction motivates the complementary volume
+and ARP signals in the implemented detector.
+
+When $N=0$, the only possible count vector is the zero vector, and
+Eq.~\eqref{eq:dm-pmf} assigns it probability one. The conditional model
+alone consequently does not assess whether an observed silent period is
+unexpected. Missing recording coverage is a separate data-quality state:
+it must not be represented as an observed zero vector. A detector's input
+contract has to make that distinction before statistical scoring.
+
+Finally, the fitted DM is a distribution over windows, not a temporal
+transition model. Using a product of window probabilities as the fitting
+objective assumes independent rows under the model. Adjacent traffic
+windows can remain dependent in practice. Allowing variation in the
+category probabilities does not itself represent seasonality, transitions,
+or the order of events.
+
 \section{Parameter estimation and likelihood computation}
+\label{sec:background-estimation}
+
+\subsection{The fitting objective and the complete window score}
+
+Suppose the fit set contains $M$ count vectors
+$\boldsymbol{x}_1,\ldots,\boldsymbol{x}_M$, with totals
+$N_i=\sum_k x_{ik}$. Taking logarithms of Eq.~\eqref{eq:dm-pmf} yields
+\begin{equation}
+\begin{split}
+  \log P(\boldsymbol{x}_i\mid N_i,\boldsymbol{\alpha})
+  ={}&\log\Gamma(N_i+1)-\sum_{k=1}^{K}\log\Gamma(x_{ik}+1)\\
+     &+\log\Gamma(\alpha_0)-\log\Gamma(N_i+\alpha_0)\\
+     &+\sum_{k=1}^{K}
+       \bigl[\log\Gamma(x_{ik}+\alpha_k)-\log\Gamma(\alpha_k)\bigr].
+\end{split}
+\label{eq:dm-log-score}
+\end{equation}
+The first line depends only on the observed counts. Write it as
+$C(\boldsymbol{x}_i)$ and denote the remaining parameter-dependent terms
+by the kernel $\kappa(\boldsymbol{x}_i;\boldsymbol{\alpha})$. Then
+\begin{equation}
+  s_{\mathrm{DM}}(\boldsymbol{x}_i)
+  =C(\boldsymbol{x}_i)+
+    \kappa(\boldsymbol{x}_i;\boldsymbol{\alpha}).
+\label{eq:kernel-and-score}
+\end{equation}
+The log-likelihood formulation and iterative estimation are discussed by
+Minka and by Al-Haj Baddar et al.
+\cite{minka2000,alhajbaddar2025analysis}.
+
+For fixed training counts, maximising the sum of the complete
+log-probabilities is equivalent to maximising
+\[
+  \mathcal{L}(\boldsymbol{\alpha})
+  =\sum_{i=1}^{M}\kappa(\boldsymbol{x}_i;\boldsymbol{\alpha}),
+\]
+because $\sum_i C(\boldsymbol{x}_i)$ is constant with respect to
+$\boldsymbol{\alpha}$. The same constant cancels when comparing the
+objective at successive parameter iterates. This is the fitting contract
+implemented by both likelihood backends.
+
+Scoring a new count vector is a different operation. The coefficient
+$C(\boldsymbol{x})$ varies between observations and must be restored to
+obtain the complete log-probability in Eq.~\eqref{eq:kernel-and-score}.
+Its omission could change the relative ordering of windows and the
+calibration threshold, even when the fitted parameters remain identical.
+Recorded fitting-kernel values and complete scoring values therefore have
+different meanings.
+
+Row-wise evaluation is equally important. In general,
+\[
+  \sum_{i=1}^{M}\kappa(\boldsymbol{x}_i;\boldsymbol{\alpha})
+  \ne
+  \kappa\!\left(\sum_{i=1}^{M}\boldsymbol{x}_i;
+    \boldsymbol{\alpha}\right).
+\]
+Pooling counts before evaluating the nonlinear likelihood creates a
+different observation. A matrix interface may reuse numerical setup
+across rows, but must preserve the row-wise sum to retain this objective.
+
+\subsection{Minka's fixed-point estimator}
+
+The maximum-likelihood parameter estimate is obtained iteratively. Let
+$\Psi(z)=\mathrm{d}\log\Gamma(z)/\mathrm{d}z$ denote the digamma function.
+The gradient component of the kernel sum is
+\[
+  \frac{\partial\mathcal{L}}{\partial\alpha_k}
+  =\sum_{i=1}^{M}\bigl[
+    \Psi(\alpha_0)-\Psi(N_i+\alpha_0)
+    +\Psi(x_{ik}+\alpha_k)-\Psi(\alpha_k)\bigr].
+\]
+Minka gives the following fixed-point update for count data
+\cite[Sec.~3, Eq.~(55)]{minka2000}:
+\begin{equation}
+  \alpha_k^{(r+1)}=\alpha_k^{(r)}
+  \frac{\displaystyle\sum_{i=1}^{M}
+    [\Psi(x_{ik}+\alpha_k^{(r)})-\Psi(\alpha_k^{(r)})]}
+  {\displaystyle\sum_{i=1}^{M}
+    [\Psi(N_i+\alpha_0^{(r)})-\Psi(\alpha_0^{(r)})]},
+  \quad k=1,\ldots,K.
+\label{eq:minka-update}
+\end{equation}
+Here $r$ indexes iterations and
+$\alpha_0^{(r)}=\sum_k\alpha_k^{(r)}$. All components are updated using the
+same preceding parameter vector.
+
+Equation~\eqref{eq:minka-update} applies to count vectors. It is distinct
+from estimating a Dirichlet density directly from observed proportions.
+Replacing counts by normalised proportions and fitting that density would
+discard the different totals and change the estimation problem. An
+implementation also needs a positive initial vector, a stopping rule, and
+an explicit outcome when a usable estimate is not reached. These are part
+of the fitting procedure rather than properties supplied by the likelihood
+backend.
+
+In LM-IDNet, SciPy supplies the digamma evaluations for this update
+\cite{virtanen2020}. The selected likelihood backend evaluates the
+objective used to monitor convergence and later contributes to scoring.
+Changing that backend does not replace Eq.~\eqref{eq:minka-update}. This
+separation permits numerical implementations to be compared without
+presenting them as different statistical estimators.
+
+\subsection{From a score to a calibrated decision}
+
+A complete log-probability supplies an ordering in which lower values
+indicate observations assigned less mass by the normal model. An
+elementary composition-only detector declares an anomaly when
+$s_{\mathrm{DM}}(\boldsymbol{x})<\tau$, where $\tau$ is a cutoff estimated
+from a separate benign calibration set. This is an instance of statistical
+anomaly detection \cite{chandola2009}. LM-IDNet's retained rule combines
+composition with count margins; its exact standardisation and joint
+calibration are specified in Chapter~\ref{ch:implementation}.
+
+Empirical quantiles allow a cutoff to be chosen without assuming Gaussian
+scores, but their interpolation convention must be specified. Hyndman and
+Fan compare the different sample-quantile definitions used in statistical
+software \cite{hyndman1996}. The chosen quantile remains an empirical
+operating point. It is not a guarantee of a corresponding future
+false-positive rate under changing traffic or dependent observations.
+Likewise, a log-probability under a normal model is not a posterior
+probability that an attack occurred: the model does not specify a
+distribution for attacks or their prior prevalence.
+
 \section{Yu--Shaw and Languasco--Migliardi methods}
+\label{sec:background-numerics}
+
+\subsection{The numerical difficulty}
+
+Logarithms avoid forming extremely small probability products directly,
+but they do not remove every floating-point difficulty. In
+Eq.~\eqref{eq:dm-log-score}, terms such as
+$\log\Gamma(\alpha_k+x_k)-\log\Gamma(\alpha_k)$ are differences of
+function values. Subtracting already rounded quantities can expose large
+relative errors when the desired difference is small compared with the
+operands. Goldberg discusses this cancellation problem and the value of
+reformulating numerical expressions \cite{goldberg1991}.
+
+For positive $a$ and a non-negative integer count $n$, define
+\begin{equation}
+  \Delta(a,n)=\log\Gamma(a+n)-\log\Gamma(a).
+\label{eq:gamma-difference}
+\end{equation}
+The Gamma recurrence gives the exact identity
+\[
+  \Delta(a,n)=\sum_{j=0}^{n-1}\log(a+j)
+  \quad\text{for }n\geq 1,
+  \qquad \Delta(a,0)=0.
+\]
+This expresses the increment without subtracting two independently
+computed log-Gamma values, but direct summation requires a number of terms
+that grows with the count. It illustrates the accuracy--cost problem
+addressed by specialised DM likelihood methods
+\cite{yu2014,languasco2023}.
+
+The kernel can be written using Eq.~\eqref{eq:gamma-difference} as
+\[
+  \kappa(\boldsymbol{x};\boldsymbol{\alpha})
+    =\sum_{k=1}^{K}\Delta(\alpha_k,x_k)
+      -\Delta(\alpha_0,N).
+\]
+Accurate evaluation of these increments is useful near the multinomial
+limit, where the concentration can be large. It does not eliminate every
+possible cancellation in the complete score, which also contains the
+count-dependent coefficient. Numerical checks must examine the actual
+quantity used by the detector.
+
+\subsection{The Yu--Shaw approach and the LM method}
+
+Yu and Shaw develop a method for accurate DM log-likelihood evaluation,
+motivated by numerical instability near the multinomial limit and the
+cost of alternative formulations for large counts \cite{yu2014}. Although
+their application concerns biological count data, the likelihood
+calculation is relevant to categorical traffic counts. The application
+domain changes the observations, not the underlying special-function
+problem.
+
+Languasco and Migliardi subsequently introduce a method for computing
+nearby log-Gamma differences with explicit error analysis
+\cite{languasco2023}. Their construction uses analytic reformulation,
+including Euler--Maclaurin expansion and argument shifts, to evaluate the
+required differences. In this thesis, \emph{LM} names that numerical
+method. It is not the name of a new DM estimator or an anomaly classifier.
+Zero counts correspond to the exact zero increment in
+Eq.~\eqref{eq:gamma-difference}, an important case for sparse protocol
+windows.
+
+Al-Haj Baddar et al. evaluate LM and Yu--Shaw within fixed-point DM
+parameter estimation on count datasets from several domains
+\cite{alhajbaddar2025analysis}. Their study supplies empirical evidence
+about the numerical procedures under its chosen workloads. It does not
+establish that LM is always faster than a particular SciPy implementation,
+or that switching numerical backends improves attack recall.
+
+The distinction determines the comparison in this thesis. The statistical
+objective and count-score convention are kept fixed; numerical agreement,
+decision agreement, and runtime are examined as separate outcomes. Matrix
+fitting calls and isolated scoring calls have different amounts of work
+and interface overhead. Their timings must be attached to the workload
+measured, rather than combined into a single claim that a backend is
+universally faster.
+
 \section{Related systems and research gap}
+\label{sec:background-related}
+
+\subsection{Traffic profiles and IoT attack monitoring}
+
+Sivanathan et al. use traffic characteristics to classify IoT devices
+\cite{sivanathan2019}. A later study constructs one-class clustering
+models and examines changes in device behaviour, including changes
+associated with legitimate updates \cite{sivanathan2020}. Together, these
+works support device-specific modelling while showing why a deviation
+cannot be assigned a security meaning solely because it differs from an
+earlier profile. LM-IDNet uses a smaller observation vector and a
+parametric count distribution; it does not reproduce their device
+classification architecture.
+
+Hamza et al. combine Manufacturer Usage Description (MUD) profiles with
+software-defined networking (SDN) telemetry to monitor volumetric attacks
+\cite{hamza2019}. Their approach observes activity associated with
+permitted communication and includes attack traces released with the
+study. This is relevant both to monitoring traffic volume and to the
+provenance of the UNSW data used here. LM-IDNet consumes selected packet
+counts and does not enforce MUD rules or implement their SDN architecture.
+
+Doshi et al. investigate machine-learning detection of consumer-IoT DDoS
+traffic using features informed by IoT communication behaviour
+\cite{doshi2018}. Their study provides another precedent for selecting
+features with an intended network-middlebox setting in mind. It uses
+different features and classifier experiments; the present work's
+normal-only learning rule cannot be inferred from its results.
+
+\subsection{Neural normal-profile detectors}
+
+N-BaIoT uses deep autoencoders to identify departures from benign device
+traffic and evaluates attacks involving Mirai and BASHLITE
+\cite{meidan2018}. Its traffic statistics and learned representation differ
+from LM-IDNet's four counts. It is a relevant comparison of modelling
+choices, but its dataset and reported performance cannot be treated as a
+benchmark result for the UNSW windows used in this thesis.
+
+Kitsune combines incremental traffic-feature extraction with an ensemble
+of small autoencoders, called KitNET, for online network intrusion
+detection \cite{mirsky2018}. Its evaluation includes a Raspberry Pi
+setting. This demonstrates that online and resource-conscious neural
+detection already has an established precedent. Those measurements belong
+to Kitsune; they do not validate the hardware performance of the present
+implementation.
+
+D\"IoT builds device-type communication profiles and aggregates learning
+across gateways through a federated approach \cite{nguyen2019}. It models
+communication sequences, whereas the DM detector treats completed count
+windows as its statistical observations. LM-IDNet implements neither
+federated learning nor this sequence model. The comparison concerns what
+is represented, how normal behaviour is learned, and where computation is
+placed.
+
+Table~\ref{tab:related-systems} collects these architectural distinctions.
+It does not rank detection accuracy: the studies use different traffic,
+attacks, observation units, and evaluation protocols. The related systems
+are literature comparisons, not reimplemented experimental baselines in
+this work.
+
+\begin{table}[tbp]
+\centering
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.19\textwidth}
+  >{\raggedright\arraybackslash}p{0.34\textwidth}
+  >{\raggedright\arraybackslash}p{0.40\textwidth}@{}}
+\toprule
+\textbf{System or study} & \textbf{Representation and learning} &
+\textbf{Relation to this thesis} \\
+\midrule
+Sivanathan et al. \cite{sivanathan2020} &
+Flow attributes and one-class clustering. &
+Device profiles and behavioural change; a different feature and model choice. \\
+Hamza et al. \cite{hamza2019} &
+MUD activity and SDN telemetry. &
+Volumetric monitoring and the associated UNSW attack-data provenance. \\
+N-BaIoT \cite{meidan2018} &
+Traffic statistics and deep autoencoders. &
+Normal-device learning with a richer representation and different attack data. \\
+Kitsune \cite{mirsky2018} &
+Incremental features and an autoencoder ensemble. &
+Online gateway-oriented detection with its own resource measurements. \\
+D\"IoT \cite{nguyen2019} &
+Communication sequences and federated device-type models. &
+Distributed profile learning; sequence and federation mechanisms are absent here. \\
+LM-IDNet (this work) &
+Four count categories, a DM model, and complementary count margins. &
+Normal-reference calibration, LM numerical integration, and guarded updates
+evaluated in a common pipeline. \\
+\bottomrule
+\end{tabular}
+\caption{Qualitative comparison of related systems with LM-IDNet. The entries
+describe architectural choices; different datasets and evaluation units
+prevent interpreting the table as a detection-performance ranking.}
+\label{tab:related-systems}
+\end{table}
+
+\subsection{Drift, poisoning, and the interpretation of adaptation}
+
+Gama et al. discuss concept drift primarily in an online supervised
+setting, where the relationship between observations and a target changes
+\cite{gama2014}. The present detector does not observe attack labels during
+runtime learning. Changes in its unlabelled inputs are therefore described
+as behavioural or distributional change unless the stronger concept-drift
+interpretation is justified. A mechanism that updates parameters is not,
+by that fact alone, evidence of improved adaptation to legitimate change.
+
+Kloft and Laskov analyse how admitted observations can poison an online
+centroid anomaly detector and how constraints affect the attacker's
+influence \cite{kloft2012}. Their formal results apply to the analysed
+centroid model. They motivate examining admission and reference constraints
+in LM-IDNet, but do not provide a security bound for its DM refits.
+Similarly, Cretu et al.'s sanitisation work motivates concern about
+contamination without proving that a confidence gate produces clean
+learning data \cite{cretu2008}.
+
+There is an inherent tension in retaining an original normal reference.
+It can preserve evidence against activity that a moving model might
+otherwise accept. It can also preserve an alert caused by a legitimate
+change. The adaptive evaluation must therefore ask which observations were
+admitted, what changed, and whether the change improved a relevant outcome.
+If no candidate is promoted, the experiment documents the behaviour of the
+guards and the continued use of the starting model. It does not demonstrate
+successful learning of a new normal regime.
+
+\subsection{The question addressed by LM-IDNet}
+
+The closest statistical precursor is the DM IoT study of Al-Haj Baddar et
+al. \cite{alhajbaddar2025iot}. The present work retains its count-modelling
+foundation and examines the additional decisions needed for a detector:
+separate benign calibration, a later labelled evaluation stream,
+complementary count checks, candidate admission and activation, and
+traceable event and state records. These are the particular integration
+and evaluation questions addressed here. No claim that normal-profile IoT
+detection itself is new follows from that choice.
+
+The experimental design is also part of the question. TESSERACT shows how
+temporal and distributional bias can distort a security-classification
+evaluation \cite{pendlebury2019}, while Arp et al. discuss pitfalls such as
+data snooping, unsuitable measures, and lab-only conclusions
+\cite{arp2022}. Applied to this study, these concerns require disclosure
+of development choices, the provenance of labels, chronological ordering,
+and the boundary between the local simulation and physical deployment.
+The following chapters define the implemented detector and the evidence
+used to answer those questions.

@@ -17,7 +17,7 @@ From inside this folder, run `./build.sh`. Docker uses the existing
 - `metadata.tex`: approved title, author, student ID, supervisors, and dates.
 - `thesis.tex`: document order; remove inputs for optional items here.
 - `frontmatter/`: one file per front-matter item, including separate lists.
-- `chapters/`: one file per chapter, with headings and short writing prompts.
+- `chapters/`: one file per chapter; Chapters 1--2 contain the first prose draft.
 - `backmatter/` and `references.bib`: bibliography output and cited sources.
 - `appendices/`: reproducibility details outside the main-text page budget.
 - `preamble.tex` and `thesis.xmpdata`: layout and PDF metadata.
@@ -25,9 +25,19 @@ From inside this folder, run `./build.sh`. Docker uses the existing
 Use the [writing guide](../docs/thesis_writing_guide.md) as the reference.
 The agreed main text is 60–100 pages, with a target of 80–100; front matter,
 bibliography, and appendices are excluded. The English abstract is based on the
-official project abstract, revised to match the implementation and evidence;
-the chapters and Italian summary remain a skeleton. Replace all bracketed
-placeholders before submission.
+official project abstract, revised to match the implementation and evidence.
+The introduction and background/related-work chapters have a first prose draft,
+with the cited subset of the [verified reference shortlist](../docs/thesis_reference_review.tex)
+in `references.bib`. Chapters 3--7, the reproducibility appendix, and the Italian
+summary remain a skeleton. Replace all bracketed placeholders before submission.
+
+The first installment was drafted on 24 October 2026 against project revision
+`63ba80d`. It covers the current joint DM/volume/ARP detector and the completed
+final-partition evaluation's scope, without importing older reports' unfinished
+work as current status. The current full project report and retained experiment
+artifacts provide the technical evidence; the writing guide also contains
+historical project-closure instructions. The chapter text, attribution, and
+contribution wording require the author's review as drafting continues.
 
 The container lacks Times New Roman. Drafts use TeX Gyre Termes, a bundled
 Times-style font; Times New Roman is selected automatically if available.

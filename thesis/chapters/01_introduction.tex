@@ -1,8 +1,240 @@
 \chapter{Introduction}
 \label{ch:introduction}
-% Define the problem and the contributions supported by this thesis.
+% First prose draft, 2026-10-24. Project evidence reviewed at revision 63ba80d.
+
+Network traffic provides an observable record of how an Internet of Things
+(IoT) device communicates with its environment. A device may continue to
+exchange syntactically valid packets after its behaviour becomes abnormal:
+the change may concern the mixture of protocols, the amount of traffic, or
+the services with which it interacts. Detecting such changes requires a
+description of expected behaviour and a decision about which departures
+deserve attention. This thesis investigates that problem using a compact
+statistical representation of each device's traffic.
+
+The system developed in this work, LM-IDNet, models counts of selected packet
+categories with a Dirichlet--multinomial (DM) distribution. It combines a
+likelihood-based composition score with total-count and Address Resolution
+Protocol (ARP) checks, calibrates the decision rule on separate normal
+traffic, and supports guarded changes to the fitted model or threshold.
+The investigation concerns both the detector and the numerical computation
+on which its likelihood scores depend.
+
 \section{Problem and motivation}
+
+The security consequences of compromised IoT devices extend beyond the
+devices themselves. Antonakakis et al. documented how the Mirai botnet used
+embedded and IoT devices to launch distributed denial-of-service (DDoS) attacks
+against Internet services \cite{antonakakis2017}. This case motivates
+monitoring device communication even when the device continues to perform
+its apparent primary function. An externally observable change in traffic
+can provide evidence that warrants investigation without requiring access
+to the device's internal software.
+
+Device-specific behaviour offers one possible basis for such monitoring.
+Sivanathan et al. showed that network attributes, including activity
+patterns and flow characteristics, can help distinguish consumer IoT
+devices \cite{sivanathan2019}. These observations support investigating
+normal profiles for individual devices. They do not imply that IoT traffic
+is constant: user activity, changes in services, and firmware updates can
+alter legitimate communication. Behavioural monitoring must therefore
+distinguish deviations from a learned profile from evidence that a
+particular attack has occurred.
+
+Signature-based detection recognises specified patterns of known activity.
+Anomaly detection instead evaluates observations against a model of normal
+behaviour \cite{chandola2009}. This can identify departures for which no
+attack signature has been supplied, but it also creates a practical
+problem: unusual benign activity can produce an alert, while an attack
+that resembles normal traffic can remain undetected. Sommer and Paxson
+emphasise the difficulties of transferring learned network intrusion
+detectors from controlled experiments to operational environments
+\cite{sommer2010}. A detector must consequently be assessed through its
+false alerts, missed attacks, assumptions, and operating conditions, rather
+than through the existence of an anomaly score alone.
+
+A compact representation is attractive when monitoring is intended to run
+near the network edge. Local processing is motivated by response-time,
+bandwidth, and data-handling considerations \cite{shi2016}. In the present
+work, a completed window is represented by four packet counts, so the
+statistical decision can be made without retaining packet payloads in the
+model. The cost of capturing, validating, and aggregating the source
+traffic remains a separate part of the pipeline. A small scoring input
+does not by itself establish that the complete system can process a live
+network at its packet arrival rate.
+
+Count modelling introduces a further issue. A fixed multinomial model
+assumes a common category-probability vector, whereas ordinary traffic can
+vary between windows. The DM distribution permits additional variation by
+allowing those probabilities to vary around a shared mean profile
+\cite{yu2014,alhajbaddar2025analysis}. Its usefulness depends on whether this
+variation describes the observed device traffic and whether departures
+remain detectable. A model that tolerates ordinary variation may also
+tolerate some malicious changes.
+
+Finally, a normal profile may become stale. Updating it from recent
+observations can accommodate change, but can also incorporate the activity
+that the detector should identify. Cretu et al. examine contaminated
+training data for anomaly sensors, while Kloft and Laskov analyse poisoning
+of an online centroid detector \cite{cretu2008,kloft2012}. Their work
+motivates explicit controls over learning data. It does not establish that
+any particular set of controls makes an adaptive DM detector immune to
+poisoning.
+
 \section{Thesis objective and scope}
+
+The objective is to design, implement, and evaluate a reproducible
+normal-reference anomaly detector for individual IoT devices. The
+statistical starting point is the IoT modelling study of Al-Haj Baddar,
+Languasco, and Migliardi, which applies DM modelling to D-Link Camera~5
+traffic using ten-minute counts of Transmission Control Protocol (TCP),
+User Datagram Protocol (UDP), Simple Service Discovery Protocol (SSDP),
+and ARP packets \cite{alhajbaddar2025iot}. LM-IDNet adopts this
+representation and investigates its use for calibrated anomaly decisions.
+The modelling precedent, the parameter estimator, and the numerical
+likelihood algorithm are inherited foundations.
+
+The implemented pipeline separates four activities. First, it validates
+packet captures, isolates a configured device, and produces time-aligned
+count windows. Second, it estimates a normal model from an earlier
+presumed-benign period. Third, it uses a distinct benign period to calibrate
+the decision rule. Fourth, it scores later windows and records both the
+decision and the statistical evidence behind it. Attack annotations are
+joined to those decisions only for offline evaluation.
+
+The learning setting is normal-only. Fitting, calibration, and runtime
+update admission use no labelled attack examples, but they require traffic
+that can serve as a trusted normal reference. The term \emph{unsupervised}
+is used in this restricted sense throughout the thesis. In the taxonomy of
+Chandola et al., training from normal examples is commonly described as
+semi-supervised anomaly detection \cite{chandola2009}. Neither term should
+obscure the baseline assumption. Labels are also used to compare completed
+experimental runs during development; the absence of labels from the
+learning rule is distinct from their absence from the research process.
+
+The detector supports static operation, threshold adaptation, and periodic
+parameter refitting. The conservative policy restricts which windows may
+enter learning buffers and which candidate changes may become active.
+It retains the original detection references during subsequent updates.
+The historical, less restrictive policy is retained as an experimental
+comparison. Accepted state can be saved, restored, and rolled back, so the
+evaluation includes the behaviour of a continuing detector rather than
+only an isolated fitting function.
+
+Two dataset roles are kept separate. D-Link captures provide the workload
+connected to the inherited numerical study, with the original traces
+published by Roy Chowdhury et al. \cite{chowdhury2021data}. Labelled
+Chromecast and Samsung camera traces from the UNSW attack-data collection
+support detection evaluation; Hamza et al. describe the associated
+collection and attack-monitoring study \cite{hamza2019}. The D-Link
+captures used here do not provide the attack labels required to estimate
+detection precision or recall.
+
+The native Languasco--Migliardi (LM) method evaluates likelihood terms
+\cite{languasco2023}; Minka's fixed-point iteration estimates the model
+parameters \cite{minka2000}. These roles are examined separately. The
+numerical investigation compares LM with the SciPy reference
+implementation, while the detection investigation examines the resulting
+decisions. Improved numerical evaluation is not assumed to imply improved
+attack detection.
+
+Operational measurements cover a supplied-window service in a local
+Linux/amd64 Docker environment constrained to one CPU and 512~MiB of
+memory. This scope includes processing completed count windows and
+attempting permitted updates. It does not include a physical embedded
+gateway, an integrated live packet collector, or a claim of lossless
+alert delivery. The system emits decisions and alert evidence; automatic
+blocking and countermeasure selection are outside the implemented scope.
+
 \section{Research questions}
+
+The study addresses three questions:
+\begin{enumerate}
+  \item \textbf{RQ1---Detection and representation.} How effectively does a
+  device-specific DM model, complemented by volume and ARP checks, identify
+  attack-labelled traffic under chronological evaluation, and which
+  limitations follow from the count representation and window duration?
+  \item \textbf{RQ2---Numerical computation.} How does the native LM
+  likelihood backend compare with SciPy in numerical agreement and
+  computational cost while preserving the same fitting objective and
+  window-score definition?
+  \item \textbf{RQ3---Adaptation and safeguards.} How do threshold adaptation
+  and periodic refitting affect decisions, and what do learning-buffer
+  admission, parameter movement, and candidate rejection reveal about the
+  tradeoff between adaptation and retaining a trusted reference?
+\end{enumerate}
+
+RQ1 requires confusion counts and precision/recall measures, together with
+analysis of attack intervals and the time at which a completed window can
+produce an alert. RQ2 requires a common numerical workload and explicit
+distinction between model fitting, matrix likelihood evaluation, and
+single-window scoring. RQ3 requires the update record as well as the final
+detection metrics. Equal static and adaptive predictions cannot establish
+a learning benefit when every proposed update is rejected.
+
+These questions do not assume that one policy wins on every device or that
+ten minutes is an optimal duration. The duration study considers alternative
+aggregation lengths, while the closing evaluation replays the selected
+detector from saved starting pairs using fixed settings. Chronological
+ordering, development-driven choices, and the independence of an evaluation
+are treated as separate matters, in accordance with the experimental-bias
+concerns discussed by Pendlebury et al. and Arp et al.
+\cite{pendlebury2019,arp2022}.
+
 \section{Contributions}
+
+The contribution is an implemented and evaluated use of established
+statistical methods for the stated monitoring problem. It comprises:
+\begin{enumerate}
+  \item \textbf{A complete count-based detection pipeline.} The work connects
+  device filtering and window construction to normal-model fitting,
+  independent calibration, and joint composition/volume/ARP decisions.
+  Event records retain the observed counts, feature margins, expected
+  profile, and model identity needed to inspect a decision.
+  \item \textbf{Integration and evaluation of the LM numerical backend.}
+  The supplied method is connected to the application's row-wise
+  likelihood contract, with validation, sparse-count handling, native
+  resource management, and comparison against SciPy. The underlying LM
+  approximation and Minka estimator are attributed to their sources.
+  \item \textbf{Inspectable adaptive operation.} Static, threshold-adaptive,
+  and refitting modes share a scoring path. The conservative policy adds
+  explicit admission and movement checks, complete candidate activation,
+  persistent accepted state, and rollback. The update records permit
+  rejected candidates and contamination risks to be examined alongside
+  any accepted changes.
+  \item \textbf{A traceable experimental evaluation.} The work compares
+  labelled devices, window durations, numerical backends, and adaptation
+  policies, and retains the selected-method final-partition outputs.
+  The resource study measures the agreed constrained simulation. Negative
+  outcomes and the boundaries of each experiment are reported with the
+  successful software behaviour.
+\end{enumerate}
+
+These contributions do not assert a new probability distribution, a new
+fixed-point estimator, or the first use of normal IoT profiles. They also
+do not establish general detection performance across arbitrary devices.
+Reproducibility is supported by retaining configurations, input and model
+fingerprints, predictions, and commands, following the principle that a
+reported result should retain its computational provenance
+\cite{sandve2013}. The empirical conclusions remain limited by the devices,
+attacks, observation periods, and execution environments studied.
+
 \section{Thesis structure}
+
+Chapter~\ref{ch:background} introduces network anomaly detection, categorical
+count models, DM estimation, numerical likelihood computation, and related
+IoT systems. It identifies the inherited foundations and the engineering
+and evaluation questions addressed by LM-IDNet.
+
+Chapter~\ref{ch:implementation} describes the implemented pipeline,
+calibration and scoring rules, numerical integration, adaptive policies,
+and state lifecycle. Chapter~\ref{ch:experiments} defines the datasets,
+chronological partitions, annotation alignment, comparison settings,
+metrics, and measurement environments.
+
+Chapter~\ref{ch:results} presents the detection, numerical, adaptation,
+window-duration, final-partition, and resource measurements.
+Chapter~\ref{ch:discussion} interprets them against the research questions
+and examines representation limits, contamination, generalisability, and
+deployment assumptions. Chapter~\ref{ch:conclusions} states the supported
+conclusions and the remaining research directions. Supporting reproduction
+details are collected in Appendix~\ref{app:reproducibility}.
