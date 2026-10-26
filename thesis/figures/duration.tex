@@ -1,0 +1,22 @@
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=1 by 2,vertical sep=1.3cm},
+ width=.92\textwidth,height=6cm,xmin=8,xmax=62,xtick={10,20,30,60},
+ xlabel={Window duration (min)},ymajorgrids=true,grid style={gray!20},
+ legend style={at={(.5,1.03)},anchor=south,legend columns=2,column sep=6pt}]
+\nextgroupplot[ylabel={Window F1 (\%)},ymin=50,ymax=100]
+\addplot[ChromecastBlue,mark=*,thick] table[x=minutes,y=f1,col sep=comma]{generated/duration_UNSW-Chromecast.csv};
+\addplot[SamsungOrange,mark=square*,thick,dashed] table[x=minutes,y=f1,col sep=comma]{generated/duration_UNSW-Samsung-Camera.csv};
+\legend{Chromecast,Samsung camera}
+\nextgroupplot[ylabel={Median alert delay (min)},ymin=0,ymax=40]
+\addplot[ChromecastBlue,mark=*,thick] table[x=minutes,y=delay,col sep=comma]{generated/duration_UNSW-Chromecast.csv};
+\addplot[SamsungOrange,mark=square*,thick,dashed] table[x=minutes,y=delay,col sep=comma]{generated/duration_UNSW-Samsung-Camera.csv};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Static development results on common observed support, with fresh
+fitting and calibration at every duration. Window F1 uses that duration's labels.
+Delay runs from attack onset to first overlapping alert-window close and is
+conditional on detection. Lines connect four measured settings.}
+\label{fig:duration}
+\end{figure}

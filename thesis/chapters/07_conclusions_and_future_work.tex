@@ -1,6 +1,178 @@
 \chapter{Conclusions and Future Work}
 \label{ch:conclusions}
-% State only contributions established by this thesis.
 \section{Conclusions}
+
+This thesis implements and evaluates LM-IDNet, a normal-only anomaly
+detector for device-specific IoT traffic. Its input is a completed
+window of TCP, ordinary UDP, SSDP, and ARP counts. A Dirichlet--multinomial
+model supplies a probabilistic reference for composition; separately
+calibrated count features complement that reference within one joint
+decision rule. The work connects this statistical procedure to
+validated capture preparation, native numerical computation, guarded
+candidate updates, persistent state, and a supplied-window runtime.
+
+The foundations are established methods. The DM distribution,
+Minka fixed-point estimator, and Languasco--Migliardi numerical
+method are attributed to their sources. The contribution is their
+working integration and the evidence collected about its behaviour,
+including negative results. It does not require claiming a new
+distribution, an original estimator, or the first use of learned
+normal IoT profiles.
+
+The detection evaluation demonstrates both promise and limits.
+In the fixed closing replay, 1,008 unique labelled windows yield
+14 true positives, three false positives, four false negatives,
+and 987 true negatives. Pooled precision is 82.35\%, recall 77.78\%,
+and F1 80.00\%. Device results differ substantially: Chromecast
+F1 is 61.54\% and Samsung F1 90.91\%. Eight of nine fully observed
+attack intervals are detected, with seven receiving an alert by
+attack end. These are descriptive results on an inspected temporal
+partition, not an untouched external performance estimate.
+
+The duration study confirms that observation granularity belongs
+in the interpretation of a detector. Coarser windows can improve
+their own F1 while increasing delay and reducing the number of
+alerts available before attack end. A high coarse-window score
+therefore cannot establish prompt response. The retained ten-minute
+reference is evaluated and operationally explicit, without being
+claimed as a universally optimal duration.
+
+The numerical investigation preserves the distinction between
+estimation and likelihood evaluation. LM and SciPy produce no
+different development decisions in the three-dataset comparison,
+and their fitted quantities agree closely. LM is faster for the
+tested single-window operation, while SciPy is faster for the
+production matrix kernel and full fitting. The aggregate experiment
+has a different workload and favours LM there. This mixed result
+supports choosing a backend using the delivered operation, rather
+than assuming that one method is fastest throughout the application.
+
+Adaptation is the least resolved statistical component. A historical
+refit improves Chromecast development detection but fails to improve
+Samsung and permits large concentration changes. Conservative guards
+reject every closing replay candidate, leaving the three modes
+equivalent to static operation. Other-duration threshold updates
+can still increase false alerts sharply. The supported achievement
+is explicit, inspectable control over candidate admission and
+activation, rather than demonstrated robust learning under arbitrary
+benign or adversarial drift.
+
+The operational evaluation shows that the supplied-window process
+fits inside a one-CPU, 512~MiB Docker allocation on the measured host.
+The long synthetic replay scores 16,000 of 20,000 input records,
+with mean processing near 30~ms and process high-water RSS near
+69~MiB. Refit rejection contributes the largest processing delays,
+up to about 5.08~s. These results support local feasibility for the
+tested interface; they do not include a physical gateway or live
+packet capture.
+
+Reproducibility is part of this outcome. Configurations, prepared
+inputs, model identities, saved events, candidate histories, and
+source fingerprints connect the narrative to the experiments.
+Generated tables recompute reported metrics from retained counts.
+Later scoring changes have an explicit regression boundary, rather
+than being silently folded into historical measurements. The final
+software verification passes all 643 current tests, supporting the
+implemented contracts without substituting for detection evidence.
+
 \section{Principal limitations}
+
+The main empirical limitation is the absence of a newly untouched
+evaluation after all design choices were completed. Later labels
+were inspected in earlier audits, and a fixed closing replay cannot
+undo that exposure. There are only two labelled device views and
+18 positive closing windows. The D-Link workload provides useful
+numerical evidence but has no attack labels, and repeated fit-window
+bounds limit its chronological interpretation.
+
+The representation cannot distinguish packet sequences that share
+the same four counts. Low-rate attacks, TCP flag changes without
+count changes, and other semantic differences may remain invisible.
+Normal-only learning also assumes an adequate benign reference;
+neither the initial fit nor the runtime buffer proves that assumption.
+Accepted adaptation is not independently validated on its own
+learning data, and stepwise movement limits do not guarantee
+long-term detection quality.
+
+Operational evidence is limited to a finite synthetic supplied-window
+simulation and software tests. Memory stability over that run is
+not an indefinite guarantee. Collector correctness, physical storage
+faults, embedded hardware performance, energy use, remote event
+delivery, and automatic response are not evaluated. These limits
+define what remains to establish before describing the prototype
+as a complete deployed intrusion-detection service.
+
 \section{Future work}
+\label{sec:future-work}
+
+\subsection{Independent evaluation before further tuning}
+
+The first priority is an untouched temporal extension or external
+collection evaluated after fixing the representation, calibration,
+and update policy. Additional manufacturers, firmware versions,
+benign uses, and attack families should be represented. Device and
+capture blocks should be retained as evaluation units so that
+variation is measured across independent situations, rather than
+through repeated outputs on the same windows.
+
+That study should keep window confusion counts, attack-interval
+coverage, alert availability, and observed exposure together.
+An external benchmark against other detectors would require a
+shared preprocessing and tuning protocol. Correcting overlapping
+D-Link fit bounds and repeating both numerical backends would also
+provide a clean chronological workload, clearly identified as a
+new experiment rather than a revision of old measurements.
+
+\subsection{Controlled drift and contamination experiments}
+
+Adaptation needs known benign changes and controlled attack
+contamination to separate their effects. A useful experiment would
+vary the contamination fraction and the rate of benign change,
+then measure buffer membership, concentration, threshold trajectory,
+candidate rejection, and detection against a static reference.
+Independent validation observations for candidate promotion would
+avoid treating increased likelihood on the fitting buffer as
+evidence of improved future performance.
+
+Possible policy changes include an explicit cumulative movement
+budget relative to the original state and calibration-tail
+requirements scaled to available sample size. Their value must
+be tested, particularly against the observed Samsung threshold
+failure, rather than assumed from stricter-looking equations.
+The useful target is successful adaptation to a verified benign
+change while retaining attack sensitivity, not a larger number
+of accepted updates.
+
+\subsection{Representation and response granularity}
+
+Compact TCP flag, direction, endpoint, or packet-size summaries
+could distinguish behaviours aliased by the four-category input.
+Their inclusion would require renewed preparation from source
+captures and explicit feature contracts. Ablation experiments
+should establish whether each added signal improves detection
+or delay enough to justify its collection and calibration cost.
+
+Shorter or multiscale observations could reduce waiting for an
+aggregate to close. They would also change sparsity, temporal
+dependence, sample counts, and false-alert exposure. A comparison
+must therefore retrain and recalibrate, keep common support,
+and use actual alert-availability times. Merely projecting an
+hourly decision backward cannot demonstrate earlier detection.
+
+\subsection{Live and physical deployment}
+
+A live collector should first demonstrate byte-to-count agreement
+with the offline preparation on a shared replay. A subsequent
+physical-gateway study can measure collection losses, total
+resource use, energy, restart behaviour, and delay through the
+complete observation-to-alert path. Multi-device operation and
+upstream backpressure need explicit load tests rather than an
+extrapolation from one detector process.
+
+Finally, remote event retention and operator response need defined
+delivery and acknowledgement contracts. The existing atomic state
+mechanism provides a sound local boundary for accepted parameters,
+but a usable monitoring service also needs trustworthy input and
+durable handling of its output. Evaluating those boundaries would
+turn the present reproducible prototype into evidence for a
+specific operational deployment.

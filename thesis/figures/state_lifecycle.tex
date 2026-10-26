@@ -1,0 +1,19 @@
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[node distance=7mm,
+ box/.style={draw,rounded corners,align=center,text width=10.3cm,minimum height=8mm,font=\small},
+ arrow/.style={-{Latex},thick}]
+\node[box] (candidate) {Candidate parameters, threshold, scales, and original references};
+\node[box,below=of candidate] (validate) {Validate the complete candidate; write, flush, and reload its snapshot};
+\node[box,below=of validate] (version) {Publish an immutable version file; keep the current pair active};
+\node[box,below=of version,very thick] (pointer) {Atomically replace the current-version pointer: activation boundary};
+\node[box,below=of pointer] (restore) {Synchronise directory; activate the same pair in memory};
+\node[box,below=of restore] (retain) {Retain current and previous versions; bound diagnostic history};
+\foreach \a/\b in {candidate/validate,validate/version,version/pointer,pointer/restore,restore/retain}
+ \draw[arrow] (\a)--(\b);
+\end{tikzpicture}
+\caption{Accepted-state publication. Failure before pointer replacement preserves
+the former active pair. Uncertain durability after replacement stops the writer;
+restart validates the committed reference rather than reporting a rejected update.}
+\label{fig:state-lifecycle}
+\end{figure}

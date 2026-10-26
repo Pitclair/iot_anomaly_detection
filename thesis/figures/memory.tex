@@ -1,0 +1,16 @@
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=.95\textwidth,height=7cm,xlabel={Input windows processed},
+ ylabel={Sampled process RSS (MiB)},ymin=60,ymax=75,xmin=0,xmax=20000,
+ scaled x ticks=false,xtick={0,5000,10000,15000,20000},
+ ymajorgrids=true,grid style={gray!20}]
+\addplot[ChromecastBlue,thick,mark=*] table[x=windows,y=rss,col sep=comma]{generated/edge_memory.csv};
+\end{axis}
+\end{tikzpicture}
+\caption{Recorded RSS samples during the 20,000-input synthetic Docker replay.
+Lines connect sparse samples; they do not expose unobserved peaks or prove
+indefinite memory stability. The workload uses the D-Link initial state and
+promotes no update. The container memory limit is 512~MiB.}
+\label{fig:memory}
+\end{figure}

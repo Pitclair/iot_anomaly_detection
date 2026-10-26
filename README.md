@@ -41,7 +41,8 @@ python scripts/evaluate_final.py
 ```
 
 The detector, evaluation, and full project report complete the agreed scope.
-Optional research, physical deployment, and dissertation preparation are listed
+The [complete thesis draft](thesis/README.md) is ready for the author's final
+review. Optional research and physical deployment are listed
 in [future work](docs/future-work.md). Earlier plans and status reports are
 historical records, rather than an active implementation backlog.
 

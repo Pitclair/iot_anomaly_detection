@@ -1,6 +1,249 @@
 \chapter{Reproducibility Details}
 \label{app:reproducibility}
-% Include only supporting details needed to reproduce the reported experiments.
 \section{Source revision and environment}
-\section{Experiment commands and configurations}
-\section{Dataset fingerprints and retained artifacts}
+
+Paths in this appendix are relative to the repository root. The thesis
+was completed against the detector and documentation tree at revision
+\texttt{16b33d6}, with the thesis changes subsequently applied. The
+detector code preceding the first writing installment is identified by
+\texttt{63ba80d}. These writing revisions do not replace the experiment
+identities recorded in the individual bundles.
+
+The closing final-partition protocol records source revision
+\texttt{99072f0}. Its 109 dependency fingerprints cover code,
+configurations, starting pairs, processed counts, labels, and original
+annotations. Three Python source files subsequently changed; their
+current hashes are verified against
+\path{reports/scoring_order_verification.json}. The original frozen
+hashes remain in the closing protocol and are copied alongside the
+current ones in the thesis evidence manifest.
+
+The historical resource image has a different boundary. Its environment
+record identifies base revision \texttt{8365870}, a dirty working tree,
+and the exact package-source and image hashes. Its image identity is
+\begin{quote}\footnotesize
+\path{sha256:76c00897e51f521264a4b2a87d0e963e3d330a7c4bb515c5e3ae4e42d41863b5}.
+\end{quote}
+The numerical records identify Python~3.12.14, NumPy~2.5.1, and
+SciPy~1.18.0. The resource image identifies Debian~13 and
+Python~3.11.17. Neither environment should be inferred from the
+machine used only to compile this document.
+
+\section{Evidence map}
+\label{app:evidence-map}
+
+Table~\ref{tab:evidence-map} maps the main results to their machine-readable
+records. The generated file
+\path{thesis/generated/evidence_manifest.json} enumerates presentation
+source SHA-256 values, the frozen dependency count, and the three
+superseded source records. A source hash provides identity, not an
+assessment of scientific quality.
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{.29\textwidth}
+ >{\raggedright\arraybackslash}p{.66\textwidth}@{}}
+\caption{Retained evidence used by the thesis. Directory names identify
+the bundle; JSON files provide exact settings and source boundaries.}
+\label{tab:evidence-map}\\
+\toprule
+Claim or result & Principal source paths \\
+\midrule
+\endfirsthead
+\toprule
+Claim or result & Principal source paths \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Reference partitions & \path{configs/d_link_day_cam5.json},
+\path{configs/unsw_chromecast.json},
+\path{configs/unsw_samsung_camera.json}; matching
+\path{data/processed/} and \path{data/labels/} device directories. \\
+Capture preparation & Device-specific \path{capture_inventory.json},
+\path{capture_validation.json}, and \path{capture_statistics.json}
+where retained under \path{reports/}; UNSW preparation records under
+\path{unsw_iot_attack_pcaps/}. \\
+Normal models and calibration & \path{artifacts/<device>/model.json}
+and \path{artifacts/<device>/threshold.json}. \\
+Reference static detection &
+\path{reports/<device>/evaluation_statistics.json}; corresponding
+\path{artifacts/<device>/events.json}. \\
+Historical adaptive results &
+\path{reports/experiments/legacy/<device>/<variant>/}; matching
+\path{configs/experiments/legacy/} and
+\path{artifacts/experiments/legacy/}. \\
+Joint-scoring selection & \path{reports/detection_decision.json} and
+\path{reports/detection_rejected_experiments.json}. \\
+Backend agreement and timing &
+\path{reports/D-LinkDayCam5/lm_backend_benchmark.json} and
+\path{reports/detection_backend_checks.json}. \\
+Native setup optimisation &
+\path{docs/lm_backend_change_record.tex}, including the historical
+paired timing and 1,000-matrix comparison. \\
+Aggregate numerical experiment &
+\path{reports/D-LinkDayCam5/lm_professor_experiment.json}. \\
+Matched durations & \path{reports/window_size/results.json},
+\path{reports/window_size/decisions.csv}, and
+\path{artifacts/experiments/window_size/}. \\
+Closing replay & \path{reports/final_evaluation/protocol.json},
+\path{results.json}, and \path{verification.json} in that directory;
+complete starting pairs, events, and attempts under
+\path{artifacts/final_evaluation/}. \\
+Later scoring regression &
+\path{reports/scoring_order_verification.json}. \\
+Resource measurements & \path{reports/edge/simulation-2000.json},
+\path{reports/edge/simulation-20000.json}, and
+\path{reports/edge/simulation-environment.json}. \\
+Current thesis verification & \path{out/thesis/project_verification.log},
+document build log, and final document-validation records. These are
+generated outputs rather than replacements for historical experiments. \\
+\end{longtable}
+
+\section{Regenerating the document}
+
+From the repository root, the following command verifies retained
+presentation inputs, regenerates table rows and plot data, and runs
+LuaLaTeX/Biber through the existing Docker Compose service:
+\begin{verbatim}
+./thesis/build.sh
+\end{verbatim}
+The output is \path{out/thesis/thesis.pdf}. Auxiliary files stay in
+the same ignored output directory. The document uses the locally
+available \path{texlive/texlive:latest} image with networking disabled.
+A complete environment record and image identity are retained with
+the final validation output; the mutable image tag alone is not
+a permanent version identifier.
+
+To regenerate only the presentation evidence, use
+\begin{verbatim}
+python3 thesis/generate_evidence.py
+\end{verbatim}
+This standard-library script reads the retained data and reports;
+it does not preprocess packet captures, refit models, or replay
+detectors. Assertions check confusion-count arithmetic and expected
+dependencies. Generated TeX rows and CSV plot data remain under
+\path{thesis/generated/}. They are presentation artifacts and must
+not be edited to alter an experimental result.
+
+The dissertation uses the cited subset of the annotated shortlist in
+\path{docs/thesis_reference_review.tex}. That review distinguishes
+full-text inspection from metadata-only verification. The bibliography
+file \path{thesis/references.bib} holds publication identifiers and
+links; existence of a DOI alone is not evidence for a particular
+claim. The author should consult the original cited passages when
+reviewing the final argument.
+
+\section{Repeating detector experiments}
+\label{app:experiment-commands}
+
+\subsection{Installation and reference stages}
+
+The following commands describe experiment entry points; they were
+not executed merely to regenerate the thesis. Research scripts can
+write their configured output paths. Use an isolated checkout and
+copies of retained artifacts when repeating a historical experiment,
+and retain its original revision before comparing new results.
+
+A local installation requires Python and the native build tools.
+The repository's documented native build is
+\begin{verbatim}
+gcc -O3 -fPIC -shared \
+  src/lm_idnet/algorithms/native/LM_time_lib.c \
+  -lm -o src/lm_idnet/algorithms/native/LM_time_lib.so
+python -m pip install -e '.[test]'
+\end{verbatim}
+The Dockerfile provides the packaged alternative. Source packet
+captures are required for preprocessing, but are not required to
+score the retained processed windows. Their access and redistribution
+remain subject to the publisher's terms and available downloads.
+
+For a chosen device configuration, the reference stage order is
+\begin{verbatim}
+lm-idnet preprocess --config configs/unsw_chromecast.json
+lm-idnet diagnose --config configs/unsw_chromecast.json
+lm-idnet train --config configs/unsw_chromecast.json
+lm-idnet calibrate --config configs/unsw_chromecast.json
+lm-idnet score --config configs/unsw_chromecast.json
+lm-idnet evaluate --config configs/unsw_chromecast.json
+\end{verbatim}
+Diagnosis and preparation outputs should be reviewed before replacing
+an accepted reference. Repeating \texttt{train} or \texttt{calibrate}
+changes the starting pair and therefore defines a new comparison
+unless the resulting bytes match the retained identity.
+
+\subsection{Adaptive, duration, and closing comparisons}
+
+The conservative and historical development suites have separate
+configuration and output directories:
+\begin{verbatim}
+./scripts/run_adaptation_experiments.sh
+./scripts/run_adaptation_experiments.sh legacy
+\end{verbatim}
+These launch through the project runner. An individual adaptive
+configuration can instead be supplied to \texttt{lm-idnet adapt},
+followed by \texttt{lm-idnet evaluate}. Omitting a persistent state
+directory starts from the configured reference pair; specifying
+\texttt{--state-dir} resumes accepted state and changes that
+experimental boundary.
+
+The retained selected-method replay is generated by
+\begin{verbatim}
+python scripts/evaluate_final.py
+\end{verbatim}
+It writes its fixed bundle under \path{reports/final_evaluation/}
+and \path{artifacts/final_evaluation/}. Running it on the current
+source produces current count-first event scores. It should not
+be expected to reproduce every historical full-score byte, even
+when all binary decisions agree.
+
+The duration script allows new output locations, for example
+\begin{verbatim}
+python scripts/evaluate_window_sizes.py \
+  --output out/repeat-window-size/reports \
+  --artifacts out/repeat-window-size/artifacts
+\end{verbatim}
+It prepares fresh model/calibration pairs at each duration and
+retains decisions on the common support. Its separate fit/calibration
+roles explain small differences from reference ten-minute metrics.
+The aggregate numerical script is
+\begin{verbatim}
+python scripts/lm_professor_experiment.py
+\end{verbatim}
+Its fixed output path is
+\path{reports/D-LinkDayCam5/lm_professor_experiment.json}.
+Backend production timing is exposed through the \texttt{benchmark}
+CLI; \texttt{lm-idnet benchmark --help} identifies its current
+configuration and repetition arguments. Timing results should be
+compared under the same environment and call boundary.
+
+\section{Runtime and verification commands}
+
+\path{docs/edge-deployment.md} supplies the full prepared-state,
+offline-container, and isolated resource-measurement commands.
+The short launcher input is
+\begin{verbatim}
+./scripts/run-edge.sh < tests/data/edge/windows.jsonl
+\end{verbatim}
+It requires a prebuilt image and prepared writable state. The
+five-record fixture emits four events. The longer measurement
+uses \path{scripts/benchmark_edge.py}, a fresh state copy, explicit
+CPU/memory limits, and either 2,000 or 20,000 input records.
+The repeated synthetic workload should not be used to estimate
+real-traffic detection precision or recall.
+
+The full current verification command used during thesis completion is
+\begin{verbatim}
+LM_IDNET_EDGE_IMAGE=lm-idnet:final \
+  .venv/bin/python -m pytest -q -m ""
+\end{verbatim}
+It reports 643 passes without skips. The empty marker expression
+includes the slow and benchmark-marked cases. The locally available
+image supplies the opt-in container checks; this successful run is
+not evidence that a fresh Docker Hub installation was performed.
+The historical clean image build was blocked by registry DNS, and
+the retained source-refreshed image boundary remains explicit.
+
+The final PDF is separately checked for unresolved citations and
+cross-references, layout overflow, and PDF/A conformance. These
+document checks validate the rendered artifact rather than its
+scientific conclusions. The final validation record gives the
+actual tool versions, file identity, page count, and outcome.

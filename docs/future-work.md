@@ -24,8 +24,11 @@ The following are optional extensions:
   default and identifies false-alert problems with coarse adaptive windows.
 - Validate physical/ARM gateways, a live packet collector, durable event
   transport, and any response integration beyond the completed simulation.
-- Complete the separate dissertation workspace, academic metadata, and final
-  PDF/A validation. The full project report is the completed technical record.
+
+The [thesis workspace](../thesis/README.md) now contains the complete draft,
+checked evidence tables, and a validated PDF/A-2b document for the author's
+final review. Personal cover details and submission approval remain part of
+that review. The full project report remains the retained technical record.
 
 Older proposals, implementation plans, and status snapshots preserve design
 history and dated measurements. Their unchecked proposals do not expand the

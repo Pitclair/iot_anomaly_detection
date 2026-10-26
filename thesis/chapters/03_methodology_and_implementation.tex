@@ -1,12 +1,716 @@
 \chapter{LM-IDNet Methodology and Implementation}
 \label{ch:implementation}
-% Describe one fixed implementation; add an architecture figure and concise pseudocode.
+This chapter describes the retained detector as an implemented procedure.
+The DM family, Minka estimator, and LM numerical method are the inherited
+foundations introduced in Chapter~\ref{ch:background}. The application adds
+data contracts, normal-data calibration, a joint decision rule, guarded
+learning, and a persistent runtime. The description follows the current
+scoring implementation, including the count-first evaluation order; the
+experimental records retain their individual source boundaries.
+
 \section{System architecture}
+\label{sec:architecture}
+
+LM-IDNet separates preparation, fitting, calibration, inference, and
+evaluation. Preparation translates mixed-device packet captures into one
+device's ordered count windows. Fitting estimates the normal DM parameters.
+Calibration establishes reference scales and cutoffs using a later benign
+period. Inference consumes completed windows and produces events; optional
+learning proposes changes for subsequent observations. Evaluation joins
+saved events to attack annotations after inference has finished.
+
+Figure~\ref{fig:pipeline} shows these dependencies. The separation between
+fit and calibration data prevents the cutoff from being computed on the
+same windows that selected the initial parameters. It does not make the
+two periods statistically independent when the traffic is temporally
+dependent. Nor does it prevent development-set results from influencing
+subsequent design choices. Those issues belong to the experimental
+protocol rather than the runtime call graph.
+
+\input{figures/pipeline}
+
+One detector object owns the active parameters, matching calibration,
+original reference, bounded buffers, and update counters. The batch runner
+collects its per-window returns into finite experiment artifacts. The
+streaming runner emits them as they become available. Both use the same
+decision and update implementation. This prevents a separate deployment
+implementation from drifting away from the model evaluated offline.
+
+The command-line stages are explicit. A scoring request does not silently
+retrain a model, and an evaluation request does not alter a threshold.
+Configurations identify inputs, device semantics, model settings, output
+locations, and adaptation policy. Configuration validation rejects unknown
+or inconsistent settings before execution. Stored artifacts then provide
+a second boundary: a valid configuration cannot make an incompatible
+model and threshold into a meaningful pair.
+
+The system does not use an HTTP service or a distributed event queue.
+Completed windows and JSON events are sufficient for the agreed
+supplied-window runtime. This choice keeps the monitoring procedure
+inspectable, but leaves live collection, transport durability, and response
+integration outside the implementation. The detector's statistical
+state is protected more strongly than ordinary research output files;
+Section~\ref{sec:state} identifies that boundary.
+
 \section{Capture validation, device filtering, and count windows}
+\label{sec:preparation}
+
+\subsection{Selecting the observed device}
+
+The processor selects frames associated with the configured media access
+control (MAC) address in either Ethernet direction. Matching ARP hardware
+addresses are also considered. Filtering on this identity avoids relying
+on a device's IP address remaining unchanged across captures. The device
+name remains a human-readable identity in configurations and events; the
+MAC address supplies the packet-selection rule. Neither constitutes
+cryptographic proof of packet origin, and the detector does not claim to
+prevent spoofing of that identity.
+
+The retained classification order is ARP, TCP, and then UDP. UDP packets
+whose source or destination port is 1900 are assigned to SSDP; the
+remaining UDP packets are assigned to ordinary UDP. Unsupported protocols
+are excluded. Each retained packet increments one category, so the sum of
+the four counts has a consistent meaning. This policy is versioned as
+\path{device-mac-bidirectional-ssdp-exclusive-v1}. Changing it changes the
+input semantics even if the resulting vector still has four entries.
+
+Frame selection is performed before full packet decoding where possible.
+This avoids spending decoding work on unrelated devices in large mixed
+captures. It does not remove the need to inspect every source record when
+establishing capture coverage or structural validity. A fast filter and a
+complete structural validator solve different preparation problems.
+
+\subsection{Window boundaries and observation states}
+
+Let $t$ denote a packet's UTC timestamp in seconds from the Unix epoch and
+let $\Delta$ be the trained duration in seconds. The containing window
+starts at
+\[
+ b(t)=\Delta\left\lfloor\frac{t}{\Delta}\right\rfloor
+\]
+and represents $[b(t),b(t)+\Delta)$. A packet exactly at the right boundary
+belongs to the next interval. The retained duration is $\Delta=600$~s.
+Normalising timezone-aware timestamps to UTC before grouping provides one
+time grid for preparation, annotations, and runtime validation.
+
+Three observation states are distinguished. An observed window contains
+counts of supported traffic; an observed-silent window contains a valid
+zero vector; a missing window contains no count vector. Missing coverage
+does not supply evidence of silence and is excluded from fitting,
+calibration, and scoring. In the stream interface it advances chronology
+without generating a decision. A gap between supplied records is not
+automatically filled with invented zero counts.
+
+This distinction also limits the security interpretation of silence.
+The DM composition model assigns its conditional probability to the zero
+vector when $N=0$, as explained in Chapter~\ref{ch:background}. The
+retained upper count tails do not add an outage detector. An interruption
+of communication can therefore require a different signal, even when
+the input correctly records an observed silent interval.
+
+\subsection{Separate preparation gates}
+
+Inventory records whether configured source files exist, their sizes and
+checksums, and whether duplicated bytes need an explicit explanation.
+Structural validation reads a classic-PCAP source to its physical end,
+checking its global header, record boundaries, timestamp representation,
+snapshot length, and captured/original length relationships. Recoverable
+anomalies such as out-of-order timestamps are reported as warnings;
+truncated records and impossible lengths fail with diagnostic evidence.
+Passing inventory alone does not establish structural validity.
+
+The classic-PCAP validator and the packet-reading path have different
+format scopes. The latter can encounter PCAPNG through its decoder, while
+the dedicated structural validator does not implement PCAPNG validation.
+The UNSW exclusion of a truncated source is consequently a recorded
+preparation decision, not evidence that all UNSW sources passed the same
+classic-PCAP gate. The thesis retains this distinction when describing
+data quality.
+
+Dataset fingerprints hash source bytes and the policies that give those
+bytes meaning: ordered categories, duration, timestamp/windowing rules,
+and partition membership. Absolute clone locations and generation times
+are excluded. A dataset identifier therefore changes when the experiment
+definition changes, without changing merely because the repository moves
+to another directory.
+
 \section{Input contracts and temporal partitions}
+\label{sec:contracts}
+
+The saved model embeds its device identity, MAC address, category order,
+duration, and counting policy. A vector can have the right dimension and
+still be incompatible: swapping TCP and UDP entries, changing window
+duration, or feeding another device's traffic changes its interpretation.
+The runtime validates these declarations before assigning statistical
+meaning to the counts. Compatibility is checked through the model and
+calibration fingerprints as well as through their schemas.
+
+At the trust boundary, counts must be non-negative integers. Boolean
+values, numeric strings, fractions, and non-finite values are rejected.
+The per-category counts and their total are bounded by $2^{63}-2$, leaving
+room for adding one in factorial expressions. This is an accepted input
+range, not a promise of exact double-precision arithmetic at its upper
+end. Numerical failures and their recovery remain explicit.
+
+Time bounds must be ordered and match the trained duration. The streaming
+boundary additionally enforces the UTC grid and rejects duplicates,
+overlap, and backward movement. A valid input record declares both a
+device and a source context; its source identifier need not encode a date.
+The runtime can validate the declaration but cannot independently prove
+that an external producer observed or classified every underlying packet.
+Producer compliance is therefore an assumption of supplied-window use.
+
+Research partition access is also explicit. Fit and calibration stages
+select only their declared captures. Ordinary scoring and evaluation use
+the development role. A dedicated final runner selects the configured
+final captures with additional checks on actual window chronology and
+label coverage. Runtime operation itself does not require knowledge of
+future captures or final-test identifiers.
+
+Nominal capture dates and actual UTC times must not be confused. A file
+named for a local calendar day can contain windows starting on the
+preceding UTC date. Capture membership identifies the experimental role;
+actual timestamps determine annotation alignment and overlap. The
+retained batch configuration checks do not supply every timeline audit
+implemented in the separate temporal research branch. That branch's
+rolling-fold results are not merged into the selected detector's evidence.
+
 \section{Model fitting and independent calibration}
+\label{sec:calibration}
+
+\subsection{Initial normal model}
+
+For the $M$ observed fitting windows, initial category probabilities are
+the pooled count proportions,
+\[
+ \widetilde p_k=\frac{\sum_{i=1}^{M}x_{ik}}
+                       {\sum_{i=1}^{M}\sum_{j=1}^{K}x_{ij}},
+ \qquad \alpha_k^{(0)}=c\,\widetilde p_k,
+\]
+where the configured initial concentration is $c=10$. Every category
+must have positive aggregate count so that the initial alpha vector is
+strictly positive. The implementation rejects an unusable initial matrix
+rather than silently inventing an initial distribution.
+
+Minka's update, Eq.~\eqref{eq:minka-update}, estimates the parameters
+\cite{minka2000}. The row-wise kernel sum monitors convergence. The
+reference settings stop when the absolute objective change is below
+$2\times10^{-9}$ or the maximum of 100,000 iterations is reached. The
+stored diagnostics distinguish convergence from merely reaching the
+iteration limit. They retain initial/final objectives, parameter values,
+iteration count, and elapsed fit time.
+
+The stopping tolerance is an implementation criterion on a numerical
+objective. It does not establish a statistical confidence interval for
+alpha or guarantee that every useful parameter regime converges in the
+available iteration budget. The numerical comparison in
+Chapter~\ref{ch:results} examines the behaviour of both backends under
+that shared fitting procedure.
+
+\subsection{Scaling three complementary features}
+
+Let $g_1(\boldsymbol{x})=s_{\mathrm{DM}}(\boldsymbol{x})$ denote the
+complete raw DM log-probability. Define
+\[
+ g_2(\boldsymbol{x})=-\log(1+N),\qquad
+ g_3(\boldsymbol{x})=-\log(1+x_{\mathrm{ARP}}).
+\]
+The negative signs put unusually large counts into the same lower-tail
+direction as unusually small composition scores. Both counts are already
+available from the four-category input. No additional packet fields or
+attack-labelled weights are required.
+
+For each feature $j$, the fitting set supplies a median $c_j$ and an
+interquartile range $d_j$. A zero fitting IQR is replaced by a unit scale.
+The standardised feature and its joint summary are
+\begin{equation}
+ z_j(\boldsymbol{x})=\frac{g_j(\boldsymbol{x})-c_j}{d_j},
+ \qquad J(\boldsymbol{x})=\min_{j\in\{1,2,3\}}z_j(\boldsymbol{x}).
+\label{eq:joint-feature}
+\end{equation}
+Median/IQR scaling places heterogeneous features on reference scales;
+it does not assert that their distributions are equal or Gaussian.
+The unit-scale fallback is particularly relevant to a category that is
+constant in the fitting data. Calibration still determines its effective
+cutoff through the common joint rule.
+
+\subsection{Joint calibration on separate normal windows}
+
+If $\mathcal C$ denotes the benign calibration windows, let
+\begin{equation}
+ q_*=Q_{0.01}\{J(\boldsymbol{x}):\boldsymbol{x}\in\mathcal C\}.
+\label{eq:joint-quantile}
+\end{equation}
+The reference calibration requires at least 30 observed windows and uses
+linear interpolation for the sample quantile. Hyndman and Fan describe
+the family of sample-quantile conventions to which this choice belongs
+\cite{hyndman1996}. The fixed minimum is an engineering guard; it is not a
+proof that thirty samples resolve a one-percent population tail reliably.
+
+One joint quantile uses the observed dependence between the three
+features, rather than selecting three thresholds independently and
+assuming an overall false-alert probability. Its one-percent value is
+an empirical operating point. Neither finite-sample calibration nor a
+later drifting stream supplies a guaranteed one-percent future false
+positive rate.
+
+For implementation, the composition cutoff is
+$\tau=c_1+q_*d_1$, while the log-count cutoffs are
+$u_N=-c_2-q_*d_2$ and $u_A=-c_3-q_*d_3$. The threshold artifact stores
+these cutoffs, their reference scales, score convention, calibration
+captures and time range, and a model fingerprint. Saving the cutoff
+without this context would leave its numerical meaning ambiguous.
+
 \section{Anomaly scoring and explanations}
+\label{sec:joint-scoring}
+
+\subsection{Signed margins and the decision}
+
+For the active DM model, define the signed composition margin
+$m_D=(s_{\mathrm{DM}}-\tau)/d_1$. The count margins are
+\[
+ m_N=\frac{u_N-\log(1+N)}{d_2},\qquad
+ m_A=\frac{u_A-\log(1+x_{\mathrm{ARP}})}{d_3}.
+\]
+With all three features evaluated, the static combined score is
+\begin{equation}
+ S(\boldsymbol{x})=\min\{m_D,m_N,m_A\},
+ \qquad \widehat y=\mathbf{1}\{S(\boldsymbol{x})<0\}.
+\label{eq:combined-decision}
+\end{equation}
+This is equivalent to comparing Eq.~\eqref{eq:joint-feature} with
+Eq.~\eqref{eq:joint-quantile}. Equality at a cutoff does not alert: the
+comparison is strictly below zero. The minimum makes any evaluated
+negative margin sufficient evidence for an alert, without interpreting
+that margin as an attack probability.
+
+In adaptive operation, the original DM and its original calibrated
+scale/cutoff remain detection references. When composition is evaluated,
+its margin is the minimum of the active and original DM margins.
+The original count cutoffs also remain fixed. Consequently, a candidate
+cannot remove a decision supported by an original reference merely by
+making the active model more tolerant. This can preserve desirable
+evidence, but can also preserve an original false alert after benign
+change. The reference is not refreshed automatically.
+
+\subsection{Count-first evaluation and numerical recovery}
+
+The current static and conservative paths evaluate the inexpensive count
+margins first. A negative count margin already determines the alert in
+Eq.~\eqref{eq:combined-decision}. The implementation can therefore emit
+that decision without evaluating composition or learning from the window.
+Its event contains the evaluated count margins and a null composition
+score. Otherwise the DM is evaluated and the composition margin joins
+the minimum. The historical adaptive policy retains complete DM scoring
+because its recent-score buffer depends on those values.
+
+This evaluation order preserves the binary rule but need not preserve the
+numerical minimum that would have been obtained by evaluating every
+feature. A skipped DM margin could have been more negative. Event severity
+and score rankings can consequently change while anomaly decisions remain
+equal. The later scoring-order regression is reported separately from
+the original full-score final replay for this reason.
+
+If the native precision guard rejects a required DM calculation, the
+implementation recomputes the same complete probability with the installed
+high-precision library and logs the recovery. It does not change the
+model, coefficient convention, or cutoff. The requested native precision
+and the input integer range are not universal promises of scoring accuracy;
+typed errors and recovery distinguish those boundaries from a valid
+statistical decision.
+
+\subsection{What an event communicates}
+
+An event identifies the device, capture context, UTC bounds, counts,
+score convention, evaluated margins, decision cutoff, and model
+fingerprint. It also records the expected proportions and residuals
+\[
+ r_k=\begin{cases}x_k/N-p_k,&N>0,\\-p_k,&N=0.\end{cases}
+\]
+The silent-window convention uses zero observed proportions. It is a
+consistent representation for diagnostics, not an estimate of category
+probabilities from an empty sample.
+
+For a combined event, severity is $\max(0,-S)$ using the score actually
+evaluated. It expresses distance beyond a cutoff on the recorded reference
+scale. A large residual points to an over- or under-represented category;
+it does not prove that category caused an attack. A count-first event
+deliberately reports less composition evidence rather than manufacturing
+a DM value. The event contract makes that absence visible to a reviewer.
+
+\subsection{A worked probability and decision example}
+\label{sec:worked-score}
+
+A small synthetic example makes the scoring convention concrete.
+It illustrates Eq.~\eqref{eq:dm-pmf}; it is not a fitted project model
+or an additional detection experiment. Consider four categories
+with $\boldsymbol{\alpha}=(1,1,1,1)$ and a window
+$\boldsymbol{x}=(2,1,0,0)$, so $N=3$ and $\alpha_0=4$.
+The complete count-vector probability is
+\begin{align*}
+ P(\boldsymbol{x}\mid3,\boldsymbol{\alpha})
+ &=\frac{3!}{2!1!0!0!}
+   \frac{\Gamma(4)}{\Gamma(7)}
+   \frac{\Gamma(3)\Gamma(2)\Gamma(1)\Gamma(1)}{\Gamma(1)^4}\\
+ &=3\cdot\frac{6}{720}\cdot2=\frac{1}{20}.
+\end{align*}
+Its complete log probability is approximately $-2.995732$.
+Omitting the multinomial coefficient would instead give $1/60$,
+or approximately $-4.094345$ in log units. This is not a rounding
+difference: it changes the event whose probability is calculated.
+
+Under this particular uniform Dirichlet prior, all twenty possible
+four-category count vectors summing to three have equal probability.
+For example, $(3,0,0,0)$ has coefficient one and a different Gamma
+product, but the same complete probability $1/20$. A rule omitting
+the coefficient would make these vectors appear to have different
+probabilities. This shows why comparing implementations requires an
+explicit count-vector convention, even though the coefficient can
+be omitted when maximising parameters for fixed data.
+
+For an illustrative calibration, suppose the composition cutoff is
+$\tau=-3.2$ with $d_1=0.4$. Let the total log-count cutoff be
+$u_N=\log11$ with $d_2=0.5$, and the ARP log-count cutoff be
+$u_A=\log6$ with $d_3=0.5$. These are chosen numbers, not the saved
+project thresholds. Since the total is three and the ARP count zero,
+the margins are
+\begin{align*}
+ m_D&=\frac{-2.995732-(-3.2)}{0.4}\simeq0.511,\\
+ m_N&=\frac{\log11-\log4}{0.5}\simeq2.023,\\
+ m_A&=\frac{\log6-\log1}{0.5}\simeq3.584.
+\end{align*}
+All margins are positive, so their minimum is positive and the
+window does not alert. A zero cutoff in margin space is compatible
+with a negative cutoff in log-probability space. Confusing the two
+thresholds would produce a different decision rule.
+
+The example also separates decision and learning. The observation
+is non-alerting, but its composition margin is below the conservative
+admission margin of one. It therefore cannot enter that learning
+buffer even if its volume passes the additional admission limit.
+Non-alerting does not mean eligible for adaptation.
+
+Count-first execution preserves the logical decision by stopping
+as soon as a negative count margin is known. It need not compute a
+complete composition explanation for that event. The retained
+examples in Section~\ref{sec:event-cases} include a real window with
+both composition and count violations, for which this distinction
+changes the reported score while leaving the alert unchanged.
+
 \section{Native LM backend}
+\label{sec:native-integration}
+
+The supplied numerical code is retained separately from the application's
+production native copy. The integration preserves the LM approximation
+and its attribution to Languasco and Migliardi \cite{languasco2023}. Its
+changes concern validation, matrix semantics, coefficient loading, memory
+lifecycle, zero-count increments, and the Python/native boundary.
+The thesis claims these integration decisions, not the mathematical
+invention of the LM method.
+
+Python sends a contiguous matrix and alpha vector to the compiled
+library. A native matrix entry point evaluates each row's kernel and
+returns their sum. Numerical setup that depends on alpha, category count,
+and requested precision can be reused across rows within that call.
+Observed counts still enter each row independently. Replacing the matrix
+with its summed count vector would change the objective, as established
+in Chapter~\ref{ch:background}.
+
+The earlier adapter repeated the shared setup for each row. Moving that
+work outside the row loop removes an integration cost while retaining
+row-wise semantics. The corresponding timing comparison and its historical
+boundary are reported in Chapter~\ref{ch:results}; this optimisation is
+not a theorem that native code is faster for every workload.
+
+The adapter validates library availability, dimensions, finite positive
+parameters, and the returned result. Coefficient-file reads and allocations
+are checked, and workspaces are released on successful and failed calls.
+Native failures are translated to application errors rather than
+terminating the interpreter. Calls are serialised around global state
+inherited from the supplied implementation. This protects the existing
+kernel contract without claiming it is an independently re-entrant native
+library.
+
+The SciPy implementation supplies a reference kernel through
+\texttt{gammaln}, while SciPy's digamma remains in the common estimator
+\cite{virtanen2020}. The count-dependent coefficient is added outside
+either kernel. Numerical validation therefore covers both backend agreement
+and the complete score seen by calibration. The offline image contains
+the compiled library and coefficient files; a runtime start does not
+depend on a compiler or network download.
+
 \section{Legacy and conservative adaptation}
+\label{sec:adaptation}
+
+\subsection{Mode, policy, and update ordering}
+
+A mode determines what may change: static operation changes neither
+parameters nor threshold, threshold adaptation changes its cutoff and
+scale, and periodic refitting proposes a complete parameter/calibration
+pair. A policy determines which observations and candidates are permitted
+to cause those changes. Both the historical legacy policy and the
+conservative policy use the same per-window processing path.
+
+The current observation is scored before any admission or candidate
+activation. A promoted update can affect later windows only. Missing
+observations do not enter learning buffers or the scored-window counter.
+The ordinary attempt schedule is expressed in observed windows, not
+elapsed wall time. During a long gap, it does not silently advance as if
+traffic had been observed.
+
+The reference ten-minute configuration uses a bounded buffer of 288
+observations and an attempt cadence of 144 observations. Periodic
+refitting normally requires 144 accepted observations. These correspond
+to 48, 24, and 24 observed hours at ten minutes, respectively; a sparse
+accepted buffer can span a much longer chronological period. The historical
+288/240 experiment changes cadence and minimum acceptance while retaining
+the same buffer capacity. Its outcomes are not attributed to the default
+schedule.
+
+\subsection{Admission to a conservative learning buffer}
+
+Let $s_t$ and $s_0$ denote raw DM scores under the active and original
+models. Write $\tau_t,I_t$ and $\tau_0,I_0$ for their cutoffs and positive
+reference scales. With confidence multiplier $h=1$, conservative admission
+requires
+\begin{equation}
+ \begin{split}
+  s_t(\boldsymbol{x})&\geq\tau_t+hI_t,\\
+  s_0(\boldsymbol{x})&\geq\tau_0+hI_0,\\
+  N&\leq V,\qquad m_N\geq h,\qquad m_A\geq h,
+ \end{split}
+\label{eq:admission}
+\end{equation}
+where $V$ is the 0.99 empirical quantile of benign calibration totals.
+The volume cap $V$ restricts learning and is distinct from the joint
+detection cutoff $u_N$. The cap can reject a window that is not an alert.
+Both active and original composition evidence must clear a confidence
+margin, and count margins must be safely positive.
+
+Equation~\eqref{eq:admission} is an unsupervised admission rule, not a
+certificate that an observation is benign. Attacks that resemble the
+observed normal features can still pass. The poisoning and contamination
+literature motivates explicit admission controls
+\cite{kloft2012,cretu2008}; its guarantees do not transfer to this particular
+DM rule. Admission counters distinguish excessive volume from insufficient
+confidence so that the restriction's empirical effect remains inspectable.
+
+\subsection{Candidate construction and validation}
+
+Threshold-only candidates score accepted counts under the active DM and
+recalculate the lower quantile and IQR. Refitting uses the same estimator
+as initial training, applied to accepted counts with one synthetic
+single-count row per category. The four smoothing rows ensure each
+category has positive total count for initialisation. They are a fitting
+device and are not counted as observed benign windows or detection labels.
+
+The candidate must be finite, positive, dimensionally compatible, and
+converged. Its kernel objective on the refitting matrix must not be worse
+than that of the active model beyond numerical tolerance. Conservative
+validation additionally imposes
+\begin{equation}
+ \frac{1}{1.25}\leq\frac{\alpha'_0}{\alpha_{0,t}}\leq1.25,
+ \quad \max_k|p'_k-p_{k,t}|\leq0.05,
+ \quad |\tau'-\tau_t|\leq2I_0.
+\label{eq:movement-bounds}
+\end{equation}
+The candidate scale must be finite and positive. Threshold and model are
+validated together, and failure rejects the entire conservative pair.
+There is no fallback that applies an otherwise unrelated threshold change
+after a conservative refit is rejected.
+
+These tests control particular movements. The likelihood check uses the
+fitting buffer rather than an independent candidate holdout. The
+concentration and proportion bounds compare successive active models,
+so a sequence of individually bounded moves need not have a fixed
+cumulative bound. The threshold bound uses the original scale. None
+establishes poisoning immunity or stable future false-alert rates.
+
+\subsection{The preserved historical policy}
+
+Legacy threshold adaptation admits all recent scored DM values, including
+anomalous ones. Legacy refitting uses an original-baseline confidence
+gate, convergence, and likelihood checks, but lacks the newer volume and
+movement restrictions. A rejected legacy refit may still fall back to a
+threshold update. With the retained combined detector, fixed detection
+references remain in effect, while historical DM-only artifacts preserve
+their earlier scoring contract.
+
+These distinctions permit a fair description of negative results.
+Learning from all recent scores can move a cutoff toward attack traffic;
+a converged refit can fit contaminated observations well. Conversely,
+restrictive guards can preserve starting decisions by rejecting every
+candidate. A rejection verifies enforcement of a configured condition,
+not successful adaptation. Controlled promotion tests establish that the
+software can activate an allowed candidate; empirical traffic experiments
+must establish whether doing so is useful.
+
+\begin{figure}[tbp]
+\centering
+\fbox{\begin{minipage}{0.92\textwidth}\small
+\textbf{One completed-window operation}\par
+\begin{enumerate}
+ \item Validate identity, categories, duration, values, and observation state.
+       Return no event for missing coverage.
+ \item Compute count margins. In static/conservative operation, emit an
+       alert immediately if a count margin is negative.
+ \item Otherwise evaluate the required DM scores, combine active/original
+       evidence, and construct the event for the current window.
+ \item In adaptive operation, test admission and update bounded buffers.
+ \item At an eligible attempt boundary, construct a threshold or refit
+       candidate using the accepted data.
+ \item Check sample support, numerical validity, convergence, likelihood,
+       and configured movement limits. Retain the active pair on rejection.
+ \item Persist a valid complete pair before activating it. Return the
+       current event and the candidate's accepted/rejected audit outcome.
+\end{enumerate}
+\end{minipage}}
+\caption{Processing order shared by batch and streaming operation. The legacy
+policy retains full DM scoring for its historical recent-score buffer. An
+activated candidate affects subsequent observations, not the decision already
+constructed for the current window.}
+\label{fig:window-procedure}
+\end{figure}
+
+An early count violation returns from the operation after recording
+admission rejection in an adaptive mode. It does not enter the learning
+buffer or attempt fitting, even if that scored-window index is an
+ordinary scheduled boundary. Later eligible boundaries still use
+the observed-window counter. The regression evidence establishes
+equal decisions and final states on its tested histories; it does
+not claim that every possible future attempt history is identical
+to the older full-score execution order.
+
 \section{Persistence, restart, and rollback}
+\label{sec:state}
+
+Persisting alpha alone would leave the detector vulnerable to combining a
+new model with an old cutoff. A snapshot therefore stores a complete
+active pair and its original references, input contract, calibration and
+adaptation settings, estimator settings, and the learning-volume limit.
+The original threshold retains fixed count cutoffs. Restoring a DM-only
+snapshot does not silently convert it to the combined rule.
+
+Versions are immutable and identified separately from parameter
+fingerprints. A pointer file names current and previous versions, and a
+bounded history records recent decisions. A nonblocking Linux file lock
+allows only one state writer or rollback operation at a time. Locking
+protects this local state directory; it is not a distributed-consensus
+protocol or a guarantee about arbitrary network filesystems.
+
+Figure~\ref{fig:state-lifecycle} identifies the activation boundary. The
+writer creates a temporary file beside its destination, flushes and
+synchronises it, and reloads the snapshot through validation. The immutable
+version is published before the active pointer is atomically replaced.
+Failure before pointer replacement leaves the former pair active.
+Failure to confirm directory durability after replacement is a committed
+state error: the runtime stops instead of describing the update as rejected.
+Restart then validates the state actually referenced by the pointer.
+
+\input{figures/state_lifecycle}
+
+Cleanup keeps active and previous snapshots and the most recent 100
+history decisions. Managed obsolete versions and abandoned temporary
+files may be removed only after reference validation. Unrelated files are
+left alone. Cleanup or logging failure is distinct from reversing a
+successful activation. The guarantees concern accepted detector state;
+ordinary finite research reports and event arrays do not all use this
+transaction protocol.
+
+Restoration validates device semantics and detector settings. An existing
+corrupt state fails instead of resetting silently to the initial model.
+Prepared edge state embeds the required calibration evidence, allowing
+startup without research captures. Buffers, scheduling counters, and input
+positions are not restored. A restarted replay can therefore score old
+windows again and can learn from them again. Persisting the model is not
+equivalent to exactly-once event processing.
+
+Rollback requires a previous accepted version and exclusive writer access.
+It restores that complete pair rather than mixing selected fields from
+two versions. An operator must stop the current writer first. This
+mechanism supports recovery from a known undesirable accepted change;
+it does not automatically determine whether a change was malicious.
+
 \section{Bounded streaming runtime and Docker simulation}
+\label{sec:streaming}
+
+The stream interface reads one UTF-8 JSON record per physical line. Each
+record declares the device, source context, and a nested completed window.
+The 65,536-byte maximum includes the line ending and is enforced while
+reading. Malformed JSON, non-finite numbers, missing fields, incompatible
+semantics, and chronology violations terminate with a line-numbered error.
+A valid final record does not require a terminating newline.
+
+After processing, an event is serialised and flushed before the next
+input read. Input and output are synchronous: a slow consumer pauses
+further reads rather than causing an unbounded queue. The detector keeps
+bounded deques, active/original state, and counters. Batch result arrays
+grow with the finite research experiment; this deliberate collection is
+not part of the streaming memory bound.
+
+Signals distinguish idle reading from an active detector operation.
+SIGINT or SIGTERM stops an idle reader; during scoring or persistence,
+shutdown is deferred until the current operation completes. This avoids
+interrupting activation mid-transaction but is not a hard execution-time
+bound for every possible future refit. The service's stop grace period is
+30~s before Docker's final termination mechanism.
+
+The packaged simulation uses a read-only Linux/amd64 image, a one-CPU
+quota, 512~MiB of memory, a 16-MiB temporary filesystem, and a 64-process
+limit. Configuration is read-only; prepared state and bounded logs are
+writable using the host's numeric identity. Networking is disabled, and
+the image starts without compiling or downloading dependencies.
+Application logs retain a current 5-MiB file and two backups. The local
+Docker log driver retains at most three 5-MB files, in addition to its
+own metadata and compression behaviour.
+
+Normal end-of-file exits successfully and leaves the finite service
+stopped. Failures can trigger up to three retries; an explicit stop stays
+stopped. A collector-owned FIFO can supply records, but that collector
+owns reconnection and input position. The service neither captures live
+packets nor acknowledges durable event delivery. An update can be
+committed before its associated event reaches a failed consumer. These
+limits are compatible with the supplied-window simulation and are retained
+when interpreting its resource measurements.
+
+\section{Computational and storage boundaries}
+\label{sec:computational-boundaries}
+
+The compact feature dimension reduces data volume but does not make
+every pipeline stage equally cheap. Preparation must read the source
+capture and validate its records, even when most frames belong to
+other devices. Cost depends on captured traffic and decoding, not
+merely on the four numbers eventually stored per window. Offline
+fitting retains an $n\times K$ matrix and repeatedly evaluates
+digamma terms and likelihood checks until convergence or the
+iteration limit. Iteration count and special-function evaluation
+cost remain input-dependent.
+
+Inference retains active and original parameter/calibration objects
+of size proportional to $K$, bounded learning buffers containing at
+most $B$ count vectors, and bounded diagnostic history of length
+at most $H$. Their dominant stored numeric content is proportional
+to $BK+H$, rather than the total number of stream records. Here
+$K=4$, $B=288$ for the reference policy, and persisted history is
+limited to 100 records. The reader has its per-line bound. This
+describes structures controlled by the application, not a precise
+RSS formula for the interpreter and native allocator.
+
+An ordinary window evaluates count features and, where needed,
+composition references. A scheduled refit constructs and fits a
+bounded candidate matrix, including the pseudo-observations. Its
+time can dominate that window even though its storage remains
+bounded and the candidate is rejected. Admission can delay an
+attempt, while convergence checks can make an actual attempt
+expensive. Average scoring cost therefore does not bound the
+longest detector operation.
+
+Streaming serialises one result and waits for its consumer before
+reading another record; it does not retain an unlimited event list.
+Batch evaluation deliberately saves all finite experiment events
+for later label joining. Disk space for captures, experiment
+outputs, and external event retention is separate from bounded
+learning state. These boundaries explain why the resource study
+measures both peak memory and refit latency, and why its findings
+cannot be applied to raw packet collection without another
+measurement.

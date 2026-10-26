@@ -1,6 +1,43 @@
 \begin{otherlanguage}{italian}
 \chapter*{Sommario}
 \addcontentsline{toc}{chapter}{Sommario}
-% Translate the final English abstract; check the applicable summary requirement.
-\textit{[Riassunto in italiano da scrivere.]}
+I dispositivi IoT possono presentare comportamenti di rete caratteristici,
+che consentono di costruire profili di normalità per il rilevamento delle
+anomalie. Questa tesi presenta LM-IDNet, un rilevatore specifico per
+dispositivo che utilizza i conteggi di pacchetti TCP, UDP ordinario, SSDP
+e ARP in finestre complete di dieci minuti. Un modello
+Dirichlet--multinomiale rappresenta la composizione del traffico ed è
+affiancato da controlli sul volume totale e sui pacchetti ARP, calibrati
+congiuntamente. La stima e la calibrazione utilizzano periodi distinti
+di traffico presunto benigno; le etichette degli attacchi sono impiegate
+nella valutazione fuori linea e nella selezione del metodo. Il sistema
+integra il metodo numerico di Languasco--Migliardi con la stima di Minka,
+aggiornamenti controllati di soglia e modello e uno stato persistente.
+
+Gli esperimenti distinguono la valutazione su traffico etichettato di
+Chromecast e di una videocamera Samsung dall'analisi numerica su un
+carico D-Link privo di etichette di attacco. Una riproduzione conclusiva
+con configurazione fissata comprende 1.008 finestre uniche etichettate:
+la precisione aggregata è 82,35\%, il richiamo 77,78\% e F1 80,00\%.
+F1 varia sensibilmente tra i dispositivi: 61,54\% e 90,91\%. Sono
+rilevati otto dei nove intervalli di attacco interamente osservati;
+per sette l'allarme è disponibile entro la fine dell'attacco. Le
+etichette della partizione successiva erano già state esaminate in
+analisi retrospettive, limitando le conclusioni sulla generalizzazione
+indipendente. Le modalità conservative non accettano aggiornamenti
+nella riproduzione conclusiva e producono le stesse decisioni della
+modalità statica. Esperimenti storici e con durate diverse mostrano
+che l'adattamento può peggiorare il rilevamento. Finestre più lunghe
+possono migliorare le proprie metriche, ritardando però gli allarmi.
+
+LM e SciPy mantengono tutte le decisioni di sviluppo verificate, con
+risultati numerici vicini e tempi dipendenti dall'operazione. Una
+simulazione Docker Linux/amd64, limitata a una CPU e 512~MiB, elabora
+16.000 finestre con un tempo medio vicino a 30~ms e un massimo di
+memoria di processo vicino a 69~MiB. La finestra più lenta richiede
+circa 5,08~s durante una ristima poi rifiutata. Le misure riguardano
+finestre già aggregate, escludendo acquisizione dal vivo e gateway
+fisici. La tesi fornisce un prototipo riproducibile e interpretabile
+e identifica i limiti della rappresentazione, dell'adattamento e
+della valutazione da approfondire con studi indipendenti.
 \end{otherlanguage}

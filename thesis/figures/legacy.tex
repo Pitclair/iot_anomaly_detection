@@ -1,0 +1,19 @@
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=.95\textwidth,height=7cm,ymin=0,ymax=100,ylabel={Development F1 (\%)},
+ xtick={0,1,2,3},xticklabels={Static,Threshold 144,Refit 144/144,Refit 288/240},
+ x tick label style={rotate=15,anchor=east,font=\small},
+ legend style={at={(.5,1.02)},anchor=south,legend columns=2,column sep=6pt},
+ ymajorgrids=true,grid style={gray!20}]
+\addplot[ChromecastBlue,thick,mark=*] table[x=mode,y=f1,col sep=comma]{generated/legacy_UNSW-Chromecast.csv};
+\addplot[SamsungOrange,thick,dashed,mark=square*] table[x=mode,y=f1,col sep=comma]{generated/legacy_UNSW-Samsung-Camera.csv};
+\legend{Chromecast,Samsung camera}
+\end{axis}
+\end{tikzpicture}
+\caption{Historical DM-only development comparisons. Refit labels give attempt
+cadence/minimum accepted windows; every adaptive variant has a 288-window buffer.
+The lines connect distinct configurations, not a temporal learning trajectory.
+These development-selected runs differ from the conservative closing replay.}
+\label{fig:legacy}
+\end{figure}

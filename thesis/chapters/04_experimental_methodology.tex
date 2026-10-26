@@ -1,10 +1,530 @@
 \chapter{Experimental Methodology}
 \label{ch:experiments}
-% Freeze this protocol before accessing final-test data.
+The experiments address detection, numerical computation, and adaptation
+through separate evidence bundles. They do not form one interchangeable
+collection of scores. This chapter states the input roles, settings,
+denominators, and measurement boundaries before presenting their results.
+In particular, the historical DM-only experiments, retrospective scoring
+selection, matched-duration study, and closing final-partition replay are
+identified separately.
+
 \section{Datasets, devices, and label provenance}
+\label{sec:experimental-data}
+
+\subsection{Two purposes for the available traffic}
+
+D-Link Camera~5 supplies the count workload connected to the inherited
+DM IoT study \cite{alhajbaddar2025iot}. The underlying D-Link traces were
+published by Roy Chowdhury et al. \cite{chowdhury2021data}. The project
+selects twelve captures from October 2020 for fitting, calibration, and
+later numerical/scoring workloads. Attack labels are unavailable for
+these selected captures. D-Link alert counts can therefore describe
+detector output but cannot estimate attack recall, precision, or a false
+positive rate.
+
+The labelled detection experiments use the UNSW consumer-IoT attack
+collection associated with Hamza et al. \cite{hamza2019,unswattackdata}. Mixed-device
+captures are filtered separately for Chromecast and Samsung Camera.
+Chromecast uses MAC address \path{f4:f5:d8:8f:0a:3c}; Samsung uses
+\path{00:16:6c:ab:6b:88}. These views are not the UNSW-NB15 dataset and
+are not N-BaIoT. Keeping their identity explicit avoids attributing a
+published result from another benchmark to the present traces.
+
+The source files remain separate from processed windows and labels.
+Prepared source directories can use symbolic links, avoiding a second
+copy of the capture bytes. Device filtering changes the analytical view,
+not the publisher's files. Model artifacts record the selected device
+and captures so that a directory containing many sources is not mistaken
+for the set actually used in an experiment.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{.19\textwidth}
+ >{\raggedright\arraybackslash}p{.14\textwidth}
+ >{\raggedright\arraybackslash}p{.26\textwidth}rrr@{}}
+\toprule
+\textbf{Device} & \textbf{Role} & \textbf{Selected date range} &
+\textbf{Windows} & \textbf{Attack} & \textbf{Silent} \\
+\midrule
+\TableRows{generated/partitions}
+\bottomrule
+\end{tabular}
+\caption{Reference ten-minute observations, generated from the configured
+processed captures and label files. Date ranges give the first and last
+selected nominal capture IDs and do not assert continuous coverage. D-Link
+has no attack labels. Silent windows are observed zero vectors and remain
+part of the window count.}
+\label{tab:partitions}
+\end{table}
+
+\subsection{Coverage, exclusions, and silent observations}
+
+Table~\ref{tab:partitions} gives the stored reference composition. The
+D-Link development captures are October~16 and~19, rather than every day
+between those dates. Its fit set has 846 rows, its calibration 288,
+development 270, and later numerical partition 288. Chromecast has 867
+fit, 576 calibration, 474 development, and 432 final observations.
+Samsung has 432 fit, 81 calibration, 556 development, and 576 final
+observations. These are counts of retained observations, not assumptions
+that every nominal day contains exactly 144 ten-minute intervals.
+
+Chromecast's October~24 capture is excluded because its final PCAPNG
+block is truncated. The preparation record documents that another
+download did not repair the publisher-side source. Six annotation
+intervals on that date consequently have no retained capture. October~21
+contains only about seven hours, producing 42 windows. Samsung May~31
+contains 81 windows and June~1 contains 124. Metrics are evaluated on
+matched observed windows rather than completing these dates with
+unobserved data.
+
+The stored Chromecast development set contains 187 silent windows;
+Samsung contains 30 silent development windows and 19 silent final
+windows. These observations are distinct from missing coverage and are
+retained in the denominators. Their presence helps explain why a large
+number of true negatives need not imply broad coverage of active device
+behaviour. No missing-state rows are stored in the selected labelled
+collections, but that does not prove the original recording was
+continuous outside the observed boundaries.
+
+An additional chronology check for this thesis found 846 D-Link fitting
+rows but only 702 distinct UTC window bounds: 144 bounds are repeated
+across selected captures. The saved model is preserved because the
+D-Link comparison concerns numerical implementations on the same retained
+matrix. The rows must not be described as 846 independent time intervals.
+Resolving that overlap and refitting would define a different workload;
+it is not silently substituted for the published project evidence.
+
+\subsection{Annotation preparation and alignment}
+
+The original annotation bytes are fingerprinted separately for each
+selected device. Chromecast's official file contains 27 intervals, of
+which 21 match retained captures; Samsung's 42 intervals all match.
+The preparation record retains the unmodified annotation identity and
+derives per-window labels separately from the processed count files.
+Labels are not appended to the training matrices or consumed by the
+detector's admission rule.
+
+For annotated interval $[a_s,a_e)$ and observation $[w_s,w_e)$, the
+window is attack-positive if
+\begin{equation}
+ a_s<w_e\quad\text{and}\quad a_e>w_s.
+\label{eq:label-overlap}
+\end{equation}
+Any positive overlap is sufficient, regardless of the fraction of the
+window occupied by the attack. When intervals overlap, their union
+determines overlap seconds so that a window cannot contain more labelled
+attack duration than its own length. Exact UTC bounds, rather than only
+the filename date, determine this alignment.
+
+The prepared Chromecast labels contain 38 positive windows across the
+retained data: 32 development and six final. Samsung has 82: 70 development
+and twelve final. An attack interval can create more than one positive
+window and can overlap another annotation. The number of positive windows
+is therefore neither an attack count nor an estimate of the duration of
+malicious packet transmission. The thesis reports both window and
+annotation-interval outcomes.
+
 \section{Chronological partitions and leakage prevention}
+\label{sec:experimental-chronology}
+
+\subsection{Reference fit, calibration, and evaluation roles}
+
+Complete captures are assigned to roles. The fit period precedes benign
+calibration, followed by development and the configured final period.
+The labelled fit and calibration partitions contain no attack-positive
+windows under the supplied annotation scheme. That supports their stated
+role as presumed normal data; incomplete annotations could still leave
+unrecognised activity in the reference. The assumption is recorded rather
+than treated as a universal guarantee of benignness.
+
+Fitting reads the fit role, and calibration reads its distinct role.
+Model and threshold artifacts preserve source identities and time bounds.
+The evaluation joins events and labels on capture context and exact
+window bounds, rejecting duplicate or incompatible records and reporting
+unmatched inputs. The dedicated closing replay checks actual chronological
+overlap and complete label coverage as well as nominal capture membership.
+
+This protocol avoids randomly mixing earlier and later windows in a
+single train/test split. It does not remove temporal dependence or produce
+multiple independent histories. Adjacent observations can be correlated,
+and a limited sequence of captures can favour particular update times.
+The separate temporal branch studies rolling folds and episode-level
+summaries; its outputs are not presented as results from the retained
+detector. This boundary follows the broader concern with time and
+distributional bias in security evaluation \cite{pendlebury2019}.
+
+\subsection{Development selection and prior exposure}
+
+Development labels were used to compare scoring choices, adaptation
+schedules, and window durations. The learning calculations still use
+normal fitting/calibration data, but the research process is not blind
+to labelled outcomes. The broad per-category-tail experiments also
+inspected later-partition labels; their own record states that subsequent
+comparisons are retrospective. A later replay cannot undo that exposure.
+
+The term \emph{final partition} in this thesis identifies the saved role
+and the closing evaluation bundle. It does not claim an independently
+untouched test set. The closing run fixes the selected ten-minute rule
+and starting pairs before replay, does not select settings from its
+outputs, and saves the complete records. Its value is reproducibility and
+coverage of that declared later sequence. Independent external
+generalisation remains unmeasured.
+
+This distinction is necessary even when the same settings are used on
+both labelled devices. Shared settings reduce device-specific tuning
+but do not erase the design choices informed by their data. Arp et al.'s
+discussion of data snooping and experimental pitfalls motivates explicit
+reporting of these choices \cite{arp2022}. The comparison tables label
+historical development, retrospective pooled, duration-specific later
+audit, and closing final results separately.
+
 \section{Static and adaptive configurations}
+\label{sec:experimental-configurations}
+
+\subsection{Common reference settings}
+
+The reference detector uses the four categories and a ten-minute duration,
+the native LM backend at six requested digits, initial concentration~10,
+likelihood-change tolerance $2\times10^{-9}$, and at most 100,000 fitting
+iterations. Joint calibration uses the 0.01 lower quantile with at least
+30 observed normal calibration windows. Every mode starts from a saved
+normal-only model and its matching threshold, not from the final state
+left by a previous mode.
+
+The three modes are static, adaptive threshold, and periodic refit.
+The conservative settings use a 288-window buffer, a 144-observation
+attempt cadence, 144 accepted windows for a refit, confidence multiplier
+one, and the 0.99 calibration-volume guard. Concentration may change by
+at most a factor~1.25 per candidate, the largest category-probability
+shift is limited to 0.05, and threshold movement is bounded by twice the
+original IQR scale. These constants are retained engineering choices;
+they were not estimated as optimal security bounds.
+
+Historical DM-only comparisons retain the legacy threshold and refit
+rules. The ordinary refit uses cadence/minimum 144/144; the selected
+development variant uses 288/240. The shared 288-window buffer is not the
+same parameter as the cadence. Retrospective DM-only versus combined
+comparisons use 288/144 and include both policies. The thesis never
+attributes their pooled improvement to the historical 288/240 run.
+
+\subsection{Scoring comparisons and rejected alternatives}
+
+The retained combined detector is compared with the earlier complete
+DM-only score. Both fit the same distribution and use the same count
+features; they differ in the calibrated evidence combined at inference
+and in preservation of original detection references. The retrospective
+pool comprises the two devices' development and later partitions,
+2,038 labelled windows in total. Each mode and partition starts
+independently. Counts are summed before pooled metrics are computed.
+
+Per-packet normalisation, broad upper tails for every category,
+separately allocated extreme-tail cutoffs, and joint rank-tail calibration
+are retained as rejected choices. They are reported because they explain
+selection of the small final rule, not because their best individual
+scores can be assembled into a new detector after inspecting labels.
+Additional packet fields, including byte, direction, and SYN information,
+were not adopted without a common validated input across both devices.
+
+No Poisson detector, N-BaIoT implementation, or Kitsune implementation was
+rerun under this protocol. Their papers supply context in related work,
+not a controlled performance baseline. Conclusions about efficiency and
+accuracy are accordingly restricted to the comparisons actually made.
+
+\subsection{Matched window-duration study}
+
+The duration study compares 10, 20, 30, and 60 minutes on common
+capture-local observed support. Complete observed hourly blocks define
+the shared support, so every duration aggregates the same retained traffic.
+Counts are summed, and annotations are reapplied at the new boundaries.
+The study excludes unmatched capture edges and records the exclusions;
+it does not join incomplete pieces from different captures into an hour.
+
+Every duration receives a fresh normal fit and joint calibration. The
+normal split is the same across durations within this study. To retain
+at least thirty calibration observations at sixty minutes, the latest
+whole normal fitting capture is moved to calibration where necessary.
+Samsung therefore fits May~28--29 and calibrates May~30--31, producing
+37 hourly calibration windows. Chromecast retains its normal split and
+has 96. The rule depends on normal sample support, not attack labels.
+It makes the study's Samsung ten-minute model different from its saved
+reference model; this difference is stated rather than hidden.
+
+Adaptive settings scale to a 48-observed-hour buffer, 24-hour attempt
+cadence, and nominal 24 accepted hours before refitting. The unchanged
+thirty-sample conservative guard implies an effective minimum of thirty
+accepted hours at sixty-minute resolution. The guard is not loosened to
+produce an update. Each evaluation role and mode again starts independently.
+Forty-eight combinations cover two devices, four durations, two roles,
+and three modes.
+
 \section{LM and SciPy comparison protocol}
+\label{sec:experimental-backends}
+
+\subsection{Production row-wise workload}
+
+The retained D-Link production benchmark uses an 846-by-4 fitting matrix,
+288 calibration windows, and 270 development windows. The two backends
+receive the same observations, estimator settings, initialisation rule,
+and complete-score convention. Temporary artifacts keep the comparison
+from replacing accepted starting pairs. Agreement measures include
+alpha differences, likelihood and threshold differences, score
+differences, and decision mismatches.
+
+Complete-fit timing excludes source loading and artifact saving. Five
+fit measurements provide the median. Kernel timing uses 200 calls per
+batch and single-window timing 1,000 calls per batch, with five batches
+and warm-up. The representative count vector is $(44,112,88,166)$.
+This separates a many-row training kernel from a one-row scoring call,
+whose Python/native and coefficient overheads have different relative
+costs.
+
+The production record reports Python~3.12.14, NumPy~2.5.1, and
+SciPy~1.18.0 on Linux x86-64. A distinct combined-detector backend-check
+record covers all three devices and their development observations.
+Its ratios are reported separately, rather than substituted into the
+D-Link timing table. Source and environment differences remain attached
+to each result.
+
+\subsection{Aggregate architecture and numerical stress probes}
+
+A separate experiment follows the supplied study's aggregate convergence
+architecture: seven D-Link days, four sampling fractions
+(10/15/20/25~percent), three fixed repeats, row-wise digamma updates,
+and a pooled-vector stopping likelihood. Both backends use identical
+samples. The resulting 84 paired fits answer a controlled architectural
+comparison on local data. Their convergence objective differs from the
+production row-wise objective, so their timing is not used to justify
+changing that production contract.
+
+The source publication's exact random samples cannot be recovered, and
+local daily row counts differ. The experiment is therefore not a literal
+reproduction of every published table. It evaluates the same broad
+architecture with controlled backend inputs. Native setup optimisation
+and high-concentration probes are likewise treated as their recorded
+experiments rather than new runs conducted while writing this thesis.
+
+The ordinary workload can show close agreement even when extreme
+concentrations expose cancellation. High-precision probes provide
+additional evidence about that regime, distinct from attack detection.
+No conclusion that smaller numerical error improves recall is drawn
+without observing a changed decision on labelled traffic.
+
 \section{Detection metrics and attack episodes}
+\label{sec:experimental-metrics}
+
+\subsection{Window classification}
+
+Let TP, FP, FN, and TN count matched windows with the usual true/false
+positive and negative outcomes. The principal rates are
+\begin{equation}
+ \mathrm{Precision}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}},\qquad
+ \mathrm{Recall}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}},\qquad
+ \mathrm{FPR}=\frac{\mathrm{FP}}{\mathrm{FP}+\mathrm{TN}}.
+\label{eq:classification-rates}
+\end{equation}
+For defined precision and recall with positive sum,
+\[
+ \mathrm{F1}=\frac{2\,\mathrm{Precision}\,\mathrm{Recall}}
+                  {\mathrm{Precision}+\mathrm{Recall}}.
+\]
+Accuracy is also available, but can be dominated by the many benign
+windows. Confusion counts accompany the rates, consistent with the
+class-imbalance concerns described by Saito and Rehmsmeier
+\cite{saito2015}.
+
+The evaluator stores undefined quantities as JSON null. In particular,
+zero denominators do not become perfect or zero performance by default;
+the current F1 implementation also returns null if precision and recall
+sum to zero. All principal tables here have positive true-positive counts,
+so their displayed F1 values are defined. Pooled F1 is calculated from
+summed confusion counts, not the arithmetic mean of device F1 values.
+
+ROC--AUC describes score ordering where the score is available, with
+orientation chosen so more anomalous observations are more positive.
+Device-wise results have a clear source boundary. A pooled AUC across
+device-calibrated margins is only descriptive because those margins need
+not have a common ranking interpretation. The primary closing result is
+the binary confusion table. Later count-first scoring can preserve that
+table while changing severity and AUC.
+
+\subsection{Annotated intervals, coverage, and response time}
+
+An interval is counted as detected if at least one alerting window
+overlaps that official annotation under Eq.~\eqref{eq:label-overlap}.
+Only fully observed intervals enter the common denominator in the
+duration study. Partially observed exclusions are reported. These
+annotation intervals are not merged into a different incident definition,
+and they are not automatically equivalent to the range metrics of Tatbul
+et al. \cite{tatbul2018}.
+
+The first operational alert time is the end of the first overlapping
+alert window. If that time is $t_a$ and attack onset is $a_s$, delay is
+$t_a-a_s$. A window that overlaps an attack may close after its annotated
+end. The number alerted by attack end is therefore reported separately
+from the number eventually detected. Median delay includes detected
+intervals only; missed attacks are not silently assigned zero delay.
+
+In the duration comparison, window F1 changes its unit as duration
+changes. A second summary projects each duration's decision onto its
+constituent ten-minute bins and compares those bins with their labels.
+This common-grid F1 assesses localisation on a fixed reference grid.
+It does not move the operational alert earlier: a thirty-minute decision
+still becomes available at the thirty-minute window's close.
+
+False-alert frequency per 24 observed hours is
+$24\,\mathrm{FP}/H$, where $H$ is the retained observation time in hours.
+It is distinct from FPR in Eq.~\eqref{eq:classification-rates}, whose
+denominator contains benign-labelled windows. Reporting both separates
+the relative classification error from a workload-normalised alert count.
+
+\subsection{Finite calibration support and tail resolution}
+\label{sec:tail-resolution}
+
+The nominal one-percent quantile is the same across reference models,
+but its empirical support is not. With linear interpolation and
+ordered calibration scores $J_{(1)}\leq\cdots\leq J_{(n)}$, the
+one-based interpolation position for probability $q$ is
+\begin{equation}
+ h=1+(n-1)q.
+\label{eq:quantile-position}
+\end{equation}
+Writing $j=\lfloor h\rfloor$ and $\lambda=h-j$, the quantile is
+$(1-\lambda)J_{(j)}+\lambda J_{(j+1)}$, with the usual endpoint
+convention. This is the linear sample-quantile convention described
+by Hyndman and Fan \cite{hyndman1996}. The position is not a count
+of independent tail events.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Calibration setting & Observations $n$ & Position $h$ at $q=0.01$ \\
+\midrule
+\TableRows{generated/quantile_ranks}
+\bottomrule
+\end{tabular}
+\caption{Resolution of the empirical one-percent calibration tail.
+Reference sample counts come from saved thresholds; the hourly sample count
+comes from the matched-duration record. The minimum is a declared guard.}
+\label{tab:quantile-ranks}
+\end{table}
+
+Table~\ref{tab:quantile-ranks} makes the difference concrete. The
+reference Samsung calibration has 81 observations, so the selected
+tail lies between the smallest and second-smallest values. Its
+37-observation hourly calibration also depends on the first two
+values, with a different interpolation weight. The 30-observation
+minimum prevents a degenerate fit to only a handful of windows,
+but does not turn those first two values into a reliable estimate
+of an arbitrary future population tail.
+
+Even the larger Chromecast calibration remains finite and temporally
+structured. Repeated routine activity may yield many similar
+observations, and adjacent windows need not provide independent
+evidence about rare normal regimes. More recorded windows can
+improve empirical resolution while still omitting a legitimate
+operating condition. The evaluation therefore keeps the reference
+period and traffic assumptions explicit rather than interpreting
+sample count as complete benign coverage.
+
+The practical implications extend to the joint rule. One unusually
+low standardised feature can set the joint minimum and influence
+the common quantile. This may leave another feature with a very
+permissive implied cutoff, even though all features were scaled
+by fitting medians and IQRs. Chapter~\ref{ch:results} consequently
+reports the resulting count cutoffs as well as the nominal quantile.
+The scale transformation and the sample-tail estimate solve
+different problems.
+
+The same limitation applies when accepted runtime observations
+recalibrate a threshold. Those observations are selected by the
+admission rule, not drawn independently from the full future benign
+distribution. Recomputing a one-percent quantile on that buffer
+does not guarantee a one-percent false positive rate. The candidate
+history and observed errors must determine whether an update
+helped; passing a minimum-size guard is insufficient evidence.
+
+No confidence interval for a population false-alert rate is inferred
+from Eq.~\eqref{eq:quantile-position}. Such a statement would need
+assumptions about sampling and dependence that the available short
+capture histories do not establish. The experiment instead reports
+the exact calibration counts, fixed rule, and later confusion
+matrices. This preserves the reproducible operating point while
+keeping its statistical interpretation appropriately limited.
+
 \section{Simulation environment and resource measurements}
+\label{sec:experimental-resources}
+
+The resource workload is a synthetic five-record sequence containing
+ordinary traffic, an observed silent window, a missing window, and
+alerting counts. Advancing timestamps permits accelerated repetitions
+without violating chronology. Trials contain 2,000 and 20,000 supplied
+records; four out of every five produce scored events. They begin from
+isolated copies of the prepared conservative D-Link state, with the
+288/144 learning schedule and unchanged movement/admission guards.
+
+The execution environment is a Linux/amd64 Docker container with one CPU
+and 512~MiB memory. The recorded host is an AMD Ryzen~7~9700X running
+AlmaLinux~10.2; Docker is version~29.7.2. The measured image is Debian~13
+with Python~3.11.17. This environment differs from the numerical
+benchmark's Python~3.12 record. A CPU quota limits scheduling resources;
+it does not emulate a particular embedded processor's clock, caches,
+memory bus, or power consumption.
+
+Timing begins when an input line is available and ends after its event
+is flushed. It includes validation, scoring, attempted refits, candidate
+handling, serialisation, and output. It excludes the time spent collecting
+a ten-minute traffic interval. The synthetic producer contributes to total
+replay throughput, while actual estimator calls are timed separately.
+Rejected fits still contribute their full cost.
+
+Process memory is measured through peak resource usage and sparse Linux
+RSS samples. These counters have different accounting boundaries, so
+both maxima are reported. State and log bytes, CPU time, image identity,
+dependency versions, fixture/script hashes, and at most ten resource
+samples are retained. The finite replay stores counters rather than an
+unbounded event history in the detector process.
+
+No update is forced by relaxing the guards. Thus a run with no promoted
+candidate measures the rejection path and its cost. Controlled acceptance,
+restart, rollback, signal, storage-failure, and retention tests provide
+separate correctness evidence. A synthetic resource trial is not a
+labelled security experiment or proof of indefinite bounded operation.
+
 \section{Reproducibility and retained artifacts}
+\label{sec:experimental-provenance}
+
+The closing protocol is saved before its replay and identifies its
+starting models, thresholds, configurations, code, processed inputs,
+labels, and annotation identities. Each of the two devices is replayed
+independently in each of three modes, retaining six event files and their
+update attempts. The original reference pairs are not overwritten.
+The recorded closing suite initially contains 601 passes; the later full
+suite and the fresh thesis-side verification contain 643 passes with no
+skips. Those counts describe different verification boundaries, not an
+increase in the number of evaluated attacks.
+
+The thesis presentation is generated from retained JSON and processed
+records. The generator verifies arithmetic consistency of confusion
+counts and rates, enumerates its source hashes, and checks the frozen
+data/configuration inputs. It also detects three later source changes in
+the probability, event-schema, and scoring modules. Their current hashes
+match the subsequent scoring-order regression record, which reports
+unchanged decisions and update outcomes on the same data. They are not
+misreported as byte-identical to the earlier final source snapshot.
+
+The paper-style aggregate experiment, production benchmark, combined-score
+checks, and long resource replay each keep their own environment and
+source record. The resource image was measured from a working tree based
+on commit \texttt{8365870}, with the dirty status and package-source hash
+recorded. A later commit name alone cannot identify that image precisely.
+Likewise, the closing replay records its source boundary separately from
+the present thesis-writing revision.
+
+Following Sandve et al.'s provenance principle \cite{sandve2013}, the
+reproducibility appendix maps the main claims to retained paths and
+commands. It distinguishes work rerun for thesis verification from
+historical measurements that were inspected. Raw capture preprocessing,
+all fitting experiments, and the long resource replay were not repeated
+merely to typeset the same values. No new external-device or physical
+gateway validation is implied by a successful document build.

@@ -1,0 +1,28 @@
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw,rounded corners,align=center,text width=3.0cm,minimum height=1.2cm,font=\small},
+  arrow/.style={-{Latex},thick},node distance=8mm and 6mm]
+\node[box] (capture) {Source captures\\device selection};
+\node[box,right=of capture] (window) {Validated counts\\UTC windows};
+\node[box,right=of window] (fit) {Normal fit\\DM parameters};
+\node[box,right=of fit] (cal) {Separate normal\\joint calibration};
+\node[box,below=15mm of window] (input) {Later completed\\count windows};
+\node[box,right=of input] (detector) {Shared detector\\fixed references};
+\node[box,right=of detector] (events) {Events and\\update records};
+\node[box,below=of detector] (state) {Validated candidate\\persistent pair};
+\draw[arrow] (capture)--(window);
+\draw[arrow] (window)--(fit);
+\draw[arrow] (fit)--(cal);
+\draw[arrow] (input)--(detector);
+\draw[arrow] (cal.south)--++(0,-6mm)-|(detector.north);
+\draw[arrow] (detector)--(events);
+\draw[arrow] (detector)--(state);
+\draw[arrow] (state.west)--++(-5mm,0)|-(detector.west);
+\end{tikzpicture}
+\caption{LM-IDNet data and state flow. The initial fit and calibration use
+different normal captures. Runtime decisions are emitted before a window can
+influence a candidate update. Labels join saved events only during offline
+evaluation; they are absent from this runtime path.}
+\label{fig:pipeline}
+\end{figure}

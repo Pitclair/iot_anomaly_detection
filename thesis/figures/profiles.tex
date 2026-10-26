@@ -1,0 +1,19 @@
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=.95\textwidth,height=7.1cm,ybar,bar width=9pt,
+ ymin=0,ymax=105,ylabel={Fitted mean share (\%)},
+ xtick={1,2,3,4},xticklabels={TCP,Ordinary UDP,SSDP,ARP},
+ legend style={at={(.5,1.03)},anchor=south,legend columns=3,font=\small,column sep=6pt},
+ ymajorgrids=true,grid style={gray!20}]
+\addplot[fill=DLinkGreen!60,draw=DLinkGreen] table[x=category,y=percent,col sep=comma]{generated/profile_D-LinkDayCam5.csv};
+\addplot[fill=ChromecastBlue!60,draw=ChromecastBlue] table[x=category,y=percent,col sep=comma]{generated/profile_UNSW-Chromecast.csv};
+\addplot[fill=SamsungOrange!60,draw=SamsungOrange] table[x=category,y=percent,col sep=comma]{generated/profile_UNSW-Samsung-Camera.csv};
+\legend{D-Link,Chromecast,Samsung}
+\end{axis}
+\end{tikzpicture}
+\caption{Expected category proportions, $p_k=\alpha_k/\alpha_0$, from the saved
+normal models. The bars are fitted means, not pooled packet fractions or measured
+attack signatures. Dataset-specific models have different expected mixtures.}
+\label{fig:profiles}
+\end{figure}

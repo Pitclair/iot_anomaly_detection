@@ -1,20 +1,32 @@
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-LM-IDNet is a lightweight, unsupervised anomaly-detection system for identifying
-abnormal network activity in IoT devices without attack signatures or
-deep-learning models. The central idea is that each device produces
-a characteristic mixture of network traffic—represented by TCP, UDP, SSDP,
-and ARP packet counts—and that deviations from this pattern can provide
-evidence of abnormal behaviour. LM-IDNet learns a normal device profile using
-a Dirichlet–multinomial model and identifies statistically unlikely traffic
-windows through calibrated likelihood scoring, complemented by compact volume
-and ARP checks. The system integrates the Languasco–Migliardi numerical method
-for accurate likelihood computation and supports guarded updates to the model
-and decision thresholds. Experiments on smart-camera and Chromecast traffic
-demonstrate high precision in the evaluated scenarios, while each alert retains
-traceable statistical evidence. Resource measurements in a constrained
-execution environment support the feasibility of lightweight operation. By
-combining probabilistic modelling, accurate numerical computation, and
-controlled adaptation in a reproducible pipeline, this thesis demonstrates an
-interpretable approach to IoT intrusion detection that learns from normal
-traffic without requiring labelled attack examples.
+IoT devices can exhibit characteristic network behaviour, making learned
+normal profiles a useful basis for anomaly monitoring. This thesis presents
+LM-IDNet, a device-specific detector using TCP, ordinary UDP, SSDP, and ARP
+counts in completed ten-minute windows. A Dirichlet--multinomial model
+represents traffic composition, complemented by jointly calibrated total-volume
+and ARP checks. Fitting and calibration use separate presumed-benign periods;
+attack labels enter offline evaluation and method selection. The system
+integrates the established Languasco--Migliardi likelihood method with
+Minka estimation, guarded threshold/model updates, and persistent state.
+
+Experiments distinguish labelled Chromecast and Samsung camera detection
+from an unlabelled D-Link numerical workload. A fixed closing replay covers
+1,008 unique labelled windows and yields pooled precision of 82.35\%, recall
+of 77.78\%, and F1 of 80.00\%. Device F1 differs substantially, at 61.54\%
+and 90.91\%. Eight of nine fully observed attack intervals are detected;
+seven receive an alert by attack end. The later partition had prior label
+exposure in retrospective audits, limiting independent generalisation claims.
+Conservative modes accept no closing updates and match static decisions.
+Historical refitting and other-duration threshold experiments show that
+adaptation can reduce detection quality. Coarser windows can improve their
+own window metrics while delaying alerts.
+
+LM and SciPy preserve all checked development decisions, with close numerical
+agreement and operation-dependent runtime. A one-CPU, 512~MiB Linux/amd64
+Docker simulation scores 16,000 windows with mean processing near 30~ms
+and process high-water memory near 69~MiB; its longest window takes about
+5.08~s during a rejected refit. These measurements cover supplied-window
+processing, excluding live collection and physical gateways. The thesis
+provides a reproducible, interpretable prototype and identifies representation,
+adaptation, and evaluation limits that require further independent study.

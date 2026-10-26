@@ -1,0 +1,21 @@
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=.95\textwidth,height=7cm,ymin=.7,ymax=1.85,
+ ylabel={LM/SciPy median runtime ratio},
+ xtick={1,2,3},xticklabels={Complete fit,Matrix kernel,Window score},
+ legend style={at={(.5,1.03)},anchor=south,legend columns=3,font=\small,column sep=6pt},
+ ymajorgrids=true,grid style={gray!20}]
+\addplot[DLinkGreen,mark=triangle*,thick] table[x=operation,y=ratio,col sep=comma]{generated/backend_D-LinkDayCam5.csv};
+\addplot[ChromecastBlue,mark=*,thick] table[x=operation,y=ratio,col sep=comma]{generated/backend_UNSW-Chromecast.csv};
+\addplot[SamsungOrange,mark=square*,dashed,thick] table[x=operation,y=ratio,col sep=comma]{generated/backend_UNSW-Samsung-Camera.csv};
+\addplot[black,dotted,domain=.8:3.2,forget plot]{1};
+\legend{D-Link,Chromecast,Samsung}
+\end{axis}
+\end{tikzpicture}
+\caption{Operation-specific runtime ratios from the retained three-dataset
+backend-check record. Values below one favour LM. This record is distinct from
+the separate D-Link production timing table; ratios from different runs are not
+combined into a single speedup estimate.}
+\label{fig:backend-ratios}
+\end{figure}

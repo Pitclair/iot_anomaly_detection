@@ -1,12 +1,910 @@
 \chapter{Results}
 \label{ch:results}
-% Generate tables and plots from retained artifacts; keep development and final results separate.
-\section{Dataset statistics}
-\section{Static detection}
-\section{LM and SciPy numerical agreement}
-\section{LM and SciPy performance}
-\section{Adaptation, accepted updates, and rejected candidates}
-\section{Contamination and parameter movement}
-\section{Window duration and alert delay}
-\section{Final-partition evaluation}
-\section{Docker simulation resource use}
+The results are organised by the question each experiment can answer.
+Normal profiles describe the fitted workloads. Development comparisons
+explain the adaptation and scoring choices. Numerical checks compare
+implementations of the same objective. The duration study examines a
+different observation scale, while the closing replay records the selected
+configuration on its designated final partition. The last sections report
+the constrained runtime and software verification. Tables and plot data
+are generated from the retained artifacts rather than transcribed from
+earlier narrative summaries.
+
+\section{Normal traffic profiles and static development detection}
+\label{sec:normal-results}
+
+\subsection{Different devices require different reference mixtures}
+
+Table~\ref{tab:profiles} reports the fitted mean proportions and total
+concentration. The D-Link model distributes substantial mass across all
+four categories. Chromecast is dominated by ordinary UDP, with an
+expected share of about 92.6\%; its SSDP parameter is positive but very
+small. Samsung assigns most expected mass to SSDP and TCP, with little
+ordinary UDP. Figure~\ref{fig:profiles} displays these contrasts on the
+same scale. The profiles are properties of the selected normal captures,
+not universal descriptions of the commercial device models.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Device & TCP (\%) & UDP (\%) & SSDP (\%) & ARP (\%) & $\alpha_0$ & $\psi$ \\
+\midrule
+\TableRows{generated/profiles}
+\bottomrule
+\end{tabular}
+\caption{Saved normal-model parameters expressed as expected category shares,
+total concentration $\alpha_0$, and inverse concentration $\psi=1/\alpha_0$.
+UDP excludes SSDP. Shares are rounded independently.}
+\label{tab:profiles}
+\end{table}
+
+\input{figures/profiles}
+
+These differences matter when interpreting a count anomaly. An SSDP-heavy
+window is not inherently anomalous: it is far less surprising under the
+Samsung reference than under the Chromecast reference. Likewise, an ARP
+count must be compared with the selected device's benign scale. A shared
+feature vocabulary therefore does not imply a shared fitted distribution
+or a globally meaningful raw likelihood cutoff.
+
+The fitted concentration also differs substantially. D-Link has
+$\alpha_0\simeq122.2$, Chromecast $28.1$, and Samsung $17.4$. For a fixed
+total count, the lower-concentration models permit more variation in
+composition around their means. This is the model's overdispersion
+parameter, rather than a measure of attack prevalence or confidence in
+the training labels. The larger D-Link concentration cannot establish
+that D-Link traffic is more secure.
+
+Table~\ref{tab:fit-parameters} records the individual parameters, iteration
+counts, and stored DM calibration quantities. Chromecast's small positive
+SSDP parameter illustrates why zero category counts and positive parameter
+validation need careful numerical treatment. The three fits converge in
+different numbers of iterations even though the same tolerance and
+maximum-iteration setting are used. A compact four-category model is not
+necessarily a one-step fit.
+
+\begin{table}[tbp]
+\centering\footnotesize
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Device & $\alpha_{TCP}$ & $\alpha_{UDP}$ & $\alpha_{SSDP}$ & $\alpha_{ARP}$ & Iter. & $\tau$ & $d_1$ \\
+\midrule
+\TableRows{generated/parameters}
+\bottomrule
+\end{tabular}
+\caption{Saved LM fits and current joint-calibration DM cutoffs and scales.
+The cutoff $\tau$ is in complete log-probability units, while $d_1$ is the
+stored fitting-score scale. These scales should not be substituted for the
+different historical adaptation scales.}
+\label{tab:fit-parameters}
+\end{table}
+
+\subsection{Static decisions on labelled development windows}
+
+The reference static detector produces the counts in
+Table~\ref{tab:development}. Chromecast detects 15 of 32 positive windows
+and Samsung 48 of 70. The corresponding F1 values are 61.22\% and
+78.69\%. Both models produce relatively few false alerts on these
+development observations: two among 442 benign Chromecast windows and
+four among 486 benign Samsung windows. The false positive rates are
+approximately 0.45\% and 0.82\%, respectively.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Device & TP & FP & FN & TN & Precision & Recall & F1 \\
+\midrule
+\TableRows{generated/development}
+\bottomrule
+\end{tabular}
+\caption{Reference static development results. The retained current joint
+rule and the historical static DM rule give the same binary counts on these
+observations. This equality does not extend to every adaptive comparison.}
+\label{tab:development}
+\end{table}
+
+The higher precision than recall means that a large part of the remaining
+error consists of attacks that do not cross the chosen normal-data
+cutoffs. This is especially clear for Chromecast, whose development
+recall is 46.88\%. Neither normal-only fitting nor the one-percent
+calibration quantile optimises recall against these attack labels.
+A benign tail setting must not be interpreted as a guarantee of
+detecting 99\% of attacks.
+
+The D-Link development workload produces three alerts in 270 windows,
+and its later numerical partition produces six in 288. Without attack
+annotations these are alert counts only. Calling all nine false
+positives would add an assumption absent from the data. The labelled
+devices therefore carry the detection conclusions, while D-Link
+primarily confirms that the numerical comparison exercises both
+alerting and non-alerting decisions.
+
+\subsection{Joint calibration produces unequal count sensitivities}
+
+Table~\ref{tab:count-cutoffs} expresses the count-tail cutoffs both in
+their stored log space and as equivalent packet-count boundaries.
+For a total count, the comparison is $\log(1+N)>u_N$; the boundary
+is therefore $\exp(u_N)-1$. Values in the count columns are rounded
+for interpretation, while decisions use the unrounded log cutoffs.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Device & $u_N$ & Total boundary & $u_A$ & ARP boundary \\
+\midrule
+\TableRows{generated/count_cutoffs}
+\bottomrule
+\end{tabular}
+\caption{Saved count-tail cutoffs and rounded equivalent packet-count
+boundaries. These are detection cutoffs; the separate learning-volume cap
+is a different empirical quantity.}
+\label{tab:count-cutoffs}
+\end{table}
+
+The differences are substantial. Samsung's total boundary is about
+1,610 packets, while Chromecast's is about $1.12\times10^{13}$.
+The latter total-volume guard is consequently inactive for ordinary
+count ranges in the evaluated traffic. Its presence in the decision
+rule does not mean that it contributes useful sensitivity on every
+device. The actual case margins and static-equivalence results are
+consistent with this calibration outcome.
+
+This follows from calibrating the minimum of standardised features
+with one common tail quantile. A sufficiently extreme benign tail
+in one feature can require a negative joint quantile that also
+makes another feature's implied cutoff very permissive. Median/IQR
+scaling supplies units for combining the features; it does not
+equalise their lower tails or guarantee that they all trigger.
+The saved cutoffs therefore need to be inspected alongside the
+formula, rather than interpreting the count checks as three
+independently active protections.
+
+The result also separates detection from learning admission. The
+conservative buffer uses a distinct 99th-percentile calibration
+volume cap. Even if the joint total guard is permissive, that
+admission cap can still reject high-volume learning observations.
+Neither cutoff is attack-labelled, and their different purposes
+should remain visible when analysing an adaptive run.
+
+\section{Historical adaptation and parameter movement}
+\label{sec:legacy-results}
+
+\subsection{Development gains depend on device and schedule}
+
+The historical policy admits windows using less restrictive checks and
+allows larger parameter movement than the conservative retained policy.
+Table~\ref{tab:legacy} and Figure~\ref{fig:legacy} show its development
+comparisons under DM-only scoring. The names 144/144 and 288/240 specify
+the attempt cadence and minimum accepted-window count. They refer to
+different configurations, not successive states of one detector.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+Device & Configuration & TP & FP & FN & TN & F1 \\
+\midrule
+\TableRows{generated/legacy}
+\bottomrule
+\end{tabular}
+\caption{Historical development comparisons with a 288-window learning buffer.
+The refit 288/240 configuration was selected after development inspection;
+the table is not evidence from an untouched selection set.}
+\label{tab:legacy}
+\end{table}
+
+\input{figures/legacy}
+
+On Chromecast, the 144-window threshold policy lowers F1 from 61.22\% to
+55.32\%. Refitting at 144/144 gives 58.33\%, also below static operation.
+The later 288/240 refit detects 23 of 32 positive windows, with two
+false positives, and reaches 80.70\% F1. The improvement comes from
+eight additional true positives at the same observed false positive
+count, compared with the static reference.
+
+Samsung behaves differently. Both 144-window adaptive variants produce
+27 true positives, three false positives, and 43 false negatives,
+reducing F1 to 54.00\%. The selected 288/240 refit improves upon those
+adaptive results, but its 77.31\% F1 remains below the static 78.69\%.
+Its one fewer false positive is accompanied by two fewer true positives.
+Thus the historical study does not show a consistent advantage for
+refitting, even after the more favourable configuration is selected.
+
+This comparison demonstrates why a single pooled improvement would be
+incomplete. Chromecast's gain and Samsung's failure are different
+responses to the same general learning mechanism. A useful policy
+must control changes relative to each device's reference, rather than
+relying on an average of opposing outcomes. The development results
+motivate that requirement; they do not validate a particular guard
+on future unseen drift.
+
+\subsection{Concentration changes reveal what the refit learned}
+
+Table~\ref{tab:concentration} reports initial and final concentrations.
+Chromecast's changes are moderate, about 1.28 and 1.23 times its
+original concentration. Samsung's are much larger: about 11.87 and
+9.58 times the original value. These are substantive distribution
+changes, even when the expected proportions remain recognisable.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Device & Configuration & Initial $\alpha_0$ & Final $\alpha_0$ & Ratio \\
+\midrule
+\TableRows{generated/concentration}
+\bottomrule
+\end{tabular}
+\caption{Concentration movement in historical refitting. Values come from the
+retained adaptation summaries, independently of classification metrics.}
+\label{tab:concentration}
+\end{table}
+
+Increasing concentration reduces the allowed compositional dispersion
+conditional on total count. It can change both benign tail probabilities
+and attack scores without supplying a new attack feature. It would
+therefore be misleading to describe the Samsung refit simply as learning
+the same normal behaviour more accurately. Its observed movement is
+large and its detection result is worse than the static reference.
+
+These updates illustrate a limitation of self-selected learning data.
+A window passing the active cutoff is not known to be benign. Accepted
+windows are selected partly because they look compatible with the
+current model, and that selection can narrow the apparent distribution.
+Attack-like traffic remaining inside the cutoff can enter the same
+buffer. These mechanisms are compatible with the observed movement,
+but concentration alone cannot identify how much is caused by
+contamination, benign drift, or selection bias. It is a diagnostic
+of the update, not an attack label.
+
+The conservative policy consequently bounds concentration, mean
+proportions, and threshold movement and retains the original reference.
+Later results show that this protection often prevents activation
+entirely. That outcome is candidate rejection, rather than a successful
+refit merely because an adaptive mode was enabled.
+
+\section{Retrospective selection of the joint decision rule}
+\label{sec:joint-results}
+
+The count-tail study compares baseline DM scoring with the retained
+joint composition, total-volume, and ARP decision rule. Its pooled
+results in Table~\ref{tab:joint-comparison} cover 2,038 unique labelled
+development and later-audit windows across the two devices. This is a
+retrospective comparison: the later labels had already been inspected.
+It explains the rule selection but does not provide an independent
+estimate of generalisation.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Configuration & DM F1 & Joint F1 & Joint TP & Joint FP & Joint FN \\
+\midrule
+\TableRows{generated/scoring_comparison}
+\bottomrule
+\end{tabular}
+\caption{Retrospective pooled scoring comparison. Baseline and joint variants
+share each configuration's update policy and input support. Legacy refitting
+here uses 288/144, distinct from the historical 288/240 study.}
+\label{tab:joint-comparison}
+\end{table}
+
+For static operation and both conservative modes, the DM and joint
+variants produce the same counts: 77 true positives, nine false
+positives, 43 false negatives, and 1,909 true negatives. F1 is
+74.76\%. The extra tails do not change these static decisions.
+This does not establish their redundancy for every possible count
+vector.
+
+The effect differs under the legacy adaptive policy. Threshold
+adaptation has 56.50\% baseline F1 and 74.76\% joint F1. Legacy
+refitting has 57.30\% baseline F1 and 75.36\% joint F1, with 78 true
+positives rather than the static 77. Original count references
+preserve alerts that can disappear when an adapting DM cutoff or model
+moves. The large gain in these rows is primarily protection against
+a weakened adaptive decision, rather than a large increase over the
+original static detector.
+
+The scoring study rejected broader alternatives. Dividing a score
+by packet count changed the meaning of the complete probability and
+lost attack recall. Broad category-specific tails introduced later-audit
+false alerts. Separate rank-based tails did not retain the desired
+recall. These outcomes support the narrower rule within the inspected
+data, but do not constitute a comprehensive feature-selection
+benchmark. Richer features were not available uniformly in the
+already prepared four-count records.
+
+The implementation subsequently evaluates cheap count guards before
+computing the DM likelihood. A regression study compares this ordering
+with the earlier full-score implementation in 20 replays covering
+all 2,038 labelled windows. Binary decisions, accepted-update counts,
+final fingerprints, thresholds, and buffer sizes agree. Event scores
+and severities may differ when an early count violation makes further
+numerical evaluation unnecessary. This thesis therefore uses confusion
+counts for cross-version equivalence and does not silently treat all
+saved rank scores as interchangeable.
+
+\section{LM and SciPy: numerical agreement and computational cost}
+\label{sec:numerical-results}
+
+\subsection{Agreement on the production objective}
+
+The D-Link production benchmark fits the same 846-row, four-category
+matrix with both backends. LM converges in 1,882 iterations and SciPy
+in 1,879. The largest relative difference between fitted parameter
+components is approximately $3.86\times10^{-7}$. The largest absolute
+window-score difference in this benchmark is $1.09\times10^{-5}$,
+and the calibrated cutoff differs by approximately
+$2.89\times10^{-6}$. Both backends flag the same three of 270
+development windows.
+
+Different iteration counts are compatible with numerical agreement.
+Small differences in intermediate special-function values can change
+when a finite convergence tolerance is first satisfied. The relevant
+checks are the final fitted quantities and decisions, rather than a
+requirement that all iteration counters match. Conversely, matching
+decisions alone would be too weak to identify a large hidden parameter
+discrepancy. Both checks are reported.
+
+The three-dataset check in Table~\ref{tab:backend-agreement} extends the
+comparison to Chromecast and Samsung. Across 1,300 development windows,
+no binary decision differs. The largest relative parameter difference
+is about $1.71\times10^{-6}$, on Chromecast; the largest absolute
+score difference is about $2.40\times10^{-4}$. The D-Link score
+difference in this second record is smaller than in the production
+benchmark because these are distinct saved runs, not repeated
+statistics merged into one experiment.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Device & Max. relative $\alpha$ difference & Max. score difference & Decision differences \\
+\midrule
+\TableRows{generated/backend_agreement}
+\bottomrule
+\end{tabular}
+\caption{LM--SciPy agreement in the three-dataset backend check. Score
+differences are absolute differences in complete log-probability units;
+zero decision differences is a finite-workload result.}
+\label{tab:backend-agreement}
+\end{table}
+
+These results support interchangeability of the observed binary
+decisions under the tested inputs and cutoffs. They do not prove
+bit-for-bit equivalence for arbitrary parameters or a window arbitrarily
+close to a cutoff. The score definition, coefficient, and fallback
+behaviour remain part of the comparison. A stable calculation of the
+wrong objective would not be validated by agreement on a few examples.
+
+\subsection{The faster backend depends on the operation}
+
+Table~\ref{tab:backend-timing} separates complete fitting, one matrix
+likelihood call, and one window score. SciPy is faster for fitting
+and the matrix kernel, while LM is faster for scoring one window.
+The LM/SciPy ratios are approximately 1.064, 1.110, and 0.899.
+The result is mixed rather than a uniform speed advantage.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrl@{}}
+\toprule
+Operation & LM & SciPy & LM/SciPy & Unit \\
+\midrule
+\TableRows{generated/backend_timing}
+\bottomrule
+\end{tabular}
+\caption{D-Link production benchmark medians. Fits include estimator iterations;
+matrix and window rows measure their specified kernel boundaries after warm-up.
+Lower runtime is better.}
+\label{tab:backend-timing}
+\end{table}
+
+Figure~\ref{fig:backend-ratios} shows the separate three-dataset timing
+check. All datasets favour LM for the single-window operation,
+but favour SciPy for the matrix kernel and complete fit. The size of
+the difference depends on parameters, matrix, and call boundary.
+These are measurements from one environment and finite repeated
+batches, not estimates for all hardware or compiler combinations.
+
+\input{figures/backend}
+
+An efficient underlying likelihood method can still incur a slower
+application matrix call. The production interface preserves row-wise
+probabilities, so native setup and dispatch are paid at a finer
+granularity than for a pooled objective. NumPy/SciPy can evaluate
+parts of the matrix expression in compiled array operations. The
+single-window workload has different amortisation and allocation
+costs. The thesis reports the delivered interface instead of
+substituting a more favourable function with different semantics.
+
+An additional professor-style aggregate experiment contains 84 paired
+cases: seven source days, four sample fractions, and three repetitions.
+Both backends converge in 79 pairs and both reach the iteration limit
+in five. Summed likelihood-computation time is approximately 21.36~s
+for LM and 24.33~s for SciPy; summed wall time is approximately
+30.79~s and 33.76~s. This experiment uses its own initialisation and
+a pooled stopping objective. It is evidence for that aggregate
+workload and cannot replace production row-wise timings or be
+described as an exact reproduction of the paper.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Backend & Fits & Converged & Likelihood sum (s) & Wall-time sum (s) \\
+\midrule
+\TableRows{generated/aggregate}
+\bottomrule
+\end{tabular}
+\caption{Aggregate numerical experiment. Each backend has 84 cases; the sums
+include the recorded non-convergent cases. This is a different workload from
+the production benchmark, not another estimate of the same median.}
+\label{tab:aggregate}
+\end{table}
+
+Numerical stress tests and fallback address another dimension:
+loss of significance when large gamma terms are subtracted. Their
+purpose is to keep a finite complete score where ordinary
+floating-point subtraction can be inaccurate. They do not add attack
+information. In the measured detection workloads, backend agreement
+provides no evidence that LM itself increases attack recall. Its
+contribution is a working numerical integration with a measured
+cost and an explicit correctness boundary.
+
+\subsection{Measured effect of reusing native setup}
+
+The historical backend change record supplies a direct comparison
+of the earlier wrapper with the matrix entry point used here.
+Its paired integration measurement reports a reduction from
+114.68 to 55.58~$\mu$s for the 846-row likelihood workload and
+from 0.30410 to 0.19486~s for complete fitting. These measurements
+are recorded in \path{docs/lm_backend_change_record.tex}; they are
+not a fresh experiment performed during thesis writing. The
+separate production medians in Table~\ref{tab:backend-timing}
+have their own measurement boundary and slightly different values.
+
+The change record also reports bit-identical likelihood results
+between the old and new native paths on 1,000 seeded stress
+matrices. This supports the implementation claim that moving
+shared setup outside the row loop need not change row-wise
+semantics. It does not make the method bit-identical to SciPy,
+whose numerical comparison is given separately.
+
+The before/after improvement and the delivered SciPy comparison
+answer different questions. Removing redundant native setup
+substantially reduces the integration's overhead. The resulting
+LM matrix kernel can nevertheless remain slower than SciPy on
+the measured production workload. Reporting both comparisons
+avoids attributing a wrapper improvement to a universal advantage
+of the underlying mathematical method. It also shows that
+backend selection depends on integration quality as well as
+the approximation being evaluated.
+
+\section{Window duration, common support, and response delay}
+\label{sec:duration-results}
+
+\subsection{Coarser windows can improve their own window metric}
+
+The matched-duration study refits and recalibrates at 10, 20, 30, and
+60 minutes. Table~\ref{tab:duration} gives static development results
+on common observed support; Figure~\ref{fig:duration} separates F1
+from delay. Samsung's ten-minute F1 here is 78.33\%, slightly
+different from the reference 78.69\%, because the study uses its own
+common-support fit/calibration preparation. The records should not
+be merged as identical repetitions.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Device & Min. & F1 & Intervals & By end & FP/24h & Delay (min) \\
+\midrule
+\TableRows{generated/duration}
+\bottomrule
+\end{tabular}
+\caption{Static matched-duration development results. Intervals gives detected
+over fully observed attack intervals; By end counts alerts available by attack
+end. Median delay is conditional on detection. FP/24h uses observed exposure,
+not benign-window count.}
+\label{tab:duration}
+\end{table}
+
+\input{figures/duration}
+
+Chromecast's window F1 rises from 61.22\% at ten minutes to 71.43\%
+at one hour. Samsung reaches its highest value, 91.43\%, at thirty
+minutes, then falls to 85.11\% at one hour. Pooling the corresponding
+confusion counts gives about 73.37\%, 78.33\%, 85.11\%, and 81.97\%
+for the four durations. This ranking describes duration-specific
+tasks: the number and extent of positive windows change with scale.
+
+The interval measure provides a different view. Chromecast detects
+10, 9, 10, and 11 of 18 development attack intervals. Samsung detects
+28, 28, 35, and 34 of 36. More detected intervals at a coarser scale
+can help retrospective identification. It does not establish that an
+alert arrives while the attack is active. Only one Chromecast
+interval and five Samsung intervals receive an alert by attack end
+at hourly resolution, compared with nine and 23 at ten minutes.
+
+\subsection{A gain in coarse labels can conceal slower alerts}
+
+Median alert delay rises from 6.83 to 36.93 minutes for Chromecast
+and from 5.20 to 30.93 minutes for Samsung as duration increases
+from ten minutes to one hour. Delay includes waiting for the first
+alerting aggregate to close. Missed intervals are excluded from the
+median, so these figures must be read together with interval recall.
+A fast median over a small detected subset would not imply good
+coverage.
+
+The common ten-minute projection in
+Table~\ref{tab:common-duration} avoids comparing only each duration's
+own positive-window count. It assigns a coarser decision to its
+covered ten-minute intervals on the same observed support. Under
+this retrospective projection, ten minutes has the highest F1 for
+both devices. Projection does not make decisions available earlier:
+an hourly decision is still produced at the hourly close.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Device & Original duration (min) & F1 on common ten-minute grid \\
+\midrule
+\TableRows{generated/duration_common_grid}
+\bottomrule
+\end{tabular}
+\caption{Static development decisions projected onto a common ten-minute grid.
+Projection permits a common labelling scale without altering alert availability.}
+\label{tab:common-duration}
+\end{table}
+
+The later audit shows why a small positive denominator can make a
+coarse result look particularly favourable. Hourly Chromecast F1
+reaches 100\% on only two positive hourly windows, yet no alert is
+available before the associated attacks end. This correctly describes
+those hourly labels, but is insufficient evidence for timely response.
+Duration is part of the detection task rather than a harmless
+preprocessing setting.
+
+\subsection{Adaptation remains vulnerable at other durations}
+
+Changing duration changes the number of observations available to
+calibrate tails and admit updates. The duration study scales nominal
+buffers and cadence by time, but keeps the minimum calibration
+sample requirement. Only 37 hourly calibration windows are available
+for Samsung. A one-percent empirical tail at that sample size
+depends on very few extreme observations.
+
+Table~\ref{tab:duration-adaptation} gives the clearest adverse outcome.
+At thirty minutes, Samsung threshold adaptation lowers development
+F1 from 91.43\% to 83.33\% and increases false positives from two
+to thirteen. On the later audit, false positives increase from zero
+to 66 and F1 falls from 92.31\% to 17.50\%. At one hour, the
+later-audit false positive count rises from three to 27.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}rlrrrr@{}}
+\toprule
+Min. & Partition & Static F1 & Adaptive F1 & Static FP & Adaptive FP \\
+\midrule
+\TableRows{generated/duration_adaptation}
+\bottomrule
+\end{tabular}
+\caption{Samsung threshold-adaptation failures in the matched-duration study.
+Adaptive denotes its conservative threshold mode; the later partition is an
+inspected audit, not a fresh selection holdout.}
+\label{tab:duration-adaptation}
+\end{table}
+
+These results prevent a claim that the conservative label guarantees
+non-degrading adaptation. The rule checks individual proposed changes;
+it does not impose a global cumulative bound on every future threshold
+trajectory. Small calibration sets and changes in accepted buffer
+composition remain consequential. Periodic refitting promotes no
+candidate in the duration study, so its static-equivalent outcomes
+reflect rejection rather than an effective learned update.
+
+Ten minutes is retained as the validated reference with the desired
+response granularity. The evidence does not identify it as a universal
+optimum. A deployment prioritising retrospective summaries could make
+a different tradeoff, but would need to repeat calibration, delay
+analysis, and adaptation checks at that duration.
+
+\section{Closing final-partition evaluation}
+\label{sec:final-results}
+
+\subsection{Fixed settings and identical conservative modes}
+
+The closing replay starts from the saved model/calibration pairs and
+uses fixed ten-minute settings on 432 Chromecast and 576 Samsung
+windows. Table~\ref{tab:final} gives its confusion counts. Static,
+conservative threshold, and conservative refitting modes produce
+identical binary predictions. Across the modes there are 3,024 saved
+decisions, but only 1,008 unique labelled observations. The replays
+must not be counted as three independent test samples.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Device & TP & FP & FN & TN & Precision & Recall & F1 \\
+\midrule
+\TableRows{generated/final}
+\bottomrule
+\end{tabular}
+\caption{Closing final-partition results for each of the three identical
+binary-decision modes. Pooled metrics use summed counts, not averaged device
+metrics. The partition had prior retrospective label exposure; fixed replay
+settings do not restore independence.}
+\label{tab:final}
+\end{table}
+
+Chromecast has four true positives, three false positives, and two
+false negatives, giving 57.14\% precision and 61.54\% F1. Samsung
+has ten true positives, no false positives, and two false negatives,
+giving 100\% precision and 90.91\% F1. Pooled precision is 82.35\%,
+recall 77.78\%, and F1 80.00\%. The pooled false positive rate is
+$3/990\simeq0.30\%$. Zero Samsung false positives is an observation
+over 564 benign windows, not a bound on future false alerts.
+
+The pooled F1 alone is insufficient. There are only six positive
+Chromecast windows and twelve positive Samsung windows, while their
+precision values differ sharply. Pooled 80.00\% does not mean that
+a typical device has 80\% F1 or that the monitor will maintain it
+under a different device mix. Individual counts preserve the
+relevant denominators.
+
+No threshold update or refit is promoted in the closing replay.
+Threshold candidates fail acceptance checks, and refit attempts
+are prevented by insufficient accepted data or rejected movement.
+The initial pairs remain active. Equality of the modes is expected
+and provides no evidence of an adaptation gain. It establishes
+that the guarded modes can decline to change state.
+
+The earlier replay records include strong rank discrimination on
+these partitions, but absolute values depend on the saved score
+version. Current count-first events can stop after a sufficient
+count violation, so their score need not be the former full-feature
+minimum. The closing conclusions use preserved decisions and interval
+evidence rather than combining historical AUC values with the
+current event definition.
+
+\subsection{Attack intervals and alert availability}
+
+Table~\ref{tab:final-intervals} expands the nine fully observed official
+attack intervals. Eight are detected by at least one overlapping
+positive window. Seven receive a first alert by attack end. The
+distinction matters for the low-rate Samsung reflection interval:
+it is counted as detected, but the first alert arrives 731~s after
+onset, after the roughly ten-minute attack has ended.
+
+\begin{table}[tbp]
+\centering\footnotesize
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{5.2cm}rrr@{}}
+\toprule
+Device & Official attack type & Detected & Delay (s) & By end \\
+\midrule
+\TableRows{generated/final_intervals}
+\bottomrule
+\end{tabular}
+\caption{Closing replay interval results. Attack names preserve annotation
+vocabulary; they are not predicted attack types. Delay is measured to the first
+overlapping alert-window close. A dash denotes no detection.}
+\label{tab:final-intervals}
+\end{table}
+
+Chromecast misses \path{TcpSynReflection1W2D2W}, while detecting its
+SSDP interval and \path{TcpSynReflection100W2D2W}. This is consistent
+with weaker count evidence in the missed interval, but three cases
+cannot establish a general relationship between the annotation's
+rate class and detection probability. The detector sees counts; it
+neither reads the rate label nor classifies the attack type.
+
+All six Samsung intervals are detected, despite two positive windows
+being missed. An interval can overlap several windows, so these
+observations are compatible. Conditional median first-alert delay
+is 414.5~s for Chromecast's two detected intervals and 448.5~s for
+Samsung's six. These values are predominantly on the scale of window
+closure, rather than the scoring kernel's millisecond scale.
+
+The closing replay makes no new setting selection during execution.
+Nevertheless, the same later labels were available in previous
+scoring and duration audits. Its value is a fixed, fingerprinted
+record of the selected implementation's behaviour on that partition.
+It should not be presented as untouched external validation.
+
+\subsection{Inspecting individual decisions}
+\label{sec:event-cases}
+
+Confusion counts establish how often predictions agree with annotations;
+the saved event fields explain which statistical condition produced a
+particular decision. Table~\ref{tab:event-cases} gives five selected
+closing-replay examples. Cases A--C are Chromecast windows, and D--E
+are Samsung windows. They are illustrative selections from the saved
+events, not a new sample or a basis for recomputing aggregate rates.
+
+\begin{table}[tbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrrrl@{}}
+\toprule
+Case & TCP & UDP & SSDP & ARP & DM log $P$ & $m_D$ & $m_N$ & $m_A$ & Outcome \\
+\midrule
+\TableRows{generated/event_cases}
+\bottomrule
+\end{tabular}
+\caption{Selected historical full-score events. A: Chromecast, 25 October
+2018 at 07:20 UTC; B: 25 October at 07:50; C: 24 October at 16:30.
+D: Samsung, 5 June 2018 at 18:50 UTC; E: 5 June at 19:00. Times are
+window starts, and each window lasts ten minutes. Margins below zero
+indicate a violated condition. Outcomes use the official window labels.}
+\label{tab:event-cases}
+\end{table}
+
+Case A contains 267 SSDP packets alongside 188 TCP, 1,806 ordinary
+UDP, and 41 ARP packets. Chromecast's fitted SSDP share is very small.
+Its complete composition log probability is $-26.8698$, below the
+saved composition cutoff of $-25.6108$. The composition margin is
+$-1.311$, while the total and ARP margins are positive. This is a
+composition-triggered alert rather than a total-volume violation.
+The window overlaps the SSDP attack beginning at 07:25:23; its
+07:30 close gives the recorded 277-second first-alert delay.
+
+Case B is part of the missed low-rate reflection interval. It has
+1,127 TCP packets and 1,118 ordinary UDP packets, no SSDP, and
+51 ARP packets. Its complete score of $-25.5615$ is close to, but
+above, the composition cutoff. The positive composition margin of
+about $0.051$ and positive count margins make it non-alerting.
+This is a false negative under the selected operating point, not
+a numerical exception or a missing observation. The table does
+not justify moving the cutoff to catch this one example: doing so
+would require re-evaluating the benign tail and other attacks.
+
+Case C demonstrates the opposite error. Its composition margin
+is $-6.673$, giving an alert with no matching official attack
+overlap. It is a false positive relative to the provided labels.
+The four counts show the departure that the fitted rule sees,
+but cannot establish whether it is a benign application change,
+an unannotated event, or another cause. The event's UTC start
+lies on 24 October even though it belongs to the configured
+25 October capture ID. This is why evaluation uses actual UTC
+bounds and capture context rather than assuming that nominal
+capture dates are exact observation boundaries.
+
+Case D violates both composition and total-volume conditions.
+Its total is 2,068 packets, with a total margin of $-5.806$ and
+a composition margin of $-19.353$. The historical full-feature
+minimum is the latter. Under the current count-first order, the
+negative total margin already establishes an alert, so composition
+can be left unevaluated. The decision remains a true positive
+even though the reported score and explanation fields can differ.
+This concrete case illustrates the score-version boundary discussed
+in Section~\ref{sec:joint-results}.
+
+Case E follows that alerting Samsung window. Its counts are much
+smaller, with total 517, and all margins are positive. The official
+attack ends at 19:00:33, so the 19:00--19:10 window overlaps it for
+33 seconds and is labelled positive. Its false-negative window
+outcome is compatible with detection of the same interval by the
+previous window. Neither the event schema nor the interval metric
+is inconsistent; they answer different questions about the same
+time range.
+
+The examples show what interpretability means in this implementation.
+A reader can recover the count vector, active reference, violated
+margin, and annotation alignment. The explanation is local to the
+statistical rule. It does not recover packet contents, prove
+malicious intent, or assign an attack family. Preserving those
+limits makes the event evidence useful without turning a numerical
+score into a causal security diagnosis.
+
+\section{Constrained Docker simulation}
+\label{sec:edge-results}
+
+\subsection{Processing cost includes rejected learning attempts}
+
+The supplied-window runtime is measured using 2,000 and 20,000 input
+records under one-CPU, 512~MiB container limits.
+Table~\ref{tab:edge} reports both runs. Four of every five records
+are observed windows and the fifth is missing-state input, giving
+1,600 and 16,000 scored windows. The repeated fixture tests the
+continuing process and update path; it is not a new labelled dataset.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Measurement & Short replay & Long replay \\
+\midrule
+\TableRows{generated/edge}
+\bottomrule
+\end{tabular}
+\caption{Supplied-window simulation measurements. Memory and disk units use
+powers of two. Process high-water RSS and sparse sampled RSS are different
+counters. No update becomes active in either run.}
+\label{tab:edge}
+\end{table}
+
+Mean processing time is about 26.75~ms and 29.97~ms per scored
+window. The worst windows take 4.449~s and 5.079~s. These tail
+events are associated with attempted estimation; the longest
+estimator calls are 4.430~s and 5.069~s. The long replay records
+110 estimator calls and no promoted candidate. Rejecting an update
+does not avoid paying its fitting cost.
+
+The long history has an initial insufficient-data attempt followed
+by 110 non-convergent refit attempts. The synthetic repeated counts
+are not favourable evidence of successful model evolution. They do
+exercise a repeated rejection path and show that the process remains
+able to handle subsequent records without activating an invalid
+candidate.
+
+Scoring latencies are much smaller than a ten-minute observation
+interval on this host. This supports the feasibility of processing
+supplied completed windows. It cannot establish end-to-end response
+time: collection, aggregation, transport, real-load queuing, and
+waiting for window close are outside the processing timer.
+Accelerated replay also keeps the allocated CPU busy; this is not
+the expected utilisation when receiving one window every ten minutes.
+
+\subsection{Finite memory and disk behaviour}
+
+Process high-water RSS is 67.88~MiB in the short replay and 68.62~MiB
+in the long replay. The long run's sparse samples reach 68.92~MiB,
+with the last recorded samples stable at that level.
+Figure~\ref{fig:memory} plots them. These measures remain separate
+because they use different interfaces and sampling boundaries;
+their discrepancy is not resolved by choosing the lower value.
+
+\input{figures/memory}
+
+Measured memory remains far below the 512~MiB limit. This is
+consistent with bounded buffers, synchronous output, and limited
+retained history. A finite replay does not prove the absence of
+every slow leak. It also does not establish how many devices can
+share the allocation: the study has one process and one initial
+device model.
+
+Retained state occupies about 6.78~KiB and 31.25~KiB at the endpoints;
+application logs occupy about 10.84~KiB and 109.55~KiB. Initial
+growth reflects accumulating bounded history rather than promoted
+models. These sizes exclude the image, captures, and downstream
+storage of emitted events. The long run emits about 11.72~MB of
+event data, an external storage responsibility if retained.
+
+Application and Docker logging have rotation settings. The normal
+simulation does not reach their limits; a separate reduced-limit
+check exercises rotation. The 20,000-input run itself therefore
+does not demonstrate eviction at production limits. The state
+protocol has failure-injection tests, but this environment does
+not reproduce physical power loss or storage-controller faults.
+
+\section{Verification and evidence consistency}
+\label{sec:verification-results}
+
+The closing verification records the test suite at its own source
+boundary. Later scoring-order work expands that suite. During
+completion of this thesis, all 643 current tests pass, including
+available container-dependent checks, using the locally available
+edge image. This is current software verification, not a claim
+that every experiment was rerun with newly generated models.
+
+Checks cover input rejection, count semantics, numerical agreement,
+short-circuit decisions, update acceptance, state recovery, streaming,
+and command interfaces. They support implemented invariants. They
+do not establish empirical detection generalisation, which requires
+independent traffic observations rather than unit tests.
+
+The document generator recomputes displayed confusion-matrix metrics,
+verifies closing input fingerprints, and records the hashes of its
+sources. Three source files have later versions covered by the
+scoring-order regression; the remaining frozen dependencies retain
+their recorded bytes. No raw capture is reprocessed and no historical
+measurement is replaced during generation. Appendix~\ref{app:reproducibility}
+identifies the commands and artifacts separating report regeneration
+from experiment repetition.
