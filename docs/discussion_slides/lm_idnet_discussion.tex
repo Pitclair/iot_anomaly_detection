@@ -87,7 +87,7 @@
 
 \begin{document}
 
-% 01 | 00:00–00:30 | 30 seconds
+% 01 | 00:00–00:45 | 45 seconds
 \begin{frame}[plain]
 \begin{tikzpicture}[remember picture,overlay]
   \fill[ink] (current page.south west) rectangle (current page.north east);
@@ -106,10 +106,11 @@
     {\color{white}\fontsize{30}{33}\selectfont\bfseries LM-IDNet};
   \node[anchor=west,text width=.51\paperwidth]
     at ([xshift=.72cm,yshift=.25cm]current page.west)
-    {\color{palerose}\Large Dirichlet--Multinomial\\Anomaly Detection for IoT Traffic};
+    {\color{palerose}\Large Can four traffic counts reveal\\abnormal IoT behaviour?};
   \node[anchor=west,text width=.50\paperwidth]
     at ([xshift=.72cm,yshift=-1.15cm]current page.west)
-    {\color{white}\normalsize Languasco--Migliardi (LM) method};
+    {\color{white}\normalsize\bfseries 4 counts/device\quad\textbullet\quad 8/9 attack intervals\\
+     \color{palerose}\small Explainable Dirichlet--multinomial detection};
   \node[anchor=south west,text width=.53\paperwidth]
     at ([xshift=.72cm,yshift=.42cm]current page.south west)
     {\color{white}\normalsize\bfseries Fatemeh Mahvari\\[.08cm]
@@ -124,33 +125,31 @@
 
 \section{System}
 
-% 02 | 00:30–01:25 | 55 seconds
-\begin{frame}{Device traffic profiles}
-\begin{columns}[c,onlytextwidth]
-\column{.62\textwidth}
-\begin{tikzpicture}
-\begin{axis}[discussion,width=9.1cm,height=5.1cm,ybar,bar width=10pt,
-  ymin=0,ymax=100,ytick={0,25,50,75,100},xmin=.4,xmax=4.6,
-  xtick={1,2,3,4},xticklabels={TCP,UDP,SSDP,ARP},
-  ylabel={Fitted normal mean (\%)},
-  legend style={at={(.5,1.04)},anchor=south},legend columns=2]
-  \addplot[fill=burgundy,draw=burgundy] coordinates {\ProfileChromecast};
-  \addplot[fill=charcoal,draw=charcoal] coordinates {\ProfileSamsung};
-  \legend{Chromecast,Samsung camera}
-\end{axis}
-\end{tikzpicture}
-\column{.34\textwidth}
-{\large\bfseries Device-specific models}\par\medskip
-Normal protocol proportions differ between devices.\par\bigskip
-\textbf{4 exclusive counts}\\per ten-minute window\par\medskip
-Learn from a trusted benign period; flag unusual later behaviour.
+% 02 | 00:45–01:45 | 60 seconds
+\begin{frame}{What exists---and where this thesis fits}
+\begin{columns}[T,onlytextwidth]
+\column{.31\textwidth}
+\begin{block}{Research systems}
+\small N-BaIoT, Kitsune and D\"IoT use richer neural, ensemble or federated representations.
+\end{block}
+\small Strong modelling capacity, but different data and protocols prevent a direct metric ranking.
+\column{.31\textwidth}
+\begin{block}{Commercial systems}
+\small Agentless discovery, broad telemetry, threat intelligence and SOC response.
+\end{block}
+\small Microsoft Defender for IoT and Palo Alto Device Security address a wider operational scope.
+\column{.31\textwidth}
+\begin{block}{LM-IDNet}
+\small Four explicit counts, a device-specific normal model and inspectable decision margins.
+\end{block}
+\small Reproducible computation, guarded state changes and constrained-runtime evidence.
 \end{columns}
-\takeaway{A separate normal model captures each device's traffic pattern.}
-\evidence{Fitted means from saved normal-only models. UDP excludes SSDP; bars are model expectations.}
+\takeaway{The added value is compactness and inspectability---not a claim to replace a commercial platform.}
+\evidence{Architectural comparison only. The cited systems use different features, datasets and evaluation protocols.}
 \end{frame}
 
-% 03 | 01:25–03:00 | 95 seconds
-\begin{frame}{Detection model and conservative adaptation}
+% 03 | 01:45–03:00 | 75 seconds
+\begin{frame}{Four counts, three signals, one explainable decision}
 \centering
 \begin{tikzpicture}[node distance=.45cm]
   \node[lightbox,text width=3cm] (input) at (-4.25,0)
@@ -177,13 +176,47 @@ Learn from a trusted benign period; flag unusual later behaviour.
   \draw[flowarrow] (arp.south) -- (arp.south |- cal.north);
   \draw[flowarrow] (cal.east) -- ++(.7,0) |- (output.east);
 \end{tikzpicture}
-\takeaway{Conservative periodic refitting: admit only sufficiently safe windows; check candidate changes before activation.}
-\evidence{Normal-only fitting and calibration. The native LM backend evaluates the DM likelihood.}
+\takeaway{DM models extra-multinomial variation ($\phi=218.96$ / $86.84$); LM evaluates its likelihood.}
+\evidence{DM is the probability model; LM is its numerical backend. Later DM/IoT work: Al-Haj Baddar, Languasco and Migliardi.}
 \end{frame}
 
 \section{Evaluation}
 
-% 04 | 03:00–04:05 | 65 seconds
+% 04 | 03:00–04:25 | 85 seconds
+\begin{frame}{Where LM adds numerical value}
+\begin{columns}[c,onlytextwidth]
+\column{.63\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.0cm,height=4.35cm,
+  xmode=log,ymode=log,xmin=100,xmax=2e14,ymin=1e-11,ymax=1,
+  xtick={122.22,1e8,1e10,1e12,1e14},
+  xticklabels={Current,$10^8$,$10^{10}$,$10^{12}$,$10^{14}$},
+  xlabel={Concentration $\alpha_0$},ylabel={Absolute error},
+  legend style={at={(.03,.97)},anchor=north west}]
+  \addplot[color=charcoal,mark=square*] coordinates {
+    (122.22,3.07e-10) (1e8,2.50e-7) (1e10,2.83e-5)
+    (1e12,2.02e-3) (1e14,3.37e-1)};
+  \addplot[color=burgundy,mark=*] coordinates {
+    (122.22,3.91e-10) (1e8,1.50e-8) (1e10,5.65e-8)
+    (1e12,5.58e-5) (1e14,1.03e-3)};
+  \legend{SciPy,LM}
+\end{axis}
+\end{tikzpicture}
+\column{.33\textwidth}
+\bigvalue{0 / 1300}\par
+\small decision differences on tested development windows\par\medskip
+\normalsize At $10^{10}$:\quad\textbf{$\sim$500$\times$ lower}\par\smallskip
+At $10^{14}$:\quad\textbf{$\sim$327$\times$ lower}\par
+\small absolute error with LM
+\end{columns}
+\vspace{-.08cm}
+\scriptsize\textbf{Live score:} LM 12.04 $\mu$s vs SciPy 13.39 $\mu$s (10.1\% faster).\quad
+\textbf{Initial/periodic fitting:} SciPy is faster.
+\takeaway{Current data are easy for both; LM protects accuracy near the multinomial boundary.}
+\evidence{100-digit reference probe. Runtime is workload-specific; ten-minute collection dominates alert delay.}
+\end{frame}
+
+% 05 | 04:25–05:25 | 60 seconds
 \begin{frame}{Datasets and chronological partitions}
 \centering
 \begin{tikzpicture}[x=.94cm]
@@ -209,11 +242,11 @@ Learn from a trusted benign period; flag unusual later behaviour.
   \node[font=\small,align=center,text=charcoal] at (3.35,-3.15)
     {Earlier complete captures\quad$\longrightarrow$\quad Later complete captures};
 \end{tikzpicture}
-\takeaway{Final replay: fixed settings, saved normal-only starting pairs, labels only for metrics.}
-\evidence{Original reference partitions. Timeline shows role order, not elapsed time. D-Link is a numerical workload without attack labels.}
+\takeaway{Useful but imperfect test bed: $\psi=0.0356$ for Chromecast and $0.0575$ for Samsung.}
+\evidence{Only Chromecast passes the papers' empirical $\psi<0.05$ convention; both training sets show extra-multinomial variation. Labels are used only for metrics.}
 \end{frame}
 
-% 05 | 04:05–06:05 | 120 seconds
+% 06 | 05:25–07:10 | 105 seconds
 \begin{frame}{Final detection results by device}
 \centering
 \normalsize Ten-minute windows\quad\textbullet\quad Final partitions
@@ -246,7 +279,7 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \evidence{Periodic-refit results match static results for each device; no candidate update was activated.}
 \end{frame}
 
-% 06 | 06:05–07:40 | 95 seconds
+% 07 | 07:10–08:25 | 75 seconds
 \begin{frame}{Attack coverage and detection delay}
 \begin{columns}[c,onlytextwidth]
 \column{.66\textwidth}
@@ -275,12 +308,12 @@ Learn from a trusted benign period; flag unusual later behaviour.
 
 \section{Achievements and limits}
 
-% 07 | 07:40–08:55 | 75 seconds
-\begin{frame}{Edge simulation: adaptive periodic refitting}
+% 08 | 08:25–09:55 | 90 seconds
+\begin{frame}{What this thesis adds---and what remains}
 \begin{columns}[c,onlytextwidth]
 \column{.65\textwidth}
 \begin{tikzpicture}
-\begin{axis}[discussion,width=9.5cm,height=4.8cm,
+\begin{axis}[discussion,width=9.5cm,height=4.1cm,
   xmin=0,xmax=20,ymin=0,ymax=100,ytick={0,25,50,75,100},
   xtick={0,5,10,15,20},xlabel={Input windows (thousands)},
   ylabel={Sampled process memory (MiB)}]
@@ -290,44 +323,22 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \end{axis}
 \end{tikzpicture}
 \column{.31\textwidth}
-\textbf{D-Link Camera 5 reference}\\Conservative policy\\1 CPU / 512 MiB\par\bigskip
-\bigvalue{\EdgeWorst\ s}\\worst observed processing\\\small including a rejected refit\par\bigskip
-\normalsize 20,000 supplied windows\\16,000 scored; 4,000 missing
+\bigvalue{4 counts}\par
+\small compact, interpretable device state\par\medskip
+\bigvalue{8 / 9}\par
+\small attack intervals alerted; 7 by attack end\par\medskip
+\bigvalue{$\sim$69 MiB}\par
+\small recorded runtime footprint
 \end{columns}
-\takeaway{Processing has observed headroom; physical gateway performance remains unmeasured.}
-\evidence{Recorded raw-DM runtime, synthetic windows, x86\_64 Docker. No update promoted; processing time excludes collection delay.}
+\vspace{-.12cm}
+\small\textbf{Limits:} two labelled devices and 18 final attack windows;
+count-preserving attacks can be missed; runtime is simulated x86\_64, not a
+physical gateway; useful adaptation remains unproven.
+\takeaway{A compact, reproducible detector whose decisions, numerical core and state changes are inspectable.}
+\evidence{20,000 synthetic windows; x86\_64 Docker, 1 CPU / 512 MiB; 5.079 s maximum with a rejected refit.}
 \end{frame}
 
-% 08 | 08:55–10:15 | 80 seconds
-\begin{frame}{Achievements, limitations and future work}
-\begin{columns}[T,onlytextwidth]
-\column{.31\textwidth}
-\bigvalue{4 counts}\par\medskip
-\textbf{Compact statistical core}\par\smallskip
-Normal-only DM learning, native likelihood, explainable count signals.
-\column{.31\textwidth}
-\bigvalue{2 devices}\par\medskip
-\textbf{Final static F1}\par\smallskip
-Chromecast: 61.54\%\\Samsung camera: 90.91\%\\Full decisions and update records.
-\column{.31\textwidth}
-\bigvalue{$\sim$69 MiB}\par\medskip
-\textbf{Operational software}\par\smallskip
-Shared batch/streaming detection, guarded state, restart and rollback.
-\end{columns}
-\vspace{.45cm}
-\textbf{Evidence limits}\quad Only 6 final attack windows for Chromecast and 12 for Samsung;
-count-preserving attacks can be missed; useful conservative learning remains unproven.
-\par\vspace{.25cm}
-\begin{tikzpicture}
-  \node[lightbox,text width=3.65cm,minimum height=.75cm] (a) {More devices and attacks};
-  \node[lightbox,text width=3.65cm,minimum height=.75cm,right=.7cm of a] (b) {Longer drift evaluation};
-  \node[lightbox,text width=3.65cm,minimum height=.75cm,right=.7cm of b] (c) {Physical gateway\\validation};
-  \draw[flowarrow] (a) -- (b);\draw[flowarrow] (b) -- (c);
-\end{tikzpicture}
-\takeaway{Device-specific detection, explainable events, guarded adaptation, restart and rollback.}
-\end{frame}
-
-% 09 | 10:15–10:30 | 15 seconds
+% 09 | 09:55–10:10 | 15 seconds
 \begin{frame}[plain,label=thanks]
 \begin{tikzpicture}[remember picture,overlay]
   \fill[darkburgundy] (current page.south west) rectangle (current page.north east);
@@ -338,7 +349,7 @@ count-preserving attacks can be missed; useful conservative learning remains unp
     {\color{palerose}\Large Questions and discussion};
   \node[anchor=south west,text width=12cm] at ([xshift=1cm,yshift=.7cm]current page.south west)
     {\color{white}\normalsize LM-IDNet\quad\textbullet\quad Fatemeh Mahvari\\[.18cm]
-     \color{palerose}\small Reference slides follow: model, native method, counts, guards, window study, sources.};
+     \color{palerose}\small Reference slides follow: model, profiles, native method, counts, guards, window study, sources.};
 \end{tikzpicture}
 \end{frame}
 
@@ -370,7 +381,31 @@ s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
 \evidence{Constant fit features use unit scale. A count-tail breach can decide early. Severity is not an attack probability.}
 \end{frame}
 
-\begin{frame}[label=reference-backend]{R2 / Native Languasco--Migliardi implementation}
+\begin{frame}[label=reference-profiles]{R2 / Device traffic profiles}
+\begin{columns}[c,onlytextwidth]
+\column{.62\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.1cm,height=5.1cm,ybar,bar width=10pt,
+  ymin=0,ymax=100,ytick={0,25,50,75,100},xmin=.4,xmax=4.6,
+  xtick={1,2,3,4},xticklabels={TCP,UDP,SSDP,ARP},
+  ylabel={Fitted normal mean (\%)},
+  legend style={at={(.5,1.04)},anchor=south},legend columns=2]
+  \addplot[fill=burgundy,draw=burgundy] coordinates {\ProfileChromecast};
+  \addplot[fill=charcoal,draw=charcoal] coordinates {\ProfileSamsung};
+  \legend{Chromecast,Samsung camera}
+\end{axis}
+\end{tikzpicture}
+\column{.34\textwidth}
+{\large\bfseries Device-specific models}\par\medskip
+Normal protocol proportions differ between devices.\par\bigskip
+\textbf{4 exclusive counts}\\per ten-minute window\par\medskip
+Learn from a trusted benign period; flag unusual later behaviour.
+\end{columns}
+\takeaway{A separate normal model captures each device's traffic pattern.}
+\evidence{Fitted means from saved normal-only models. UDP excludes SSDP; bars are model expectations.}
+\end{frame}
+
+\begin{frame}[label=reference-backend]{R3 / Native Languasco--Migliardi implementation}
 \begin{columns}[c,onlytextwidth]
 \column{.49\textwidth}
 \begin{tikzpicture}
@@ -395,7 +430,7 @@ s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
 \evidence{Retained D-Link native-method timings, five batches and warm-up. Fitting excludes input/output. These are recorded measurements.}
 \end{frame}
 
-\begin{frame}[label=reference-counts]{R3 / Final confusion counts by device}
+\begin{frame}[label=reference-counts]{R4 / Final confusion counts by device}
 \begin{columns}[c,onlytextwidth]
 \column{.63\textwidth}
 \begin{tikzpicture}
@@ -417,7 +452,7 @@ s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
 \evidence{Static mode, final partitions. A window is attack-labelled if it overlaps an official attack interval.}
 \end{frame}
 
-\begin{frame}[label=reference-guards]{R4 / Conservative learning guards}
+\begin{frame}[label=reference-guards]{R5 / Conservative learning guards}
 \centering
 \begin{tikzpicture}
   \node[lightbox,text width=3.3cm] (score) {\textbf{Score first}\\Emit current decision};
@@ -442,7 +477,7 @@ s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
 \evidence{Per-update guards do not establish immunity to stealthy attacks or unlimited cumulative drift. Final replay promoted no candidates.}
 \end{frame}
 
-\begin{frame}[label=reference-coverage]{R5 / Window duration: attack coverage}
+\begin{frame}[label=reference-coverage]{R6 / Window duration: attack coverage}
 \begin{columns}[c,onlytextwidth]
 \column{.49\textwidth}
 \begin{tikzpicture}
@@ -475,7 +510,7 @@ s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
 \evidence{Static development study; matched traffic within each device; fresh fitting and calibration at every duration.}
 \end{frame}
 
-\begin{frame}[label=reference-duration]{R6 / Window duration: F1 and detection delay}
+\begin{frame}[label=reference-duration]{R7 / Window duration: F1 and detection delay}
 \begin{columns}[c,onlytextwidth]
 \column{.49\textwidth}
 \begin{tikzpicture}
@@ -508,8 +543,8 @@ s=\min(m_{\mathrm{DM}},m_N,m_{\mathrm{ARP}}),\qquad
 \evidence{Static development study. Samsung uses May 28--29 to fit and May 30--31 to calibrate at every duration. Lines join measured settings.}
 \end{frame}
 
-\begin{frame}[label=reference-sources]{R7 / References and project evidence}
-\normalsize
+\begin{frame}[label=reference-sources]{R8 / References and project evidence}
+\small
 \textbf{Statistical learning}\par\smallskip
 Minka, \emph{Estimating a Dirichlet distribution}, 2000 / revised 2012.\\
 Fixed-point estimation of the DM parameters.
@@ -520,12 +555,16 @@ Languasco and Migliardi, \emph{Computational Statistics} 38, 2023.\\
 Al-Haj Baddar, Languasco and Migliardi, \emph{IEEE TPAMI} 47(2), 2025.\\
 \href{https://doi.org/10.1109/TPAMI.2024.3489645}{doi: 10.1109/TPAMI.2024.3489645}
 \par\medskip
+\textbf{Research and market context}\par\smallskip
+N-BaIoT, Kitsune and D\"IoT: neural, ensemble and federated research systems.\\
+Microsoft Defender for IoT and Palo Alto Device Security: representative commercial scope.
+\par\smallskip
 \textbf{Project evidence}\par\smallskip
 Final protocol, results and events: \texttt{reports/final\_evaluation/}\\
 Duration study: \texttt{reports/window\_size/}\\
 Backend benchmark: \texttt{reports/D-LinkDayCam5/}\\
+Numerical probe: \texttt{docs/lm\_professor\_architecture\_experiment\_report.md}\\
 Supplied-window simulation: \texttt{reports/edge/}
-\takeaway{Speaker notes map every numerical slide to its retained source files.}
 \end{frame}
 
 \end{document}
