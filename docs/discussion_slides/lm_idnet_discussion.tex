@@ -9,7 +9,7 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{arrows.meta,positioning,calc}
-\graphicspath{{../slides/}{docs/slides/}}
+\graphicspath{{../slides/}{../../thesis/assets/}{docs/slides/}}
 \input{evidence.tex}
 
 % Visual system retained from docs/slides/lm_idnet_project_presentation.tex.
@@ -36,12 +36,42 @@
 \exhyphenpenalty=10000
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{itemize item}{\color{burgundy}$\blacktriangleright$}
+\AddToHook{shipout/foreground}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[anchor=north west,inner sep=0pt]
+      at ([xshift=.12cm,yshift=-.10cm]current page.north west)
+      {\ifnum\value{page}=1\relax
+         \includegraphics[height=.82cm,decodearray={1 0 1 0 1 0}]{unipd-seal.png}%
+       \else
+         \ifnum\value{page}=10\relax
+           \includegraphics[height=.82cm,decodearray={1 0 1 0 1 0}]{unipd-seal.png}%
+         \else
+           \includegraphics[height=.76cm]{unipd_logo.png}%
+         \fi
+       \fi};
+    \ifnum\value{page}=1\relax
+      \node[anchor=north east,inner sep=0pt]
+        at ([xshift=.61\paperwidth,yshift=-.10cm]current page.north west)
+        {\includegraphics[height=.68cm,decodearray={1 0 1 0 1 0}]{dei_logo.png}};
+    \else
+      \ifnum\value{page}=10\relax
+        \node[anchor=north east,inner sep=0pt]
+          at ([xshift=.61\paperwidth,yshift=-.10cm]current page.north west)
+          {\includegraphics[height=.68cm,decodearray={1 0 1 0 1 0}]{dei_logo.png}};
+      \else
+        \node[anchor=north east,inner sep=0pt]
+          at ([xshift=-.12cm,yshift=-.10cm]current page.north east)
+          {\includegraphics[height=.66cm]{dei_logo.png}};
+      \fi
+    \fi
+  \end{tikzpicture}%
+}
 \setbeamertemplate{frametitle}{%
-  \vspace{.18cm}\insertframetitle\par\vspace{-.1cm}%
+  \vspace{.18cm}\hspace*{.30cm}\insertframetitle\par\vspace{-.1cm}%
   {\color{burgundy}\rule{\textwidth}{.6pt}}%
 }
 \newcommand{\slideprefix}{}
-\newcommand{\slidetotal}{/9}
+\newcommand{\slidetotal}{/10}
 \setbeamertemplate{footline}{%
   \hbox{%
     \begin{beamercolorbox}[wd=.83\paperwidth,ht=2.8ex,dp=1.1ex,leftskip=1em]{author in head/foot}%
@@ -76,12 +106,12 @@
   every node near coord/.append style={font=\small,text=ink,
     /pgf/number format/fixed,/pgf/number format/precision=1}}}
 
-\title{LM-IDNet}
+\title{LM-IDNet: Adaptive IoT Network Anomaly Detection}
 \subtitle{Dirichlet--Multinomial Anomaly Detection for IoT Traffic}
 \author{Fatemeh Mahvari}
 \institute{Supervisor: Professor Mauro Migliardi\\Co-supervisor: Professor Alessandro Languasco}
-\date{20 October 2026}
-\hypersetup{pdftitle={LM-IDNet — Discussion Presentation},
+\date{}
+\hypersetup{pdftitle={LM-IDNet: Adaptive IoT Network Anomaly Detection},
   pdfauthor={Fatemeh Mahvari},pdfsubject={12-minute presentation with reference slides}}
 \pdfstringdefDisableCommands{\def\translate#1{#1}}
 
@@ -102,21 +132,23 @@
     ([xshift=-.10cm,yshift=.10cm]detector.north west) rectangle
     ([xshift=.10cm,yshift=-.10cm]detector.south east);
   \node[anchor=west,text width=.52\paperwidth]
-    at ([xshift=.72cm,yshift=1.6cm]current page.west)
-    {\color{white}\fontsize{30}{33}\selectfont\bfseries LM-IDNet};
-  \node[anchor=west,text width=.51\paperwidth]
-    at ([xshift=.72cm,yshift=.25cm]current page.west)
-    {\color{palerose}\Large Can four traffic counts reveal\\abnormal IoT behaviour?};
+    at ([xshift=.72cm,yshift=1.25cm]current page.west)
+    {\color{white}\large\bfseries LM-IDNet: Adaptive IoT Network\\Anomaly Detection};
+  \node[anchor=north,align=center,text width=.38\paperwidth]
+    at ([xshift=.31\paperwidth,yshift=-.24cm]current page.north west)
+    {\color{palerose}\scriptsize Department of Information Engineering};
   \node[anchor=west,text width=.50\paperwidth]
     at ([xshift=.72cm,yshift=-1.15cm]current page.west)
-    {\color{white}\normalsize\bfseries 4 counts/device\quad\textbullet\quad 8/9 attack intervals\\
-     \color{palerose}\small Explainable Dirichlet--multinomial detection};
+    {\color{white}\normalsize\bfseries Dirichlet--multinomial anomaly detection\\
+     \color{palerose}\small Languasco--Migliardi likelihood evaluation};
   \node[anchor=south west,text width=.53\paperwidth]
-    at ([xshift=.72cm,yshift=.42cm]current page.south west)
-    {\color{white}\normalsize\bfseries Fatemeh Mahvari\\[.08cm]
-     \color{palerose}\small Supervisor: Professor Mauro Migliardi\\
+    at ([xshift=.72cm,yshift=.30cm]current page.south west)
+    {\color{palerose}\scriptsize Master's Degree in Computer Engineering\\[.08cm]
+     \color{white}\small\bfseries Fatemeh Mahvari\quad\textbullet\quad Student ID: 2141994\\
+     \color{palerose}\scriptsize Supervisor: Professor Mauro Migliardi\\
      Co-supervisor: Professor Alessandro Languasco\\
-     Discussion presentation\quad\textbullet\quad\insertdate};
+     Scientific support: Professor Sherenaz Al-Haj Baddar\\
+     Academic Year 2025/2026};
   \node[anchor=south east,fill=ink,inner sep=2pt]
     at ([xshift=-.06cm,yshift=.06cm]detector.south east)
     {\color{palerose}\fontsize{6}{7}\selectfont REFERENCE IMAGE / PRYPIAT DETECTOR};
@@ -126,26 +158,26 @@
 \section{System}
 
 % 02 | 00:45–01:45 | 60 seconds
-\begin{frame}{What exists---and where this thesis fits}
+\begin{frame}{Context: IoT anomaly-detection approaches}
 \begin{columns}[T,onlytextwidth]
 \column{.31\textwidth}
-\begin{block}{Research systems}
+\begin{block}{Research studies}
 \small N-BaIoT, Kitsune and D\"IoT use richer neural, ensemble or federated representations.
 \end{block}
 \small Strong modelling capacity, but different data and protocols prevent a direct metric ranking.
 \column{.31\textwidth}
-\begin{block}{Commercial systems}
+\begin{block}{Operational platforms}
 \small Agentless discovery, broad telemetry, threat intelligence and SOC response.
 \end{block}
 \small Microsoft Defender for IoT and Palo Alto Device Security address a wider operational scope.
 \column{.31\textwidth}
-\begin{block}{LM-IDNet}
+\begin{block}{Scope of this study}
 \small Four explicit counts, a device-specific normal model and inspectable decision margins.
 \end{block}
-\small Reproducible computation, guarded state changes and constrained-runtime evidence.
+\small Dirichlet--multinomial scoring, numerical validation and a constrained-runtime evaluation.
 \end{columns}
-\takeaway{The added value is compactness and inspectability---not a claim to replace a commercial platform.}
-\evidence{Architectural comparison only. The cited systems use different features, datasets and evaluation protocols.}
+\takeaway{LM-IDNet proposes device-specific detection from four counts using a Dirichlet--multinomial (DM) model.}
+\evidence{It combines composition, traffic-volume and ARP checks with calibrated margins and guarded periodic refitting.}
 \end{frame}
 
 % 03 | 01:45–03:00 | 75 seconds
@@ -159,8 +191,8 @@
   \node[lightbox,text width=3cm] (output) at (4.25,0)
     {\textbf{Alert evidence}\\Which signal\\crossed its cutoff?};
   \draw[flowarrow] (input) -- (counts);
-  \node[flowbox,text width=3.3cm] (dm) at (-3.9,-1.8)
-    {\textbf{DM likelihood}\\Protocol composition};
+  \node[flowbox,text width=3.3cm,font=\small] (dm) at (-3.9,-1.8)
+    {\textbf{Dirichlet--multinomial}\\Protocol composition};
   \node[flowbox,text width=3.3cm] (volume) at (0,-1.8)
     {\textbf{Total packets}\\Traffic volume};
   \node[flowbox,text width=3.3cm] (arp) at (3.9,-1.8)
@@ -176,47 +208,13 @@
   \draw[flowarrow] (arp.south) -- (arp.south |- cal.north);
   \draw[flowarrow] (cal.east) -- ++(.7,0) |- (output.east);
 \end{tikzpicture}
-\takeaway{DM models extra-multinomial variation ($\phi=218.96$ / $86.84$); LM evaluates its likelihood.}
-\evidence{DM is the probability model; LM is its numerical backend. Later DM/IoT work: Al-Haj Baddar, Languasco and Migliardi.}
+\takeaway{The Languasco--Migliardi (LM) algorithm evaluates the DM likelihood using stable log-gamma differences.}
+\evidence{Concentration measures how tightly traffic stays around its average protocol mix; $\psi$ is its inverse. A smaller $\psi$ is closer to the multinomial limit, where direct log-gamma subtraction can lose precision.}
 \end{frame}
 
 \section{Evaluation}
 
-% 04 | 03:00–04:25 | 85 seconds
-\begin{frame}{Where LM adds numerical value}
-\begin{columns}[c,onlytextwidth]
-\column{.63\textwidth}
-\begin{tikzpicture}
-\begin{axis}[discussion,width=9.0cm,height=4.35cm,
-  xmode=log,ymode=log,xmin=100,xmax=2e14,ymin=1e-11,ymax=1,
-  xtick={122.22,1e8,1e10,1e12,1e14},
-  xticklabels={Current,$10^8$,$10^{10}$,$10^{12}$,$10^{14}$},
-  xlabel={Concentration $\alpha_0$},ylabel={Absolute error},
-  legend style={at={(.03,.97)},anchor=north west}]
-  \addplot[color=charcoal,mark=square*] coordinates {
-    (122.22,3.07e-10) (1e8,2.50e-7) (1e10,2.83e-5)
-    (1e12,2.02e-3) (1e14,3.37e-1)};
-  \addplot[color=burgundy,mark=*] coordinates {
-    (122.22,3.91e-10) (1e8,1.50e-8) (1e10,5.65e-8)
-    (1e12,5.58e-5) (1e14,1.03e-3)};
-  \legend{SciPy,LM}
-\end{axis}
-\end{tikzpicture}
-\column{.33\textwidth}
-\bigvalue{0 / 1300}\par
-\small decision differences on tested development windows\par\medskip
-\normalsize At $10^{10}$:\quad\textbf{$\sim$500$\times$ lower}\par\smallskip
-At $10^{14}$:\quad\textbf{$\sim$327$\times$ lower}\par
-\small absolute error with LM
-\end{columns}
-\vspace{-.08cm}
-\scriptsize\textbf{Live score:} LM 12.04 $\mu$s vs SciPy 13.39 $\mu$s (10.1\% faster).\quad
-\textbf{Initial/periodic fitting:} SciPy is faster.
-\takeaway{Current data are easy for both; LM protects accuracy near the multinomial boundary.}
-\evidence{100-digit reference probe. Runtime is workload-specific; ten-minute collection dominates alert delay.}
-\end{frame}
-
-% 05 | 04:25–05:25 | 60 seconds
+% 04 | 03:00–04:00 | 60 seconds
 \begin{frame}{Datasets and chronological partitions}
 \centering
 \begin{tikzpicture}[x=.94cm]
@@ -242,10 +240,44 @@ At $10^{14}$:\quad\textbf{$\sim$327$\times$ lower}\par
   \node[font=\small,align=center,text=charcoal] at (3.35,-3.15)
     {Earlier complete captures\quad$\longrightarrow$\quad Later complete captures};
 \end{tikzpicture}
-\takeaway{Useful but imperfect test bed: $\psi=0.0356$ for Chromecast and $0.0575$ for Samsung.}
-\evidence{Only Chromecast passes the papers' empirical $\psi<0.05$ convention; both training sets show extra-multinomial variation. Labels are used only for metrics.}
+\takeaway{ICNC 2025 ALM baseline: $\psi<0.05$; Chromecast passes, Samsung does not.}
+\evidence{Reference: Al-Haj Baddar, Languasco and Migliardi. Values: $0.0356$ / $0.0575$; both show extra-multinomial variation. Labels are used only for metrics.}
 \end{frame}
 
+% 05 | 04:00–05:25 | 85 seconds
+\begin{frame}{Numerical comparison: LM and SciPy}
+\begin{columns}[c,onlytextwidth]
+\column{.63\textwidth}
+\begin{tikzpicture}
+\begin{axis}[discussion,width=9.0cm,height=4.35cm,
+  xmode=log,ymode=log,xmin=100,xmax=2e14,ymin=1e-11,ymax=1,
+  xtick={122.22,1e8,1e10,1e12,1e14},
+  xticklabels={Current,$10^8$,$10^{10}$,$10^{12}$,$10^{14}$},
+  xlabel={Concentration $\alpha_0$},ylabel={Absolute error},
+  legend style={at={(.03,.97)},anchor=north west}]
+  \addplot[color=charcoal,mark=square*] coordinates {
+    (122.22,3.07e-10) (1e8,2.50e-7) (1e10,2.83e-5)
+    (1e12,2.02e-3) (1e14,3.37e-1)};
+  \addplot[color=burgundy,mark=*] coordinates {
+    (122.22,3.91e-10) (1e8,1.50e-8) (1e10,5.65e-8)
+    (1e12,5.58e-5) (1e14,1.03e-3)};
+  \legend{SciPy,LM}
+\end{axis}
+\end{tikzpicture}
+\column{.33\textwidth}
+\bigvalue{$\sim$500$\times$}\par
+\small lower absolute error at $\alpha_0=10^{10}$\par\medskip
+\bigvalue{$\sim$327$\times$}\par
+\small lower absolute error at $\alpha_0=10^{14}$\par\medskip
+{\color{charcoal}\small Current data: 0/1300 decision differences.}
+\end{columns}
+\vspace{-.08cm}
+\fontsize{7.4}{8.2}\selectfont
+\textbf{Live score:} LM 12.04 $\mu$s vs SciPy 13.39 $\mu$s (10.1\% faster).\quad
+\textbf{Fit/refit:} LM 193 ms vs SciPy 181 ms (LM 6.4\% slower).
+\takeaway{Both agree on current data; LM has lower error in the high-concentration stress regime.}
+\evidence{100-digit reference probe. Runtime is workload-specific; ten-minute collection dominates alert delay.}
+\end{frame}
 % 06 | 05:25–07:10 | 105 seconds
 \begin{frame}{Final detection results by device}
 \centering
@@ -306,14 +338,32 @@ At $10^{14}$:\quad\textbf{$\sim$327$\times$ lower}\par
 \evidence{Static mode, final official intervals; C = Chromecast, S = Samsung. Median delay is among detected attacks; alerts occur at window close.}
 \end{frame}
 
-\section{Achievements and limits}
+\section{Summary and limits}
 
-% 08 | 08:25–09:55 | 90 seconds
-\begin{frame}{What this thesis adds---and what remains}
+% 08 | 08:25–09:30 | 65 seconds
+\begin{frame}{Edge architecture and simulation}
+\centering
+\begin{tikzpicture}[node distance=.28cm]
+  \node[lightbox,text width=2.25cm,font=\small] (input)
+    {\textbf{Validated window}\\JSONL or batch input};
+  \node[flowbox,text width=2.35cm,font=\small,right=of input] (score)
+    {\textbf{Score first}\\DM + total + ARP};
+  \node[lightbox,text width=2.15cm,font=\small,right=of score] (event)
+    {\textbf{Emit event}\\Decision + margins};
+  \node[flowbox,text width=2.25cm,font=\small,right=of event] (buffer)
+    {\textbf{Safe buffer}\\Bounded evidence};
+  \node[lightbox,text width=2.5cm,font=\small,right=of buffer] (state)
+    {\textbf{Guarded candidate}\\Atomic state / rollback};
+  \draw[flowarrow] (input) -- (score);
+  \draw[flowarrow] (score) -- (event);
+  \draw[flowarrow] (event) -- (buffer);
+  \draw[flowarrow] (buffer) -- (state);
+\end{tikzpicture}
+\vspace{-.04cm}
 \begin{columns}[c,onlytextwidth]
-\column{.65\textwidth}
+\column{.62\textwidth}
 \begin{tikzpicture}
-\begin{axis}[discussion,width=9.5cm,height=4.1cm,
+\begin{axis}[discussion,width=9.0cm,height=2.7cm,
   xmin=0,xmax=20,ymin=0,ymax=100,ytick={0,25,50,75,100},
   xtick={0,5,10,15,20},xlabel={Input windows (thousands)},
   ylabel={Sampled process memory (MiB)}]
@@ -322,23 +372,48 @@ At $10^{14}$:\quad\textbf{$\sim$327$\times$ lower}\par
     at (axis cs:19.8,73) {$\sim$69 MiB};
 \end{axis}
 \end{tikzpicture}
-\column{.31\textwidth}
-\bigvalue{4 counts}\par
-\small compact, interpretable device state\par\medskip
-\bigvalue{8 / 9}\par
-\small attack intervals alerted; 7 by attack end\par\medskip
+\column{.34\textwidth}
+\raggedright
+\bigvalue{20,000}\par
+\small inputs: 16,000 scored; 4,000 missing skipped\par
 \bigvalue{$\sim$69 MiB}\par
-\small recorded runtime footprint
+\small sampled process memory\par
+{\small\textbf{5.079 s} worst observed window, including a rejected refit}
 \end{columns}
-\vspace{-.12cm}
-\small\textbf{Limits:} two labelled devices and 18 final attack windows;
-count-preserving attacks can be missed; runtime is simulated x86\_64, not a
-physical gateway; useful adaptation remains unproven.
-\takeaway{A compact, reproducible detector whose decisions, numerical core and state changes are inspectable.}
-\evidence{20,000 synthetic windows; x86\_64 Docker, 1 CPU / 512 MiB; 5.079 s maximum with a rejected refit.}
+\vspace{-.18cm}
+\takeaway{One detector serves batch and streaming; updates affect only later windows.}
+\evidence{Accelerated synthetic replay; x86\_64 Docker, 1 CPU / 512 MiB. No candidate update was promoted.}
 \end{frame}
 
-% 09 | 09:55–10:10 | 15 seconds
+% 09 | 09:30–10:25 | 55 seconds
+\begin{frame}{Summary: results and limitations}
+\begin{columns}[T,onlytextwidth]
+\column{.48\textwidth}
+\begin{block}{Observed results}
+\small
+\begin{itemize}
+  \item Four counts support three inspectable alert signals.
+  \item 8/9 attack intervals were alerted; 7 by attack end.
+  \item LM reduces absolute error in the high-concentration stress regime.
+  \item Streaming remained near 69 MiB with guarded persistent state.
+\end{itemize}
+\end{block}
+\column{.48\textwidth}
+\begin{block}{Scope and limitations}
+\small
+\begin{itemize}
+  \item Two labelled devices and 18 final attack windows.
+  \item Count-preserving attacks may remain invisible.
+  \item The edge trial is synthetic x86\_64, not a physical gateway.
+  \item Useful conservative adaptation remains unproven on these traces.
+\end{itemize}
+\end{block}
+\end{columns}
+\takeaway{The prototype combines explainable detection, stable likelihood evaluation and guarded runtime state.}
+\evidence{Claims remain limited to the recorded datasets, numerical probe and constrained simulation.}
+\end{frame}
+
+% 10 | 10:25–10:40 | 15 seconds
 \begin{frame}[plain,label=thanks]
 \begin{tikzpicture}[remember picture,overlay]
   \fill[darkburgundy] (current page.south west) rectangle (current page.north east);
@@ -552,6 +627,8 @@ Fixed-point estimation of the DM parameters.
 \textbf{Native likelihood method}\par\smallskip
 Languasco and Migliardi, \emph{Computational Statistics} 38, 2023.\\
 \href{https://doi.org/10.1007/s00180-022-01311-7}{doi: 10.1007/s00180-022-01311-7}\\
+Al-Haj Baddar, Languasco and Migliardi, \emph{ICNC}, 2025.\\
+\href{https://doi.org/10.1109/ICNC64010.2025.10993688}{doi: 10.1109/ICNC64010.2025.10993688}\\
 Al-Haj Baddar, Languasco and Migliardi, \emph{IEEE TPAMI} 47(2), 2025.\\
 \href{https://doi.org/10.1109/TPAMI.2024.3489645}{doi: 10.1109/TPAMI.2024.3489645}
 \par\medskip
@@ -560,11 +637,9 @@ N-BaIoT, Kitsune and D\"IoT: neural, ensemble and federated research systems.\\
 Microsoft Defender for IoT and Palo Alto Device Security: representative commercial scope.
 \par\smallskip
 \textbf{Project evidence}\par\smallskip
-Final protocol, results and events: \texttt{reports/final\_evaluation/}\\
-Duration study: \texttt{reports/window\_size/}\\
-Backend benchmark: \texttt{reports/D-LinkDayCam5/}\\
-Numerical probe: \texttt{docs/lm\_professor\_architecture\_experiment\_report.md}\\
-Supplied-window simulation: \texttt{reports/edge/}
+Source code, protocols, results and reproducibility records:\\
+\href{https://github.com/Pitclair/iot_anomaly_detection}
+  {\texttt{github.com/Pitclair/iot\_anomaly\_detection}}
 \end{frame}
 
 \end{document}
