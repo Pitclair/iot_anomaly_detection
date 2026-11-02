@@ -110,7 +110,7 @@
 \subtitle{Dirichlet--Multinomial Anomaly Detection for IoT Traffic}
 \author{Fatemeh Mahvari}
 \institute{Supervisor: Professor Mauro Migliardi\\Co-supervisor: Professor Alessandro Languasco}
-\date{}
+\date{2 December 2026}
 \hypersetup{pdftitle={LM-IDNet: Adaptive IoT Network Anomaly Detection},
   pdfauthor={Fatemeh Mahvari},pdfsubject={12-minute presentation with reference slides}}
 \pdfstringdefDisableCommands{\def\translate#1{#1}}
@@ -148,7 +148,7 @@
      \color{palerose}\scriptsize Supervisor: Professor Mauro Migliardi\\
      Co-supervisor: Professor Alessandro Languasco\\
      Scientific support: Professor Sherenaz Al-Haj Baddar\\
-     Academic Year 2025/2026};
+     Academic Year 2025/2026\quad\textbullet\quad 2 December 2026};
   \node[anchor=south east,fill=ink,inner sep=2pt]
     at ([xshift=-.06cm,yshift=.06cm]detector.south east)
     {\color{palerose}\fontsize{6}{7}\selectfont REFERENCE IMAGE / PRYPIAT DETECTOR};
@@ -330,12 +330,24 @@
 \textcolor{burgundy}{$\blacklozenge$}\ \textbf{First alert}\\
 \textcolor{palerose}{\rule{.5cm}{4pt}}\ Annotated attack\par\bigskip
 \textbf{Chromecast}\\2/3 detected; 2/3 by end\\
-\bigvalue{6.9}\ min median\par\medskip
+{\scriptsize Delay (min)}\\[-.04cm]
+\begin{tabular}{@{}ccc@{}}
+\scriptsize avg & \scriptsize median & \scriptsize SD \\
+\textcolor{burgundy}{\bfseries\FinalDelayMeanChromecast} &
+\textcolor{burgundy}{\bfseries\FinalDelayMedianChromecast} &
+\textcolor{burgundy}{\bfseries\FinalDelayStdChromecast}
+\end{tabular}\par\medskip
 \textbf{Samsung camera}\\6/6 detected; 5/6 by end\\
-\bigvalue{7.5}\ min median
+{\scriptsize Delay (min)}\\[-.04cm]
+\begin{tabular}{@{}ccc@{}}
+\scriptsize avg & \scriptsize median & \scriptsize SD \\
+\textcolor{burgundy}{\bfseries\FinalDelayMeanSamsung} &
+\textcolor{burgundy}{\bfseries\FinalDelayMedianSamsung} &
+\textcolor{burgundy}{\bfseries\FinalDelayStdSamsung}
+\end{tabular}
 \end{columns}
 \takeaway{The ten-minute collection interval is part of the detection delay.}
-\evidence{Static mode, final official intervals; C = Chromecast, S = Samsung. Median delay is among detected attacks; alerts occur at window close.}
+\evidence{Static mode, final official intervals; C = Chromecast, S = Samsung. Statistics are among detected attacks; SD is population standard deviation. Alerts occur at window close.}
 \end{frame}
 
 \section{Summary and limits}
@@ -590,7 +602,7 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \column{.49\textwidth}
 \begin{tikzpicture}
 \begin{axis}[discussion,width=7.0cm,height=4.6cm,
-  title={Static window F1},xmin=5,xmax=65,ymin=0,ymax=105,
+  title={Static F1},xmin=5,xmax=65,ymin=0,ymax=105,
   xtick={10,20,30,60},ytick={0,25,50,75,100},
   xlabel={Window duration (min)},ylabel={F1 (\%)},
   legend style={at={(.03,.03)},anchor=south west,font=\small}]
@@ -604,7 +616,7 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \column{.49\textwidth}
 \begin{tikzpicture}
 \begin{axis}[discussion,width=7.0cm,height=4.6cm,
-  title={Median first-alert delay},xmin=5,xmax=65,ymin=0,ymax=44,
+  title={Median delay},xmin=5,xmax=65,ymin=0,ymax=44,
   xtick={10,20,30,60},ytick={0,10,20,30,40},
   xlabel={Window duration (min)},ylabel={Delay (min)},
   legend style={at={(.03,.97)},anchor=north west,font=\small}]
@@ -615,10 +627,23 @@ Learn from a trusted benign period; flag unusual later behaviour.
 \end{tikzpicture}
 \end{columns}
 \takeaway{F1 changes with label granularity; median delay is conditional on detection.}
-\evidence{Static development study. Samsung uses May 28--29 to fit and May 30--31 to calibrate at every duration. Lines join measured settings.}
+\evidence{Static development study. Samsung uses May 28--29 to fit and May 30--31 to calibrate at every duration. Lines join measured settings. Final-partition attack durations and first alerts are in R8.}
 \end{frame}
 
-\begin{frame}[label=reference-sources]{R8 / References and project evidence}
+\begin{frame}[label=reference-incident-timing]{R8 / Final evaluation: attack duration and first alert}
+\centering
+\scriptsize
+\begin{tabular}{@{}clcccc@{}}
+\textbf{ID} & \textbf{Attack interval (UTC, 2018)} & \textbf{Duration} &
+\textbf{First alert (UTC)} & \textbf{Delay} & \textbf{By end} \\
+\hline
+\IncidentTimingRows
+\end{tabular}
+\takeaway{Eight of nine attacks were discovered; seven were discovered before the annotated end.}
+\evidence{Static mode, final partitions. Duration and delay are mm:ss. First alert is the close of the first positive overlapping window; ``--'' denotes a missed attack.}
+\end{frame}
+
+\begin{frame}[label=reference-sources]{R9 / References and project evidence}
 \small
 \textbf{Statistical learning}\par\smallskip
 Minka, \emph{Estimating a Dirichlet distribution}, 2000 / revised 2012.\\
@@ -631,10 +656,6 @@ Al-Haj Baddar, Languasco and Migliardi, \emph{ICNC}, 2025.\\
 \href{https://doi.org/10.1109/ICNC64010.2025.10993688}{doi: 10.1109/ICNC64010.2025.10993688}\\
 Al-Haj Baddar, Languasco and Migliardi, \emph{IEEE TPAMI} 47(2), 2025.\\
 \href{https://doi.org/10.1109/TPAMI.2024.3489645}{doi: 10.1109/TPAMI.2024.3489645}
-\par\medskip
-\textbf{Research and market context}\par\smallskip
-N-BaIoT, Kitsune and D\"IoT: neural, ensemble and federated research systems.\\
-Microsoft Defender for IoT and Palo Alto Device Security: representative commercial scope.
 \par\smallskip
 \textbf{Project evidence}\par\smallskip
 Source code, protocols, results and reproducibility records:\\
