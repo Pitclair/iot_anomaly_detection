@@ -1,19 +1,25 @@
-\documentclass[12pt,a4paper,twoside,openright]{extreport}
+%!TEX TS-program = lualatex
+%!TEX encoding = UTF-8 Unicode
+
+\PassOptionsToPackage{style=ieee}{biblatex}
+\documentclass[language=english]{unipd-thesis-modern}
 \input{metadata}
 \input{preamble}
 
+\title{\ThesisTitle}
+\thesisHeader{Department of Information Engineering\\Master's Degree in Computer Engineering}
+\academicYear{\ThesisAcademicYear}
+\author{\ThesisAuthor}
+\studentId{\ThesisStudentId}
+\advisor{\ThesisSupervisor}{}
+\coadvisor{\ThesisCoSupervisor}{}
+
 \begin{document}
-\input{frontmatter/frontispiece}
-\cleardoublepage
-\pagenumbering{roman}
-\input{frontmatter/abstract}
-\input{frontmatter/abstract_italian}
-\input{frontmatter/contents}
+\frontmatter
 \input{frontmatter/list_of_figures}
 \input{frontmatter/list_of_tables}
 \input{frontmatter/acronyms}
-\cleardoublepage
-\pagenumbering{arabic}
+\mainmatter
 
 \input{chapters/01_introduction}
 \input{chapters/02_background_and_related_work}
@@ -23,7 +29,10 @@
 \input{chapters/06_discussion_and_limitations}
 \input{chapters/07_conclusions_and_future_work}
 
+\begin{appendices}
+  \input{appendices/reproducibility}
+\end{appendices}
+
+\bookmarksetup{startatroot}
 \input{backmatter/bibliography}
-\appendix
-\input{appendices/reproducibility}
 \end{document}

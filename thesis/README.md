@@ -1,8 +1,8 @@
 # Thesis workspace
 
 The complete thesis draft is ready for the author's final review:
-**80 pages of main text**, plus front matter, bibliography, and the
-reproducibility appendix. The compiled document is
+**68 pages of main text** in the UniPD modern template, plus front matter,
+bibliography, and the reproducibility appendix. The compiled document is
 [thesis.pdf](../out/thesis/thesis.pdf). All seven chapters, the English abstract,
 and the Italian summary are written. There are 30 cited references, eight
 figures, and an evidence map connecting results to retained experiment files.
@@ -30,19 +30,21 @@ sources and both historical/current source boundaries. Historical experiments
 are read, rather than rerun or overwritten.
 
 - `metadata.tex`: title, author, student ID, supervisors, and academic year.
-- `thesis.tex`: document order.
+- `thesis.tex`: template metadata and document order.
+- `unipd-thesis-modern.cls` and `template/`: the imported UniPD class and branding.
+- `docs/`: thin adapters from the template front matter to the thesis text.
 - `frontmatter/`: one file per front-matter item, including separate lists.
 - `chapters/`: seven complete chapter drafts.
 - `backmatter/` and `references.bib`: bibliography output and cited sources.
 - `appendices/`: reproducibility details outside the main-text page budget.
-- `preamble.tex` and `thesis.xmpdata`: layout and PDF metadata.
+- `preamble.tex` and `thesis.xmpdata`: project-specific packages and PDF metadata.
 - `figures/`: vector diagrams and plots rendered by TikZ/PGFPlots.
 - `generated/`: checked table rows, plot CSVs, and source fingerprints.
 - `validation.json`: final document identity, environment, and verification.
 
 Use the [writing guide](../docs/thesis_writing_guide.md) for formatting and the
-institution's submission guidance. The agreed main text is 60–100 pages, with
-a target of 80–100; the draft meets that target. The cited subset of the
+institution's submission guidance. The agreed main text is 60–100 pages; the
+modern-template draft remains within that range. The cited subset of the
 [verified reference shortlist](../docs/thesis_reference_review.tex) is in
 `references.bib`. The shortlist retains annotations explaining what each source
 supports and where access limited verification. Mosimann's paper is used for
@@ -71,14 +73,9 @@ summary, and submission declarations. The cover preserves academic year
 **2025/2026**, which still needs personal confirmation; an unconfirmed
 graduation date is omitted. Optional personal acknowledgements are omitted.
 
-The final PDF uses **Times New Roman**, 12 pt, with the required A4 layout and
-1.5 spacing. Original Core Fonts files are cached locally in the ignored
-`out/thesis/fonts/` directory; their SHA-256 values match the
-[Debian installer records](https://sources.debian.org/src/msttcorefonts/3.8.1/update-ms-fonts/).
-The original archive and [font licence](https://corefonts.sourceforge.net/eula.htm)
-are retained under `out/thesis/tools/corefonts/`, outside version control.
-A fresh checkout needs these font files or an installed Times New Roman;
-otherwise the build warns and uses TeX Gyre Termes.
+The final PDF uses the template's **TeX Gyre Pagella X**, 11 pt, A4 layout,
+page geometry, chapter styling, headers, and UniPD red link colour. It does not
+depend on locally cached proprietary fonts.
 
 The final document passes **veraPDF 1.30.3, PDF/A-2b** validation. The report is
 [pdfa_validation.xml](../out/thesis/pdfa_validation.xml). Recheck after any
@@ -89,22 +86,19 @@ out/thesis/tools/verapdf/verapdf --flavour 2b --format xml \
   out/thesis/thesis.pdf > out/thesis/pdfa_validation.xml
 ```
 
-The preamble omits LuaTeX's optional CIDSet entry to avoid an incorrect
-TrueType subset listing; PDF/A-2 validation confirms the resulting embedded
-fonts. Layout checks found no overfull boxes or unresolved references or
+PDF/A-2 validation confirms the embedded fonts. Layout checks found no
+overfull boxes or unresolved references or
 citations. The cover, abstracts, figures, and representative tables were
 visually inspected. The PDF is below the 40 MB submission limit.
 
 ## Template attribution
 
-Adapted from [Template tesi UniPD DEI](https://www.overleaf.com/latex/templates/template-tesi-unipd-dei/dqwqrnbyyssj)
-by **Cecco di Ronchitti da Bruzene**, licensed under
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-`upstream/main.tex` is the unmodified public source downloaded on 15 October
-2026. The complete Overleaf project ZIP requires an account; the public source
-is retained here instead. Changes include English text, separate files, the
-modular chapters, statistical figures/tables, font handling, and local Docker build.
-
-`assets/unipd-seal.png` was extracted unchanged from the
-[official English frontispiece](https://stem.elearning.unipd.it/pluginfile.php/562/mod_book/chapter/46/facsimile_frontespizio_tesi_cdl_%20nuovo%20ENG.docx).
-University branding remains the University's property.
+The document uses **unipd-thesis-modern v1.3.1** by Francesco Barone, released
+under a CC licence and published through
+[GitHub](https://github.com/baronefr/unipd-thesis-modern) and
+[Overleaf](https://www.overleaf.com/latex/templates/unipd-modern-thesis-template/qxcgfbvhfjtn).
+The class and its `template/` assets were copied unchanged on 2 November 2026
+from the author's `Fatemeh_Master_Thesis` Overleaf project. Thesis-specific
+wiring remains in `thesis.tex`, `preamble.tex`, and `docs/`; the scientific
+chapters, evidence, figures, tables, and references were not rewritten during
+the template migration. University branding remains the University's property.

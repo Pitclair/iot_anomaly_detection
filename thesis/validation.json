@@ -5,41 +5,32 @@
   ],
   "build_environment": {
     "biber": "2.22",
-    "engine": "This is LuaHBTeX, Version 1.24.0 (TeX Live 2026)  (format=lualatex 2026.9.27)  24 OCT 2026 15:13",
-    "font_archive_url": "https://downloads.sourceforge.net/corefonts/times32.exe",
-    "font_checksum_source": "https://sources.debian.org/src/msttcorefonts/3.8.1/update-ms-fonts/",
-    "font_licence": "https://corefonts.sourceforge.net/eula.htm",
-    "font_sha256": {
-      "Times.TTF": "4e98adeff8ccc8ef4e3ece8d4547e288ff85fdc9c7ca711a4599c234874bbe86",
-      "Timesbd.TTF": "4357b63cef20c01661a53c5dae70ffd20cb4765503aaed6d38b17a57c5a90bff",
-      "Timesbi.TTF": "192e1b0d18e90334e999a99f8c32808d6a2e74b3698b8cd90c943c2249a46549",
-      "Timesi.TTF": "c25ae529b4cecdbca148b6ccb862ee0abad770af8b1fd29c8dba619d1b8da78a"
-    },
+    "engine": "This is LuaHBTeX, Version 1.24.0 (TeX Live 2026)  (format=lualatex 2026.9.27)  2 NOV 2026 13:24",
     "latex_image_id": "sha256:16c556aeb4095b47245fcd05db47061529e5df8fc8c04d97fb0f049055244526",
     "latexmk": "4.88"
   },
-  "checked_at_utc": "2026-10-24T15:16:38.536271+00:00",
+  "checked_at_utc": "2026-11-02T13:31:26.534879+00:00",
   "document": {
-    "body_font_pt": 12,
-    "bytes": 818141,
+    "body_font_pt": 11,
+    "bytes": 621247,
     "cited_references": 30,
     "figures": 8,
-    "line_spacing": 1.5,
+    "line_spacing": 1.1,
     "main_text_numbered_pages": [
       1,
-      80
+      68
     ],
-    "main_text_pages": 80,
+    "main_text_pages": 68,
     "main_text_physical_pages": [
-      21,
-      100
+      17,
+      84
     ],
-    "pages": 110,
+    "pages": 96,
     "paper": "A4",
     "path": "out/thesis/thesis.pdf",
-    "sha256": "76b33280f76c24713229623f60b3b44a78bf989b3308f5193011b241549c989a",
+    "sha256": "a7a1fef1a05fade8f06314861d0e3e9e13452c7fc2c182a3f5f55451dce97028",
     "tables": 21,
-    "text_font": "Times New Roman"
+    "text_font": "TeX Gyre Pagella X"
   },
   "document_checks": {
     "build_passed": true,
@@ -70,12 +61,12 @@
     "details": {
       "failedChecks": "0",
       "failedRules": "0",
-      "passedChecks": "261957",
+      "passedChecks": "407773",
       "passedRules": "144"
     },
     "profile": "PDF/A-2b",
     "report": "out/thesis/pdfa_validation.xml",
-    "report_sha256": "79c953b4d9dc333d1ef42318385b311cf438744ad2ce29e2ca24835b4ae76337",
+    "report_sha256": "c87fece1b8275fecf50448fc3494097093160033c3722dcbb93979a0bd250035",
     "tool": "veraPDF 1.30.3"
   },
   "project_tests": {
@@ -91,9 +82,9 @@
   "source_commit": "16b33d6eaeeeeb569853b2b7582d93160d968b31",
   "status": "complete_draft_for_author_review",
   "thesis_source_sha256": {
-    "thesis/README.md": "6509abb64ea9d007fa999c88399ad439f91896938c30dd8d894074699a9ee66a",
+    "thesis/README.md": "276d04bb435a8246e137cecddaf52f1ebc95c069b8555512b3a10e9b49cc4ec0",
     "thesis/appendices/reproducibility.tex": "208cccb771ae4c6fb0ae33635a0a9808734ba880e19a4842141bc89c0fe359c9",
-    "thesis/backmatter/bibliography.tex": "82b0f524bdb2f78d639ef777089654b85eaddfd5fa07c2f7af64de5487d62d7f",
+    "thesis/backmatter/bibliography.tex": "482f01a2d04a1e049098f4c400aa0077cd345d702203f6df66e1966edbc1f78c",
     "thesis/build.sh": "41e1b044c551056bbe425b76ec4b85515b1659d028f662283ce5bb84535bb4d2",
     "thesis/chapters/01_introduction.tex": "bc5293a8c860678fa721ad553cddfe31e34ecdd38480418aabca1028bb84363b",
     "thesis/chapters/02_background_and_related_work.tex": "ed4f95e110f8a674ba7f1121d278e00b42a84f9b8932929005b23d090d9ef3ac",
@@ -102,6 +93,9 @@
     "thesis/chapters/05_results.tex": "5f078548d9a160b5a1b81b87749bed88d81b6b09234f15d4f387e2a969024d2c",
     "thesis/chapters/06_discussion_and_limitations.tex": "1ef512f0ac30e59482180348313e1ef5638764b6a944f7b9a2afc182c92d6851",
     "thesis/chapters/07_conclusions_and_future_work.tex": "f7c3439fe1fb469ec01ad8e0297b306f5f376a3191b92223868e99ae165cbd5c",
+    "thesis/docs/abstract.tex": "4c8962cc12320385cb1fd1ac8a005c11f3c926828d221e0cc5b1438af9955ab9",
+    "thesis/docs/glossary.tex": "139aaee030ce789c6944b4f269abe743b90f1d621a6242760d7237215ec92ff9",
+    "thesis/docs/sommario.tex": "d378e83d2427d5c32d7713b328f26797218602b2a02d910f9b0b854e12c129dc",
     "thesis/figures/backend.tex": "b5062946124d3da862bcde55d54778d7070425933172ac2cd93111a742a293cd",
     "thesis/figures/duration.tex": "dc4ff0f3f5cd63e14d363519a8a36551f5c2561f794171ddc44d5e50c9c50724",
     "thesis/figures/legacy.tex": "579adca4875b938441caef0e85e371b4ccae181a9c349463b75742b70281e936",
@@ -109,11 +103,9 @@
     "thesis/figures/pipeline.tex": "e1e14fbc02cfa45a78f52f6fc9da55519f46ec5aa602d5e932ea0df15a742afe",
     "thesis/figures/profiles.tex": "ea6e00d34bec08a62310c006bf066fbe7a4496396b1121717417923f3f7c4df6",
     "thesis/figures/state_lifecycle.tex": "f65fc6d3ad82bfef078de4be82d8ffead20ab7ecca4a292dc58cdcf2b84596c4",
-    "thesis/frontmatter/abstract.tex": "e876f418aea74c7660d4b3894465e847f51234348d2bf039bb98dcd66f8019ac",
-    "thesis/frontmatter/abstract_italian.tex": "c5b2c86401614a2021b71def93e5ebac016bbf7c3c651604f29cbce9ec547f89",
+    "thesis/frontmatter/abstract.tex": "2d4adf4a9242d2c86e920c845c03b16dceacdd9c65204e6e10804ae2b39367de",
+    "thesis/frontmatter/abstract_italian.tex": "d3d7458fff8b39d61029b8975a072ddfd972e0abb6b80ac839743e675f41b8df",
     "thesis/frontmatter/acronyms.tex": "136c74db60ebd3ff218098d60c40ae326c39fe6408712d7768e8aef64326aaa3",
-    "thesis/frontmatter/contents.tex": "ef52959a1798bf3b8a8fab9ac65ba451e12f8ad5e9052186697be539b0a15bd0",
-    "thesis/frontmatter/frontispiece.tex": "4d08b54be95ab5abf1db9b6baa4cfa8f825ffc73f719187a5b6bfc315f53000e",
     "thesis/frontmatter/list_of_figures.tex": "7cc09e0989dde1c52a142439ceb3807c4e5a369e3d3f56c9ff63112e654b37ac",
     "thesis/frontmatter/list_of_tables.tex": "4eee59dfe390f35ef7f72f8216d0415b0bf0916ff42539316c9535948fd13ed7",
     "thesis/generate_evidence.py": "2336cba70e8c1cc08c1430c1c28aeea94d4903aeba19516a1629b40a0f0db5f8",
@@ -148,39 +140,38 @@
     "thesis/generated/quantile_ranks.tex": "3b786f9cbb2397027406869751d222d0a6f9ef037f35f026d4bbe9702f96a42a",
     "thesis/generated/scoring_comparison.tex": "2b7fceae8ccac673f528a7497c476e53685f3088ea6a94ba2e7839e10ae113de",
     "thesis/metadata.tex": "76ac1a3396f3bd8bbfac871a852ab8e94c3e5475477202294db702978ab893a2",
-    "thesis/preamble.tex": "7fa622d868c11e3e84a01ff5ff7582fbbaf704a7ee821a8e2d50bd61ba4fd607",
+    "thesis/preamble.tex": "0b0ed67b2d9a9fa4214f9db94c22584dff86fed4d2902c6ad6ef81fbc5a427b3",
     "thesis/references.bib": "05174339e7a648453d6b55d7e69ae99907eb72a63a4d2467f95356c5ce2ad869",
-    "thesis/thesis.tex": "63bb8a67a2f5fc6785a8253b9a38eafe46d221184a5921fc4c814e96b049ffe1",
-    "thesis/thesis.xmpdata": "d9f7f56434b9fd700116351bc2afa2d4b7d9794f1e0bdc9af07920e7f5a3227e"
+    "thesis/template/english.tex": "aab28939aa8c3163f42db56c10aac71bd566fb834998e35547c8ce8d5f6a28ab",
+    "thesis/template/extras.tex": "838855f4de523bd65ded1dc6dea9885476c1a3931dd31aa64d7141ea0ac3e97b",
+    "thesis/template/italian.tex": "d4898121deaa6e7aec18dd19ee32083209ed5a691546c56a7438b0ee4039b8f4",
+    "thesis/template/unipdbg.old.pdf": "2e6609b60aa044f9d1f9dd6e7900b83cff82ede3822fabd7ded737d46d3919b6",
+    "thesis/template/unipdbg.pdf": "77b014f0800d9ad34a09127d92da1b85c25ca717a6588d60a6fa3a83c6cf6777",
+    "thesis/template/universis.old.pdf": "1ffe806cfe940fdf177a17d4473f260839bd5483cb9ae53f5b3807e65937ac8f",
+    "thesis/template/universis.pdf": "6d8bb487068fbcfecd52a074ca7e33925a08cc33525aa7d270146c20c9088552",
+    "thesis/thesis.tex": "aeade1c8df76c6b677b99bbde95d070d870fff7cea1be26ff01f8f5d494d553b",
+    "thesis/thesis.xmpdata": "e80f356284c9fd85472c6b56e51724daa36c93e6afc32097ecbf48c6ecfc6551",
+    "thesis/unipd-thesis-modern.cls": "f3cfa3eeaddb858171dcfe20d6250ce6651da790b60f739cb0c3192f06c2e64d"
   },
   "visual_review": {
     "all_eight_figures_checked": true,
     "physical_pages": [
       1,
-      3,
-      5,
-      37,
-      40,
-      50,
-      52,
-      56,
-      63,
-      68,
-      69,
-      70,
-      71,
-      73,
-      75,
-      77,
-      78,
-      79,
-      81,
-      82,
-      84,
-      85,
-      104,
-      106
+      7,
+      9,
+      17,
+      34,
+      42,
+      43,
+      57,
+      58,
+      60,
+      64,
+      66,
+      72,
+      89,
+      93
     ],
-    "scope": "Cover, English/Italian abstracts, all figures, bibliography, evidence map, and representative numerical tables; not a pixel-by-pixel review of every prose page."
+    "scope": "New cover, English/Italian abstracts, all eight figures, bibliography, evidence map, and representative chapter/table pages; not a pixel-by-pixel review of every prose page."
   }
 }

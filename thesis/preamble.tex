@@ -1,44 +1,22 @@
-% Adapted from the community template; attribution is in README.md.
-\usepackage[
-  top=2cm,bottom=2cm,outer=2cm,inner=3cm,includeheadfoot
-]{geometry}
-\usepackage[italian,main=english]{babel}
-\usepackage{fontspec}
-\IfFileExists{../out/thesis/fonts/Times.TTF}{
-  \setmainfont[Path=../out/thesis/fonts/,BoldFont=Timesbd.TTF,
-    ItalicFont=Timesi.TTF,BoldItalicFont=Timesbi.TTF]{Times.TTF}
-}{\IfFontExistsTF{Times New Roman}{
-  \setmainfont{Times New Roman}
-}{
-  \setmainfont{TeX Gyre Termes}
-  \PackageWarningNoLine{thesis}{Times New Roman unavailable; using TeX Gyre Termes for drafts}
-}}
-\usepackage{setspace}
-\onehalfspacing
+% Project-specific additions to unipd-thesis-modern; attribution is in README.md.
+\babelprovide[import]{italian}
 \usepackage{microtype}
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\graphicspath{{assets/}}
+\setlength{\emergencystretch}{2em}
+\usepackage{amssymb}
 \usepackage{array,booktabs}
 % Bypass file hooks between a generated table's last row and its bottom rule.
 \makeatletter
 \newcommand{\TableRows}[1]{\@@input#1.tex }
 \makeatother
-\usepackage{tabularx,longtable}
-\usepackage{tikz,pgfplots}
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usepackage{longtable}
+\usepackage{pgfplots}
+\usetikzlibrary{positioning}
 \usepgfplotslibrary{groupplots}
 \pgfplotsset{compat=1.18}
 \definecolor{ChromecastBlue}{HTML}{0072B2}
 \definecolor{SamsungOrange}{HTML}{D55E00}
 \definecolor{DLinkGreen}{HTML}{009E73}
-\usepackage{csquotes}
-\usepackage[backend=biber,style=ieee]{biblatex}
 \addbibresource{references.bib}
-\usepackage[a-2b,pdf17]{pdfx}
-% PDF/A-2 permits omitting CIDSet; LuaTeX's TrueType subsets can list it incorrectly.
-\pdfvariable omitcidset=1
 \usepackage{xurl}
-\hypersetup{hidelinks}
 \setcounter{tocdepth}{2}
 \setcounter{secnumdepth}{2}
