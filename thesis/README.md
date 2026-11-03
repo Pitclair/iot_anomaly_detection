@@ -2,7 +2,7 @@
 
 The complete thesis draft is ready for the author's final review:
 **68 pages of main text** in the UniPD modern template, plus front matter,
-bibliography, and the reproducibility appendix. The compiled document is
+bibliography, and the reproducibility appendix, for 98 pages total. The compiled document is
 [thesis.pdf](../out/thesis/thesis.pdf). All seven chapters, the English abstract,
 and the Italian summary are written. There are 30 cited references, eight
 figures, and an evidence map connecting results to retained experiment files.
@@ -33,6 +33,9 @@ are read, rather than rerun or overwritten.
 - `thesis.tex`: template metadata and document order.
 - `unipd-thesis-modern.cls` and `template/`: the imported UniPD class and branding.
 - `docs/`: thin adapters from the template front matter to the thesis text.
+- `upstream-template/`: the complete, unchanged 27-file Overleaf template project.
+- `TEMPLATE_README.md`, `main.tex`, demo chapters, `img/`, and optional document
+  files: convenient root-level copies of the original template material.
 - `frontmatter/`: one file per front-matter item, including separate lists.
 - `chapters/`: seven complete chapter drafts.
 - `backmatter/` and `references.bib`: bibliography output and cited sources.
@@ -101,4 +104,7 @@ The class and its `template/` assets were copied unchanged on 2 November 2026
 from the author's `Fatemeh_Master_Thesis` Overleaf project. Thesis-specific
 wiring remains in `thesis.tex`, `preamble.tex`, and `docs/`; the scientific
 chapters, evidence, figures, tables, and references were not rewritten during
-the template migration. University branding remains the University's property.
+the template migration. The original dedication is active, and every unused
+template file is retained unchanged under `upstream-template/` even where an
+active thesis file occupies the original path. University branding remains the
+University's property.
