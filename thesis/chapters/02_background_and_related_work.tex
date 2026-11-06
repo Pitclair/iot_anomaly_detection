@@ -38,14 +38,13 @@ sanitisation \cite{cretu2008}. LM-IDNet instead assumes a trusted initial
 reference and applies admission restrictions when considering later
 learning data; the mechanisms should not be conflated.
 
-A deviation also needs an operational interpretation. An unusual score
-does not identify its cause or establish malicious intent. Unfamiliar
+A deviation also needs an operational interpretation. Unfamiliar
 benign behaviour can generate false positives, and a malicious action may
 preserve the features monitored by the detector. These limitations are
 particularly relevant to the operational gap described by Sommer and
 Paxson \cite{sommer2010}. In this thesis an alert reports statistical
-evidence for investigation. It does not constitute an attack-family label
-or an automatic decision to block traffic.
+evidence for investigation; attack attribution and response require
+additional evidence.
 
 The evaluation must preserve that distinction. Precision measures how many
 positive decisions correspond to labelled attacks, whereas recall measures
@@ -80,13 +79,12 @@ rather than every frame present in the source capture.
 
 The four-category representation and ten-minute precedent come from the
 IoT modelling study of Al-Haj Baddar et al. \cite{alhajbaddar2025iot}.
-They constitute an application-specific representation, not a general
-property of the DM distribution. Other IoT studies use richer traffic
+They constitute an application-specific representation. Other IoT studies use richer traffic
 attributes: Sivanathan et al. investigate device characteristics, while
 Doshi et al. select features using the communication properties of consumer
 IoT devices \cite{sivanathan2019,doshi2018}. Their work motivates examining
-device behaviour, but does not establish that these four counts retain all
-security-relevant information.
+device behaviour. This thesis evaluates the information retained by the
+selected four-count representation.
 
 Aggregation reduces the amount of data presented to the model and gives
 each feature a direct interpretation. It also removes packet order,
@@ -122,16 +120,15 @@ not allow the underlying category probabilities themselves to change
 between windows. Ordinary device activity can introduce more variation
 than this conditional model permits. In that case, overdispersion means
 variation beyond the multinomial expectation at a comparable total and
-mean profile. It does not generally mean that a category's variance must
-exceed its mean. The latter criterion belongs to an equidispersed Poisson
-reference and cannot be transferred without qualification to categorical
-counts.
+mean profile. The relevant reference is the multinomial conditional
+variance; the variance-to-mean criterion instead belongs to an equidispersed
+Poisson model.
 
 The conditioning on $N$ also matters when examining data. Raw counts from
 windows with very different totals can have different variances even if
-their category probabilities are unchanged. Descriptive variability alone
-does not determine whether extra-multinomial variation is present. The
-statistical comparison must retain the role of the observed totals.
+their category probabilities are unchanged. Assessing extra-multinomial
+variation therefore requires a statistical comparison that retains the
+observed totals.
 
 \section{The Dirichlet--multinomial model}
 \label{sec:background-dm}
@@ -177,8 +174,8 @@ Integrating out $\boldsymbol{\theta}$ gives the probability mass function
 The count support is defined by $\sum_k x_k=N$. The multinomial
 coefficient in Eq.~\eqref{eq:dm-pmf} counts the orderings represented by a
 count vector. It is needed when assigning probability to that vector,
-even though it does not affect maximisation over
-$\boldsymbol{\alpha}$ for fixed observed data.
+while remaining constant with respect to $\boldsymbol{\alpha}$ during
+maximisation on fixed observed data.
 
 \subsection{Mean profile, concentration, and conditional variation}
 
@@ -204,8 +201,8 @@ Eq.~\eqref{eq:dm-variance}.
 For fixed $\boldsymbol{p}$ and $N>1$, a smaller concentration permits
 greater variation than the multinomial reference. For illustration,
 $N=100$, $p_k=0.5$, and $\alpha_0=9$ give conditional variance $272.5$,
-compared with $25$ for the multinomial. This is an algebraic example,
-not a measurement from the traffic datasets. As $\alpha_0$ tends to
+compared with $25$ for the multinomial. This algebraic example illustrates
+the parameter effect. As $\alpha_0$ tends to
 infinity at fixed $\boldsymbol{p}$, the inflation factor tends to one and
 the DM approaches the multinomial model.
 
@@ -213,8 +210,7 @@ LM-IDNet reports the inverse concentration $\psi=1/\alpha_0$ as a
 dispersion indicator. An alternative parameter is
 $\rho=1/(1+\alpha_0)=\psi/(1+\psi)$, for which the inflation factor is
 $1+(N-1)\rho$. Specifying the parameterisation is essential when comparing
-reported dispersion values. Neither $\psi$ nor $\rho$ is an anomaly
-threshold or a probability of malicious activity.
+reported dispersion values. Both $\psi$ and $\rho$ describe dispersion.
 
 The categories are dependent because they share a total. For $j\ne k$,
 \[
@@ -227,28 +223,23 @@ model of positive correlation between their raw traffic volumes.
 
 \subsection{What the model leaves unspecified}
 
-The hierarchy models category composition conditional on the total. It
-does not provide a separate probability distribution for $N$. The
+The hierarchy models category composition conditional on the total. The
 conditional mass still changes with $N$, because a different total changes
-the count support; it is therefore misleading to call the raw score
-volume-invariant. Nevertheless, an explicit upper-tail count check can
-provide evidence about large totals that is distinct from the conditional
-composition model. This distinction motivates the complementary volume
-and ARP signals in the implemented detector.
+the count support. An explicit upper-tail count check therefore supplies
+separate evidence about large totals. This distinction motivates the
+complementary volume and ARP signals in the implemented detector.
 
 When $N=0$, the only possible count vector is the zero vector, and
-Eq.~\eqref{eq:dm-pmf} assigns it probability one. The conditional model
-alone consequently does not assess whether an observed silent period is
-unexpected. Missing recording coverage is a separate data-quality state:
-it must not be represented as an observed zero vector. A detector's input
-contract has to make that distinction before statistical scoring.
+Eq.~\eqref{eq:dm-pmf} assigns it probability one. Availability monitoring
+therefore requires a separate signal. Missing recording coverage remains a
+separate data-quality state from an observed zero vector, and the input
+contract distinguishes them before scoring.
 
-Finally, the fitted DM is a distribution over windows, not a temporal
-transition model. Using a product of window probabilities as the fitting
-objective assumes independent rows under the model. Adjacent traffic
-windows can remain dependent in practice. Allowing variation in the
-category probabilities does not itself represent seasonality, transitions,
-or the order of events.
+Finally, the fitted DM is a distribution over windows. Using a product of
+window probabilities as the fitting objective assumes independent rows
+under the model. Adjacent traffic
+windows can remain dependent in practice; seasonality, transitions, and
+event order require a temporal extension.
 
 \section{Parameter estimation and likelihood computation}
 \label{sec:background-estimation}
@@ -349,7 +340,7 @@ backend.
 In LM-IDNet, SciPy supplies the digamma evaluations for this update
 \cite{virtanen2020}. The selected likelihood backend evaluates the
 objective used to monitor convergence and later contributes to scoring.
-Changing that backend does not replace Eq.~\eqref{eq:minka-update}. This
+Equation~\eqref{eq:minka-update} remains the estimator across backends. This
 separation permits numerical implementations to be compared without
 presenting them as different statistical estimators.
 
@@ -368,11 +359,9 @@ Empirical quantiles allow a cutoff to be chosen without assuming Gaussian
 scores, but their interpolation convention must be specified. Hyndman and
 Fan compare the different sample-quantile definitions used in statistical
 software \cite{hyndman1996}. The chosen quantile remains an empirical
-operating point. It is not a guarantee of a corresponding future
-false-positive rate under changing traffic or dependent observations.
-Likewise, a log-probability under a normal model is not a posterior
-probability that an attack occurred: the model does not specify a
-distribution for attacks or their prior prevalence.
+operating point whose future false-positive rate depends on traffic
+stability and dependence. Computing an attack posterior would additionally
+require a distribution for attacks and their prior prevalence.
 
 \section{Yu--Shaw and Languasco--Migliardi methods}
 \label{sec:background-numerics}
@@ -380,7 +369,7 @@ distribution for attacks or their prior prevalence.
 \subsection{The numerical difficulty}
 
 Logarithms avoid forming extremely small probability products directly,
-but they do not remove every floating-point difficulty. In
+while subtraction can still introduce floating-point error. In
 Eq.~\eqref{eq:dm-log-score}, terms such as
 $\log\Gamma(\alpha_k+x_k)-\log\Gamma(\alpha_k)$ are differences of
 function values. Subtracting already rounded quantities can expose large
@@ -412,10 +401,8 @@ The kernel can be written using Eq.~\eqref{eq:gamma-difference} as
       -\Delta(\alpha_0,N).
 \]
 Accurate evaluation of these increments is useful near the multinomial
-limit, where the concentration can be large. It does not eliminate every
-possible cancellation in the complete score, which also contains the
-count-dependent coefficient. Numerical checks must examine the actual
-quantity used by the detector.
+limit, where the concentration can be large. Numerical checks therefore
+cover the complete score, including its count-dependent coefficient.
 
 \subsection{The Yu--Shaw approach and the LM method}
 
@@ -432,7 +419,8 @@ nearby log-Gamma differences with explicit error analysis
 \cite{languasco2023}. Their construction uses analytic reformulation,
 including Euler--Maclaurin expansion and argument shifts, to evaluate the
 required differences. In this thesis, \emph{LM} names that numerical
-method. It is not the name of a new DM estimator or an anomaly classifier.
+method; Minka's iteration remains the estimator, and LM-IDNet supplies the
+anomaly decision.
 Zero counts correspond to the exact zero increment in
 Eq.~\eqref{eq:gamma-difference}, an important case for sparse protocol
 windows.
@@ -440,9 +428,8 @@ windows.
 Al-Haj Baddar et al. evaluate LM and Yu--Shaw within fixed-point DM
 parameter estimation on count datasets from several domains
 \cite{alhajbaddar2025analysis}. Their study supplies empirical evidence
-about the numerical procedures under its chosen workloads. It does not
-establish that LM is always faster than a particular SciPy implementation,
-or that switching numerical backends improves attack recall.
+about the numerical procedures under its chosen workloads. This thesis
+measures SciPy timing and detector decisions under its own workloads.
 
 The distinction determines the comparison in this thesis. The statistical
 objective and count-score convention are kept fixed; numerical agreement,
@@ -462,10 +449,8 @@ Sivanathan et al. use traffic characteristics to classify IoT devices
 models and examines changes in device behaviour, including changes
 associated with legitimate updates \cite{sivanathan2020}. Together, these
 works support device-specific modelling while showing why a deviation
-cannot be assigned a security meaning solely because it differs from an
-earlier profile. LM-IDNet uses a smaller observation vector and a
-parametric count distribution; it does not reproduce their device
-classification architecture.
+requires security interpretation. LM-IDNet instead uses a smaller
+observation vector and a parametric count distribution.
 
 Hamza et al. combine Manufacturer Usage Description (MUD) profiles with
 software-defined networking (SDN) telemetry to monitor volumetric attacks
@@ -473,14 +458,14 @@ software-defined networking (SDN) telemetry to monitor volumetric attacks
 permitted communication and includes attack traces released with the
 study. This is relevant both to monitoring traffic volume and to the
 provenance of the UNSW data used here. LM-IDNet consumes selected packet
-counts and does not enforce MUD rules or implement their SDN architecture.
+counts within a separate statistical architecture.
 
 Doshi et al. investigate machine-learning detection of consumer-IoT DDoS
 traffic using features informed by IoT communication behaviour
 \cite{doshi2018}. Their study provides another precedent for selecting
 features with an intended network-middlebox setting in mind. It uses
-different features and classifier experiments; the present work's
-normal-only learning rule cannot be inferred from its results.
+different features and classifier experiments; the present work evaluates
+its normal-only learning rule separately.
 
 \subsection{Neural normal-profile detectors}
 
@@ -488,30 +473,26 @@ N-BaIoT uses deep autoencoders to identify departures from benign device
 traffic and evaluates attacks involving Mirai and BASHLITE
 \cite{meidan2018}. Its traffic statistics and learned representation differ
 from LM-IDNet's four counts. It is a relevant comparison of modelling
-choices, but its dataset and reported performance cannot be treated as a
-benchmark result for the UNSW windows used in this thesis.
+choices; direct benchmark results here use the shared local data.
 
 Kitsune combines incremental traffic-feature extraction with an ensemble
 of small autoencoders, called KitNET, for online network intrusion
 detection \cite{mirsky2018}. Its evaluation includes a Raspberry Pi
 setting. This demonstrates that online and resource-conscious neural
-detection already has an established precedent. Those measurements belong
-to Kitsune; they do not validate the hardware performance of the present
-implementation.
+detection already has an established precedent. LM-IDNet resource results
+come from its own constrained simulation.
 
 D\"IoT builds device-type communication profiles and aggregates learning
 across gateways through a federated approach \cite{nguyen2019}. It models
 communication sequences, whereas the DM detector treats completed count
-windows as its statistical observations. LM-IDNet implements neither
-federated learning nor this sequence model. The comparison concerns what
+windows as its statistical observations. The comparison concerns what
 is represented, how normal behaviour is learned, and where computation is
 placed.
 
 Table~\ref{tab:related-systems} collects these architectural distinctions.
-It does not rank detection accuracy: the studies use different traffic,
-attacks, observation units, and evaluation protocols. The related systems
-are literature comparisons, not reimplemented experimental baselines in
-this work.
+Detection accuracy remains within each study's traffic, attacks, observation
+units, and evaluation protocol. The experimental baselines in this thesis
+are the locally implemented variants described in Chapter~\ref{ch:experiments}.
 
 \begin{table}[tbp]
 \centering
@@ -537,7 +518,7 @@ Incremental features and an autoencoder ensemble. &
 Online gateway-oriented detection with its own resource measurements. \\
 D\"IoT \cite{nguyen2019} &
 Communication sequences and federated device-type models. &
-Distributed profile learning; sequence and federation mechanisms are absent here. \\
+Distributed profile learning compared with local count-window modelling. \\
 LM-IDNet (this work) &
 Four count categories, a DM model, and complementary count margins. &
 Normal-reference calibration, LM numerical integration, and guarded updates
@@ -554,20 +535,19 @@ prevent interpreting the table as a detection-performance ranking.}
 
 Gama et al. discuss concept drift primarily in an online supervised
 setting, where the relationship between observations and a target changes
-\cite{gama2014}. The present detector does not observe attack labels during
-runtime learning. Changes in its unlabelled inputs are therefore described
+\cite{gama2014}. The present detector learns from unlabelled runtime
+observations. Changes in those inputs are therefore described
 as behavioural or distributional change unless the stronger concept-drift
-interpretation is justified. A mechanism that updates parameters is not,
-by that fact alone, evidence of improved adaptation to legitimate change.
+interpretation is justified. Adaptation quality is measured through its
+effect on later outcomes.
 
 Kloft and Laskov analyse how admitted observations can poison an online
 centroid anomaly detector and how constraints affect the attacker's
 influence \cite{kloft2012}. Their formal results apply to the analysed
 centroid model. They motivate examining admission and reference constraints
-in LM-IDNet, but do not provide a security bound for its DM refits.
-Similarly, Cretu et al.'s sanitisation work motivates concern about
-contamination without proving that a confidence gate produces clean
-learning data \cite{cretu2008}.
+in LM-IDNet. Cretu et al.'s sanitisation work similarly motivates explicit
+measurement of contamination risk \cite{cretu2008}. Security bounds would
+require analysis of the specific DM update rule.
 
 There is an inherent tension in retaining an original normal reference.
 It can preserve evidence against activity that a moving model might
@@ -575,8 +555,7 @@ otherwise accept. It can also preserve an alert caused by a legitimate
 change. The adaptive evaluation must therefore ask which observations were
 admitted, what changed, and whether the change improved a relevant outcome.
 If no candidate is promoted, the experiment documents the behaviour of the
-guards and the continued use of the starting model. It does not demonstrate
-successful learning of a new normal regime.
+guards and the continued use of the starting model.
 
 \subsection{The question addressed by LM-IDNet}
 
@@ -586,8 +565,7 @@ foundation and examines the additional decisions needed for a detector:
 separate benign calibration, a later labelled evaluation stream,
 complementary count checks, candidate admission and activation, and
 traceable event and state records. These are the particular integration
-and evaluation questions addressed here. No claim that normal-profile IoT
-detection itself is new follows from that choice.
+and evaluation questions addressed here.
 
 The experimental design is also part of the question. TESSERACT shows how
 temporal and distributional bias can distort a security-classification

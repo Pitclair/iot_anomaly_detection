@@ -15,9 +15,7 @@ The foundations are established methods. The DM distribution,
 Minka fixed-point estimator, and Languasco--Migliardi numerical
 method are attributed to their sources. The contribution is their
 working integration and the evidence collected about its behaviour,
-including negative results. It does not require claiming a new
-distribution, an original estimator, or the first use of learned
-normal IoT profiles.
+including negative results.
 
 The detection evaluation demonstrates both promise and limits.
 In the fixed closing replay, 1,008 unique labelled windows yield
@@ -26,16 +24,15 @@ and 987 true negatives. Pooled precision is 82.35\%, recall 77.78\%,
 and F1 80.00\%. Device results differ substantially: Chromecast
 F1 is 61.54\% and Samsung F1 90.91\%. Eight of nine fully observed
 attack intervals are detected, with seven receiving an alert by
-attack end. These are descriptive results on an inspected temporal
-partition, not an untouched external performance estimate.
+attack end. These descriptive results come from an inspected temporal
+partition; external performance requires new traffic.
 
 The duration study confirms that observation granularity belongs
 in the interpretation of a detector. Coarser windows can improve
 their own F1 while increasing delay and reducing the number of
-alerts available before attack end. A high coarse-window score
-therefore cannot establish prompt response. The retained ten-minute
-reference is evaluated and operationally explicit, without being
-claimed as a universally optimal duration.
+alerts available before attack end. Alert availability therefore remains
+beside the coarse-window score. The retained ten-minute reference is the
+evaluated operating point for this project.
 
 The numerical investigation preserves the distinction between
 estimation and likelihood evaluation. LM and SciPy produce no
@@ -60,11 +57,11 @@ benign or adversarial drift.
 The operational evaluation shows that the supplied-window process
 fits inside a one-CPU, 512~MiB Docker allocation on the measured host.
 The long synthetic replay scores 16,000 of 20,000 input records,
-with mean processing near 30~ms and process high-water RSS near
+with mean processing near 30~ms and peak resident memory near
 69~MiB. Refit rejection contributes the largest processing delays,
 up to about 5.08~s. These results support local feasibility for the
-tested interface; they do not include a physical gateway or live
-packet capture.
+supplied-window interface; physical gateway and live-capture measurements
+remain future work.
 
 Reproducibility is part of this outcome. Configurations, prepared
 inputs, model identities, saved events, candidate histories, and
@@ -77,30 +74,21 @@ implemented contracts without substituting for detection evidence.
 
 \section{Principal limitations}
 
-The main empirical limitation is the absence of a newly untouched
-evaluation after all design choices were completed. Later labels
-were inspected in earlier audits, and a fixed closing replay cannot
-undo that exposure. There are only two labelled device views and
-18 positive closing windows. The D-Link workload provides useful
-numerical evidence but has no attack labels, and repeated fit-window
-bounds limit its chronological interpretation.
+The main empirical limitation is prior exposure to the later labels during
+earlier audits. The evaluation contains two labelled device views and
+18 positive closing windows. D-Link is reserved for algorithm benchmarking,
+where repeated fit-window bounds limit chronological interpretation.
 
-The representation cannot distinguish packet sequences that share
-the same four counts. Low-rate attacks, TCP flag changes without
-count changes, and other semantic differences may remain invisible.
-Normal-only learning also assumes an adequate benign reference;
-neither the initial fit nor the runtime buffer proves that assumption.
-Accepted adaptation is not independently validated on its own
-learning data, and stepwise movement limits do not guarantee
-long-term detection quality.
+Packet sequences that share the same four counts receive the same input
+representation. Low-rate attacks, TCP flag changes without count changes,
+and other semantic differences may remain invisible. Normal-only learning
+assumes an adequate benign reference. Independent candidate validation and
+cumulative movement controls remain open adaptation requirements.
 
 Operational evidence is limited to a finite synthetic supplied-window
-simulation and software tests. Memory stability over that run is
-not an indefinite guarantee. Collector correctness, physical storage
-faults, embedded hardware performance, energy use, remote event
-delivery, and automatic response are not evaluated. These limits
-define what remains to establish before describing the prototype
-as a complete deployed intrusion-detection service.
+simulation and software tests. Longer operation, collector correctness,
+physical storage faults, embedded hardware performance, energy use, remote
+event delivery, and automatic response require deployment trials.
 
 \section{Future work}
 \label{sec:future-work}
@@ -157,7 +145,7 @@ aggregate to close. They would also change sparsity, temporal
 dependence, sample counts, and false-alert exposure. A comparison
 must therefore retrain and recalibrate, keep common support,
 and use actual alert-availability times. Merely projecting an
-hourly decision backward cannot demonstrate earlier detection.
+hourly decision backward preserves its original availability time.
 
 \subsection{Live and physical deployment}
 

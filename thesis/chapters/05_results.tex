@@ -16,13 +16,13 @@ earlier narrative summaries.
 \subsection{Different devices require different reference mixtures}
 
 Table~\ref{tab:profiles} reports the fitted mean proportions and total
-concentration. The D-Link model distributes substantial mass across all
-four categories. Chromecast is dominated by ordinary UDP, with an
+concentration for the two detection-evaluation devices. Chromecast is
+dominated by ordinary UDP, with an
 expected share of about 92.6\%; its SSDP parameter is positive but very
 small. Samsung assigns most expected mass to SSDP and TCP, with little
 ordinary UDP. Figure~\ref{fig:profiles} displays these contrasts on the
-same scale. The profiles are properties of the selected normal captures,
-not universal descriptions of the commercial device models.
+same scale. The profiles describe the selected normal captures for each
+evaluated device.
 
 \begin{table}[tbp]
 \centering\small
@@ -42,27 +42,23 @@ UDP excludes SSDP. Shares are rounded independently.}
 \input{figures/profiles}
 
 These differences matter when interpreting a count anomaly. An SSDP-heavy
-window is not inherently anomalous: it is far less surprising under the
-Samsung reference than under the Chromecast reference. Likewise, an ARP
-count must be compared with the selected device's benign scale. A shared
-feature vocabulary therefore does not imply a shared fitted distribution
-or a globally meaningful raw likelihood cutoff.
+window is far less surprising under the Samsung reference than under the
+Chromecast reference. Likewise, an ARP count must be compared with the
+selected device's benign scale. Each device therefore has its own fitted
+distribution and likelihood cutoff.
 
-The fitted concentration also differs substantially. D-Link has
-$\alpha_0\simeq122.2$, Chromecast $28.1$, and Samsung $17.4$. For a fixed
-total count, the lower-concentration models permit more variation in
-composition around their means. This is the model's overdispersion
-parameter, rather than a measure of attack prevalence or confidence in
-the training labels. The larger D-Link concentration cannot establish
-that D-Link traffic is more secure.
+The fitted concentration also differs: Chromecast has
+$\alpha_0\simeq28.1$ and Samsung $17.4$. For a fixed total count, the
+lower-concentration Samsung model permits more variation in composition
+around its mean. Concentration controls this overdispersion.
 
 Table~\ref{tab:fit-parameters} records the individual parameters, iteration
 counts, and stored DM calibration quantities. Chromecast's small positive
 SSDP parameter illustrates why zero category counts and positive parameter
 validation need careful numerical treatment. The three fits converge in
-different numbers of iterations even though the same tolerance and
-maximum-iteration setting are used. A compact four-category model is not
-necessarily a one-step fit.
+validation need careful numerical treatment. The two fits converge in
+different numbers of iterations under the same tolerance and
+maximum-iteration setting.
 
 \begin{table}[tbp]
 \centering\footnotesize
@@ -101,25 +97,15 @@ Device & TP & FP & FN & TN & Precision & Recall & F1 \\
 \end{tabular}
 \caption{Reference static development results. The retained current joint
 rule and the historical static DM rule give the same binary counts on these
-observations. This equality does not extend to every adaptive comparison.}
+observations; adaptive comparisons are reported separately.}
 \label{tab:development}
 \end{table}
 
 The higher precision than recall means that a large part of the remaining
-error consists of attacks that do not cross the chosen normal-data
-cutoffs. This is especially clear for Chromecast, whose development
-recall is 46.88\%. Neither normal-only fitting nor the one-percent
-calibration quantile optimises recall against these attack labels.
-A benign tail setting must not be interpreted as a guarantee of
-detecting 99\% of attacks.
-
-The D-Link development workload produces three alerts in 270 windows,
-and its later numerical partition produces six in 288. Without attack
-annotations these are alert counts only. Calling all nine false
-positives would add an assumption absent from the data. The labelled
-devices therefore carry the detection conclusions, while D-Link
-primarily confirms that the numerical comparison exercises both
-alerting and non-alerting decisions.
+error consists of attacks inside the chosen normal-data cutoffs. This is
+especially clear for Chromecast, whose development recall is 46.88\%.
+The one-percent quantile calibrates the benign score tail; attack recall is
+measured separately from the labelled evaluation windows.
 
 \subsection{Joint calibration produces unequal count sensitivities}
 
@@ -147,17 +133,16 @@ is a different empirical quantity.}
 The differences are substantial. Samsung's total boundary is about
 1,610 packets, while Chromecast's is about $1.12\times10^{13}$.
 The latter total-volume guard is consequently inactive for ordinary
-count ranges in the evaluated traffic. Its presence in the decision
-rule does not mean that it contributes useful sensitivity on every
-device. The actual case margins and static-equivalence results are
+count ranges in the evaluated traffic. Useful sensitivity therefore varies
+by device. The actual case margins and static-equivalence results are
 consistent with this calibration outcome.
 
 This follows from calibrating the minimum of standardised features
 with one common tail quantile. A sufficiently extreme benign tail
 in one feature can require a negative joint quantile that also
 makes another feature's implied cutoff very permissive. Median/IQR
-scaling supplies units for combining the features; it does not
-equalise their lower tails or guarantee that they all trigger.
+scaling supplies units for combining the features; trigger activity can
+still differ by feature because their lower tails differ.
 The saved cutoffs therefore need to be inspected alongside the
 formula, rather than interpreting the count checks as three
 independently active protections.
@@ -165,9 +150,8 @@ independently active protections.
 The result also separates detection from learning admission. The
 conservative buffer uses a distinct 99th-percentile calibration
 volume cap. Even if the joint total guard is permissive, that
-admission cap can still reject high-volume learning observations.
-Neither cutoff is attack-labelled, and their different purposes
-should remain visible when analysing an adaptive run.
+admission cap can still reject high-volume learning observations. Both
+cutoffs come from benign calibration and serve different purposes.
 
 \section{Historical adaptation and parameter movement}
 \label{sec:legacy-results}
@@ -192,7 +176,7 @@ Device & Configuration & TP & FP & FN & TN & F1 \\
 \end{tabular}
 \caption{Historical development comparisons with a 288-window learning buffer.
 The refit 288/240 configuration was selected after development inspection;
-the table is not evidence from an untouched selection set.}
+the table therefore records retrospective development evidence.}
 \label{tab:legacy}
 \end{table}
 
@@ -210,16 +194,15 @@ Samsung behaves differently. Both 144-window adaptive variants produce
 reducing F1 to 54.00\%. The selected 288/240 refit improves upon those
 adaptive results, but its 77.31\% F1 remains below the static 78.69\%.
 Its one fewer false positive is accompanied by two fewer true positives.
-Thus the historical study does not show a consistent advantage for
-refitting, even after the more favourable configuration is selected.
+Thus refitting produces mixed device-level outcomes, even after the more
+favourable configuration is selected.
 
 This comparison demonstrates why a single pooled improvement would be
 incomplete. Chromecast's gain and Samsung's failure are different
 responses to the same general learning mechanism. A useful policy
 must control changes relative to each device's reference, rather than
 relying on an average of opposing outcomes. The development results
-motivate that requirement; they do not validate a particular guard
-on future unseen drift.
+motivate that requirement. Guard validation requires future unseen drift.
 
 \subsection{Concentration changes reveal what the refit learned}
 
@@ -251,14 +234,15 @@ the same normal behaviour more accurately. Its observed movement is
 large and its detection result is worse than the static reference.
 
 These updates illustrate a limitation of self-selected learning data.
-A window passing the active cutoff is not known to be benign. Accepted
+Passing the active cutoff establishes statistical admission only; benign
+status remains unknown. Accepted
 windows are selected partly because they look compatible with the
 current model, and that selection can narrow the apparent distribution.
 Attack-like traffic remaining inside the cutoff can enter the same
 buffer. These mechanisms are compatible with the observed movement,
-but concentration alone cannot identify how much is caused by
+but concentration alone leaves their relative influence unidentified:
 contamination, benign drift, or selection bias. It is a diagnostic
-of the update, not an attack label.
+of the update, while attack labels come from the external annotations.
 
 The conservative policy consequently bounds concentration, mean
 proportions, and threshold movement and retains the original reference.
@@ -273,9 +257,9 @@ The count-tail study compares baseline DM scoring with the retained
 joint composition, total-volume, and ARP decision rule. Its pooled
 results in Table~\ref{tab:joint-comparison} cover 2,038 unique labelled
 development and later-audit windows across the two devices. This is a
-retrospective comparison: the later labels had already been inspected.
-It explains the rule selection but does not provide an independent
-estimate of generalisation.
+retrospective comparison because the later labels had already been
+inspected. It explains rule selection; independent generalisation requires
+new traffic.
 
 \begin{table}[tbp]
 \centering\small
@@ -295,9 +279,8 @@ here uses 288/144, distinct from the historical 288/240 study.}
 For static operation and both conservative modes, the DM and joint
 variants produce the same counts: 77 true positives, nine false
 positives, 43 false negatives, and 1,909 true negatives. F1 is
-74.76\%. The extra tails do not change these static decisions.
-This does not establish their redundancy for every possible count
-vector.
+74.76\%. The extra tails leave these static decisions unchanged and remain
+available as guards for other count vectors.
 
 The effect differs under the legacy adaptive policy. Threshold
 adaptation has 56.50\% baseline F1 and 74.76\% joint F1. Legacy
@@ -313,9 +296,8 @@ by packet count changed the meaning of the complete probability and
 lost attack recall. Broad category-specific tails introduced later-audit
 false alerts. Separate rank-based tails did not retain the desired
 recall. These outcomes support the narrower rule within the inspected
-data, but do not constitute a comprehensive feature-selection
-benchmark. Richer features were not available uniformly in the
-already prepared four-count records.
+data. A broader feature-selection benchmark would require uniformly
+prepared richer features.
 
 The implementation subsequently evaluates cheap count guards before
 computing the DM likelihood. A regression study compares this ordering
@@ -324,8 +306,8 @@ all 2,038 labelled windows. Binary decisions, accepted-update counts,
 final fingerprints, thresholds, and buffer sizes agree. Event scores
 and severities may differ when an early count violation makes further
 numerical evaluation unnecessary. This thesis therefore uses confusion
-counts for cross-version equivalence and does not silently treat all
-saved rank scores as interchangeable.
+counts for cross-version equivalence; saved rank scores retain their
+implementation-specific meaning.
 
 \section{LM and SciPy: numerical agreement and computational cost}
 \label{sec:numerical-results}
@@ -374,11 +356,9 @@ zero decision differences is a finite-workload result.}
 \end{table}
 
 These results support interchangeability of the observed binary
-decisions under the tested inputs and cutoffs. They do not prove
-bit-for-bit equivalence for arbitrary parameters or a window arbitrarily
-close to a cutoff. The score definition, coefficient, and fallback
-behaviour remain part of the comparison. A stable calculation of the
-wrong objective would not be validated by agreement on a few examples.
+decisions under the tested inputs and cutoffs. The comparison therefore
+retains the score definition, coefficient, fallback behaviour, and explicit
+coverage of near-cutoff and stress cases.
 
 \subsection{The faster backend depends on the operation}
 
@@ -427,9 +407,8 @@ Both backends converge in 79 pairs and both reach the iteration limit
 in five. Summed likelihood-computation time is approximately 21.36~s
 for LM and 24.33~s for SciPy; summed wall time is approximately
 30.79~s and 33.76~s. This experiment uses its own initialisation and
-a pooled stopping objective. It is evidence for that aggregate
-workload and cannot replace production row-wise timings or be
-described as an exact reproduction of the paper.
+a pooled stopping objective. Its timing applies to that aggregate workload;
+the production row-wise timings remain separate.
 
 \begin{table}[tbp]
 \centering\small
@@ -449,11 +428,9 @@ the production benchmark, not another estimate of the same median.}
 Numerical stress tests and fallback address another dimension:
 loss of significance when large gamma terms are subtracted. Their
 purpose is to keep a finite complete score where ordinary
-floating-point subtraction can be inaccurate. They do not add attack
-information. In the measured detection workloads, backend agreement
-provides no evidence that LM itself increases attack recall. Its
-contribution is a working numerical integration with a measured
-cost and an explicit correctness boundary.
+floating-point subtraction can be inaccurate. Attack recall remains a
+property of the detector decisions. LM contributes a working numerical
+integration with a measured cost and an explicit correctness boundary.
 
 \subsection{Measured effect of reusing native setup}
 
@@ -462,8 +439,7 @@ of the earlier wrapper with the matrix entry point used here.
 Its paired integration measurement reports a reduction from
 114.68 to 55.58~$\mu$s for the 846-row likelihood workload and
 from 0.30410 to 0.19486~s for complete fitting. These measurements
-are recorded in \path{docs/lm_backend_change_record.tex}; they are
-not a fresh experiment performed during thesis writing. The
+are retained in \path{docs/lm_backend_change_record.tex}. The
 separate production medians in Table~\ref{tab:backend-timing}
 have their own measurement boundary and slightly different values.
 
@@ -471,8 +447,7 @@ The change record also reports bit-identical likelihood results
 between the old and new native paths on 1,000 seeded stress
 matrices. This supports the implementation claim that moving
 shared setup outside the row loop need not change row-wise
-semantics. It does not make the method bit-identical to SciPy,
-whose numerical comparison is given separately.
+semantics. SciPy agreement is measured separately.
 
 The before/after improvement and the delivered SciPy comparison
 answer different questions. Removing redundant native setup
@@ -525,8 +500,7 @@ tasks: the number and extent of positive windows change with scale.
 The interval measure provides a different view. Chromecast detects
 10, 9, 10, and 11 of 18 development attack intervals. Samsung detects
 28, 28, 35, and 34 of 36. More detected intervals at a coarser scale
-can help retrospective identification. It does not establish that an
-alert arrives while the attack is active. Only one Chromecast
+can help retrospective identification. Only one Chromecast
 interval and five Samsung intervals receive an alert by attack end
 at hourly resolution, compared with nine and 23 at ten minutes.
 
@@ -545,8 +519,8 @@ Table~\ref{tab:common-duration} avoids comparing only each duration's
 own positive-window count. It assigns a coarser decision to its
 covered ten-minute intervals on the same observed support. Under
 this retrospective projection, ten minutes has the highest F1 for
-both devices. Projection does not make decisions available earlier:
-an hourly decision is still produced at the hourly close.
+both devices. Operational availability remains at each original window's
+close, including the hourly close for a sixty-minute decision.
 
 \begin{table}[tbp]
 \centering\small
@@ -596,22 +570,19 @@ Min. & Partition & Static F1 & Adaptive F1 & Static FP & Adaptive FP \\
 \bottomrule
 \end{tabular}
 \caption{Samsung threshold-adaptation failures in the matched-duration study.
-Adaptive denotes its conservative threshold mode; the later partition is an
-inspected audit, not a fresh selection holdout.}
+Adaptive denotes its conservative threshold mode; the later partition is a
+retrospective inspected audit.}
 \label{tab:duration-adaptation}
 \end{table}
 
-These results prevent a claim that the conservative label guarantees
-non-degrading adaptation. The rule checks individual proposed changes;
-it does not impose a global cumulative bound on every future threshold
-trajectory. Small calibration sets and changes in accepted buffer
+The rule checks individual proposed changes, while cumulative threshold
+trajectories depend on every accepted step. Small calibration sets and changes in accepted buffer
 composition remain consequential. Periodic refitting promotes no
 candidate in the duration study, so its static-equivalent outcomes
 reflect rejection rather than an effective learned update.
 
 Ten minutes is retained as the validated reference with the desired
-response granularity. The evidence does not identify it as a universal
-optimum. A deployment prioritising retrospective summaries could make
+response granularity. A deployment prioritising retrospective summaries could make
 a different tradeoff, but would need to repeat calibration, delay
 analysis, and adaptation checks at that duration.
 
@@ -639,8 +610,7 @@ Device & TP & FP & FN & TN & Precision & Recall & F1 \\
 \end{tabular}
 \caption{Closing final-partition results for each of the three identical
 binary-decision modes. Pooled metrics use summed counts, not averaged device
-metrics. The partition had prior retrospective label exposure; fixed replay
-settings do not restore independence.}
+metrics. The partition had prior retrospective label exposure.}
 \label{tab:final}
 \end{table}
 
@@ -649,22 +619,19 @@ false negatives, giving 57.14\% precision and 61.54\% F1. Samsung
 has ten true positives, no false positives, and two false negatives,
 giving 100\% precision and 90.91\% F1. Pooled precision is 82.35\%,
 recall 77.78\%, and F1 80.00\%. The pooled false positive rate is
-$3/990\simeq0.30\%$. Zero Samsung false positives is an observation
-over 564 benign windows, not a bound on future false alerts.
+$3/990\simeq0.30\%$. Samsung has zero false positives over 564 observed
+benign windows; future rates require further traffic.
 
 The pooled F1 alone is insufficient. There are only six positive
 Chromecast windows and twelve positive Samsung windows, while their
-precision values differ sharply. Pooled 80.00\% does not mean that
-a typical device has 80\% F1 or that the monitor will maintain it
-under a different device mix. Individual counts preserve the
-relevant denominators.
+precision values differ sharply. Individual counts therefore remain beside
+the pooled 80.00\% value and preserve the relevant denominators.
 
 No threshold update or refit is promoted in the closing replay.
 Threshold candidates fail acceptance checks, and refit attempts
 are prevented by insufficient accepted data or rejected movement.
 The initial pairs remain active. Equality of the modes is expected
-and provides no evidence of an adaptation gain. It establishes
-that the guarded modes can decline to change state.
+and establishes that the guarded modes can decline to change state.
 
 The earlier replay records include strong rank discrimination on
 these partitions, but absolute values depend on the saved score
@@ -693,17 +660,16 @@ Device & Official attack type & Detected & Delay (s) & By end \\
 \bottomrule
 \end{tabular}
 \caption{Closing replay interval results. Attack names preserve annotation
-vocabulary; they are not predicted attack types. Delay is measured to the first
+vocabulary from the dataset. Delay is measured to the first
 overlapping alert-window close. A dash denotes no detection.}
 \label{tab:final-intervals}
 \end{table}
 
 Chromecast misses \path{TcpSynReflection1W2D2W}, while detecting its
 SSDP interval and \path{TcpSynReflection100W2D2W}. This is consistent
-with weaker count evidence in the missed interval, but three cases
-cannot establish a general relationship between the annotation's
-rate class and detection probability. The detector sees counts; it
-neither reads the rate label nor classifies the attack type.
+with weaker count evidence in the missed interval. Three cases support only
+a case-level explanation; the detector uses counts while the rate class
+remains an offline annotation.
 
 All six Samsung intervals are detected, despite two positive windows
 being missed. An interval can overlap several windows, so these
@@ -716,7 +682,7 @@ The closing replay makes no new setting selection during execution.
 Nevertheless, the same later labels were available in previous
 scoring and duration audits. Its value is a fixed, fingerprinted
 record of the selected implementation's behaviour on that partition.
-It should not be presented as untouched external validation.
+Independent validation requires new traffic.
 
 \subsection{Inspecting individual decisions}
 \label{sec:event-cases}
@@ -725,8 +691,8 @@ Confusion counts establish how often predictions agree with annotations;
 the saved event fields explain which statistical condition produced a
 particular decision. Table~\ref{tab:event-cases} gives five selected
 closing-replay examples. Cases A--C are Chromecast windows, and D--E
-are Samsung windows. They are illustrative selections from the saved
-events, not a new sample or a basis for recomputing aggregate rates.
+are Samsung windows. They illustrate the saved event fields; aggregate
+rates continue to use the complete replay.
 
 \begin{table}[tbp]
 \centering\footnotesize
@@ -760,17 +726,16 @@ Case B is part of the missed low-rate reflection interval. It has
 51 ARP packets. Its complete score of $-25.5615$ is close to, but
 above, the composition cutoff. The positive composition margin of
 about $0.051$ and positive count margins make it non-alerting.
-This is a false negative under the selected operating point, not
-a numerical exception or a missing observation. The table does
-not justify moving the cutoff to catch this one example: doing so
-would require re-evaluating the benign tail and other attacks.
+This is an ordinary statistical false negative under the selected operating
+point. Moving the cutoff to catch this one example would require
+re-evaluating the benign tail and other attacks.
 
 Case C demonstrates the opposite error. Its composition margin
 is $-6.673$, giving an alert with no matching official attack
 overlap. It is a false positive relative to the provided labels.
-The four counts show the departure that the fitted rule sees,
-but cannot establish whether it is a benign application change,
-an unannotated event, or another cause. The event's UTC start
+The four counts show the departure that the fitted rule sees; determining
+whether it is a benign application change, an unannotated event, or another
+cause requires packet-level evidence. The event's UTC start
 lies on 24 October even though it belongs to the configured
 25 October capture ID. This is why evaluation uses actual UTC
 bounds and capture context rather than assuming that nominal
@@ -791,17 +756,13 @@ smaller, with total 517, and all margins are positive. The official
 attack ends at 19:00:33, so the 19:00--19:10 window overlaps it for
 33 seconds and is labelled positive. Its false-negative window
 outcome is compatible with detection of the same interval by the
-previous window. Neither the event schema nor the interval metric
-is inconsistent; they answer different questions about the same
-time range.
+previous window. The event schema and interval metric answer different
+questions about the same time range.
 
 The examples show what interpretability means in this implementation.
 A reader can recover the count vector, active reference, violated
-margin, and annotation alignment. The explanation is local to the
-statistical rule. It does not recover packet contents, prove
-malicious intent, or assign an attack family. Preserving those
-limits makes the event evidence useful without turning a numerical
-score into a causal security diagnosis.
+margin, and annotation alignment. The explanation remains local to the
+statistical rule; packet-level attribution requires separate evidence.
 
 \section{Constrained Docker simulation}
 \label{sec:edge-results}
@@ -813,7 +774,8 @@ records under one-CPU, 512~MiB container limits.
 Table~\ref{tab:edge} reports both runs. Four of every five records
 are observed windows and the fifth is missing-state input, giving
 1,600 and 16,000 scored windows. The repeated fixture tests the
-continuing process and update path; it is not a new labelled dataset.
+continuing process and update path. Detection metrics come from the
+labelled replays reported above.
 
 \begin{table}[tbp]
 \centering\small
@@ -825,7 +787,7 @@ Measurement & Short replay & Long replay \\
 \bottomrule
 \end{tabular}
 \caption{Supplied-window simulation measurements. Memory and disk units use
-powers of two. Process high-water RSS and sparse sampled RSS are different
+powers of two. Peak process RSS and sparse sampled RSS are different
 counters. No update becomes active in either run.}
 \label{tab:edge}
 \end{table}
@@ -835,40 +797,36 @@ window. The worst windows take 4.449~s and 5.079~s. These tail
 events are associated with attempted estimation; the longest
 estimator calls are 4.430~s and 5.069~s. The long replay records
 110 estimator calls and no promoted candidate. Rejecting an update
-does not avoid paying its fitting cost.
+still incurs its fitting cost.
 
 The long history has an initial insufficient-data attempt followed
-by 110 non-convergent refit attempts. The synthetic repeated counts
-are not favourable evidence of successful model evolution. They do
-exercise a repeated rejection path and show that the process remains
-able to handle subsequent records without activating an invalid
-candidate.
+by 110 non-convergent refit attempts. The synthetic repeated counts exercise
+a repeated rejection path and show that the process continues handling
+subsequent records while preserving the active state.
 
 Scoring latencies are much smaller than a ten-minute observation
 interval on this host. This supports the feasibility of processing
-supplied completed windows. It cannot establish end-to-end response
-time: collection, aggregation, transport, real-load queuing, and
-waiting for window close are outside the processing timer.
-Accelerated replay also keeps the allocated CPU busy; this is not
-the expected utilisation when receiving one window every ten minutes.
+supplied completed windows. End-to-end response also includes collection,
+aggregation, transport, real-load queuing, and waiting for window close.
+Accelerated replay keeps the allocated CPU busy throughout the trial.
 
 \subsection{Finite memory and disk behaviour}
 
-Process high-water RSS is 67.88~MiB in the short replay and 68.62~MiB
-in the long replay. The long run's sparse samples reach 68.92~MiB,
+The operating system's high-water RSS counter---the peak resident memory
+used by the process---is 67.88~MiB in the short replay and 68.62~MiB in
+the long replay. The long run's sparse samples reach 68.92~MiB,
 with the last recorded samples stable at that level.
 Figure~\ref{fig:memory} plots them. These measures remain separate
-because they use different interfaces and sampling boundaries;
-their discrepancy is not resolved by choosing the lower value.
+because they use different interfaces and sampling boundaries; the
+reported comparison retains both values.
 
 \input{figures/memory}
 
 Measured memory remains far below the 512~MiB limit. This is
 consistent with bounded buffers, synchronous output, and limited
-retained history. A finite replay does not prove the absence of
-every slow leak. It also does not establish how many devices can
-share the allocation: the study has one process and one initial
-device model.
+retained history. The reported boundary is one process, one initial device
+model, and 20,000 supplied records; longer and multi-device trials remain
+separate measurements.
 
 Retained state occupies about 6.78~KiB and 31.25~KiB at the endpoints;
 application logs occupy about 10.84~KiB and 109.55~KiB. Initial
@@ -878,11 +836,10 @@ storage of emitted events. The long run emits about 11.72~MB of
 event data, an external storage responsibility if retained.
 
 Application and Docker logging have rotation settings. The normal
-simulation does not reach their limits; a separate reduced-limit
-check exercises rotation. The 20,000-input run itself therefore
-does not demonstrate eviction at production limits. The state
-protocol has failure-injection tests, but this environment does
-not reproduce physical power loss or storage-controller faults.
+simulation stays below their limits; a separate reduced-limit check
+exercises rotation. State failure-injection tests cover software faults,
+while physical power loss and storage-controller faults require hardware
+testing.
 
 \section{Verification and evidence consistency}
 \label{sec:verification-results}
@@ -891,14 +848,13 @@ The closing verification records the test suite at its own source
 boundary. Later scoring-order work expands that suite. During
 completion of this thesis, all 643 current tests pass, including
 available container-dependent checks, using the locally available
-edge image. This is current software verification, not a claim
-that every experiment was rerun with newly generated models.
+edge image. This is current software verification; historical experiments
+retain their recorded models and source boundaries.
 
 Checks cover input rejection, count semantics, numerical agreement,
 short-circuit decisions, update acceptance, state recovery, streaming,
-and command interfaces. They support implemented invariants. They
-do not establish empirical detection generalisation, which requires
-independent traffic observations rather than unit tests.
+and command interfaces. They support implemented invariants; empirical
+detection generalisation requires independent traffic observations.
 
 The document generator recomputes displayed confusion-matrix metrics,
 verifies closing input fingerprints, and records the hashes of its

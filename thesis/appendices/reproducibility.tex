@@ -6,8 +6,8 @@ Paths in this appendix are relative to the repository root. The thesis
 was completed against the detector and documentation tree at revision
 \texttt{16b33d6}, with the thesis changes subsequently applied. The
 detector code preceding the first writing installment is identified by
-\texttt{63ba80d}. These writing revisions do not replace the experiment
-identities recorded in the individual bundles.
+\texttt{63ba80d}. The individual bundles retain the experiment identities
+that precede these writing revisions.
 
 The closing final-partition protocol records source revision
 \texttt{99072f0}. Its 109 dependency fingerprints cover code,
@@ -110,16 +110,16 @@ The output is \path{out/thesis/thesis.pdf}. Auxiliary files stay in
 the same ignored output directory. The document uses the locally
 available \path{texlive/texlive:latest} image with networking disabled.
 A complete environment record and image identity are retained with
-the final validation output; the mutable image tag alone is not
-a permanent version identifier.
+the final validation output; permanent identification uses the recorded
+image digest in addition to the mutable tag.
 
 To regenerate only the presentation evidence, use
 \begin{verbatim}
 python3 thesis/generate_evidence.py
 \end{verbatim}
 This standard-library script reads the retained data and reports;
-it does not preprocess packet captures, refit models, or replay
-detectors. Assertions check confusion-count arithmetic and expected
+its scope is presentation-evidence regeneration. Assertions check
+confusion-count arithmetic and expected
 dependencies. Generated TeX rows and CSV plot data remain under
 \path{thesis/generated/}. They are presentation artifacts and must
 not be edited to alter an experimental result.
@@ -128,17 +128,17 @@ The dissertation uses the cited subset of the annotated shortlist in
 \path{docs/thesis_reference_review.tex}. That review distinguishes
 full-text inspection from metadata-only verification. The bibliography
 file \path{thesis/references.bib} holds publication identifiers and
-links; existence of a DOI alone is not evidence for a particular
-claim. The author should consult the original cited passages when
-reviewing the final argument.
+links. Support for each claim comes from the cited passage in the
+original publication, which the author should consult when reviewing
+the final argument.
 
 \section{Repeating detector experiments}
 \label{app:experiment-commands}
 
 \subsection{Installation and reference stages}
 
-The following commands describe experiment entry points; they were
-not executed merely to regenerate the thesis. Research scripts can
+The following commands describe experiment entry points. Thesis regeneration
+reads retained results, while research scripts can
 write their configured output paths. Use an isolated checkout and
 copies of retained artifacts when repeating a historical experiment,
 and retain its original revision before comparing new results.
@@ -151,9 +151,9 @@ gcc -O3 -fPIC -shared \
   -lm -o src/lm_idnet/algorithms/native/LM_time_lib.so
 python -m pip install -e '.[test]'
 \end{verbatim}
-The Dockerfile provides the packaged alternative. Source packet
-captures are required for preprocessing, but are not required to
-score the retained processed windows. Their access and redistribution
+The Dockerfile provides the packaged alternative. Preprocessing requires
+source packet captures; scoring the retained processed windows uses the
+stored counts. Capture access and redistribution
 remain subject to the publisher's terms and available downloads.
 
 For a chosen device configuration, the reference stage order is

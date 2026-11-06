@@ -8,9 +8,9 @@ attack labels enter offline evaluation and method selection. The system
 integrates the established Languasco--Migliardi likelihood method with
 Minka estimation, guarded threshold/model updates, and persistent state.
 
-Experiments distinguish labelled Chromecast and Samsung camera detection
-from an unlabelled D-Link numerical workload. A fixed closing replay covers
-1,008 unique labelled windows and yields pooled precision of 82.35\%, recall
+Detection experiments use labelled Chromecast and Samsung camera traffic.
+A fixed closing replay covers 1,008 unique labelled windows and yields pooled
+precision of 82.35\%, recall
 of 77.78\%, and F1 of 80.00\%. Device F1 differs substantially, at 61.54\%
 and 90.91\%. Eight of nine fully observed attack intervals are detected;
 seven receive an alert by attack end. The later partition had prior label
@@ -23,7 +23,7 @@ own window metrics while delaying alerts.
 LM and SciPy preserve all checked development decisions, with close numerical
 agreement and operation-dependent runtime. A one-CPU, 512~MiB Linux/amd64
 Docker simulation scores 16,000 windows with mean processing near 30~ms
-and process high-water memory near 69~MiB; its longest window takes about
+and peak process memory near 69~MiB; its longest window takes about
 5.08~s during a rejected refit. These measurements cover supplied-window
 processing, excluding live collection and physical gateways. The thesis
 provides a reproducible, interpretable prototype and identifies representation,

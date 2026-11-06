@@ -1,8 +1,8 @@
 # Thesis workspace
 
 The complete thesis draft is ready for the author's final review:
-**68 pages of main text** in the UniPD modern template, plus front matter,
-bibliography, and the reproducibility appendix, for 98 pages total. The compiled document is
+**64 pages of main text** in the UniPD modern template, plus front matter,
+bibliography, and the reproducibility appendix, for 94 pages total. The compiled document is
 [thesis.pdf](../out/thesis/thesis.pdf). All seven chapters, the English abstract,
 and the Italian summary are written. There are 30 cited references, eight
 figures, and an evidence map connecting results to retained experiment files.
@@ -58,13 +58,14 @@ The draft preserves the distinctions needed for a defensible final review:
 - The closing replay has pooled F1 80.00% on 1,008 unique windows, with
   substantially different device results and only 18 positive windows.
 - Later labels had already been inspected in retrospective audits. The fixed
-  closing replay is not described as an untouched external validation set.
-- Conservative modes promote no closing updates. Other-duration threshold
-  adaptation can increase false alerts; static equality is not a learning gain.
-- Numerical speed depends on the operation. The unlabelled D-Link workload
-  supports numerical comparisons, not attack precision or recall.
+  closing replay records retrospective evidence.
+- Conservative modes reject every closing update. Other-duration threshold
+  adaptation can increase false alerts; learning gains require accepted updates
+  and improved later outcomes.
+- Numerical speed depends on the operation. D-Link is reserved for algorithm
+  benchmarking; Chromecast and Samsung supply detection evidence.
 - The constrained resource study receives supplied counts on an x86 Docker
-  host. Physical gateways and live collection were not measured.
+  host. Physical gateways and live collection require separate measurements.
 
 The appendix separates historical experiments from the current source and
 the fresh verification. All 643 current project tests passed without skips,

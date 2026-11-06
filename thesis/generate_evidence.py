@@ -65,8 +65,9 @@ def main():
         model = read(f"artifacts/{dataset}/model.json")
         threshold = read(f"artifacts/{dataset}/threshold.json")
         calibration_n = threshold["calibration_window_count"]
-        quantile_ranks.append([NAMES[dataset] + ", reference", calibration_n,
-                               f"{1 + (calibration_n - 1) * threshold['quantile']:.2f}"])
+        if dataset != "D-LinkDayCam5":
+            quantile_ranks.append([NAMES[dataset] + ", reference", calibration_n,
+                                   f"{1 + (calibration_n - 1) * threshold['quantile']:.2f}"])
         fit_bounds = []
         for role, captures in config["ingest"]["partitions"].items():
             count, positive, silent = 0, 0, 0
@@ -88,17 +89,17 @@ def main():
         chronology[dataset] = {"fit_rows": len(fit_bounds),
                                "distinct_fit_bounds": len(set(fit_bounds)),
                                "repeated_fit_bounds": len(fit_bounds) - len(set(fit_bounds))}
-        profiles.append([NAMES[dataset], *[f"{100*p:.3f}" for p in model["mean_probabilities"]],
-                         f"{model['concentration']:.3f}", f"{model['psi']:.5f}"])
-        parameters.append([NAMES[dataset], *[f"{a:.6g}" for a in model["alpha"]],
-                           model["fit_diagnostics"]["iterations"],
-                           f"{threshold['threshold']:.4f}", f"{threshold['score_iqr']:.4f}"])
-        total, arp = (threshold["count_tails"][k]["threshold"] for k in ["total", "arp"])
-        count_cutoffs.append([NAMES[dataset], f"{total:.4f}", f"{math.expm1(total):.0f}",
-                              f"{arp:.4f}", f"{math.expm1(arp):.0f}"])
         for k, p in enumerate(model["mean_probabilities"]):
             model_plot.append([dataset, k + 1, 100*p])
         if dataset != "D-LinkDayCam5":
+            profiles.append([NAMES[dataset], *[f"{100*p:.3f}" for p in model["mean_probabilities"]],
+                             f"{model['concentration']:.3f}", f"{model['psi']:.5f}"])
+            parameters.append([NAMES[dataset], *[f"{a:.6g}" for a in model["alpha"]],
+                               model["fit_diagnostics"]["iterations"],
+                               f"{threshold['threshold']:.4f}", f"{threshold['score_iqr']:.4f}"])
+            total, arp = (threshold["count_tails"][k]["threshold"] for k in ["total", "arp"])
+            count_cutoffs.append([NAMES[dataset], f"{total:.4f}", f"{math.expm1(total):.0f}",
+                                  f"{arp:.4f}", f"{math.expm1(arp):.0f}"])
             result = read(f"reports/{dataset}/evaluation_statistics.json")
             development.append([NAMES[dataset], *metrics(result)])
     rows("partitions", partition_rows)

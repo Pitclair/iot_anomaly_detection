@@ -10,23 +10,20 @@ traces, with substantial variation across devices. The closing replay's
 pooled F1 is 80.00\%, but Chromecast achieves 61.54\% and Samsung
 90.91\%. Eight of nine fully observed attack intervals are detected,
 and seven receive an alert by attack end. These results support the
-feasibility of a compact, device-specific monitor for some attacks;
-they do not establish broad intrusion-detection coverage.
+feasibility of a compact, device-specific monitor for the selected devices,
+attacks, and observation periods.
 
 The retained count tails are useful safeguards against losing alerts
-when historical adaptive references move. They do not improve the
-static confusion counts on the inspected support. Consequently, the
+when historical adaptive references move. Static confusion counts remain
+unchanged on the inspected support. Consequently, the
 joint rule's justification is broader decision coverage within the
-same compact feature set, with observed protection in legacy adaptive
-runs, rather than a demonstrated static recall gain over DM alone.
+same compact feature set, with observed protection in legacy adaptive runs.
 
 Window duration has a direct effect on the task. Coarser windows can
 increase duration-specific F1 and interval coverage while delaying
-alerts beyond attack end. The matched study's hourly result therefore
-cannot be described as better solely because one window metric rises.
-Ten minutes is a practical evaluated reference for this project, with
-an explicit delay cost; the experiments do not establish an optimal
-duration for all networks.
+alerts beyond attack end. Window metrics and alert availability therefore
+need joint interpretation. Ten minutes is the practical evaluated reference
+for this project, with an explicit delay cost.
 
 \subsection{RQ2: numerical computation}
 
@@ -40,9 +37,8 @@ aggregate professor-style experiment favours LM on its own workload,
 which has a different objective boundary and initialisation.
 
 The supported conclusion is therefore accurate numerical integration
-with measured, mixed performance. It is not a universal speedup and
-does not establish improved attack detection from a different way of
-evaluating the same probability. The distinction between estimator,
+with operation-dependent performance. Attack detection remains governed by
+the same probability and decision rule. The distinction between estimator,
 likelihood backend, and detector is necessary to interpret the result
 and to attribute the inherited work correctly
 \cite{minka2000,languasco2023}.
@@ -53,28 +49,26 @@ Historical refitting improves Chromecast's development F1 but fails
 to improve Samsung's. Large Samsung concentration changes demonstrate
 that a refit can move well beyond the original dispersion. The retained
 conservative rules reject all closing replay candidates, preserving
-the initial model/calibration pair and static decisions. That is
-evidence of enforceable rejection, not evidence that a learned model
-has followed benign drift successfully.
+the initial model/calibration pair and static decisions. This demonstrates
+enforceable rejection; successful benign-drift adaptation remains a future
+experimental target.
 
 The duration experiment supplies a further negative result: accepted
 conservative threshold updates can increase false alerts severely at
-other durations. Safeguards reduce specific permitted movements but
-do not guarantee non-degrading performance. This outcome is consistent
+other durations. Safeguards reduce specific permitted movements, while
+long-run quality remains an empirical outcome. This result is consistent
 with the broader difficulty of separating drift from adversarial
 contamination in unsupervised streams \cite{gama2014,kloft2012}.
 The thesis establishes an inspectable experimental framework for
 that tradeoff, with both accepted and rejected candidates visible.
-It does not solve robust autonomous adaptation.
 
 \section{What the four counts preserve and discard}
 \label{sec:representation-limits}
 
-\subsection{Anomalous traffic is not synonymous with malicious traffic}
+\subsection{Statistical anomalies require security interpretation}
 
-A fitted normal model answers whether a completed observation is
-compatible with its reference, not whether a malicious actor caused
-it. A benign software update, changed application use, or a new
+A fitted normal model measures compatibility with its reference. A benign
+software update, changed application use, or a new
 network service can shift counts. An attack can leave the selected
 mixture and count tails inside their normal ranges. Both directions
 of error follow from the mismatch between statistical abnormality
@@ -83,19 +77,17 @@ detection discussed by Sommer and Paxson \cite{sommer2010}.
 
 The device-specific design makes this question more concrete than a
 single model of arbitrary network traffic. Normal references do differ
-strongly across the three workloads. However, selecting one device
-does not make all of its benign uses stationary. The initial captures
+strongly across the three workloads. A single device can still have
+several changing benign uses. The initial captures
 represent a limited set of operating conditions. The saved profile
 can be an intelligible reference without being an exhaustive model
 of every future legitimate behaviour.
 
-An event therefore retains evidence rather than an assertion of
-attack identity. Counts, expected shares, margins, and model identity
-can explain why the configured detector alerted. They do not prove
-which exploit occurred, which endpoint initiated it, or which
-countermeasure is appropriate. The attack types shown in the result
-tables are offline annotations supplied by the dataset, not labels
-predicted by LM-IDNet.
+An event therefore retains evidence for the configured detector decision.
+Counts, expected shares, margins, and model identity explain why it alerted.
+Exploit attribution, endpoint attribution, and response selection require
+additional evidence. Attack types in the result tables come from offline
+dataset annotations.
 
 \subsection{Several packet sequences can have exactly the same input}
 
@@ -104,8 +96,7 @@ vector. Two windows can contain the same TCP, UDP, SSDP, and ARP counts
 while differing in destinations, TCP flags, payloads, packet sizes,
 and timing within the interval. The implemented detector must assign
 the same decision to those windows when its active state is the
-same. No improvement in parameter estimation can recover information
-that is absent from the input.
+same. Recovering the discarded information requires a richer input.
 
 This explains a specific limitation for TCP SYN attacks. TCP SYN
 packets and ordinary TCP packets increment the same category. Their
@@ -113,8 +104,8 @@ distinction is visible only indirectly if the attack changes the
 aggregate enough to cross a count or composition cutoff. Low-rate
 behaviour that resembles the existing reference can remain undetected,
 as in the missed Chromecast reflection interval. This is a plausible
-representation-based explanation, rather than proof of a unique
-causal mechanism from one interval.
+representation-based explanation; one interval cannot establish a unique
+causal mechanism.
 
 The exclusive SSDP category is helpful because discovery traffic
 would otherwise be merged with ordinary UDP. It still discards
@@ -122,13 +113,13 @@ message contents, request/response roles, and destination structure.
 Similarly, an unusual ARP volume is visible, but malicious ARP
 semantics with an ordinary count need not be. Extending these signals
 would require a revised input contract, prepared datasets, models,
-and evaluation; it cannot be inferred from the four retained counts.
+and evaluation.
 
 \subsection{Conditional probability and volume are different signals}
 
 The DM model gives a probability mass for a composition conditional
 on the observed total $N$. Its complete log probability includes the
-multinomial coefficient and is not simply a distance between the
+multinomial coefficient in addition to the relationship between the
 normalised observed vector and the fitted mean. The number and
 probability of possible compositions vary with $N$. Raw score values
 can therefore reflect both composition and the conditional sample
@@ -138,9 +129,8 @@ The total-count guard addresses a different question: whether the
 window's total is unusually high relative to benign counts. The ARP
 guard adds a particular absolute-category check. Their joint
 calibration avoids claiming that three separately chosen one-percent
-tests automatically form a one-percent detector. Even so, the empirical
-joint tail is not a formal false-alert guarantee under dependent
-future observations or changed traffic.
+tests automatically form a one-percent detector. Its future false-alert
+rate depends on later traffic and temporal dependence.
 
 The retained guards are upper tails. A silent observed vector does
 not violate them, and the zero-count conditional composition has no
@@ -154,11 +144,11 @@ essential to any such extension.
 \section{Adaptation is a selection problem as well as a fitting problem}
 \label{sec:adaptation-discussion}
 
-\subsection{Learning buffers do not provide trusted labels}
+\subsection{Learning buffers contain statistically admitted observations}
 
 An accepted learning window is one that passes implemented checks.
-Calling the buffer safe is a description of admission policy, not
-a statement that it contains only benign examples. The original
+The term \emph{safe buffer} describes its admission policy; benign status
+remains unknown. The original
 references and count guards make admission stricter, but an attack
 whose counts resemble normal behaviour can still pass. Conversely,
 a legitimate new behaviour can fail the same checks and never enter
@@ -170,67 +160,60 @@ to benign change. Weak rejection increases the opportunity to
 adapt but permits contaminated or unrepresentative observations to
 change the detector. Work on poisoning and normal-profile construction
 motivates explicit attention to this tradeoff
-\cite{kloft2012,cretu2008}. The project implements concrete checks;
-it does not inherit a robustness theorem from those citations.
+\cite{kloft2012,cretu2008}. The project implements concrete checks and
+evaluates their observed effect.
 
 The buffer is also selected even when every accepted observation is
 benign. Restricting admission to observations with large normality
 margins samples a central subset of the active distribution. Fitting
 that subset can underestimate tail variation and increase the
 concentration parameter. The dramatic Samsung changes are consistent
-with this concern, but the experiment does not isolate selection
-effects from contamination or actual traffic changes. A controlled
+with this concern. Separating selection effects from contamination and
+actual traffic changes requires a controlled
 study would need known benign drift and a separately manipulated
 contamination fraction.
 
 \subsection{Candidate checks answer local questions}
 
 The implemented movement limits answer whether a candidate is close
-enough to its reference under specified statistics. They do not answer
-whether the next attack will be easier to detect. A candidate can
+enough to its reference under specified statistics. Later labelled
+observations answer whether attacks become easier to detect. A candidate can
 increase its own buffer likelihood because the same selected buffer
-was used for fitting. That diagnostic checks numerical fit behaviour,
-but is not independent validation of future detection.
+was used for fitting. That diagnostic checks numerical fit behaviour;
+independent validation requires separate future observations.
 
 Threshold movement also needs a time horizon. Bounding each accepted
 step can still permit substantial movement after several steps. A
 fixed original composition reference and count limits constrain
-some ways of losing sensitivity, but they do not prevent an adapting
-DM cutoff from creating extra alerts. The duration study's Samsung
-false positives show the practical importance of that distinction.
+some ways of losing sensitivity. The duration study's Samsung false
+positives show that an adapting DM cutoff can create extra alerts.
 A policy described as conservative should therefore be reported
 through its equations and acceptance history, not through its name.
 
-No promoted update in the closing replay means that the retained
-implementation has not demonstrated the successful side of the
-drift tradeoff on that partition. It would be inappropriate to infer
-that adaptation is useless in every environment. It is equally
-inappropriate to present static-equivalent performance as proof
-that adaptation improves long-running monitoring. The current
-evidence supports cautious deployment of the original reference
-and further controlled study of update criteria.
+Every proposed update in the closing replay is rejected, so this partition
+demonstrates preservation of the original reference. Demonstrating useful
+adaptation requires controlled benign drift and accepted candidates that
+improve later outcomes.
 
-\subsection{Persistence protects consistency, not statistical quality}
+\subsection{Persistence protects state consistency}
 
 Atomic activation ensures that a complete accepted model/calibration
 pair becomes current together. Rollback and restart validation prevent
 an interrupted write from silently combining incompatible artifacts.
-These are operational properties. They do not make an accepted
-candidate statistically desirable. A perfectly durable poisoned
-model would still be an undesirable model.
+Candidate quality remains governed by statistical validation and later
+outcomes.
 
 Likewise, restart resets learning buffers and counters rather than
 restoring an exact input-processing position. That choice bounds
 state and simplifies recovery but changes the subsequent update
 schedule. The external producer must manage replay and duplicate
-delivery. Tests of state recovery should not be interpreted as an
-exactly-once stream-processing guarantee.
+delivery. Exactly-once processing would require a shared input-position and
+acknowledgement protocol.
 
 The local writer lock is sufficient for the tested single-host
-process contract. It does not coordinate an arbitrary distributed
-filesystem or multiple independently managed replicas. Extending
-the runtime would require a new ownership and delivery design;
-the present study supplies no measurements for such a deployment.
+process contract. A distributed filesystem or independently managed
+replicas require a new ownership and delivery design and their own
+measurements.
 
 \section{Interpreting numerical accuracy and runtime}
 \label{sec:numerical-discussion}
@@ -242,23 +225,21 @@ their difference loses significant digits. The numerical method and
 fallback address that calculation, following established concerns
 about floating-point arithmetic \cite{goldberg1991}. Parameter
 validation, native-resource management, and preservation of the
-multinomial coefficient are equally necessary: accuracy in a kernel
-does not compensate for a changed probability definition or an
-invalid input.
+multinomial coefficient are equally necessary for computing the intended
+probability on valid inputs.
 
-The LM--SciPy results have two practical implications. First, the
-observed detector errors are not explained by different binary
-decisions between the backends on the checked development inputs.
+The LM--SciPy results have two practical implications. First, both backends
+produce the same binary decisions on the checked development inputs.
 Second, the small observed score differences still matter near a
 decision boundary, so the comparison should remain part of future
-changes to numerical code. A finite agreement test cannot certify
-every possible large count vector or concentration.
+changes to numerical code. Stress probes extend coverage to large count
+vectors and concentrations.
 
 Runtime must also be attributed to the correct layer. Single-window
 scoring, repeated matrix evaluation during estimation, and the full
 application include different setup, allocation, and iteration costs.
-The aggregate experiment changes the likelihood boundary and cannot
-be used as a shortcut to a production speedup claim. Reporting these
+The aggregate experiment changes the likelihood boundary, so its speedup
+applies to that workload. Reporting these
 layers separately is more useful for implementation decisions than
 one averaged ratio that hides their differences.
 
@@ -274,8 +255,8 @@ The synchronous runtime makes that cost visible as backpressure:
 it finishes one record before consuming the next. This avoids an
 unbounded application queue under the supplied-window contract, but
 it shifts responsibility upstream when input arrives faster than
-processing. The accelerated simulation is not evidence of lossless
-collection under arbitrary packet rates. An asynchronous implementation
+processing. Lossless collection under arbitrary packet rates requires a
+collector measurement. An asynchronous implementation
 would have different queuing and failure behaviour and would need
 its own evaluation.
 
@@ -292,8 +273,8 @@ separate dimensions of the system.
 \subsection{Selection, chronology, and prior label exposure}
 
 Chronological separation prevents future windows from entering the
-initial fit. It does not by itself prevent evaluation bias if later
-labels influence feature, policy, or duration choices. The retained
+initial fit. Evaluation bias can still arise when later labels influence
+feature, policy, or duration choices. The retained
 later partition was inspected in previous audits before the closing
 fixed replay. This is the main limitation on interpreting its F1
 as a generalisation estimate, in line with the dataset-selection
@@ -301,18 +282,17 @@ concerns of Pendlebury et al. and Arp et al.
 \cite{pendlebury2019,arp2022}.
 
 The closing protocol improves reproducibility: it records fixed
-inputs, settings, predictions, and unchanged starting artifacts.
-It cannot retrospectively remove knowledge gained during development.
-An untouched temporal extension or external collection is required
+inputs, settings, predictions, and unchanged starting artifacts. Prior
+development knowledge remains part of the study history. An untouched
+temporal extension or external collection is required
 to assess the selected rule independently. Replaying the same bytes
 with more random seeds would not supply that missing independence.
 
-There is also no repeated deployment-level sampling across many
-devices. Two labelled device views cannot estimate the variation
-across manufacturers, firmware versions, network topologies, or
-applications. The unlabelled D-Link workload broadens the numerical
-input set but does not add labelled detection evidence. Conclusions
-are therefore expressed for the observed devices and partitions.
+The labelled evaluation contains two device views. Variation across
+manufacturers, firmware versions, network topologies, and applications
+requires broader deployment-level sampling. The D-Link data remain an
+algorithm-benchmark workload. Detection conclusions are therefore expressed
+for the observed Chromecast and Samsung partitions.
 
 \subsection{Labels and observation coverage}
 
@@ -322,23 +302,20 @@ attack, even if the overlap is brief or contains little selected
 traffic. That convention is reproducible but can penalise a normal
 aggregate near an interval edge or reward a delayed alert covering
 only part of an attack. Interval coverage and first-alert time help
-expose these effects; neither replaces the window confusion counts
+expose these effects and complement the window confusion counts
 \cite{tatbul2018}.
 
 Truncated captures are excluded, and partial dates contribute only
 observed windows. This avoids inventing counts but changes the
-available attack set. Results cannot be extrapolated to the six
-Chromecast annotations on the excluded capture. The repeated D-Link
-fit bounds likewise prevent describing its 846 retained rows as
-independent chronological evidence, although both numerical backends
-still receive the identical matrix.
+available attack set. The six Chromecast annotations on the excluded capture
+remain outside the reported results. The D-Link algorithm benchmark reports
+846 retained rows and 702 distinct UTC bounds, with both numerical backends
+receiving the identical matrix.
 
 The benign reference is presumed benign from its dataset role.
-There is no independent forensic proof that it contains every
-legitimate mode and no unannotated malicious activity. Normal-only
-training remains conditional on that trust assumption. The project
-does not claim that the fitting algorithm discovers a clean reference
-automatically from arbitrary mixed traffic.
+Normal-only training remains conditional on that trust assumption. A
+forensically established reference would require independent verification
+of legitimate modes and unannotated activity.
 
 \subsection{Small denominators and dependent observations}
 
@@ -353,31 +330,29 @@ For these reasons the report gives exact counts and avoids narrow
 confidence statements based on an unsupported independence model.
 A larger study could estimate uncertainty using independent devices
 or capture blocks and report variability across those units. The
-present observations support descriptive comparisons, not a claim
-of statistical superiority to other published detectors.
+present observations support descriptive comparisons within this study.
 
 Rare positives also explain why a low false positive rate can coexist
 with modest precision. Chromecast's three false alerts are few
 relative to 426 benign windows, but substantial relative to four
 true alerts. Both precision and recall are therefore retained,
 rather than using accuracy dominated by true negatives
-\cite{saito2015}. Pooling devices does not eliminate the underlying
-class-imbalance and prevalence issues.
+\cite{saito2015}. Pooling retains the underlying class-imbalance and
+prevalence issues.
 
 \subsection{Comparison scope and implementation history}
 
 Related systems establish that learned normal IoT profiles and
 online anomaly detection are established research directions
-\cite{meidan2018,mirsky2018,nguyen2019}. This thesis does not rerun
-their neural or ensemble models with common data and tuning budgets.
-It cannot rank LM-IDNet against them using headline values from
-different datasets. Its direct baselines are its stated static,
-adaptive, scoring, and numerical alternatives.
+\cite{meidan2018,mirsky2018,nguyen2019}. Direct baselines in this thesis are
+the stated static, adaptive, scoring, and numerical alternatives. A ranking
+against the neural and ensemble systems would require common data and tuning
+budgets.
 
 Source revisions also matter. The closing replay predates the
 count-first score ordering. Later regression evidence preserves its
-binary conclusions, but does not establish equality of every score
-or AUC. Keeping both provenance boundaries is preferable to silently
+binary conclusions. Scores and AUC remain attached to their recorded source
+version. Keeping both provenance boundaries is preferable to silently
 rewriting old results as if all measurements came from the current
 source tree. The generated manifest makes this distinction auditable.
 
@@ -388,10 +363,9 @@ The constrained Docker study supports a limited but useful statement:
 one supplied-window process runs within the configured CPU and memory
 limits on the measured Linux/amd64 host, including repeated rejected
 updates. This is consistent with the motivation for nearby network
-processing in edge systems \cite{shi2016}. It does not establish
-resource requirements on an ARM gateway, a router, or a microcontroller.
-An x86 host CPU under a container quota does not reproduce their
-instruction set, memory hierarchy, storage, or power constraints.
+processing in edge systems \cite{shi2016}. ARM gateways, routers, and
+microcontrollers require direct measurements of their instruction set,
+memory hierarchy, storage, and power constraints.
 
 The runtime receives completed counts rather than capturing packets
 inside the measured service. Live collection could dominate CPU,
@@ -401,20 +375,18 @@ semantics used to train the model. A fast collector with different
 semantics would feed a different statistical problem to a valid
 saved model.
 
-State publication and bounded logging improve operational control,
-but they do not provide a complete security-monitoring service.
+State publication and bounded logging improve operational control.
 Input authenticity, remote transport, downstream retention,
 operator notification, and incident response remain integration
-responsibilities. In particular, an emitted event is not a durable
-acknowledgement from an external consumer. These boundaries are
-material to deployment, while remaining outside the agreed
-supplied-window experiment.
+responsibilities. Durable delivery requires an acknowledgement from the
+external consumer. These boundaries are material to deployment and define
+work beyond the supplied-window experiment.
 
 Finally, deployment should distinguish the quality of a decision
 from the reliability of its execution. The implementation can
 validate inputs, preserve state consistency, and reproduce a
-decision while still missing an attack that does not change the
-four counts. Conversely, a useful statistical signal is insufficient
+decision while attacks with unchanged four-count representations remain
+invisible. Conversely, a useful statistical signal is insufficient
 if a collector drops windows or an alert is never delivered. The
 thesis supplies evidence for both the statistical and software
 components within stated limits, without treating either as a
