@@ -305,22 +305,26 @@ across rows, but must preserve the row-wise sum to retain this objective.
 \subsection{Minka's fixed-point estimator}
 
 The maximum-likelihood parameter estimate is obtained iteratively. Let
-$\Psi(z)=\mathrm{d}\log\Gamma(z)/\mathrm{d}z$ denote the digamma function.
+\[
+  \digamma(z)\coloneqq\frac{\mathrm{d}}{\mathrm{d}z}\log\Gamma(z)
+  =\frac{\Gamma'(z)}{\Gamma(z)}
+\]
+denote the digamma function.
 The gradient component of the kernel sum is
 \[
   \frac{\partial\mathcal{L}}{\partial\alpha_k}
   =\sum_{i=1}^{M}\bigl[
-    \Psi(\alpha_0)-\Psi(N_i+\alpha_0)
-    +\Psi(x_{ik}+\alpha_k)-\Psi(\alpha_k)\bigr].
+    \digamma(\alpha_0)-\digamma(N_i+\alpha_0)
+    +\digamma(x_{ik}+\alpha_k)-\digamma(\alpha_k)\bigr].
 \]
 Minka gives the following fixed-point update for count data
 \cite[Sec.~3, Eq.~(55)]{minka2000}:
 \begin{equation}
   \alpha_k^{(r+1)}=\alpha_k^{(r)}
   \frac{\displaystyle\sum_{i=1}^{M}
-    [\Psi(x_{ik}+\alpha_k^{(r)})-\Psi(\alpha_k^{(r)})]}
+    [\digamma(x_{ik}+\alpha_k^{(r)})-\digamma(\alpha_k^{(r)})]}
   {\displaystyle\sum_{i=1}^{M}
-    [\Psi(N_i+\alpha_0^{(r)})-\Psi(\alpha_0^{(r)})]},
+    [\digamma(N_i+\alpha_0^{(r)})-\digamma(\alpha_0^{(r)})]},
   \quad k=1,\ldots,K.
 \label{eq:minka-update}
 \end{equation}
@@ -382,7 +386,10 @@ For positive $a$ and a non-negative integer count $n$, define
   \Delta(a,n)=\log\Gamma(a+n)-\log\Gamma(a).
 \label{eq:gamma-difference}
 \end{equation}
-The Gamma recurrence gives the exact identity
+Euler's gamma function satisfies the functional equation
+$\Gamma(s+1)=s\Gamma(s)$ for $s>0$. Taking logarithms gives
+$\log\Gamma(s+1)=\log s+\log\Gamma(s)$; repeated application yields
+the exact identity
 \[
   \Delta(a,n)=\sum_{j=0}^{n-1}\log(a+j)
   \quad\text{for }n\geq 1,
@@ -414,13 +421,26 @@ calculation is relevant to categorical traffic counts. The application
 domain changes the observations, not the underlying special-function
 problem.
 
-Languasco and Migliardi subsequently introduce a method for computing
-nearby log-Gamma differences with explicit error analysis
-\cite{languasco2023}. Their construction uses analytic reformulation,
-including Euler--Maclaurin expansion and argument shifts, to evaluate the
-required differences. In this thesis, \emph{LM} names that numerical
-method; Minka's iteration remains the estimator, and LM-IDNet supplies the
-anomaly decision.
+Languasco and Migliardi show that the Yu--Shaw derivation is not
+mathematically valid as written: it applies an asymptotic log-Gamma formula
+without retaining either its large-argument condition or its asymptotic
+error term. They also correct its truncation-error estimate and identify
+error accumulation across the mesh computation, which Yu and Shaw did not
+analyse \cite[Introduction, p.~1997; Sec.~4]{languasco2023}. The series
+identity used by Yu and Shaw nevertheless remains correct; Languasco and
+Migliardi supply a rigorous proof based on the Taylor expansion of
+$\log(1+u)$.
+
+Languasco and Migliardi subsequently introduced a rigorously proved method
+for computing nearby log-Gamma differences with explicit error bounds and
+a complete computational-cost analysis \cite{languasco2023}. Their
+construction uses analytic reformulation, including Euler--Maclaurin
+expansion and argument shifts, to evaluate the required differences. Its
+error bounds account for accumulation across the likelihood terms and give
+an a priori criterion for bounding the final numerical error in the DM log
+probability of Eq.~\eqref{eq:dm-log-score}. In this thesis, \emph{LM} names
+that numerical method; Minka's iteration remains the estimator, and
+LM-IDNet supplies the anomaly decision.
 Zero counts correspond to the exact zero increment in
 Eq.~\eqref{eq:gamma-difference}, an important case for sparse protocol
 windows.
